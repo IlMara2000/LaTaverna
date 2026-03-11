@@ -1,16 +1,13 @@
 // src/services/appwrite.js
-import { Client, Account, Databases } from 'appwrite';
-import { CONFIG } from '../../config/env.js';
+import { Client, Account, Databases } from "appwrite";
+import { CONFIG } from "@config/env.js";
 
-let client = null;
-export let account = null;
-export let databases = null;
+const client = new Client()
+  .setEndpoint(CONFIG.APPWRITE_ENDPOINT)
+  .setProject(CONFIG.APPWRITE_PROJECT)
+  .setSelfSigned(true); // solo per sviluppo locale
 
-export function initAppwrite() {
-  client = new Client()
-    .setEndpoint(CONFIG.APPWRITE_ENDPOINT)
-    .setProject(CONFIG.APPWRITE_PROJECT);
+export const account = new Account(client);
+export const databases = new Databases(client);
 
-  account = new Account(client);
-  databases = new Databases(client);
-}
+console.log("✅ Appwrite inizializzato:", CONFIG.APPWRITE_PROJECT);
