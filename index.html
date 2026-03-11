@@ -18,7 +18,11 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-html, body { height: 100%; background-color: var(--bg-deep); }
+/* FIX BACKGROUND INFINITO */
+html, body { 
+    height: 100%; 
+    background-color: var(--bg-deep); 
+}
 
 body {
   background-image: radial-gradient(circle at 10% 10%, rgba(169, 83, 236, 0.1), transparent 40%);
@@ -32,8 +36,12 @@ body {
   transition: all 0.5s ease;
 }
 
-body.dashboard-active { justify-content: flex-start; padding-top: 60px; }
+body.dashboard-active {
+  justify-content: flex-start;
+  padding-top: 60px;
+}
 
+/* FIX TASTONE "LA TAVERNA" */
 #main-title-btn { 
   background: rgba(255,255,255,0.01);
   border: 1px solid var(--border-color);
@@ -48,11 +56,39 @@ body.dashboard-active { justify-content: flex-start; padding-top: 60px; }
   text-shadow: 0 0 15px rgba(169, 83, 236, 0.6);
   box-shadow: 0 15px 40px rgba(0,0,0,0.5);
   backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#main-title-btn:hover {
+  transform: translateY(-5px) scale(1.03);
+  border-color: var(--accent-purple);
+  background: rgba(169, 83, 236, 0.08);
+  text-shadow: 0 0 25px rgba(169, 83, 236, 1);
+  box-shadow: 0 20px 50px rgba(169, 83, 236, 0.2);
 }
 
 #ui { width: 100%; max-width: 1000px; display: none; }
 
-/* FIX MENU E OVERLAY */
+/* --- HEADER E SIDEBAR --- */
+.pt-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; width: 100%; }
+.icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; }
+
+/* FIX MENU E OVERLAY (Area Blu) */
+.pt-aside { 
+    position: fixed; 
+    top: 0; 
+    left: -300px; 
+    width: 280px; 
+    height: 100%; 
+    background: var(--glass-bg); 
+    backdrop-filter: blur(20px); 
+    z-index: 1000 !important; 
+    padding: 30px 20px; 
+    border-right: 1px solid var(--border-color); 
+    transition: transform 0.3s ease; 
+    pointer-events: auto !important;
+}
+.pt-aside.open { transform: translateX(300px); }
+
 .sidebar-overlay { 
     position: fixed; 
     top: 0; 
@@ -62,23 +98,62 @@ body.dashboard-active { justify-content: flex-start; padding-top: 60px; }
     background: rgba(0,0,0,0.7); 
     backdrop-filter: blur(4px);
     display: none; 
-    z-index: 998; /* Sotto la sidebar */
+    z-index: 998; 
+    cursor: pointer;
 }
 .sidebar-overlay.show { display: block; }
 
-.pt-aside { 
-    z-index: 1000 !important; /* Sopra l'overlay */
-    pointer-events: auto !important;
+/* FIX TOOLTIP CHAT VOCALE */
+.vox-chat-wrapper { position: relative; display: flex; align-items: center; }
+.vox-chat-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #000;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+.vox-chat-wrapper:hover .vox-chat-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(5px);
 }
 
-/* Form Login */
-.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 24px; width: 100%; max-width: 450px; margin: 0 auto; }
+/* --- LOGIN FORM --- */
+.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 24px; width: 100%; max-width: 450px; margin: 0 auto; pointer-events: auto; }
 .form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
+.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
 .form-group input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; }
 .btn-primary { width: 100%; padding: 16px; background: var(--accent-purple); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; }
-.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+.btn-discord { width: 100%; padding: 16px; background: #5865F2; border: none; border-radius: 12px; color: #fff; font-weight: 700; margin-top: 15px; cursor: pointer; }
+.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
 .lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); }
+
+/* --- CSS DASHBOARD E AI CHAT --- */
+.pt-card, .ai-panel { 
+    background: rgba(255,255,255,0.03); 
+    border: 1px solid var(--border-color); 
+    border-radius: 20px; 
+    padding: 25px; 
+    margin-bottom: 15px; 
+}
+.ai-panel { background: var(--glass-bg); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+.ai-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.ai-badge { background: rgba(169, 83, 236, 0.2); color: var(--accent-purple); padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; }
+.ai-body { min-height: 100px; color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+.ai-input-group { display: flex; gap: 10px; background: #000; padding: 8px; border-radius: 16px; border: 1px solid var(--border-color); }
+.ai-input-group input { flex: 1; padding: 10px; background: transparent; border: none; color: white; outline: none; }
+.ai-input-group button { background: rgba(255,255,255,0.1); border: none; border-radius: 12px; color: white; cursor: pointer; padding: 0 15px; }
 </style>
 </head>
 <body>
@@ -92,25 +167,21 @@ import { renderLayout } from './src/ui/components/layout.js';
 import { renderSidebar } from './src/ui/components/sidebar.js';
 import { renderAIChat } from './src/ui/components/aichatpanel.js';
 
+/* TRADUZIONI CON T.Ai.verna AGGIORNATA */
 const translations = {
     it: { 
         loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", 
         noAccount: "Non hai un account?", register: "Registrati", exit: "Esci", dash: "Dashboard", 
-        notes: "Note", npc: "Personaggi", settings: "Opzioni", voxChat: "Chat Vocale", 
+        notes: "Note", npc: "Personaggi", settings: "Opzioni", voxChat: "Chat Vocale (Vox Chat)", 
         welcome: "Viandante", activity: "Attività", loading: "Caricamento...",
-        // CHIAVI PER AICHATPANEL.JS - Devono corrispondere a quelle usate nel componente
-        aiTitle: "T.AIverna", 
-        aiPlaceholder: "Inizia a scrivere per chiedere consigli sulla tua campagna...", 
-        aiInput: "Chiedi alla T.AI..."
+        aiTitle: "T.Ai.verna", aiPlaceholder: "Inizia a scrivere per chiedere consigli sulla tua campagna...", aiInput: "Chiedi alla T.Ai..."
     },
     en: { 
         loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", 
         noAccount: "No account?", register: "Register", exit: "Logout", dash: "Dashboard", 
         notes: "Notes", npc: "NPCs", settings: "Settings", voxChat: "Voice Chat", 
         welcome: "Traveler", activity: "Activity", loading: "Loading...",
-        aiTitle: "T.AIvern", 
-        aiPlaceholder: "Start typing to ask for advice...", 
-        aiInput: "Ask the T.AI..."
+        aiTitle: "T.Ai.vern", aiPlaceholder: "Start typing to ask for advice on your campaign...", aiInput: "Ask the T.Ai..."
     }
 };
 
@@ -118,21 +189,20 @@ let currentLang = localStorage.getItem('taverna_lang') || 'it';
 const t = (key) => translations[currentLang][key] || key;
 
 function renderLogin() {
-    const mainBtn = document.getElementById('main-title-btn');
-    if(mainBtn) mainBtn.style.display = "none";
-    
+    document.getElementById('main-title-btn').style.display = "none";
     const ui = document.getElementById('ui');
     ui.style.display = "block";
     ui.innerHTML = `
         <div class="login-card">
-            <h2 style="text-align:center; margin-bottom:30px;">${t('loginTitle')}</h2>
+            <h2 style="text-align:center; margin-bottom:30px; font-weight:800;">${t('loginTitle')}</h2>
             <form id="login-form">
                 <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
                 <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
                 <button type="submit" class="btn-primary">${t('enter')}</button>
+                <button type="button" class="btn-discord">${t('discord')}</button>
             </form>
-            <div style="margin-top:25px; text-align:center;">
-                ${t('noAccount')} <a href="#" id="to-register" style="color:var(--accent-purple); text-decoration:none;">${t('register')}</a>
+            <div style="margin-top:25px; text-align:center; font-size:14px; color:var(--text-muted);">
+                ${t('noAccount')} <a href="#" id="to-register" style="color:var(--accent-purple); font-weight:600; text-decoration:none;">${t('register')}</a>
             </div>
             <div style="margin-top:30px; display:flex; justify-content:center; gap:10px;">
                 <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="changeLang('it')">IT</button>
@@ -148,27 +218,21 @@ function renderLogin() {
         showPlatform(user);
     };
 
-    // Dentro index.html, sostituisci il vecchio blocco document.getElementById('to-register').onclick con questo:
-
-document.getElementById('to-register').onclick = async (e) => {
-    e.preventDefault();
-    try {
-        // Importiamo showRegister come definito nel tuo file
-        const { showRegister } = await import('./register.js'); 
-        // Passiamo 'ui' (il container) e renderLogin (per tornare indietro)
-        showRegister(ui, t, renderLogin);
-    } catch (err) {
-        console.error("Errore caricamento register.js:", err);
-    }
-};
-
+    document.getElementById('to-register').onclick = async (e) => {
+        e.preventDefault();
+        try {
+            const { showRegister } = await import('./register.js');
+            showRegister(ui, t, renderLogin);
+        } catch (err) {
+            console.error("Errore caricamento register.js:", err);
+            alert("Errore nel caricamento della pagina di registrazione.");
+        }
+    };
 }
 
 function showPlatform(user) {
     document.body.classList.add('dashboard-active');
-    const mainBtn = document.getElementById('main-title-btn');
-    if(mainBtn) mainBtn.style.display = "none";
-    
+    document.getElementById('main-title-btn').style.display = "none";
     const ui = document.getElementById('ui');
     ui.style.display = "block";
     
@@ -185,11 +249,12 @@ function showPlatform(user) {
     }
 
     renderSidebar(sidebarWrapper, user, t, (target) => {
+        console.log("Navigazione:", target);
         closeMenu();
-    }, currentLang, (lang) => window.changeLang(lang));
+    }, currentLang, window.changeLang);
 
     const mainContent = document.getElementById('main-content');
-    if (mainContent) renderAIChat(mainContent, t);
+    if(mainContent) renderAIChat(mainContent, t);
 
     const overlay = document.getElementById('overlay');
     const closeMenu = () => {
@@ -200,10 +265,8 @@ function showPlatform(user) {
 
     overlay.onclick = closeMenu;
 
-    // Listener globale per apertura menu
     document.addEventListener('click', (e) => {
-        const btn = e.target.closest('#open-menu');
-        if(btn) {
+        if(e.target.closest('#open-menu')) {
             const sidebar = document.getElementById('sidebar');
             if(sidebar) {
                 sidebar.classList.add('open');
@@ -218,17 +281,19 @@ window.changeLang = (lang) => {
     location.reload(); 
 };
 
-// --- Gestione Avvio ---
+const mainBtn = document.getElementById('main-title-btn');
 const session = localStorage.getItem('taverna_session');
+
 if (session) {
     const data = JSON.parse(session);
-    if (Date.now() < data.expiry) showPlatform(data.user);
-    else {
+    if (Date.now() < data.expiry) {
+        showPlatform(data.user);
+    } else {
         localStorage.removeItem('taverna_session');
-        document.getElementById('main-title-btn').onclick = renderLogin;
+        mainBtn.onclick = renderLogin;
     }
 } else {
-    document.getElementById('main-title-btn').onclick = renderLogin;
+    mainBtn.onclick = renderLogin;
 }
 </script>
 </body>
