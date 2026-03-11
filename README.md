@@ -1,17 +1,56 @@
-# LaTaverna - dev README
+# LaTaverna - Server (TypeScript + Appwrite)
 
-Quick start:
-1. Creare i file sopra nella struttura indicata.
-2. Nel browser, aprire `src/index.html` servito da un semplice server statico:
-   - installa `serve` (`npm i -g serve`) e poi `serve .` nella root
-3. In Functions di :contentReference[oaicite:4]{index=4}:
-   - creare Function `createUserProfile` con index.js e package.json
-   - creare Function `verifyDiscord` con index.js e package.json
-   - impostare environment variables (see config/env.js + note in files)
-4. Testa createUserProfile via execution (payload: `{ "appwrite_user_id": "...", "username":"Den", "gdprAccepted": true }`).
-5. Testa verifyDiscord con payload: `{ "appwrite_user_id": "...", "discord_id": "..." }`.
-6. Per il frontend, usa il browser per registrare/login e lascia che il codice JS chiami Appwrite.
+Breve: backend boilerplate per LaTaverna usando Appwrite. Fornisce registrazione, login e funzione cloud per verificare Discord.
 
-Notes:
-- Non committare API keys pubblicamente.
-- Per produzione: mettere HTTPS, limitare execution permissions, mettere rate limit, proteggere functions.
+Prerequisiti
+- Node.js 18+ (consigliato)
+- Appwrite (server + project)
+- Collezione `users` in Appwrite (ID da inserire in .env)
+- Variabili ambiente configurate (vedi `.env.example`)
+
+Setup
+1. Copia `server/.env.example` → `server/.env` e inserisci i valori reali.
+2. Dal progetto root:
+   - npm install
+   - cd server && npm install
+3. Avvia in sviluppo:
+   - npm run dev (o `npm run dev:server` per solo server)
+
+Script utili (root package.json)
+- npm run dev:client — avvia Vite frontend
+- npm run dev:server — avvia server TypeScript
+- npm run dev — avvia client + server (con currently configured scripts)
+- npm run build:server — compila TypeScript (server/dist)
+- npm run start:server — avvia server compilato
+
+Endpoint principali
+- POST /api/auth/register
+  - body: { email, password, username, gdprAccepted }
+  - Crea account Appwrite, document in collection users, e sessione (login automatico).
+- POST /api/auth/login
+  - body: { email, password }
+  - Crea sessione e ritorna i dati utente.
+
+Appwrite Function
+- src/functions/verifyDiscord/index.ts
+  - Riceve { code, appwrite_user_id }, scambia OAuth code con Discord, ottiene discord_id e aggiorna documento users (campo discord_id).
+  - Deployare/adattare come Appwrite Cloud Function (runtime Node/TS).
+
+File principali
+- server/package.json
+- server/tsconfig.json
+- server/.env.example
+- server/src/index.ts
+- server/src/routes/auth.routes.ts
+- server/src/controllers/auth.controller.ts
+- server/src/services/auth.service.ts
+- server/src/functions/verifyDiscord/index.ts
+- server/src/utils/validators.ts
+- server/src/types/index.d.ts
+
+Note
+- Non committare il file `server/.env` (aggiungere a .gitignore).
+- Errori e log sono scritti su console; frontend deve gestire le risposte JSON per mostrare alert.
+- Adatta il runtime della function per l'environment Appwrite (handler export/format se necessario).
+
+Per assistenza su deploy Appwrite o integrazione frontend, indica cosa vuoi fare e fornisci i file frontend (login.js / register.js).
