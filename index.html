@@ -21,17 +21,17 @@
 /* 1. CORREZIONE: Background Infinito */
 html, body {
   height: 100%;
-  background-color: var(--bg-deep); /* Colore di base per evitare il bianco */
+  background-color: var(--bg-deep);
 }
 
 body {
   background-image: radial-gradient(circle at 10% 10%, rgba(169, 83, 236, 0.1), transparent 40%);
-  background-attachment: fixed; /* Mantiene il gradiente fisso mentre scorri */
+  background-attachment: fixed;
   color: var(--text-main);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Centra il tastone all'inizio */
+  justify-content: center;
   padding: env(safe-area-inset-top) 20px 40px 20px;
   transition: all 0.5s ease;
 }
@@ -41,7 +41,7 @@ body.dashboard-active {
   padding-top: 60px;
 }
 
-/* 2. CORREZIONE: Tastone "LA TAVERNA" centrato e reattivo */
+/* 2. CORREZIONE: Tastone "LA TAVERNA" bottone */
 #main-title-btn { 
   background: rgba(255,255,255,0.01);
   border: 1px solid var(--border-color);
@@ -68,15 +68,42 @@ body.dashboard-active {
 
 #ui { width: 100%; max-width: 1000px; display: none; }
 
-/* --- STILI COMPONENTI (Mantenuti per layout.js e sidebar.js) --- */
+/* --- STILI COMPONENTI --- */
 .pt-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; width: 100%; }
 .icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; }
-.pt-aside { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--glass-bg); backdrop-filter: blur(20px); z-index: 1000; padding: 30px 20px; border-right: 1px solid var(--border-color); transition: transform 0.3s ease; }
+
+/* CORREZIONE CSS: Overlay e Sidebar */
+.pt-aside { 
+    position: fixed; 
+    top: 0; 
+    left: -300px; 
+    width: 280px; 
+    height: 100%; 
+    background: var(--glass-bg); 
+    backdrop-filter: blur(20px); 
+    z-index: 1000; 
+    padding: 30px 20px; 
+    border-right: 1px solid var(--border-color); 
+    transition: transform 0.3s ease; 
+    pointer-events: auto;
+}
 .pt-aside.open { transform: translateX(300px); }
-.sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 999; }
+
+.sidebar-overlay { 
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100vw; 
+    height: 100vh; 
+    background: rgba(0,0,0,0.7); 
+    backdrop-filter: blur(4px);
+    display: none; 
+    z-index: 998; 
+    cursor: pointer;
+}
 .sidebar-overlay.show { display: block; }
 
-/* 4. CORREZIONE: CSS per Tooltip Chat Vocale */
+/* Tooltip Chat Vocale */
 .vox-chat-wrapper { position: relative; display: flex; align-items: center; }
 .vox-chat-tooltip {
   position: absolute;
@@ -95,7 +122,6 @@ body.dashboard-active {
   transition: all 0.3s ease;
   pointer-events: none;
   z-index: 10;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
 }
 .vox-chat-wrapper:hover .vox-chat-tooltip {
   opacity: 1;
@@ -103,8 +129,8 @@ body.dashboard-active {
   transform: translateX(-50%) translateY(5px);
 }
 
-/* Stili Form Login */
-.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 24px; width: 100%; max-width: 450px; margin: 0 auto;}
+/* Form Login */
+.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 24px; width: 100%; max-width: 450px; margin: 0 auto; pointer-events: auto;}
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
 .form-group input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; }
@@ -115,7 +141,6 @@ body.dashboard-active {
 .pt-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; margin-bottom: 15px; }
 .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; text-align: left; font-size: 16px; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 12px; }
 .tab-btn.active { background: rgba(169, 83, 236, 0.1); color: var(--accent-purple); font-weight: 600; }
-.lang-selector { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
 .lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
 .lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); }
 </style>
@@ -132,8 +157,20 @@ import { renderSidebar } from './src/ui/components/sidebar.js';
 import { renderAIChat } from './src/ui/components/aichatpanel.js';
 
 const translations = {
-    it: { loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", noAccount: "Non hai un account?", register: "Registrati", exit: "Esci", dash: "Dashboard", notes: "Note", npc: "Personaggi", settings: "Opzioni", voxChat: "Chat Vocale (Vox Chat)", welcome: "Viandante", activity: "Attività", loading: "Caricamento..." },
-    en: { loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", noAccount: "No account?", register: "Register", exit: "Logout", dash: "Dashboard", notes: "Notes", npc: "NPCs", settings: "Settings", voxChat: "Voice Chat", welcome: "Traveler", activity: "Activity", loading: "Loading..." }
+    it: { 
+        loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", 
+        noAccount: "Non hai un account?", register: "Registrati", exit: "Esci", dash: "Dashboard", 
+        notes: "Note", npc: "Personaggi", settings: "Opzioni", voxChat: "Chat Vocale (Vox Chat)", 
+        welcome: "Viandante", activity: "Attività", loading: "Caricamento...",
+        aiTitle: "T.AIverna", aiPlaceholder: "Inizia a scrivere per chiedere consigli sulla tua campagna...", aiInput: "Chiedi alla T.AI..."
+    },
+    en: { 
+        loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", 
+        noAccount: "No account?", register: "Register", exit: "Logout", dash: "Dashboard", 
+        notes: "Notes", npc: "NPCs", settings: "Settings", voxChat: "Voice Chat", 
+        welcome: "Traveler", activity: "Activity", loading: "Loading...",
+        aiTitle: "T.AIvern", aiPlaceholder: "Start typing to ask for advice on your campaign...", aiInput: "Ask the T.AI..."
+    }
 };
 
 let currentLang = localStorage.getItem('taverna_lang') || 'it';
@@ -169,9 +206,11 @@ function renderLogin() {
         showPlatform(user);
     };
 
-    document.getElementById('to-register').onclick = (e) => {
+    // CORREZIONE: Collegamento a register.js
+    document.getElementById('to-register').onclick = async (e) => {
         e.preventDefault();
-        alert("Vai alla pagina di registrazione (da implementare)");
+        const { renderRegister } = await import('./register.js');
+        renderRegister(ui, t, renderLogin);
     };
 }
 
@@ -181,30 +220,43 @@ function showPlatform(user) {
     const ui = document.getElementById('ui');
     ui.style.display = "block";
     
-    // 1. Renderizziamo il Layout base (ora gestito esternamente)
     renderLayout(ui, user, t, () => {
         localStorage.removeItem('taverna_session');
         location.reload();
     });
     
-    // 2. Renderizziamo la Sidebar (esterna)
     let sidebarWrapper = document.getElementById('sidebar-wrapper');
     if(!sidebarWrapper) {
         sidebarWrapper = document.createElement('div');
         sidebarWrapper.id = "sidebar-wrapper";
         document.body.appendChild(sidebarWrapper);
     }
+
     renderSidebar(sidebarWrapper, user, t, (target) => {
-        alert("Navigo a: " + target); // placeholder per la navigazione reale
-        document.getElementById('sidebar').classList.remove('open');
+        console.log("Navigazione:", target);
+        closeMenu();
     }, currentLang, changeLang);
 
-    // 3. Renderizziamo la chat AI
     const mainContent = document.getElementById('main-content');
     renderAIChat(mainContent, t);
 
-    // Colleghiamo l'overlay al menu (gestito da layout.js)
-    document.getElementById('overlay').onclick = () => document.getElementById('sidebar').classList.remove('open');
+    // CORREZIONE OVERLAY: Funzione per chiudere il menu toccando fuori
+    const overlay = document.getElementById('overlay');
+    const closeMenu = () => {
+        const sidebar = document.getElementById('sidebar');
+        if(sidebar) sidebar.classList.remove('open');
+        overlay.classList.remove('show');
+    };
+
+    overlay.onclick = closeMenu;
+
+    // Listener per il tasto menu (generato da layout.js)
+    document.addEventListener('click', (e) => {
+        if(e.target.closest('#open-menu')) {
+            document.getElementById('sidebar').classList.add('open');
+            overlay.classList.add('show');
+        }
+    });
 }
 
 window.changeLang = (lang) => {
@@ -212,7 +264,6 @@ window.changeLang = (lang) => {
     location.reload(); 
 };
 
-// --- Gestione Avvio ---
 const mainBtn = document.getElementById('main-title-btn');
 const session = localStorage.getItem('taverna_session');
 
