@@ -4,184 +4,230 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>LA TAVERNA</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* --- IL TUO STILE ORIGINALE "PREMIUM" --- */
-* { margin: 0px; padding:0; box-sizing:border-box; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
+/* --- TEMA E VARIABILI --- */
+:root {
+  --bg-deep: #0a0a0c;
+  --accent-purple: #a953ec;
+  --text-main: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(22, 22, 26, 0.98);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+
+/* 1. CORREZIONE: Background Infinito */
+html, body {
+  height: 100%;
+  background-color: var(--bg-deep); /* Colore di base per evitare il bianco */
+}
+
 body {
-  background:
-    radial-gradient(circle at 20% 30%, rgba(169,83,236,0.25), transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(128,0,128,0.35), transparent 40%),
-    radial-gradient(circle at top left, #2a0a3a, #120018),
-    linear-gradient(135deg,#0f0617,#1c0828,#260c35);
-    margin: 0; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; color:white;
-    transition: justify-content 0.3s ease;
+  background-image: radial-gradient(circle at 10% 10%, rgba(169, 83, 236, 0.1), transparent 40%);
+  background-attachment: fixed; /* Mantiene il gradiente fisso mentre scorri */
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Centra il tastone all'inizio */
+  padding: env(safe-area-inset-top) 20px 40px 20px;
+  transition: all 0.5s ease;
 }
 
-/* Stato Dashboard Attiva: allinea tutto in alto e rende il layout fluido */
-body.dashboard-active { justify-content: flex-start; padding-top: 40px; }
-
-#main-title { 
-  font-size:48px; font-weight: 800; color:#fff; text-shadow:0 0 20px rgba(169,83,236,0.8); 
-  margin-bottom:20px; text-align:center; cursor:pointer; transition: 0.3s;
-  letter-spacing: 4px;
-}
-#main-title:hover { transform: scale(1.05); text-shadow: 0 0 30px rgba(169,83,236,1); }
-
-/* Container UI adattivo */
-#ui { width:100%; max-width:1100px; display:none; animation: fadeIn 0.5s ease; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Login & Form */
-.login-header h2 { font-size:26px; color:#fff; margin-bottom:25px; text-align: center; }
-.form-group { margin-bottom:18px; }
-.form-group label { display:block; margin-bottom:8px; color:#c9b6e6; font-size: 13px; text-transform: uppercase; }
-.form-group input {
-  width:100%; padding:14px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); color:#fff; font-size:15px;
-  transition:0.2s;
-}
-.form-group input:focus { outline:none; border-color:#a953ec; box-shadow:0 0 10px rgba(169,83,236,0.3); }
-
-.btn { width:100%; padding:16px; background:#a953ec; color:white; border:none; border-radius:10px; font-size:16px; font-weight:600; cursor:pointer; transition:0.3s; }
-.btn:hover { background: #bc76f0; transform:translateY(-2px); box-shadow:0 8px 20px rgba(169,83,236,0.4); }
-
-.social-btn {
-  width: 100%; display:flex; align-items:center; justify-content:center; gap:10px; background:#5865F2; color:white;
-  border:none; padding:14px; border-radius:10px; cursor:pointer; font-weight:bold; transition:0.2s;
+body.dashboard-active {
+  justify-content: flex-start;
+  padding-top: 60px;
 }
 
-/* Dashboard Layout Adattivo */
-.pt-header { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px; }
-.pt-head-right { display:flex; gap:12px; align-items:center; }
-
-.icon-btn { 
-    background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:inherit; 
-    padding:10px 15px; border-radius:12px; cursor:pointer; display: flex; align-items: center; gap: 8px;
+/* 2. CORREZIONE: Tastone "LA TAVERNA" centrato e reattivo */
+#main-title-btn { 
+  background: rgba(255,255,255,0.01);
+  border: 1px solid var(--border-color);
+  padding: 20px 40px;
+  border-radius: 20px;
+  font-size: clamp(28px, 6vw, 42px);
+  font-weight: 800;
+  color: #fff; 
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 0 0 15px rgba(169, 83, 236, 0.6);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.icon-btn:hover { background: rgba(255,255,255,0.12); }
-
-.platform-body { 
-    width:100%; display:grid; 
-    grid-template-columns: 250px 1fr; /* Sidebar fissa su desktop */
-    gap:25px; 
+#main-title-btn:hover {
+  transform: translateY(-5px) scale(1.03);
+  border-color: var(--accent-purple);
+  background: rgba(169, 83, 236, 0.08);
+  text-shadow: 0 0 25px rgba(169, 83, 236, 1);
+  box-shadow: 0 20px 50px rgba(169, 83, 236, 0.2);
 }
 
-/* Responsive: su mobile la grid diventa una colonna sola */
-@media (max-width: 850px) {
-    .platform-body { grid-template-columns: 1fr; }
-    .pt-aside { display: none; } /* La sidebar la gestiremo col menu a comparsa poi */
+#ui { width: 100%; max-width: 1000px; display: none; }
+
+/* --- STILI COMPONENTI (Mantenuti per layout.js e sidebar.js) --- */
+.pt-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; width: 100%; }
+.icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; }
+.pt-aside { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--glass-bg); backdrop-filter: blur(20px); z-index: 1000; padding: 30px 20px; border-right: 1px solid var(--border-color); transition: transform 0.3s ease; }
+.pt-aside.open { transform: translateX(300px); }
+.sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 999; }
+.sidebar-overlay.show { display: block; }
+
+/* 4. CORREZIONE: CSS per Tooltip Chat Vocale */
+.vox-chat-wrapper { position: relative; display: flex; align-items: center; }
+.vox-chat-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #000;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+.vox-chat-wrapper:hover .vox-chat-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(5px);
 }
 
-.pt-card { background:rgba(255,255,255,0.03); backdrop-filter: blur(10px); border:1px solid rgba(255,255,255,0.08); padding:20px; border-radius:20px; }
+/* Stili Form Login */
+.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 24px; width: 100%; max-width: 450px; margin: 0 auto;}
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;}
+.form-group input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; }
+.btn-primary { width: 100%; padding: 16px; background: var(--accent-purple); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; }
+.btn-discord { width: 100%; padding: 16px; background: #5865F2; border: none; border-radius: 12px; color: #fff; font-weight: 700; margin-top: 15px; cursor: pointer; }
 
-/* Navigazione Sidebar */
-.pt-nav { display:flex; flex-direction:column; gap:10px; }
-.tab-btn { 
-    background:transparent; border:1px solid rgba(255,255,255,0.05); color:#ccc; 
-    padding:14px; border-radius:12px; text-align:left; cursor:pointer; transition: 0.2s;
-}
-.tab-btn.active { background:rgba(169,83,236,0.15); color:#fff; border-color:#a953ec; }
-
-/* Toast/Notifiche */
-.pt-toast{ position:fixed; right:20px; bottom:20px; background:#a953ec; color:white; padding:12px 20px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5); opacity:0; transform:translateY(20px); transition:0.3s; z-index:9999; }
-.pt-toast.show{ opacity:1; transform:translateY(0); }
+/* Dashboard Cards */
+.pt-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; margin-bottom: 15px; }
+.tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; text-align: left; font-size: 16px; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 12px; }
+.tab-btn.active { background: rgba(169, 83, 236, 0.1); color: var(--accent-purple); font-weight: 600; }
+.lang-selector { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+.lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); }
 </style>
 </head>
 <body>
 
-<div id="main-title">LA TAVERNA</div>
+<button id="main-title-btn">LA TAVERNA</button>
+<div class="sidebar-overlay" id="overlay"></div>
 <div id="ui"></div>
 
 <script type="module">
-// --- IMPORTAZIONE MODULI ESTERNI (Assicurati che i file esistano!) ---
+import { renderLayout } from './src/ui/components/layout.js';
+import { renderSidebar } from './src/ui/components/sidebar.js';
 import { renderAIChat } from './src/ui/components/aichatpanel.js';
 
-const uiContainer = document.getElementById('ui');
-const mainTitle = document.getElementById('main-title');
-
 const translations = {
-    it: { vox: "Chat Vocale", exit: "Esci", welcome: "Benvenuto", dash: "Dashboard", npc: "Personaggi", notes: "Note" },
-    en: { vox: "Voice Chat", exit: "Logout", welcome: "Welcome", dash: "Dashboard", npc: "NPCs", notes: "Notes" }
+    it: { loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", noAccount: "Non hai un account?", register: "Registrati", exit: "Esci", dash: "Dashboard", notes: "Note", npc: "Personaggi", settings: "Opzioni", voxChat: "Chat Vocale (Vox Chat)", welcome: "Viandante", activity: "Attività", loading: "Caricamento..." },
+    en: { loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", noAccount: "No account?", register: "Register", exit: "Logout", dash: "Dashboard", notes: "Notes", npc: "NPCs", settings: "Settings", voxChat: "Voice Chat", welcome: "Traveler", activity: "Activity", loading: "Loading..." }
 };
-let currentLang = 'it';
+
+let currentLang = localStorage.getItem('taverna_lang') || 'it';
 const t = (key) => translations[currentLang][key];
 
-// --- FUNZIONE LOGIN ---
 function renderLogin() {
-  mainTitle.style.display = "none";
-  uiContainer.style.display = "block";
-  uiContainer.innerHTML = `
-    <div style="max-width: 400px; margin: 0 auto;">
-        <div class="login-header"><h2>Entra nella Taverna</h2></div>
-        <form id="login-form">
-            <div class="form-group"><label>Email</label><input type="email" id="email" placeholder="latua@email.com" required /></div>
-            <div class="form-group"><label>Password</label><input type="password" id="password" placeholder="••••••••" required /></div>
-            <button type="submit" class="btn">Accedi</button>
-            <div style="text-align:center; margin: 20px 0; color: #888;">oppure</div>
-            <button type="button" class="social-btn" id="discord-login">Login con Discord</button>
-        </form>
-    </div>
-  `;
-
-  document.getElementById('login-form').onsubmit = e => {
-    e.preventDefault();
-    showPlatform({ email: document.getElementById('email').value, username: "Viandante" });
-  };
-}
-
-// --- FUNZIONE DASHBOARD (L'ANIMA DEL SITO) ---
-function showPlatform(user) {
-  document.body.classList.add('dashboard-active');
-  uiContainer.innerHTML = `
-    <header class="pt-header">
-      <div class="pt-head-left">
-        <h2 style="font-size: 24px;">${t('welcome')}, <span style="color:#a953ec;">${user.username}</span></h2>
-        <div style="font-size:13px; color:#aaa;">Esplora i segreti della tua campagna</div>
-      </div>
-      <div class="pt-head-right">
-        <button class="icon-btn" title="${t('vox')}">🎧 <span>${t('vox')}</span></button>
-        <button id="logout-btn" class="icon-btn" style="color:#ff4444;">✕</button>
-      </div>
-    </header>
-
-    <div class="platform-body">
-      <aside class="pt-aside">
-        <div class="pt-card" style="margin-bottom: 15px; display:flex; align-items:center; gap:12px;">
-            <div style="width:40px; height:40px; border-radius:8px; background:#a953ec; display:flex; align-items:center; justify-content:center; font-weight:bold;">${user.username[0]}</div>
-            <div><div style="font-size:14px; font-weight:bold;">${user.username}</div><div style="font-size:11px; color:#888;">Online</div></div>
-        </div>
-        <nav class="pt-nav">
-          <button class="tab-btn active">🏠 ${t('dash')}</button>
-          <button class="tab-btn">📝 ${t('notes')}</button>
-          <button class="tab-btn">👥 ${t('npc')}</button>
-          <button class="tab-btn">⚙️ Impostazioni</button>
-        </nav>
-      </aside>
-
-      <main class="pt-main">
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div class="pt-card">
-                <h3>Attività Recenti</h3>
-                <p style="color:#888; margin-top:10px; font-size:14px;">Nessuna nuova notifica. La sessione è pronta per iniziare.</p>
+    document.getElementById('main-title-btn').style.display = "none";
+    const ui = document.getElementById('ui');
+    ui.style.display = "block";
+    ui.innerHTML = `
+        <div class="login-card">
+            <h2 style="text-align:center; margin-bottom:30px; font-weight:800;">${t('loginTitle')}</h2>
+            <form id="login-form">
+                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
+                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
+                <button type="submit" class="btn-primary">${t('enter')}</button>
+                <button type="button" class="btn-discord">${t('discord')}</button>
+            </form>
+            <div style="margin-top:25px; text-align:center; font-size:14px; color:var(--text-muted);">
+                ${t('noAccount')} <a href="#" id="to-register" style="color:var(--accent-purple); font-weight:600; text-decoration:none;">${t('register')}</a>
             </div>
-            
-            <div id="ai-chat-container"></div>
+            <div style="margin-top:30px; display:flex; justify-content:center; gap:10px;">
+                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="changeLang('it')">IT</button>
+                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="changeLang('en')">EN</button>
+            </div>
         </div>
-      </main>
-    </div>
-  `;
+    `;
+    
+    document.getElementById('login-form').onsubmit = (e) => {
+        e.preventDefault();
+        const user = { username: t('welcome'), email: document.getElementById('email').value };
+        localStorage.setItem('taverna_session', JSON.stringify({user, expiry: Date.now() + 86400000}));
+        showPlatform(user);
+    };
 
-  // Carichiamo il componente AI Chat dal tuo file esterno
-  const aiContainer = document.getElementById('ai-chat-container');
-  if (renderAIChat) {
-      renderAIChat(aiContainer, t);
-  }
-
-  // Bottone Logout
-  document.getElementById('logout-btn').onclick = () => location.reload();
+    document.getElementById('to-register').onclick = (e) => {
+        e.preventDefault();
+        alert("Vai alla pagina di registrazione (da implementare)");
+    };
 }
 
-// Inizio: Il clic sul Titolo attiva il Login
-mainTitle.onclick = renderLogin;
+function showPlatform(user) {
+    document.body.classList.add('dashboard-active');
+    document.getElementById('main-title-btn').style.display = "none";
+    const ui = document.getElementById('ui');
+    ui.style.display = "block";
+    
+    // 1. Renderizziamo il Layout base (ora gestito esternamente)
+    renderLayout(ui, user, t, () => {
+        localStorage.removeItem('taverna_session');
+        location.reload();
+    });
+    
+    // 2. Renderizziamo la Sidebar (esterna)
+    let sidebarWrapper = document.getElementById('sidebar-wrapper');
+    if(!sidebarWrapper) {
+        sidebarWrapper = document.createElement('div');
+        sidebarWrapper.id = "sidebar-wrapper";
+        document.body.appendChild(sidebarWrapper);
+    }
+    renderSidebar(sidebarWrapper, user, t, (target) => {
+        alert("Navigo a: " + target); // placeholder per la navigazione reale
+        document.getElementById('sidebar').classList.remove('open');
+    }, currentLang, changeLang);
+
+    // 3. Renderizziamo la chat AI
+    const mainContent = document.getElementById('main-content');
+    renderAIChat(mainContent, t);
+
+    // Colleghiamo l'overlay al menu (gestito da layout.js)
+    document.getElementById('overlay').onclick = () => document.getElementById('sidebar').classList.remove('open');
+}
+
+window.changeLang = (lang) => {
+    localStorage.setItem('taverna_lang', lang);
+    location.reload(); 
+};
+
+// --- Gestione Avvio ---
+const mainBtn = document.getElementById('main-title-btn');
+const session = localStorage.getItem('taverna_session');
+
+if (session) {
+    const data = JSON.parse(session);
+    if (Date.now() < data.expiry) {
+        showPlatform(data.user);
+    } else {
+        localStorage.removeItem('taverna_session');
+        mainBtn.onclick = renderLogin;
+    }
+} else {
+    mainBtn.onclick = renderLogin;
+}
+
 </script>
 </body>
 </html>
