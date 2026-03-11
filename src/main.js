@@ -31,6 +31,16 @@ function App() {
         {/* Rotte Pubbliche */}
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
         <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
+        
+        <Route path="/admin" element={
+          user ? (
+            <Layout>
+              <AdminDashboard />
+            </Layout>
+          ) : (
+            <Navigate to="/login" />
+          )
+        } />
 
         {/* Rotte Protette (Taverna) */}
         <Route path="/" element={
