@@ -148,11 +148,20 @@ function renderLogin() {
         showPlatform(user);
     };
 
-    document.getElementById('to-register').onclick = async (e) => {
-        e.preventDefault();
-        const { renderRegister } = await import('./register.js');
-        renderRegister(ui, t, renderLogin);
-    };
+    // Dentro index.html, sostituisci il vecchio blocco document.getElementById('to-register').onclick con questo:
+
+document.getElementById('to-register').onclick = async (e) => {
+    e.preventDefault();
+    try {
+        // Importiamo showRegister come definito nel tuo file
+        const { showRegister } = await import('./register.js'); 
+        // Passiamo 'ui' (il container) e renderLogin (per tornare indietro)
+        showRegister(ui, t, renderLogin);
+    } catch (err) {
+        console.error("Errore caricamento register.js:", err);
+    }
+};
+
 }
 
 function showPlatform(user) {
