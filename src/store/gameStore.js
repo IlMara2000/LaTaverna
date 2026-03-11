@@ -1,10 +1,18 @@
 import { create } from 'zustand';
 
 export const useGameStore = create((set) => ({
+    // Stato iniziale
     tokens: [],
-    setTokens: (tokens) => set({ tokens }),
+    currentMap: null,
+
+    // Funzioni per aggiornare lo stato
+    setTokens: (newTokens) => set({ tokens: newTokens }),
+    
     updateToken: (tokenId, data) => set((state) => ({
-        tokens: state.tokens.map(t => t.$id === tokenId ? { ...t, ...data } : t)
+        tokens: state.tokens.map(t => 
+            t.$id === tokenId ? { ...t, ...data } : t
+        )
     })),
-    addToken: (token) => set((state) => ({ tokens: [...state.tokens, token] })),
+
+    setMap: (mapUrl) => set({ currentMap: mapUrl }),
 }));
