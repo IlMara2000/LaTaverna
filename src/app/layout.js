@@ -3,7 +3,9 @@ import "../style.css";
 export default function RootLayout({ children }) {
   return (
     <html lang="it">
-      <body>{children}</body>
+      <body className="bg-[#0a0a0a] text-white antialiased">
+        {children}
+      </body>
     </html>
   );
 }
