@@ -1,341 +1,368 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>LA TAVERNA</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<style>
-/* --- TEMA E VARIABILI --- */
-:root {
-  --bg-deep: #0a0a0c;
-  --accent-purple: #a953ec;
-  --accent-glow: rgba(169, 83, 236, 0.4);
-  --text-main: #f4f4f5;
-  --text-muted: #a1a1aa;
-  --border-color: rgba(255, 255, 255, 0.08);
-  --glass-bg: rgba(22, 22, 26, 0.98);
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>LA TAVERNA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+  /* ---------- RESET ---------- */
+  *{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Inter',system-ui;
+  }
+  html,body{
+    height:100%;
+    background:#0f0f13;
+    color:#ffffff;
+  }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+  /* ---------- BODY ---------- */
+  body{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
 
-html, body { height: 100%; background-color: var(--bg-deep); overflow-x: hidden; }
+    background:
+      radial-gradient(circle at 10% 10%, rgba(169,83,236,0.15), transparent 40%),
+      linear-gradient(180deg,#0f0f13,#1b1b22);
 
-body{
-margin:0;
-font-family:system-ui;
-background:linear-gradient(180deg,#0f0f13,#1b1b22);
-color:white;
-}
+    padding:20px;
+  }
 
-.dashboard{
-padding:24px;
-max-width:600px;
-flex-direction:column;
-margin:auto;
-gap:20px;
-}
+  /* ---------- TITLE ---------- */
+  #main-title-btn{
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);
 
-.card{
-background:rgba(255,255,255,0.04);
-border:1px solid rgba(255,255,255,0.08);
-backdrop-filter:blur(10px);
-border-radius:18px;
-padding:18px;
-margin-bottom:20px;
-}
+    padding:26px 50px;
+    border-radius:24px;
 
-.account{
-display:flex;
-align-items:center;
-gap:16px;
-margin-bottom:20px;
-}
+    font-size:36px;
+    font-weight:900;
+    letter-spacing:4px;
 
-.avatar{
-width:52px;
-height:52px;
-border-radius:14px;
-background:linear-gradient(135deg,#7a3cff,#b04dff);
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
-font-size:20px;
-}
+    cursor:pointer;
 
-.menu{
-display:flex;
-flex-wrap:wrap;
-gap:12px;
-margin-bottom:20px;
-}
+    backdrop-filter:blur(10px);
 
-.menu button{
-padding:10px 16px;
-border-radius:12px;
-border:none;
+    box-shadow:
+      0 20px 50px rgba(0,0,0,0.6),
+      0 0 40px rgba(169,83,236,0.2);
 
-background:#2c2c35;
-color:white;
+    transition:.25s;
+  }
 
-transition:all .2s;
-}
+  #main-title-btn:hover{
+    transform:translateY(-3px);
+    box-shadow:
+      0 25px 60px rgba(0,0,0,0.8),
+      0 0 60px rgba(169,83,236,0.35);
+  }
 
-.menu button:hover{
-background:#7a3cff;
-transform:translateY(-2px);
-}
-.lang{
-display:flex;
-gap:10px;
-}
+  /* ---------- LOGIN CARD ---------- */
+  .login-card{
+    width:100%;
+    max-width:420px;
+    background:rgba(20,20,28,0.95);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:28px;
+    padding:36px 28px;
+    box-shadow:0 30px 70px rgba(0,0,0,0.6);
+    backdrop-filter:blur(20px);
+  }
 
-.lang button{
-padding:10px 20px;
-border-radius:12px;
-background:#222;
-color:white;
-border:1px solid #444;
-}
-  background-image: radial-gradient(circle at 10% 10%, rgba(169, 83, 236, 0.1), transparent 40%);
-  background-attachment: fixed;
-  color: var(--text-main);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: env(safe-area-inset-top) 20px 40px 20px;
-  transition: all 0.5s ease;
-}
-.chatBox{
-position:fixed;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-width:90%;
-max-width:500px;
-}
+  /* ---------- FORM ---------- */
+  .form-group{
+    margin-bottom:20px;
+  }
+  .form-group label{
+    font-size:11px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:#9ca3af;
+    display:block;
+    margin-bottom:6px;
+  }
 
-.chatHeader{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:10px;
-}
+  input{
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:#101014;
+    color:white;
+    font-size:14px;
+    transition:.2s;
+  }
+  input:focus{
+    outline:none;
+    border-color:#a953ec;
+  }
 
-.chatAi{
-background:rgba(20,20,30,0.8);
-border:1px solid rgba(255,255,255,0.08);
-padding:18px;
-border-radius:20px;
-box-shadow:0 10px 30px rgba(0,0,0,0.4);
-}
-  
-.chatInput{
-display:flex;
-gap:12px;
-}
-  
-.chatInput input{
-flex:1;
-padding:14px;
-border-radius:12px;
-border:none;
-background:#101014;
-color:white;
-}
+  /* ---------- BUTTON PRIMARY ---------- */
+  .btn-primary{
+    width:100%;
+    padding:16px;
+    border-radius:14px;
+    border:none;
+    background:linear-gradient(135deg,#a953ec,#7928ca);
+    font-weight:700;
+    letter-spacing:1px;
+    cursor:pointer;
+    margin-top:10px;
+    box-shadow:0 8px 20px rgba(169,83,236,0.4);
+    transition:.2s;
+  }
+  .btn-primary:hover{ transform:translateY(-2px); }
 
-.chatInput button{
-width:42px;
-border-radius:12px;
-border:none;
-background:#7a3cff;
-color:white;
-font-weight:bold;
-}
-  
-  body.dashboard-active { justify-content: flex-start; padding-top: 40px; }
+  /* ---------- DISCORD BUTTON ---------- */
+  .btn-discord{
+    width:100%;
+    padding:14px;
+    border-radius:14px;
+    border:1px solid #5865F2;
+    background:rgba(88,101,242,0.05);
+    color:#5865F2;
+    font-weight:600;
+    margin-top:14px;
+    cursor:pointer;
+    transition:.2s;
+  }
+  .btn-discord:hover{ background:rgba(88,101,242,0.15); }
 
-/* --- BOTTONI PRO --- */
-.btn-primary { 
-  width: 100%; 
-  padding: 18px; 
-  background: linear-gradient(135deg, #a953ec 0%, #7928ca 100%); 
-  border: none; 
-  border-radius: 16px; 
-  color: #fff; 
-  font-weight: 800; 
-  text-transform: uppercase; 
-  letter-spacing: 2px; 
-  cursor: pointer; 
-  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-  box-shadow: 0 4px 15px var(--accent-glow);
-}
+  /* ---------- DASHBOARD ---------- */
+  .dashboard{
+    width:100%;
+    max-width:600px;
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+    margin:auto;
+  }
 
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px var(--accent-glow); filter: brightness(1.1); }
+  /* ---------- CARD ---------- */
+  .card{
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:18px;
+    padding:20px;
+    backdrop-filter:blur(10px);
+    box-shadow:0 15px 40px rgba(0,0,0,0.5);
+  }
 
-.btn-discord { 
-  width: 100%; padding: 16px; background: rgba(88, 101, 242, 0.05); 
-  border: 1px solid #5865F2; border-radius: 16px; color: #5865F2; 
-  font-weight: 700; margin-top: 15px; cursor: pointer; transition: 0.3s;
-}
+  /* ---------- ACCOUNT ---------- */
+  .account{
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
 
-#main-title-btn { 
-  background: rgba(255,255,255,0.01); border: 1px solid var(--border-color);
-  padding: 25px 50px; border-radius: 24px; font-size: clamp(24px, 5vw, 42px);
-  font-weight: 900; color: #fff; cursor: pointer; text-transform: uppercase;
-  letter-spacing: 4px; text-shadow: 0 0 20px var(--accent-glow);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.5); backdrop-filter: blur(12px);
-}
+  /* ---------- AVATAR ---------- */
+  .avatar{
+    width:54px;
+    height:54px;
+    border-radius:16px;
+    background:linear-gradient(135deg,#7a3cff,#b04dff);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+    font-size:20px;
+  }
 
-/* --- INPUTS --- */
-input { 
-  width: 100%; padding: 16px; background: rgba(0,0,0,0.5) !important; 
-  border: 1px solid var(--border-color); border-radius: 14px; color: #fff; 
-  font-size: 15px; transition: 0.3s;
-}
-input:focus { border-color: var(--accent-purple); outline: none; }
+  /* ---------- MENU ---------- */
+  .menu{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:14px;
+  }
+  .menu button{
+    padding:14px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,0.08);
+    background:#1a1a22;
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+    transition:.2s;
+  }
+  .menu button:hover{
+    background:#7a3cff;
+    transform:translateY(-2px);
+  }
 
-/* --- LAYOUT DASHBOARD --- */
-#ui { width: 100%; max-width: 1000px; display: none; }
-.sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: none; z-index: 998; }
-.sidebar-overlay.show { display: block; }
+  /* ---------- LANGUAGE ---------- */
+  .lang{ display:flex; gap:10px; }
+  .lang button{
+    padding:10px 18px;
+    border-radius:12px;
+    background:#1a1a22;
+    border:1px solid rgba(255,255,255,0.08);
+    color:white;
+    cursor:pointer;
+  }
 
-.pt-aside { 
-  position: fixed; top: 0; left: -320px; width: 300px; height: 100%; 
-  background: var(--glass-bg); z-index: 1000; padding: 40px 24px; 
-  border-right: 1px solid var(--border-color); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
-}
-.pt-aside.open { left: 0; }
+  /* ---------- CHAT AI ---------- */
+  .chatBox{
+    position:fixed;
+    bottom:20px;
+    left:0;
+    right:0;
+    margin:auto;
+    width:92%;
+    max-width:520px;
+  }
+  .chatAi{
+    background:rgba(20,20,30,0.9);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;
+    padding:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.6);
+  }
 
-/* FIX MODULO REGISTRAZIONE / LOGIN */
-.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px 30px; border-radius: 32px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+  /* ---------- CHAT INPUT ---------- */
+  .chatInput{ display:flex; gap:10px; margin-top:10px; }
+  .chatInput input{
+    flex:1; padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.08); background:#101014; color:white;
+  }
+  .chatInput button{
+    width:42px; border-radius:12px; border:none; background:#7a3cff; color:white; font-weight:700; cursor:pointer;
+  }
 
-/* FIX GDPR BOX */
-.gdpr-container {
-  display: flex; align-items: flex-start; gap: 12px; 
-  background: rgba(255,255,255,0.03); padding: 15px; 
-  border-radius: 14px; border: 1px solid var(--border-color);
-  margin-bottom: 25px; cursor: pointer;
-}
-.gdpr-container input[type="checkbox"] {
-  width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0;
-  accent-color: var(--accent-purple);
-}
-.gdpr-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; pointer-events: none; }
+  /* ---------- SIDEBAR ---------- */
+  .sidebar-overlay{ position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; z-index:998; }
+  .sidebar-overlay.show{ display:block; }
+  .pt-aside{
+    position:fixed; top:0; left:-300px; width:280px; height:100%; background:#14141c;
+    border-right:1px solid rgba(255,255,255,0.08); padding:30px 20px; transition:.3s; z-index:999;
+  }
+  .pt-aside.open{ left:0; }
 
-.ai-panel { background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 25px; margin-top: 20px; }
-</style>
+  /* ---------- SMALL RESPONSIVE TWEAKS ---------- */
+  @media (max-width:420px){
+    #main-title-btn{ font-size:20px; padding:16px 28px; letter-spacing:2px; }
+    .login-card{ padding:26px 18px; border-radius:18px; }
+    .menu{ grid-template-columns:repeat(1,1fr); gap:10px; }
+    .dashboard{ padding:12px; gap:14px; max-width:100%; }
+  }
+  </style>
 </head>
 <body>
 
-<button id="main-title-btn">LA TAVERNA</button>
-<div class="sidebar-overlay" id="overlay"></div>
-<div id="ui"></div>
+  <button id="main-title-btn">LA TAVERNA</button>
+  <div class="sidebar-overlay" id="overlay"></div>
+  <div id="ui"></div>
 
-<script type="module">
-import { renderLayout } from './src/ui/components/layout.js';
-import { renderSidebar } from './src/ui/components/sidebar.js';
-import { renderAIChat } from './src/ui/components/aichatpanel.js';
+  <script type="module">
+  import { renderLayout } from './src/ui/components/layout.js';
+  import { renderSidebar } from './src/ui/components/sidebar.js';
+  import { renderAIChat } from './src/ui/components/aichatpanel.js';
 
-const translations = {
-    it: { 
-        loginTitle: "Bentornato", email: "Email", pass: "Password", enter: "Entra", 
-        discord: "Discord Login", noAccount: "Nuovo?", register: "Registrati", 
-        aiTitle: "T.Ai.verna", aiPlaceholder: "Chiedi alla T.Ai...", aiInput: "Invia"
-    },
-    en: { 
-        loginTitle: "Welcome", email: "Email", pass: "Password", enter: "Login", 
-        discord: "Discord Login", noAccount: "New?", register: "Register", 
-        aiTitle: "T.Ai.vern", aiPlaceholder: "Ask T.Ai...", aiInput: "Send"
-    }
-};
+  const translations = {
+      it: { 
+          loginTitle: "Bentornato", email: "Email", pass: "Password", enter: "Entra", 
+          discord: "Discord Login", noAccount: "Nuovo?", register: "Registrati", 
+          aiTitle: "T.Ai.verna", aiPlaceholder: "Chiedi alla T.Ai...", aiInput: "Invia"
+      },
+      en: { 
+          loginTitle: "Welcome", email: "Email", pass: "Password", enter: "Login", 
+          discord: "Discord Login", noAccount: "New?", register: "Register", 
+          aiTitle: "T.Ai.vern", aiPlaceholder: "Ask T.Ai...", aiInput: "Send"
+      }
+  };
 
-let currentLang = localStorage.getItem('taverna_lang') || 'it';
-const t = (key) => translations[currentLang][key] || key;
+  let currentLang = localStorage.getItem('taverna_lang') || 'it';
+  const t = (key) => translations[currentLang][key] || key;
 
-function renderLogin() {
-    document.getElementById('main-title-btn').style.display = "none";
-    const ui = document.getElementById('ui');
-    ui.style.display = "block";
-    ui.innerHTML = `
-        <div class="login-card">
-            <h2 style="text-align:center; margin-bottom:30px; font-weight:900; font-size:28px;">${t('loginTitle')}</h2>
-            <form id="login-form">
-                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
-                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
-                <button type="submit" class="btn-primary">${t('enter')}</button>
-                <button type="button" class="btn-discord">${t('discord')}</button>
-            </form>
-            <div style="margin-top:25px; text-align:center; font-size:14px;">
-                ${t('noAccount')} <a href="#" id="to-register" style="color:var(--accent-purple); font-weight:700; text-decoration:none;">${t('register')}</a>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('login-form').onsubmit = (e) => {
-        e.preventDefault();
-        const user = { username: "Viandante", email: document.getElementById('email').value };
-        localStorage.setItem('taverna_session', JSON.stringify({user, expiry: Date.now() + 86400000}));
-        showPlatform(user);
-    };
+  function renderLogin() {
+      document.getElementById('main-title-btn').style.display = "none";
+      const ui = document.getElementById('ui');
+      ui.style.display = "block";
+      ui.innerHTML = `
+          <div class="login-card">
+              <h2 style="text-align:center; margin-bottom:30px; font-weight:900; font-size:28px;">${t('loginTitle')}</h2>
+              <form id="login-form">
+                  <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
+                  <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
+                  <button type="submit" class="btn-primary">${t('enter')}</button>
+                  <button type="button" class="btn-discord" id="discord-login">${t('discord')}</button>
+              </form>
+              <div style="margin-top:25px; text-align:center; font-size:14px;">
+                  ${t('noAccount')} <a href="#" id="to-register" style="color:var(--accent-purple); font-weight:700; text-decoration:none;">${t('register')}</a>
+              </div>
+          </div>
+      `;
+      
+      document.getElementById('login-form').onsubmit = (e) => {
+          e.preventDefault();
+          const user = { username: "Viandante", email: document.getElementById('email').value };
+          localStorage.setItem('taverna_session', JSON.stringify({user, expiry: Date.now() + 86400000}));
+          showPlatform(user);
+      };
 
-    document.getElementById('to-register').onclick = async (e) => {
-        e.preventDefault();
-        const { showRegister } = await import('./register.js');
-        showRegister(ui, t, renderLogin);
-    };
-}
+      document.getElementById('to-register').onclick = async (e) => {
+          e.preventDefault();
+          const { showRegister } = await import('./src/ui/register.js');
+          showRegister(document.getElementById('ui'), t, renderLogin);
+      };
 
-function showPlatform(user) {
-    document.body.classList.add('dashboard-active');
-    document.getElementById('main-title-btn').style.display = "none";
-    const ui = document.getElementById('ui');
-    ui.style.display = "block";
-    
-    renderLayout(ui, user, t, () => {
-        localStorage.removeItem('taverna_session');
-        location.reload();
-    });
-    
-    let sidebarWrapper = document.getElementById('sidebar-wrapper') || document.createElement('div');
-    sidebarWrapper.id = "sidebar-wrapper";
-    document.body.appendChild(sidebarWrapper);
+      // discord login button: open Appwrite OAuth endpoint in a new tab (frontend placeholder)
+      document.getElementById('discord-login').onclick = () => {
+        // replace [YOUR_SUBDOMAIN] if needed, Appwrite handles OAuth flow
+        window.open('https://nyc.cloud.appwrite.io/v1/account/sessions/oauth2/discord', '_blank');
+      };
+  }
 
-    renderSidebar(sidebarWrapper, user, t, () => { closeMenu(); }, currentLang, (l) => window.changeLang(l));
+  function showPlatform(user) {
+      document.body.classList.add('dashboard-active');
+      document.getElementById('main-title-btn').style.display = "none";
+      const ui = document.getElementById('ui');
+      ui.style.display = "block";
+      
+      renderLayout(ui, user, t, () => {
+          localStorage.removeItem('taverna_session');
+          location.reload();
+      });
+      
+      let sidebarWrapper = document.getElementById('sidebar-wrapper') || document.createElement('div');
+      sidebarWrapper.id = "sidebar-wrapper";
+      document.body.appendChild(sidebarWrapper);
 
-    const mainContent = document.getElementById('main-content');
-    if(mainContent) renderAIChat(mainContent, t);
+      renderSidebar(sidebarWrapper, user, t, () => { closeMenu(); }, currentLang, (l) => window.changeLang(l));
 
-    const overlay = document.getElementById('overlay');
-    const closeMenu = () => {
-        const sidebar = document.getElementById('sidebar');
-        if(sidebar) sidebar.classList.remove('open');
-        overlay.classList.remove('show');
-    };
-    overlay.onclick = closeMenu;
+      const mainContent = document.getElementById('main-content');
+      if(mainContent) renderAIChat(mainContent, t);
 
-    document.addEventListener('click', (e) => {
-        if(e.target.closest('#open-menu')) {
-            const sidebar = document.getElementById('sidebar');
-            if(sidebar) { sidebar.classList.add('open'); overlay.classList.add('show'); }
-        }
-    });
-}
+      const overlay = document.getElementById('overlay');
+      const closeMenu = () => {
+          const sidebar = document.getElementById('sidebar');
+          if(sidebar) sidebar.classList.remove('open');
+          overlay.classList.remove('show');
+      };
+      overlay.onclick = closeMenu;
 
-window.changeLang = (lang) => { localStorage.setItem('taverna_lang', lang); location.reload(); };
+      document.addEventListener('click', (e) => {
+          if(e.target.closest('#open-menu')) {
+              const sidebar = document.getElementById('sidebar');
+              if(sidebar) { sidebar.classList.add('open'); overlay.classList.add('show'); }
+          }
+      });
+  }
 
-const session = localStorage.getItem('taverna_session');
-if (session) {
-    const data = JSON.parse(session);
-    if (Date.now() < data.expiry) showPlatform(data.user);
-    else renderLogin();
-} else {
-    document.getElementById('main-title-btn').onclick = renderLogin;
-}
-</script>
+  window.changeLang = (lang) => { localStorage.setItem('taverna_lang', lang); location.reload(); };
+
+  const session = localStorage.getItem('taverna_session');
+  if (session) {
+      const data = JSON.parse(session);
+      if (Date.now() < data.expiry) showPlatform(data.user);
+      else renderLogin();
+  } else {
+      document.getElementById('main-title-btn').onclick = renderLogin;
+  }
+  </script>
 </body>
 </html>
