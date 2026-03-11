@@ -1,27 +1,29 @@
-import { login } from '../services/auth.js';
-import { checkAndRedirectDiscord } from '../services/redirectDiscord.js';
-
-export function showLogin(container) {
-  container.innerHTML = `
-    <div>
-      <h2>Login</h2>
-      <input id="email" placeholder="email"/><br/>
-      <input id="password" type="password" placeholder="password"/><br/>
-      <button id="btnLogin">Login</button>
-      <p>Oppure <a id="toRegister" href="#">registrati</a></p>
-    </div>
-  `;
-
-  container.querySelector('#btnLogin').onclick = async () => {
-    const email = container.querySelector('#email').value;
-    const password = container.querySelector('#password').value;
-    await login(email, password);
-    await checkAndRedirectDiscord();
-    container.innerHTML = '<p>Login OK — ora sei collegato (se Discord è ok)</p>';
-  };
-
-  container.querySelector('#toRegister').onclick = (e) => {
+// Link Registrati SPA
+const toRegisterLink = container.querySelector('#toRegister');
+if (toRegisterLink) {
+  toRegisterLink.onclick = (e) => {
     e.preventDefault();
-    import('./register.js').then(m => m.showRegister(container));
+    document.title = "LaTaverna - Registrati"; // Aggiorna titolo scheda
+    import('./register.js').then(module => {
+      module.showRegister(container);
+    });
   };
 }
+const clientId = "1478809987357868083";
+
+const redirectUri = encodeURIComponent(
+"https://nyc.cloud.appwrite.io/v1/account/sessions/oauth2/callback/discord/69a85edc001553a4b931"
+);
+
+const scope = "identify%20email";
+
+function loginWithDiscord() {
+
+    const authUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
+
+    window.location.href = authUrl;
+}
+
+document
+.getElementById("discord-login")
+.addEventListener("click", loginWithDiscord);
