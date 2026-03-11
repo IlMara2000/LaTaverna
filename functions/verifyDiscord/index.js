@@ -1,58 +1,80 @@
-// functions/verifyDiscord/index.js
-const fetch = require('node-fetch');
-const sdk = require('node-appwrite');
+import fetch from "node-fetch";
+import { Client, Databases } from "node-appwrite";
 
-const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;      // impostalo in Environment Vars della Function
-const GUILD_ID = process.env.DISCORD_GUILD_ID;       // id del tuo server Discord
-const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT || "https://nyc.cloud.appwrite.io/v1";
-const APPWRITE_PROJECT = process.env.APPWRITE_PROJECT || "69a85edc001553a4b931";
-const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY; // chiave server sicura impostata nella Function environment
-const DB_ID = process.env.DB_ID || "69a867cc0018c0a6d700";
-const USERS_TABLE_ID = process.env.USERS_TABLE_ID || "users";
+const APPWRITE_ENDPOINT = process.env.APPWRITE_ENDPOINT;
+const APPWRITE_PROJECT = process.env.APPWRITE_PROJECT;
+const APPWRITE_API_KEY = process.env.APPWRITE_API_KEY;
+const DATABASE_ID = process.env.DATABASE_ID;
+const USERS_COLLECTION_ID = process.env.USERS_COLLECTION_ID;
 
-const { Client, Databases, Query } = require('node-appwrite');
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI;
 
-module.exports = async function (req, res) {
+const client = new Client()
+  .setEndpoint(APPWRITE_ENDPOINT)
+  .setProject(APPWRITE_PROJECT)
+  .setKey(APPWRITE_API_KEY);
+
+const databases = new Databases(client);
+
+async function getDiscordToken(code) {
+  const params = new URLSearchParams({
+    client_id: DISCORD_CLIENT_ID,
+    client_secret: DISCORD_CLIENT_SECRET,
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: DISCORD_REDIRECT_URI
+  });
+
+  const response = await fetch("https://discord.com/api/oauth2/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString()
+  });
+
+  if (!response.ok) throw new Error(`Token error: ${response.status}`);
+  return response.json();
+}
+
+async function getDiscordUser(access_token) {
+  const response = await fetch("https://discord.com/api/users/@me", {
+    headers: { Authorization: `Bearer ${access_token}` }
+  });
+  if (!response.ok) throw new Error(`User info error: ${response.status}`);
+  return response.json();
+}
+
+export default async function (req) {
   try {
-    const payload = JSON.parse(req.payload || req.body || '{}');
-    const { appwrite_user_id, discord_id } = payload;
+    const body = req.payload ? JSON.parse(req.payload) : {};
+    const { code } = body;
+    if (!code) throw new Error("Missing code parameter");
 
-    if (!appwrite_user_id) return res.json({ ok: false, error: 'Missing appwrite_user_id' });
+    const tokenData = await getDiscordToken(code);
+    const accessToken = tokenData.access_token;
 
-    const client = new Client()
-      .setEndpoint(APPWRITE_ENDPOINT)
-      .setProject(APPWRITE_PROJECT)
-      .setKey(APPWRITE_API_KEY);
+    const discordUser = await getDiscordUser(accessToken);
+    const discordId = discordUser.id;
+    const username = discordUser.username;
 
-    const databases = new Databases(client);
-
-    // trova profilo per appwrite_user_id
-    const profiles = await databases.listDocuments(DB_ID, USERS_TABLE_ID, [
-      Query.equal('appwrite_user_id', [appwrite_user_id])
+    const users = await databases.listDocuments(DATABASE_ID, USERS_COLLECTION_ID, [
+      `discord_id="${discordId}"`
     ]);
-    const profile = profiles.documents[0];
-    if (!profile) return res.json({ ok: false, error: 'Profile not found' });
 
-    const discordIdToCheck = discord_id || profile.discord_id;
-    if (!discordIdToCheck) return res.json({ ok: false, error: 'No discord id to check' });
-
-    // verifica membership nel guild
-    const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${discordIdToCheck}`;
-    const r = await fetch(url, {
-      headers: { Authorization: `Bot ${BOT_TOKEN}` }
-    });
-
-    if (r.status === 200) {
-      // aggiorna record
-      await databases.updateDocument(DB_ID, USERS_TABLE_ID, profile.$id, {
-        discord_id: discordIdToCheck
-      });
-      return res.json({ ok: true, linked: true });
+    let userId;
+    if (users.total > 0) {
+      userId = users.documents[0].$id;
+      await databases.updateDocument(DATABASE_ID, USERS_COLLECTION_ID, userId, { username, discord_id: discordId });
     } else {
-      return res.json({ ok: false, linked: false, status: r.status });
+      const newUser = await databases.createDocument(DATABASE_ID, USERS_COLLECTION_ID, "unique()", { discord_id: discordId, username, role: "player" });
+      userId = newUser.$id;
     }
+
+    return JSON.stringify({ userId, discord_id: discordId, username });
+
   } catch (err) {
-    console.error(err);
-    return res.json({ ok: false, error: String(err) });
+    console.error("verifyDiscord error:", err);
+    return JSON.stringify({ error: err.message });
   }
-};
+}
