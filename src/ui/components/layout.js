@@ -1,17 +1,24 @@
-/* Esempio di background Vercel-style per LaTaverna */
-body {
-  background: radial-gradient(circle at top center, #1a1033 0%, #0a0a0c 100%);
-  color: #f4f4f5;
-  font-family: 'Inter', sans-serif; /* Font tipico dei SaaS moderni */
-}
+// src/ui/components/layout.js
 
-.card {
-  background: rgba(22, 22, 26, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(124, 58, 237, 0.1); /* Bordo viola appena accennato */
-  transition: border 0.3s ease;
-}
+export function renderLayout(container, user, t, onLogout) {
+    container.innerHTML = `
+        <header class="pt-header">
+            <button class="icon-btn" id="open-menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <div style="display:flex; gap:12px;">
+                <button class="icon-btn">🔔</button>
+                <button id="logout-btn" class="btn-primary" style="width:auto; padding:10px 20px; font-size:14px;">${t('exit')}</button>
+            </div>
+        </header>
 
-.card:hover {
-  border: 1px solid rgba(124, 58, 237, 0.5);
+        <main id="main-content">
+            </main>
+    `;
+
+    document.getElementById('logout-btn').onclick = onLogout;
 }
