@@ -25,11 +25,10 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Padding-top aumentato per staccarsi dal bordo alto (Dynamic Island) */
   padding: 80px 20px 40px 20px; 
 }
 
-/* Bottone Titolo Iniziale (Più centrato e staccato) */
+/* Bottone Titolo Iniziale */
 #main-title-btn { 
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border-color);
@@ -47,13 +46,13 @@ body {
 
 #ui { width: 100%; max-width: 1000px; display: none; }
 
-/* Dashboard Header (Respiro per il tasto menu) */
+/* Dashboard Header */
 .pt-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 20px 0;
-  margin-bottom: 40px; /* Spazio tra header e contenuto card */
+  margin-bottom: 40px;
   width: 100%;
 }
 
@@ -71,7 +70,7 @@ body {
   position: fixed;
   top: 0; left: -300px; width: 280px; height: 100%;
   background: var(--glass-bg); backdrop-filter: blur(20px);
-  z-index: 1000; padding: 60px 20px 20px 20px; /* Spazio interno alto */
+  z-index: 1000; padding: 60px 20px 20px 20px;
   border-right: 1px solid var(--border-color);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -80,7 +79,7 @@ body {
 .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 999; }
 .sidebar-overlay.show { display: block; }
 
-/* Login / Register Card (Spostata più in basso) */
+/* Login / Register Card */
 .login-card { 
   background: var(--glass-bg); 
   border: 1px solid var(--border-color); 
@@ -114,6 +113,9 @@ body {
 <div id="ui"></div>
 
 <script type="module">
+/* -----------------------------------------------------------
+   SISTEMA DI TRADUZIONE
+   ----------------------------------------------------------- */
 const translations = {
     it: { loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", exit: "Esci", dash: "Dashboard", notes: "Note di Sessione", npc: "Lista NPC", settings: "Impostazioni", activity: "Attività Recenti", loading: "In caricamento...", welcome: "Viandante" },
     en: { loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", exit: "Logout", dash: "Dashboard", notes: "Session Notes", npc: "NPC List", settings: "Settings", activity: "Recent Activity", loading: "Loading...", welcome: "Traveler" }
@@ -122,6 +124,9 @@ const translations = {
 let currentLang = localStorage.getItem('taverna_lang') || (navigator.language.startsWith('it') ? 'it' : 'en');
 const CONFIG = { SESSION_DURATION: 24 * 60 * 60 * 1000 };
 
+/* -----------------------------------------------------------
+   LOGICA SESSIONE E LINGUA
+   ----------------------------------------------------------- */
 function saveSession(userData) {
     localStorage.setItem('taverna_session', JSON.stringify({ user: userData, expiry: Date.now() + CONFIG.SESSION_DURATION }));
 }
@@ -141,6 +146,9 @@ window.setLanguage = (lang) => {
 
 function t(key) { return translations[currentLang][key]; }
 
+/* -----------------------------------------------------------
+   GESTIONE UI PRINCIPALE
+   ----------------------------------------------------------- */
 function toggleMenu() {
     document.querySelector('.pt-aside').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('show');
@@ -157,7 +165,7 @@ function renderLogin() {
                 <div class="form-group"><label>${t('email')}</label><input type="email" id="email" placeholder="latua@email.com" required></div>
                 <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" placeholder="••••••••" required></div>
                 <button type="submit" class="btn-primary">${t('enter')}</button>
-                <button type="button" class="btn-discord">${t('discord')}</button>
+                <button type="button" class="btn-discord" id="discord-login">${t('discord')}</button>
             </form>
             <div style="margin-top:30px; display:flex; justify-content:center; gap:10px;">
                 <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="setLanguage('it')">IT</button>
@@ -165,12 +173,16 @@ function renderLogin() {
             </div>
         </div>
     `;
+    
     document.getElementById('login-form').onsubmit = (e) => {
         e.preventDefault();
         const user = { username: t('welcome'), email: document.getElementById('email').value };
         saveSession(user);
         showPlatform(user);
     };
+
+    // Qui chiameremo il file esterno per Discord più avanti
+    document.getElementById('discord-login').onclick = () => { console.log("Avvio Discord redirect..."); };
 }
 
 function showPlatform(user) {
@@ -197,10 +209,10 @@ function showPlatform(user) {
                 </div>
             </div>
             <nav style="margin-top:20px;">
-                <button class="tab-btn active">🏠 ${t('dash')}</button>
-                <button class="tab-btn">📝 ${t('notes')}</button>
-                <button class="tab-btn">👥 ${t('npc')}</button>
-                <button class="tab-btn">⚙️ ${t('settings')}</button>
+                <button class="tab-btn active" id="nav-dash">🏠 ${t('dash')}</button>
+                <button class="tab-btn" id="nav-notes">📝 ${t('notes')}</button>
+                <button class="tab-btn" id="nav-npc">👥 ${t('npc')}</button>
+                <button class="tab-btn" id="nav-settings">⚙️ ${t('settings')}</button>
             </nav>
             <div class="lang-selector">
                 <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="setLanguage('it')">IT</button>
@@ -208,7 +220,7 @@ function showPlatform(user) {
             </div>
         </aside>
 
-        <main>
+        <main id="main-content">
             <div class="pt-card">
                 <h3 style="font-size:18px;">${t('activity')}</h3>
                 <p style="color:var(--text-muted); margin-top:15px; font-size:14px;">${t('loading')}</p>
@@ -216,13 +228,27 @@ function showPlatform(user) {
         </main>
     `;
 
+    // Eventi Menu
     document.getElementById('open-menu').onclick = toggleMenu;
     document.getElementById('overlay').onclick = toggleMenu;
     document.getElementById('logout-btn').onclick = () => { localStorage.removeItem('taverna_session'); location.reload(); };
+
+    // Gestione Navigazione (In futuro caricheranno i file .js)
+    document.getElementById('nav-dash').onclick = () => { console.log("Carico Dashboard..."); toggleMenu(); };
+    document.getElementById('nav-notes').onclick = () => { console.log("Carico Note..."); toggleMenu(); };
+    document.getElementById('nav-npc').onclick = () => { console.log("Carico NPC..."); toggleMenu(); };
+    document.getElementById('nav-settings').onclick = () => { console.log("Carico Settings..."); toggleMenu(); };
 }
 
+/* -----------------------------------------------------------
+   AVVIO APPLICAZIONE
+   ----------------------------------------------------------- */
 const user = checkSession();
-if (user) showPlatform(user); else document.getElementById('main-title-btn').onclick = renderLogin;
+if (user) {
+    showPlatform(user);
+} else {
+    document.getElementById('main-title-btn').onclick = renderLogin;
+}
 </script>
 </body>
 </html>
