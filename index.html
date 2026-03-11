@@ -27,7 +27,6 @@ body {
   padding: 80px 20px 40px 20px; 
 }
 
-/* Bottone Titolo Iniziale */
 #main-title-btn { 
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border-color);
@@ -37,11 +36,13 @@ body {
   font-weight: 800;
   color: #fff; 
   cursor: pointer;
+  transition: transform 0.2s;
+  z-index: 10;
 }
+#main-title-btn:active { transform: scale(0.95); }
 
 #ui { width: 100%; max-width: 1000px; display: none; }
 
-/* Stili per i componenti che verranno caricati */
 .pt-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 40px; width: 100%; }
 .icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; cursor: pointer; }
 .pt-aside { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--glass-bg); backdrop-filter: blur(20px); z-index: 1000; padding: 60px 20px 20px 20px; border-right: 1px solid var(--border-color); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -69,11 +70,9 @@ body {
 <div id="ui"></div>
 
 <script type="module">
-// Importiamo i componenti dalla cartella corretta
 import { renderLayout } from './src/ui/components/layout.js';
 import { renderSidebar } from './src/ui/components/sidebar.js';
 import { renderAIChat } from './src/ui/components/aichatpanel.js';
-// Importiamo anche la dashboard che avevamo creato prima
 import { renderDashboard } from './dashboard.js'; 
 
 const translations = {
@@ -82,7 +81,6 @@ const translations = {
 };
 
 let currentLang = localStorage.getItem('taverna_lang') || (navigator.language.startsWith('it') ? 'it' : 'en');
-
 function t(key) { return translations[currentLang][key]; }
 
 function toggleMenu() {
@@ -102,36 +100,33 @@ function showPlatform(user) {
     const ui = document.getElementById('ui');
     ui.style.display = "block";
     
-    // 1. Renderizziamo il Layout base
     renderLayout(ui, user, t, handleLogout);
     
-    // 2. Renderizziamo la Sidebar (la mettiamo fuori dal contenitore UI per gestirla come fixed)
-    const sidebarContainer = document.createElement('div');
-    sidebarContainer.id = "sidebar-wrapper";
-    document.body.appendChild(sidebarContainer);
-    renderSidebar(sidebarContainer, user, t, (target) => {
+    let sidebarWrapper = document.getElementById('sidebar-wrapper');
+    if(!sidebarWrapper) {
+        sidebarWrapper = document.createElement('div');
+        sidebarWrapper.id = "sidebar-wrapper";
+        document.body.appendChild(sidebarWrapper);
+    }
+
+    renderSidebar(sidebarWrapper, user, t, (target) => {
         const mainContent = document.getElementById('main-content');
         if(target === 'dash') renderDashboard(mainContent, t);
-        // Altri target (npc, notes) li aggiungeremo man mano
+        // Qui aggiungeremo gli altri moduli (notes, npc)
         toggleMenu();
     }, currentLang, (lang) => {
         localStorage.setItem('taverna_lang', lang);
         location.reload();
     });
 
-    // 3. Carichiamo la Dashboard nel main-content per default
     const mainContent = document.getElementById('main-content');
     renderDashboard(mainContent, t);
-
-    // 4. Aggiungiamo il pannello AI sotto la dashboard
     renderAIChat(mainContent, t);
 
-    // Colleghiamo il tasto menu dell'header alla funzione toggle
     document.getElementById('open-menu').onclick = toggleMenu;
     document.getElementById('overlay').onclick = toggleMenu;
 }
 
-// Logica di Login semplificata (come prima)
 function renderLogin() {
     document.getElementById('main-title-btn').style.display = "none";
     const ui = document.getElementById('ui');
@@ -140,8 +135,8 @@ function renderLogin() {
         <div class="login-card">
             <h2 style="text-align:center; margin-bottom:30px; font-size:28px;">${t('loginTitle')}</h2>
             <form id="login-form">
-                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
-                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
+                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" placeholder="test@test.it" required></div>
+                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" placeholder="••••••••" required></div>
                 <button type="submit" class="btn-primary">${t('enter')}</button>
             </form>
         </div>
@@ -154,13 +149,21 @@ function renderLogin() {
     };
 }
 
+// Inizializzazione corretta del tastone
+const mainBtn = document.getElementById('main-title-btn');
 const sessionData = localStorage.getItem('taverna_session');
+
 if (sessionData) {
     const session = JSON.parse(sessionData);
+    // Se clicco il titolo e sono loggato, mostro la piattaforma
+    mainBtn.onclick = () => showPlatform(session.user);
+    // Avvio automatico se sessione valida
     showPlatform(session.user);
 } else {
-    document.getElementById('main-title-btn').onclick = renderLogin;
+    // Se non sono loggato, il tasto apre il login
+    mainBtn.onclick = renderLogin;
 }
+
 </script>
 </body>
 </html>
