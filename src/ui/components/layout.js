@@ -10,9 +10,13 @@ export function renderLayout(container, user, t, onLogout) {
                     <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
             </button>
-            <div style="display:flex; gap:12px;">
-                <button class="icon-btn">🔔</button>
-                <button id="logout-btn" class="btn-primary" style="width:auto; padding:10px 20px; font-size:14px;">${t('exit')}</button>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <div class="vox-chat-wrapper">
+                    <button class="icon-btn" id="btn-vox-chat">🎧</button>
+                    <span class="vox-chat-tooltip">${t('voxChat')}</span>
+                </div>
+                
+                <button id="logout-btn" class="icon-btn" style="border-color:rgba(255,0,0,0.2); color:#ff5555;">${t('exit')}</button>
             </div>
         </header>
 
@@ -21,4 +25,5 @@ export function renderLayout(container, user, t, onLogout) {
     `;
 
     document.getElementById('logout-btn').onclick = onLogout;
+    document.getElementById('open-menu').onclick = () => document.getElementById('sidebar').classList.toggle('open');
 }
