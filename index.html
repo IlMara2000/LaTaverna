@@ -15,7 +15,6 @@
   --glass-bg: rgba(22, 22, 26, 0.98);
 }
 
-/* Reset e Base */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
 body {
@@ -38,69 +37,26 @@ body {
   font-weight: 800;
   color: #fff; 
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  transition: transform 0.2s;
 }
-
-#main-title-btn:active { transform: scale(0.95); }
 
 #ui { width: 100%; max-width: 1000px; display: none; }
 
-/* Dashboard Header */
-.pt-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 0;
-  margin-bottom: 40px;
-  width: 100%;
-}
-
-.icon-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--border-color);
-  color: #fff;
-  padding: 12px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-/* Sidebar / Menu Verde (A comparsa) */
-.pt-aside {
-  position: fixed;
-  top: 0; left: -300px; width: 280px; height: 100%;
-  background: var(--glass-bg); backdrop-filter: blur(20px);
-  z-index: 1000; padding: 60px 20px 20px 20px;
-  border-right: 1px solid var(--border-color);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Stili per i componenti che verranno caricati */
+.pt-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; margin-bottom: 40px; width: 100%; }
+.icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; cursor: pointer; }
+.pt-aside { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: var(--glass-bg); backdrop-filter: blur(20px); z-index: 1000; padding: 60px 20px 20px 20px; border-right: 1px solid var(--border-color); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .pt-aside.open { transform: translateX(300px); }
-
 .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 999; }
 .sidebar-overlay.show { display: block; }
-
-/* Login / Register Card */
-.login-card { 
-  background: var(--glass-bg); 
-  border: 1px solid var(--border-color); 
-  padding: 40px 30px; 
-  border-radius: 24px; 
-  width: 100%;
-  margin-top: 20px;
-}
-
+.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px 30px; border-radius: 24px; width: 100%; }
 .form-group { margin-bottom: 25px; }
 .form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
 .form-group input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; }
-
 .btn-primary { width: 100%; padding: 16px; background: var(--accent-purple); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; }
 .btn-discord { width: 100%; padding: 16px; background: #5865F2; border: none; border-radius: 12px; color: #fff; font-weight: 700; margin-top: 15px; cursor: pointer; }
-
-/* Dashboard Cards */
 .pt-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
 .tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; text-align: left; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
 .tab-btn.active { background: rgba(169, 83, 236, 0.1); color: var(--accent-purple); font-weight: 600; }
-
 .lang-selector { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
 .lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
 .lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); }
@@ -113,47 +69,69 @@ body {
 <div id="ui"></div>
 
 <script type="module">
-/* -----------------------------------------------------------
-   SISTEMA DI TRADUZIONE
-   ----------------------------------------------------------- */
+// Importiamo i componenti dalla cartella corretta
+import { renderLayout } from './src/ui/components/layout.js';
+import { renderSidebar } from './src/ui/components/sidebar.js';
+import { renderAIChat } from './src/ui/components/aichatpanel.js';
+// Importiamo anche la dashboard che avevamo creato prima
+import { renderDashboard } from './dashboard.js'; 
+
 const translations = {
     it: { loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", exit: "Esci", dash: "Dashboard", notes: "Note di Sessione", npc: "Lista NPC", settings: "Impostazioni", activity: "Attività Recenti", loading: "In caricamento...", welcome: "Viandante" },
     en: { loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", exit: "Logout", dash: "Dashboard", notes: "Session Notes", npc: "NPC List", settings: "Settings", activity: "Recent Activity", loading: "Loading...", welcome: "Traveler" }
 };
 
 let currentLang = localStorage.getItem('taverna_lang') || (navigator.language.startsWith('it') ? 'it' : 'en');
-const CONFIG = { SESSION_DURATION: 24 * 60 * 60 * 1000 };
-
-/* -----------------------------------------------------------
-   LOGICA SESSIONE E LINGUA
-   ----------------------------------------------------------- */
-function saveSession(userData) {
-    localStorage.setItem('taverna_session', JSON.stringify({ user: userData, expiry: Date.now() + CONFIG.SESSION_DURATION }));
-}
-
-function checkSession() {
-    const data = localStorage.getItem('taverna_session');
-    if (!data) return null;
-    const session = JSON.parse(data);
-    return Date.now() > session.expiry ? (localStorage.removeItem('taverna_session'), null) : session.user;
-}
-
-window.setLanguage = (lang) => {
-    currentLang = lang;
-    localStorage.setItem('taverna_lang', lang);
-    location.reload(); 
-};
 
 function t(key) { return translations[currentLang][key]; }
 
-/* -----------------------------------------------------------
-   GESTIONE UI PRINCIPALE
-   ----------------------------------------------------------- */
 function toggleMenu() {
-    document.querySelector('.pt-aside').classList.toggle('open');
-    document.getElementById('overlay').classList.toggle('show');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    if(sidebar) sidebar.classList.toggle('open');
+    if(overlay) overlay.classList.toggle('show');
 }
 
+function handleLogout() {
+    localStorage.removeItem('taverna_session');
+    location.reload();
+}
+
+function showPlatform(user) {
+    document.getElementById('main-title-btn').style.display = "none";
+    const ui = document.getElementById('ui');
+    ui.style.display = "block";
+    
+    // 1. Renderizziamo il Layout base
+    renderLayout(ui, user, t, handleLogout);
+    
+    // 2. Renderizziamo la Sidebar (la mettiamo fuori dal contenitore UI per gestirla come fixed)
+    const sidebarContainer = document.createElement('div');
+    sidebarContainer.id = "sidebar-wrapper";
+    document.body.appendChild(sidebarContainer);
+    renderSidebar(sidebarContainer, user, t, (target) => {
+        const mainContent = document.getElementById('main-content');
+        if(target === 'dash') renderDashboard(mainContent, t);
+        // Altri target (npc, notes) li aggiungeremo man mano
+        toggleMenu();
+    }, currentLang, (lang) => {
+        localStorage.setItem('taverna_lang', lang);
+        location.reload();
+    });
+
+    // 3. Carichiamo la Dashboard nel main-content per default
+    const mainContent = document.getElementById('main-content');
+    renderDashboard(mainContent, t);
+
+    // 4. Aggiungiamo il pannello AI sotto la dashboard
+    renderAIChat(mainContent, t);
+
+    // Colleghiamo il tasto menu dell'header alla funzione toggle
+    document.getElementById('open-menu').onclick = toggleMenu;
+    document.getElementById('overlay').onclick = toggleMenu;
+}
+
+// Logica di Login semplificata (come prima)
 function renderLogin() {
     document.getElementById('main-title-btn').style.display = "none";
     const ui = document.getElementById('ui');
@@ -162,90 +140,24 @@ function renderLogin() {
         <div class="login-card">
             <h2 style="text-align:center; margin-bottom:30px; font-size:28px;">${t('loginTitle')}</h2>
             <form id="login-form">
-                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" placeholder="latua@email.com" required></div>
-                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" placeholder="••••••••" required></div>
+                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
+                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
                 <button type="submit" class="btn-primary">${t('enter')}</button>
-                <button type="button" class="btn-discord" id="discord-login">${t('discord')}</button>
             </form>
-            <div style="margin-top:30px; display:flex; justify-content:center; gap:10px;">
-                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="setLanguage('it')">IT</button>
-                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="setLanguage('en')">EN</button>
-            </div>
         </div>
     `;
-    
     document.getElementById('login-form').onsubmit = (e) => {
         e.preventDefault();
-        const user = { username: t('welcome'), email: document.getElementById('email').value };
-        saveSession(user);
+        const user = { username: "Francesco", email: document.getElementById('email').value };
+        localStorage.setItem('taverna_session', JSON.stringify({user, expiry: Date.now() + 86400000}));
         showPlatform(user);
     };
-
-    // Qui chiameremo il file esterno per Discord più avanti
-    document.getElementById('discord-login').onclick = () => { console.log("Avvio Discord redirect..."); };
 }
 
-function showPlatform(user) {
-    document.getElementById('main-title-btn').style.display = "none";
-    const ui = document.getElementById('ui');
-    ui.style.display = "block";
-    ui.innerHTML = `
-        <header class="pt-header">
-            <button class="icon-btn" id="open-menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
-            <div style="display:flex; gap:12px;">
-                <button class="icon-btn">🔔</button>
-                <button id="logout-btn" class="btn-primary" style="width:auto; padding:10px 20px; font-size:14px;">${t('exit')}</button>
-            </div>
-        </header>
-
-        <aside class="pt-aside">
-            <div class="pt-card" style="display:flex; gap:12px; align-items:center; background:rgba(255,255,255,0.05);">
-                <div style="width:45px; height:45px; background:var(--accent-purple); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">${user.username[0]}</div>
-                <div>
-                    <div style="font-weight:700; font-size:14px;">${user.username}</div>
-                    <div style="font-size:11px; color:var(--text-muted);">${user.email}</div>
-                </div>
-            </div>
-            <nav style="margin-top:20px;">
-                <button class="tab-btn active" id="nav-dash">🏠 ${t('dash')}</button>
-                <button class="tab-btn" id="nav-notes">📝 ${t('notes')}</button>
-                <button class="tab-btn" id="nav-npc">👥 ${t('npc')}</button>
-                <button class="tab-btn" id="nav-settings">⚙️ ${t('settings')}</button>
-            </nav>
-            <div class="lang-selector">
-                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="setLanguage('it')">IT</button>
-                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="setLanguage('en')">EN</button>
-            </div>
-        </aside>
-
-        <main id="main-content">
-            <div class="pt-card">
-                <h3 style="font-size:18px;">${t('activity')}</h3>
-                <p style="color:var(--text-muted); margin-top:15px; font-size:14px;">${t('loading')}</p>
-            </div>
-        </main>
-    `;
-
-    // Eventi Menu
-    document.getElementById('open-menu').onclick = toggleMenu;
-    document.getElementById('overlay').onclick = toggleMenu;
-    document.getElementById('logout-btn').onclick = () => { localStorage.removeItem('taverna_session'); location.reload(); };
-
-    // Gestione Navigazione (In futuro caricheranno i file .js)
-    document.getElementById('nav-dash').onclick = () => { console.log("Carico Dashboard..."); toggleMenu(); };
-    document.getElementById('nav-notes').onclick = () => { console.log("Carico Note..."); toggleMenu(); };
-    document.getElementById('nav-npc').onclick = () => { console.log("Carico NPC..."); toggleMenu(); };
-    document.getElementById('nav-settings').onclick = () => { console.log("Carico Settings..."); toggleMenu(); };
-}
-
-/* -----------------------------------------------------------
-   AVVIO APPLICAZIONE
-   ----------------------------------------------------------- */
-const user = checkSession();
-if (user) {
-    showPlatform(user);
+const sessionData = localStorage.getItem('taverna_session');
+if (sessionData) {
+    const session = JSON.parse(sessionData);
+    showPlatform(session.user);
 } else {
     document.getElementById('main-title-btn').onclick = renderLogin;
 }
