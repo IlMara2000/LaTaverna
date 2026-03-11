@@ -100,7 +100,40 @@ body {
 .divider::before { left:0; } .divider::after { right:0; }
 
 /* Dashboard Layout & Cards (GDR focused) */
-.platform-body { display: grid; grid-template-columns: 260px 1fr; gap: 30px; margin-top: 20px; }
+/* Dashboard Layout Refined & Responsive */
+.platform-body { 
+  display: grid; 
+  grid-template-columns: 260px 1fr; /* Default per Desktop */
+  gap: 20px; 
+  margin-top: 20px; 
+  width: 100%;
+}
+
+/* Modifica per Mobile */
+@media (max-width: 768px) {
+  #ui {
+    padding: 20px; /* Riduciamo il padding del contenitore su mobile */
+    margin-top: 10px;
+  }
+
+  .platform-body { 
+    grid-template-columns: 1fr; /* Colonna singola su mobile */
+  }
+
+  .pt-aside {
+    order: 2; /* Spostiamo la sidebar sotto il contenuto principale se preferisci */
+    width: 100%;
+  }
+
+  .pt-grid {
+    grid-template-columns: 1fr; /* Le statistiche vanno una sotto l'altra */
+  }
+
+  #main-title-btn {
+    font-size: 28px; /* Titolo più piccolo su mobile */
+  }
+}
+
 .pt-aside { display: flex; flex-direction: column; gap: 20px; }
 .pt-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; }
 
