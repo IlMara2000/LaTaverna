@@ -22,6 +22,64 @@
 html, body { height: 100%; background-color: var(--bg-deep); overflow-x: hidden; }
 
 body {
+margin:0;
+font-family:system-ui;
+background:#0e0e0e;
+color:white;
+}
+
+.dashboard{
+padding:20px;
+width:100%;
+max-width:600px;
+margin:auto;
+}
+
+.account{
+display:flex;
+align-items:center;
+gap:12px;
+margin-bottom:20px;
+}
+
+.avatar{
+width:48px;
+height:48px;
+border-radius:12px;
+background:#7a3cff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+}
+
+.menu{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+margin-bottom:20px;
+}
+
+.menu button{
+padding:8px 14px;
+border-radius:20px;
+border:none;
+background:#eee;
+color:#000;
+}
+
+.lang{
+display:flex;
+gap:10px;
+}
+
+.lang button{
+padding:10px 20px;
+border-radius:12px;
+background:#222;
+color:white;
+border:1px solid #444;
+}
   background-image: radial-gradient(circle at 10% 10%, rgba(169, 83, 236, 0.1), transparent 40%);
   background-attachment: fixed;
   color: var(--text-main);
