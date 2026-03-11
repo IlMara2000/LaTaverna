@@ -1,7 +1,13 @@
 // config/env.js
+
 export const CONFIG = {
-  APPWRITE_ENDPOINT: "https://nyc.cloud.appwrite.io/v1",
-  APPWRITE_PROJECT: "69a85edc001553a4b931",
-  DATABASE_ID: "69a867cc0018c0a6d700",
-  USERS_TABLE_ID: "users"
+
+  APPWRITE_ENDPOINT: import.meta.env.VITE_APPWRITE_ENDPOINT,
+
+  APPWRITE_PROJECT: import.meta.env.VITE_APPWRITE_PROJECT,
+
+  DATABASE_ID: import.meta.env.VITE_DATABASE_ID,
+
+  USERS_COLLECTION_ID: import.meta.env.VITE_USERS_COLLECTION_ID
+
 };
