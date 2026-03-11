@@ -24,27 +24,40 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  /* Centratura verticale e orizzontale del contenuto iniziale */
+  justify-content: center; 
   align-items: center;
-  padding: 100px 20px 40px 20px; /* Più spazio in alto */
+  padding: 20px;
 }
 
-/* Bottone Titolo Iniziale */
+/* Layout Adattivo quando la UI è attiva */
+body.dashboard-active {
+  justify-content: flex-start; /* Torna in alto quando entri nel gioco */
+  padding-top: env(safe-area-inset-top);
+}
+
+/* TASTONE INIZIALE - Ora perfettamente centrato */
 #main-title-btn { 
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border-color);
-  padding: 16px 32px;
-  border-radius: 16px;
-  font-size: 32px;
+  padding: 20px 40px;
+  border-radius: 20px;
+  font-size: clamp(24px, 5vw, 40px); /* Dimensione dinamica */
   font-weight: 800;
   color: #fff; 
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
-#main-title-btn:hover { background: rgba(255,255,255,0.05); }
-#main-title-btn:active { transform: scale(0.95); }
+#main-title-btn:hover { 
+  background: rgba(169, 83, 236, 0.1); 
+  border-color: var(--accent-purple);
+  transform: translateY(-5px);
+}
 
-#ui { width: 100%; max-width: 1000px; display: none; }
+#ui { width: 100%; max-width: 1200px; display: none; margin-top: 40px; }
 
 /* Dashboard Header */
 .pt-header {
@@ -52,115 +65,115 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 20px 0;
-  margin-bottom: 40px;
   width: 100%;
 }
 
-.icon-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--border-color);
-  color: #fff;
-  padding: 12px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-/* Sidebar / Menu Verde */
+/* Sidebar Responsive */
 .pt-aside {
   position: fixed;
   top: 0; left: -300px; width: 280px; height: 100%;
   background: var(--glass-bg); backdrop-filter: blur(20px);
-  z-index: 1000; padding: 60px 20px 20px 20px;
+  z-index: 1000; padding: 60px 20px;
   border-right: 1px solid var(--border-color);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s ease;
 }
 .pt-aside.open { transform: translateX(300px); }
 
 .sidebar-overlay { 
   position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(0,0,0,0.6); display: none; z-index: 999; 
+  background: rgba(0,0,0,0.7); display: none; z-index: 999; 
 }
 .sidebar-overlay.show { display: block; }
 
-/* Login Card */
-.login-card { 
-  background: var(--glass-bg); 
-  border: 1px solid var(--border-color); 
-  padding: 40px 30px; 
-  border-radius: 24px; 
+/* Grid Adattiva per la Dashboard */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
   width: 100%;
   margin-top: 20px;
 }
 
-.form-group { margin-bottom: 25px; }
-.form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; }
-.form-group input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; font-size: 16px; }
+.pt-card { 
+  background: rgba(255,255,255,0.03); 
+  border: 1px solid var(--border-color); 
+  border-radius: 24px; 
+  padding: 25px;
+  height: 100%;
+}
 
-.btn-primary { width: 100%; padding: 16px; background: var(--accent-purple); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; font-size: 16px; }
-.btn-discord { width: 100%; padding: 16px; background: #5865F2; border: none; border-radius: 12px; color: #fff; font-weight: 700; margin-top: 15px; cursor: pointer; font-size: 16px; }
+/* Form Login */
+.login-card { 
+  max-width: 450px; margin: 0 auto;
+  background: var(--glass-bg); border: 1px solid var(--border-color); 
+  padding: 40px; border-radius: 30px; 
+}
 
-/* Dashboard Cards */
-.pt-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
-.tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; text-align: left; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
-.tab-btn.active { background: rgba(169, 83, 236, 0.1); color: var(--accent-purple); font-weight: 600; }
+.form-group input { 
+  width: 100%; padding: 18px; background: #000; 
+  border: 1px solid var(--border-color); border-radius: 15px; 
+  color: #fff; margin-top: 8px;
+}
 
-.lang-selector { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
-.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+.btn-primary { 
+  width: 100%; padding: 18px; background: var(--accent-purple); 
+  border: none; border-radius: 15px; color: #fff; 
+  font-weight: 700; cursor: pointer; margin-top: 10px;
+}
+
+.tab-btn { 
+  background: transparent; border: none; color: var(--text-muted); 
+  padding: 16px; border-radius: 12px; text-align: left; 
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  cursor: pointer;
+}
+.tab-btn.active { background: rgba(169, 83, 236, 0.1); color: var(--accent-purple); }
+
+.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px 15px; border-radius: 10px; cursor: pointer; }
 .lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); }
+
+/* Utility icone */
+.icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; cursor: pointer; }
 </style>
 </head>
 <body>
 
 <button id="main-title-btn">LA TAVERNA</button>
+
 <div class="sidebar-overlay" id="overlay"></div>
 <div id="ui"></div>
 
+<script src="./src/ui/components/layout.js"></script>
+<script src="./src/ui/components/sidebar.js"></script>
+<script src="./src/ui/components/aichatpanel.js"></script>
 <script>
-// --- CONFIGURAZIONE E TRADUZIONI ---
 const translations = {
-    it: { loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", exit: "Esci", dash: "Dashboard", notes: "Note di Sessione", npc: "Lista NPC", settings: "Impostazioni", activity: "Attività Recenti", loading: "In caricamento...", welcome: "Viandante" },
-    en: { loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", exit: "Logout", dash: "Dashboard", notes: "Session Notes", npc: "NPC List", settings: "Settings", activity: "Recent Activity", loading: "Loading...", welcome: "Traveler" }
+    it: { loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Discord Login", exit: "Esci", dash: "Dashboard", notes: "Note", npc: "Personaggi", settings: "Opzioni", activity: "Attività Recenti", welcome: "Viandante" },
+    en: { loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Discord Login", exit: "Logout", dash: "Dashboard", notes: "Notes", npc: "NPCs", settings: "Settings", activity: "Recent Activity", welcome: "Traveler" }
 };
 
-let currentLang = localStorage.getItem('taverna_lang') || (navigator.language.startsWith('it') ? 'it' : 'en');
+let currentLang = localStorage.getItem('taverna_lang') || 'it';
 const t = (key) => translations[currentLang][key];
 
-// --- LOGICA SESSIONE (24H) ---
-const saveSession = (userData) => {
-    localStorage.setItem('taverna_session', JSON.stringify({ user: userData, expiry: Date.now() + 86400000 }));
-};
-
-const checkSession = () => {
-    const data = localStorage.getItem('taverna_session');
-    if (!data) return null;
-    const session = JSON.parse(data);
-    if (Date.now() > session.expiry) {
-        localStorage.removeItem('taverna_session');
-        return null;
-    }
-    return session.user;
-};
-
-// --- FUNZIONI UI ---
 function toggleMenu() {
     document.querySelector('.pt-aside').classList.toggle('open');
     document.getElementById('overlay').classList.toggle('show');
 }
 
 function renderLogin() {
+    document.body.classList.remove('dashboard-active');
     document.getElementById('main-title-btn').style.display = "none";
     const ui = document.getElementById('ui');
     ui.style.display = "block";
     ui.innerHTML = `
         <div class="login-card">
-            <h2 style="text-align:center; margin-bottom:30px; font-size:28px;">${t('loginTitle')}</h2>
+            <h2 style="text-align:center; margin-bottom:30px; font-weight:800;">${t('loginTitle')}</h2>
             <form id="login-form">
-                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" placeholder="latua@email.com" required></div>
-                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" placeholder="••••••••" required></div>
+                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
+                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
                 <button type="submit" class="btn-primary">${t('enter')}</button>
-                <button type="button" class="btn-discord" id="discord-btn">${t('discord')}</button>
             </form>
-            <div style="margin-top:30px; display:flex; justify-content:center; gap:10px;">
+            <div style="margin-top:25px; display:flex; justify-content:center; gap:10px;">
                 <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="changeLang('it')">IT</button>
                 <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="changeLang('en')">EN</button>
             </div>
@@ -170,50 +183,46 @@ function renderLogin() {
     document.getElementById('login-form').onsubmit = (e) => {
         e.preventDefault();
         const user = { username: t('welcome'), email: document.getElementById('email').value };
-        saveSession(user);
+        localStorage.setItem('taverna_session', JSON.stringify({user, expiry: Date.now() + 86400000}));
         showPlatform(user);
     };
 }
 
 function showPlatform(user) {
+    document.body.classList.add('dashboard-active'); // Cambia il layout in adattivo
     document.getElementById('main-title-btn').style.display = "none";
     const ui = document.getElementById('ui');
     ui.style.display = "block";
+    
+    // Struttura adattiva
     ui.innerHTML = `
         <header class="pt-header">
-            <button class="icon-btn" id="open-menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-            </button>
+            <button class="icon-btn" id="open-menu">☰</button>
             <div style="display:flex; gap:12px;">
-                <button class="icon-btn">🔔</button>
-                <button id="logout-btn" class="btn-primary" style="width:auto; padding:10px 20px; font-size:14px;">${t('exit')}</button>
+                <button id="logout-btn" class="icon-btn">✕</button>
             </div>
         </header>
 
         <aside class="pt-aside">
-            <div class="pt-card" style="display:flex; gap:12px; align-items:center; background:rgba(255,255,255,0.05); padding:15px;">
-                <div style="width:40px; height:40px; background:var(--accent-purple); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">${user.username[0]}</div>
-                <div>
-                    <div style="font-weight:700; font-size:14px;">${user.username}</div>
-                    <div style="font-size:11px; color:var(--text-muted);">${user.email}</div>
-                </div>
+            <div class="pt-card" style="padding:15px; margin-bottom:20px; background:rgba(255,255,255,0.05);">
+                <div style="font-weight:800;">${user.username}</div>
+                <div style="font-size:11px; color:var(--text-muted);">${user.email}</div>
             </div>
-            <nav style="margin-top:20px;">
+            <nav>
                 <button class="tab-btn active">🏠 ${t('dash')}</button>
                 <button class="tab-btn">📝 ${t('notes')}</button>
                 <button class="tab-btn">👥 ${t('npc')}</button>
-                <button class="tab-btn">⚙️ ${t('settings')}</button>
             </nav>
-            <div class="lang-selector">
-                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="changeLang('it')">IT</button>
-                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="changeLang('en')">EN</button>
-            </div>
         </aside>
 
-        <main id="main-content">
+        <main class="dashboard-grid">
             <div class="pt-card">
-                <h3 style="font-size:18px;">${t('activity')}</h3>
-                <p style="color:var(--text-muted); margin-top:15px; font-size:14px;">${t('loading')}</p>
+                <h3>${t('activity')}</h3>
+                <p style="color:var(--text-muted); margin-top:10px;">Benvenuto nella Taverna...</p>
+            </div>
+            <div class="pt-card" id="ai-placeholder">
+                <h3 style="color:var(--accent-purple)">AI Assistant</h3>
+                <p style="font-size:14px; color:var(--text-muted);">In attesa di istruzioni...</p>
             </div>
         </main>
     `;
@@ -231,12 +240,18 @@ window.changeLang = (l) => {
     location.reload();
 };
 
-// --- AVVIO ---
-const activeUser = checkSession();
+// Inizializzazione
+const sessionData = localStorage.getItem('taverna_session');
 const mainBtn = document.getElementById('main-title-btn');
 
-if (activeUser) {
-    showPlatform(activeUser);
+if (sessionData) {
+    const session = JSON.parse(sessionData);
+    if (Date.now() < session.expiry) {
+        showPlatform(session.user);
+    } else {
+        localStorage.removeItem('taverna_session');
+        mainBtn.onclick = renderLogin;
+    }
 } else {
     mainBtn.onclick = renderLogin;
 }
