@@ -10,6 +10,7 @@
 :root {
   --bg-deep: #0a0a0c;
   --accent-purple: #a953ec;
+  --accent-glow: rgba(169, 83, 236, 0.4);
   --text-main: #f4f4f5;
   --text-muted: #a1a1aa;
   --border-color: rgba(255, 255, 255, 0.08);
@@ -18,10 +19,7 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
-html, body { 
-    height: 100%; 
-    background-color: var(--bg-deep); 
-}
+html, body { height: 100%; background-color: var(--bg-deep); overflow-x: hidden; }
 
 body {
   background-image: radial-gradient(circle at 10% 10%, rgba(169, 83, 236, 0.1), transparent 40%);
@@ -35,109 +33,111 @@ body {
   transition: all 0.5s ease;
 }
 
-body.dashboard-active {
-  justify-content: flex-start;
-  padding-top: 60px;
+body.dashboard-active { justify-content: flex-start; padding-top: 60px; }
+
+/* --- BOTTONI PRO E GRAFICA --- */
+.btn-primary { 
+  width: 100%; 
+  padding: 18px; 
+  background: linear-gradient(135deg, #a953ec 0%, #7928ca 100%); 
+  border: none; 
+  border-radius: 16px; 
+  color: #fff; 
+  font-weight: 800; 
+  text-transform: uppercase; 
+  letter-spacing: 2px; 
+  cursor: pointer; 
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+  box-shadow: 0 4px 15px var(--accent-glow);
+  position: relative;
+  overflow: hidden;
 }
 
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px var(--accent-glow);
+  filter: brightness(1.1);
+}
+
+.btn-primary:active { transform: translateY(0); }
+
+.btn-discord { 
+  width: 100%; 
+  padding: 16px; 
+  background: rgba(88, 101, 242, 0.05); 
+  border: 1px solid #5865F2; 
+  border-radius: 16px; 
+  color: #5865F2; 
+  font-weight: 700; 
+  margin-top: 15px; 
+  cursor: pointer; 
+  transition: 0.3s;
+}
+
+.btn-discord:hover { background: #5865F2; color: #fff; }
+
+/* TASTONE INIZIALE */
 #main-title-btn { 
   background: rgba(255,255,255,0.01);
   border: 1px solid var(--border-color);
-  padding: 20px 40px;
-  border-radius: 20px;
-  font-size: clamp(28px, 6vw, 42px);
-  font-weight: 800;
+  padding: 25px 50px;
+  border-radius: 24px;
+  font-size: clamp(24px, 5vw, 42px);
+  font-weight: 900;
   color: #fff; 
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 3px;
-  text-shadow: 0 0 15px rgba(169, 83, 236, 0.6);
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px var(--accent-glow);
   box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(12px);
+  transition: 0.4s;
 }
+#main-title-btn:hover { border-color: var(--accent-purple); transform: scale(1.02); }
 
+/* --- INPUTS --- */
+input { 
+  width: 100%; 
+  padding: 16px; 
+  background: rgba(0,0,0,0.5) !important; 
+  border: 1px solid var(--border-color); 
+  border-radius: 14px; 
+  color: #fff; 
+  font-size: 15px;
+  transition: 0.3s;
+}
+input:focus { border-color: var(--accent-purple); outline: none; box-shadow: 0 0 0 4px rgba(169, 83, 236, 0.1); }
+
+/* --- LAYOUT SIDEBAR & OVERLAY --- */
 #ui { width: 100%; max-width: 1000px; display: none; }
-
-/* --- HEADER E SIDEBAR --- */
-.pt-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; width: 100%; }
-
-/* FIX MENU E OVERLAY */
-.pt-aside { 
-    position: fixed; 
-    top: 0; 
-    left: -300px; 
-    width: 280px; 
-    height: 100%; 
-    background: var(--glass-bg); 
-    backdrop-filter: blur(20px); 
-    z-index: 1000 !important; 
-    padding: 30px 20px; 
-    border-right: 1px solid var(--border-color); 
-    transition: transform 0.3s ease; 
-}
-.pt-aside.open { transform: translateX(300px); }
-
-.sidebar-overlay { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100vw; 
-    height: 100vh; 
-    background: rgba(0,0,0,0.7); 
-    display: none; 
-    z-index: 998; 
-}
+.sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: none; z-index: 998; cursor: pointer; }
 .sidebar-overlay.show { display: block; }
 
-/* --- STILE MENU LATERALE RIFINITO --- */
-.sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 30px;
+.pt-aside { 
+  position: fixed; top: 0; left: -320px; width: 300px; height: 100%; 
+  background: var(--glass-bg); z-index: 1000; padding: 40px 24px; 
+  border-right: 1px solid var(--border-color); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); 
 }
+.pt-aside.open { left: 0; }
 
+/* SIDEBAR NAV RIFINITA */
 .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 14px 18px;
-    border-radius: 14px;
-    color: var(--text-muted);
-    font-weight: 500;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid transparent;
+  display: flex; align-items: center; gap: 15px; padding: 16px; border-radius: 16px;
+  color: var(--text-muted); font-weight: 600; margin-bottom: 8px; cursor: pointer; transition: 0.3s;
 }
+.nav-item:hover, .nav-item.active { background: rgba(169, 83, 236, 0.1); color: var(--accent-purple); }
 
-.nav-item:hover, .nav-item.active {
-    background: rgba(169, 83, 236, 0.1);
-    color: var(--accent-purple);
-    border-color: rgba(169, 83, 236, 0.2);
-}
+/* LOGIN CARD */
+.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 45px; border-radius: 32px; width: 100%; max-width: 480px; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
+.form-group { margin-bottom: 25px; }
+.form-group label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
 
-.nav-item-icon {
-    font-size: 18px;
-}
+/* T.Ai.verna PANEL */
+.ai-panel { background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: 24px; padding: 25px; }
+.ai-badge { background: rgba(169, 83, 236, 0.15); color: var(--accent-purple); padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
 
-/* --- AI CHAT --- */
-.ai-panel { background: var(--glass-bg); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; margin-bottom: 15px; }
-.ai-badge { background: rgba(169, 83, 236, 0.2); color: var(--accent-purple); padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; }
-.ai-input-group { display: flex; gap: 10px; background: #000; padding: 8px; border-radius: 16px; border: 1px solid var(--border-color); }
-.ai-input-group input { flex: 1; padding: 10px; background: transparent; border: none; color: white; outline: none; }
-.ai-input-group button { background: rgba(255,255,255,0.1); border: none; border-radius: 12px; color: white; cursor: pointer; padding: 0 15px; }
-
-/* --- LOGIN CARD --- */
-.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 40px; border-radius: 24px; width: 100%; max-width: 450px; margin: 0 auto; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
-.form-group input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; }
-.btn-primary { width: 100%; padding: 16px; background: var(--accent-purple); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; }
-.btn-discord { width: 100%; padding: 16px; background: #5865F2; border: none; border-radius: 12px; color: #fff; font-weight: 700; margin-top: 15px; cursor: pointer; }
-.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-.lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); }
+.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 10px 16px; border-radius: 10px; cursor: pointer; }
+.lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(169, 83, 236, 0.05); }
 </style>
 </head>
 <body>
@@ -153,18 +153,18 @@ import { renderAIChat } from './src/ui/components/aichatpanel.js';
 
 const translations = {
     it: { 
-        loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", 
-        noAccount: "Non hai un account?", register: "Registrati", exit: "Esci", dash: "Dashboard", 
-        notes: "Note", npc: "Personaggi", settings: "Opzioni", voxChat: "Chat Vocale", 
-        welcome: "Viandante", activity: "Attività", loading: "Caricamento...",
-        aiTitle: "T.Ai.verna", aiPlaceholder: "Inizia a scrivere per chiedere consigli...", aiInput: "Chiedi alla T.Ai..."
+        loginTitle: "Bentornato", email: "Indirizzo Email", pass: "Password Segreta", enter: "Entra nella Locanda", 
+        discord: "Accedi con Discord", noAccount: "Nuovo della zona?", register: "Registrati", 
+        exit: "Esci", dash: "Dashboard", notes: "Note di Viaggio", npc: "Personaggi", 
+        settings: "Opzioni", voxChat: "Chat Vocale", welcome: "Viandante",
+        aiTitle: "T.Ai.verna", aiPlaceholder: "Chiedi consigli sulla tua campagna...", aiInput: "Invia"
     },
     en: { 
-        loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", 
-        noAccount: "No account?", register: "Register", exit: "Logout", dash: "Dashboard", 
-        notes: "Notes", npc: "NPCs", settings: "Settings", voxChat: "Voice Chat", 
-        welcome: "Traveler", activity: "Activity", loading: "Loading...",
-        aiTitle: "T.Ai.vern", aiPlaceholder: "Start typing to ask for advice...", aiInput: "Ask the T.Ai..."
+        loginTitle: "Welcome Back", email: "Email Address", pass: "Secret Password", enter: "Enter the Tavern", 
+        discord: "Login with Discord", noAccount: "New here?", register: "Register", 
+        exit: "Logout", dash: "Dashboard", notes: "Travel Notes", npc: "NPCs", 
+        settings: "Settings", voxChat: "Voice Chat", welcome: "Traveler",
+        aiTitle: "T.Ai.vern", aiPlaceholder: "Ask for advice...", aiInput: "Send"
     }
 };
 
@@ -177,19 +177,15 @@ function renderLogin() {
     ui.style.display = "block";
     ui.innerHTML = `
         <div class="login-card">
-            <h2 style="text-align:center; margin-bottom:30px; font-weight:800;">${t('loginTitle')}</h2>
+            <h2 style="text-align:center; margin-bottom:40px; font-weight:900; font-size:32px;">${t('loginTitle')}</h2>
             <form id="login-form">
                 <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
                 <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
                 <button type="submit" class="btn-primary">${t('enter')}</button>
                 <button type="button" class="btn-discord">${t('discord')}</button>
             </form>
-            <div style="margin-top:25px; text-align:center; font-size:14px; color:var(--text-muted);">
-                ${t('noAccount')} <a href="#" id="to-register" style="color:var(--accent-purple); font-weight:600; text-decoration:none;">${t('register')}</a>
-            </div>
-            <div style="margin-top:30px; display:flex; justify-content:center; gap:10px;">
-                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="changeLang('it')">IT</button>
-                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="changeLang('en')">EN</button>
+            <div style="margin-top:30px; text-align:center; font-size:14px; color:var(--text-muted);">
+                ${t('noAccount')} <a href="#" id="to-register" style="color:var(--accent-purple); font-weight:700; text-decoration:none;">${t('register')}</a>
             </div>
         </div>
     `;
@@ -203,18 +199,8 @@ function renderLogin() {
 
     document.getElementById('to-register').onclick = async (e) => {
         e.preventDefault();
-        try {
-            // Tentativo caricamento dal percorso src/ui/register.js se presente, altrimenti root
-            const module = await import('./src/ui/register.js').catch(() => import('./register.js'));
-            if (module.showRegister) {
-                module.showRegister(ui, t, renderLogin);
-            } else if (module.renderRegister) {
-                module.renderRegister(ui, t, renderLogin);
-            }
-        } catch (err) {
-            console.error("Errore caricamento registrazione:", err);
-            alert("Errore nel caricamento della pagina di registrazione. Controlla che register.js sia nella cartella corretta.");
-        }
+        const module = await import('./register.js');
+        module.showRegister(ui, t, renderLogin);
     };
 }
 
@@ -229,16 +215,11 @@ function showPlatform(user) {
         location.reload();
     });
     
-    let sidebarWrapper = document.getElementById('sidebar-wrapper');
-    if(!sidebarWrapper) {
-        sidebarWrapper = document.createElement('div');
-        sidebarWrapper.id = "sidebar-wrapper";
-        document.body.appendChild(sidebarWrapper);
-    }
+    let sidebarWrapper = document.getElementById('sidebar-wrapper') || document.createElement('div');
+    sidebarWrapper.id = "sidebar-wrapper";
+    document.body.appendChild(sidebarWrapper);
 
-    renderSidebar(sidebarWrapper, user, t, (target) => {
-        closeMenu();
-    }, currentLang, window.changeLang);
+    renderSidebar(sidebarWrapper, user, t, (target) => { closeMenu(); }, currentLang, (l) => window.changeLang(l));
 
     const mainContent = document.getElementById('main-content');
     if(mainContent) renderAIChat(mainContent, t);
@@ -249,38 +230,25 @@ function showPlatform(user) {
         if(sidebar) sidebar.classList.remove('open');
         overlay.classList.remove('show');
     };
-
     overlay.onclick = closeMenu;
 
     document.addEventListener('click', (e) => {
         if(e.target.closest('#open-menu')) {
             const sidebar = document.getElementById('sidebar');
-            if(sidebar) {
-                sidebar.classList.add('open');
-                overlay.classList.add('show');
-            }
+            if(sidebar) { sidebar.classList.add('open'); overlay.classList.add('show'); }
         }
     });
 }
 
-window.changeLang = (lang) => {
-    localStorage.setItem('taverna_lang', lang);
-    location.reload(); 
-};
+window.changeLang = (lang) => { localStorage.setItem('taverna_lang', lang); location.reload(); };
 
-const mainBtn = document.getElementById('main-title-btn');
 const session = localStorage.getItem('taverna_session');
-
 if (session) {
     const data = JSON.parse(session);
-    if (Date.now() < data.expiry) {
-        showPlatform(data.user);
-    } else {
-        localStorage.removeItem('taverna_session');
-        mainBtn.onclick = renderLogin;
-    }
+    if (Date.now() < data.expiry) showPlatform(data.user);
+    else { localStorage.removeItem('taverna_session'); document.getElementById('main-title-btn').onclick = renderLogin; }
 } else {
-    mainBtn.onclick = renderLogin;
+    document.getElementById('main-title-btn').onclick = renderLogin;
 }
 </script>
 </body>
