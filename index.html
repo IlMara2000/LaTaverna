@@ -2,12 +2,10 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>LA TAVERNA</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
-/* ... (Tutto il CSS precedente rimane identico) ... */
-
 :root {
   --bg-deep: #0a0a0c;
   --accent-purple: #a953ec;
@@ -17,6 +15,7 @@
   --glass-bg: rgba(22, 22, 26, 0.98);
 }
 
+/* Reset e Base */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
 
 body {
@@ -26,58 +25,85 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: env(safe-area-inset-top) 20px 20px 20px;
+  /* Padding-top aumentato per staccarsi dal bordo alto (Dynamic Island) */
+  padding: 80px 20px 40px 20px; 
 }
 
+/* Bottone Titolo Iniziale (Più centrato e staccato) */
 #main-title-btn { 
   background: rgba(255,255,255,0.02);
   border: 1px solid var(--border-color);
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-size: 28px;
+  padding: 16px 32px;
+  border-radius: 16px;
+  font-size: 32px;
   font-weight: 800;
   color: #fff; 
-  margin-top: 60px;
   cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  transition: transform 0.2s;
 }
+
+#main-title-btn:active { transform: scale(0.95); }
 
 #ui { width: 100%; max-width: 1000px; display: none; }
 
-.pt-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; margin-bottom: 20px; width: 100%; }
+/* Dashboard Header (Respiro per il tasto menu) */
+.pt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 0;
+  margin-bottom: 40px; /* Spazio tra header e contenuto card */
+  width: 100%;
+}
 
-.icon-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; }
+.icon-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+}
 
+/* Sidebar / Menu Verde (A comparsa) */
 .pt-aside {
   position: fixed;
   top: 0; left: -300px; width: 280px; height: 100%;
   background: var(--glass-bg); backdrop-filter: blur(20px);
-  z-index: 1000; padding: 30px 20px; border-right: 1px solid var(--border-color);
+  z-index: 1000; padding: 60px 20px 20px 20px; /* Spazio interno alto */
+  border-right: 1px solid var(--border-color);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex; flex-direction: column;
 }
-
 .pt-aside.open { transform: translateX(300px); }
 
 .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; z-index: 999; }
 .sidebar-overlay.show { display: block; }
 
-.tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; text-align: left; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+/* Login / Register Card (Spostata più in basso) */
+.login-card { 
+  background: var(--glass-bg); 
+  border: 1px solid var(--border-color); 
+  padding: 40px 30px; 
+  border-radius: 24px; 
+  width: 100%;
+  margin-top: 20px;
+}
+
+.form-group { margin-bottom: 25px; }
+.form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.form-group input { width: 100%; padding: 16px; background: #000; border: 1px solid var(--border-color); border-radius: 12px; color: #fff; }
+
+.btn-primary { width: 100%; padding: 16px; background: var(--accent-purple); border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; }
+.btn-discord { width: 100%; padding: 16px; background: #5865F2; border: none; border-radius: 12px; color: #fff; font-weight: 700; margin-top: 15px; cursor: pointer; }
+
+/* Dashboard Cards */
+.pt-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
+.tab-btn { background: transparent; border: none; color: var(--text-muted); padding: 16px; border-radius: 12px; text-align: left; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
 .tab-btn.active { background: rgba(169, 83, 236, 0.1); color: var(--accent-purple); font-weight: 600; }
 
-.login-card { background: var(--glass-bg); border: 1px solid var(--border-color); padding: 30px; border-radius: 20px; width: 100%; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
-.form-group input { width: 100%; padding: 14px; background: #000; border: 1px solid var(--border-color); border-radius: 10px; color: #fff; }
-
-.btn-primary { width: 100%; padding: 14px; background: var(--accent-purple); border: none; border-radius: 10px; color: #fff; font-weight: 700; cursor: pointer; }
-.btn-discord { width: 100%; padding: 14px; background: #5865F2; border: none; border-radius: 10px; color: #fff; font-weight: 700; margin-top: 10px; cursor: pointer; }
-
-.pt-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 15px; padding: 20px; margin-bottom: 15px; }
-.pt-avatar { width: 50px; height: 50px; background: var(--accent-purple); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px; }
-
-/* Stile Selettore Lingua */
-.lang-selector { margin-top: auto; padding: 10px; display: flex; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 20px; }
-.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+.lang-selector { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+.lang-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; }
 .lang-btn.active { border-color: var(--accent-purple); color: var(--accent-purple); }
 </style>
 </head>
@@ -88,103 +114,57 @@ body {
 <div id="ui"></div>
 
 <script type="module">
-// --- SISTEMA DI TRADUZIONE ---
 const translations = {
-    it: {
-        loginTitle: "Accedi",
-        email: "Email",
-        pass: "Password",
-        enter: "Entra",
-        discord: "Accedi con Discord",
-        exit: "Esci",
-        dash: "Dashboard",
-        notes: "Note di Sessione",
-        npc: "Lista NPC",
-        settings: "Impostazioni",
-        activity: "Sezione ATTIVITÀ",
-        loading: "In caricamento...",
-        welcome: "Viandante"
-    },
-    en: {
-        loginTitle: "Login",
-        email: "Email",
-        pass: "Password",
-        enter: "Enter",
-        discord: "Login with Discord",
-        exit: "Logout",
-        dash: "Dashboard",
-        notes: "Session Notes",
-        npc: "NPC List",
-        settings: "Settings",
-        activity: "ACTIVITY Section",
-        loading: "Loading...",
-        welcome: "Traveler"
-    }
+    it: { loginTitle: "Accedi", email: "EMAIL", pass: "PASSWORD", enter: "Entra", discord: "Accedi con Discord", exit: "Esci", dash: "Dashboard", notes: "Note di Sessione", npc: "Lista NPC", settings: "Impostazioni", activity: "Attività Recenti", loading: "In caricamento...", welcome: "Viandante" },
+    en: { loginTitle: "Login", email: "EMAIL", pass: "PASSWORD", enter: "Enter", discord: "Login with Discord", exit: "Logout", dash: "Dashboard", notes: "Session Notes", npc: "NPC List", settings: "Settings", activity: "Recent Activity", loading: "Loading...", welcome: "Traveler" }
 };
 
 let currentLang = localStorage.getItem('taverna_lang') || (navigator.language.startsWith('it') ? 'it' : 'en');
+const CONFIG = { SESSION_DURATION: 24 * 60 * 60 * 1000 };
 
-const CONFIG = {
-  DISCORD_CLIENT_ID: '1478809987357868083',
-  SESSION_DURATION: 24 * 60 * 60 * 1000 
-};
-
-const ui = document.getElementById('ui');
-const mainBtn = document.getElementById('main-title-btn');
-const overlay = document.getElementById('overlay');
-
-// --- LOGICA SESSIONE ---
 function saveSession(userData) {
-    const session = { user: userData, expiry: Date.now() + CONFIG.SESSION_DURATION };
-    localStorage.setItem('taverna_session', JSON.stringify(session));
+    localStorage.setItem('taverna_session', JSON.stringify({ user: userData, expiry: Date.now() + CONFIG.SESSION_DURATION }));
 }
 
 function checkSession() {
-    const sessionData = localStorage.getItem('taverna_session');
-    if (!sessionData) return null;
-    const session = JSON.parse(sessionData);
-    if (Date.now() > session.expiry) {
-        localStorage.removeItem('taverna_session');
-        return null;
-    }
-    return session.user;
+    const data = localStorage.getItem('taverna_session');
+    if (!data) return null;
+    const session = JSON.parse(data);
+    return Date.now() > session.expiry ? (localStorage.removeItem('taverna_session'), null) : session.user;
 }
 
-// --- LOGICA LINGUA ---
-function setLanguage(lang) {
+window.setLanguage = (lang) => {
     currentLang = lang;
     localStorage.setItem('taverna_lang', lang);
-    const user = checkSession();
-    if (user) showPlatform(user); else renderLogin();
-}
+    location.reload(); 
+};
 
 function t(key) { return translations[currentLang][key]; }
 
-// --- FUNZIONI UI ---
 function toggleMenu() {
     document.querySelector('.pt-aside').classList.toggle('open');
-    overlay.classList.toggle('show');
+    document.getElementById('overlay').classList.toggle('show');
 }
 
 function renderLogin() {
-    mainBtn.style.display = "none";
+    document.getElementById('main-title-btn').style.display = "none";
+    const ui = document.getElementById('ui');
     ui.style.display = "block";
     ui.innerHTML = `
         <div class="login-card">
-            <h2 style="text-align:center; margin-bottom:20px;">${t('loginTitle')}</h2>
+            <h2 style="text-align:center; margin-bottom:30px; font-size:28px;">${t('loginTitle')}</h2>
             <form id="login-form">
-                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" required></div>
-                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" required></div>
+                <div class="form-group"><label>${t('email')}</label><input type="email" id="email" placeholder="latua@email.com" required></div>
+                <div class="form-group"><label>${t('pass')}</label><input type="password" id="pw" placeholder="••••••••" required></div>
                 <button type="submit" class="btn-primary">${t('enter')}</button>
-                <button type="button" class="btn-discord" id="discord-btn">${t('discord')}</button>
+                <button type="button" class="btn-discord">${t('discord')}</button>
             </form>
-            <div class="lang-selector" style="justify-content:center; border:none;">
-                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="window.setLanguage('it')">IT</button>
-                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="window.setLanguage('en')">EN</button>
+            <div style="margin-top:30px; display:flex; justify-content:center; gap:10px;">
+                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="setLanguage('it')">IT</button>
+                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="setLanguage('en')">EN</button>
             </div>
         </div>
     `;
-
     document.getElementById('login-form').onsubmit = (e) => {
         e.preventDefault();
         const user = { username: t('welcome'), email: document.getElementById('email').value };
@@ -193,58 +173,56 @@ function renderLogin() {
     };
 }
 
-window.setLanguage = setLanguage; // Rendo globale per i bottoni
-
 function showPlatform(user) {
-    mainBtn.style.display = "none";
+    document.getElementById('main-title-btn').style.display = "none";
+    const ui = document.getElementById('ui');
     ui.style.display = "block";
     ui.innerHTML = `
         <header class="pt-header">
             <button class="icon-btn" id="open-menu">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <div style="display:flex; gap:10px;">
+            <div style="display:flex; gap:12px;">
                 <button class="icon-btn">🔔</button>
-                <button id="logout-btn" class="btn-primary" style="width:auto; padding:10px 20px;">${t('exit')}</button>
+                <button id="logout-btn" class="btn-primary" style="width:auto; padding:10px 20px; font-size:14px;">${t('exit')}</button>
             </div>
         </header>
 
         <aside class="pt-aside">
-            <div class="pt-card" style="display:flex; gap:12px; align-items:center;">
-                <div class="pt-avatar">${user.username[0].toUpperCase()}</div>
+            <div class="pt-card" style="display:flex; gap:12px; align-items:center; background:rgba(255,255,255,0.05);">
+                <div style="width:45px; height:45px; background:var(--accent-purple); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800;">${user.username[0]}</div>
                 <div>
-                    <div style="font-weight:700;">${user.username}</div>
+                    <div style="font-weight:700; font-size:14px;">${user.username}</div>
                     <div style="font-size:11px; color:var(--text-muted);">${user.email}</div>
                 </div>
             </div>
-            <nav>
+            <nav style="margin-top:20px;">
                 <button class="tab-btn active">🏠 ${t('dash')}</button>
                 <button class="tab-btn">📝 ${t('notes')}</button>
                 <button class="tab-btn">👥 ${t('npc')}</button>
                 <button class="tab-btn">⚙️ ${t('settings')}</button>
             </nav>
             <div class="lang-selector">
-                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="window.setLanguage('it')">Italiano</button>
-                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="window.setLanguage('en')">English</button>
+                <button class="lang-btn ${currentLang==='it'?'active':''}" onclick="setLanguage('it')">IT</button>
+                <button class="lang-btn ${currentLang==='en'?'active':''}" onclick="setLanguage('en')">EN</button>
             </div>
         </aside>
 
-        <main id="tab-content">
+        <main>
             <div class="pt-card">
-                <h3>${t('activity')}</h3>
-                <p style="color:var(--text-muted); margin-top:10px;">${t('loading')}</p>
+                <h3 style="font-size:18px;">${t('activity')}</h3>
+                <p style="color:var(--text-muted); margin-top:15px; font-size:14px;">${t('loading')}</p>
             </div>
         </main>
     `;
 
     document.getElementById('open-menu').onclick = toggleMenu;
-    overlay.onclick = toggleMenu;
+    document.getElementById('overlay').onclick = toggleMenu;
     document.getElementById('logout-btn').onclick = () => { localStorage.removeItem('taverna_session'); location.reload(); };
 }
 
-// --- AVVIO APP ---
-const activeUser = checkSession();
-if (activeUser) showPlatform(activeUser); else mainBtn.onclick = renderLogin;
+const user = checkSession();
+if (user) showPlatform(user); else document.getElementById('main-title-btn').onclick = renderLogin;
 </script>
 </body>
 </html>
