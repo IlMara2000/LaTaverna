@@ -1,7 +1,0 @@
-{
-  "name": "createUserProfile",
-  "version": "1.0.0",
-  "dependencies": {
-    "node-appwrite": "^7.0.0"
-  }
-}
