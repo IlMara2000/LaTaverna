@@ -1,0 +1,188 @@
+/* RESET BASE */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+
+/* BACKGROUND PRINCIPALE */
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+
+  /* background taverna */
+  background: radial-gradient(circle at top, #2a1a12 0%, #120a07 100%);
+  
+  color: #ffffff;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  min-height: 100vh;
+  min-width: 100vw;
+
+  overflow-x: hidden;
+}
+
+
+/* ROOT APP */
+
+#app {
+  width: 100%;
+  max-width: 420px;
+  padding: 30px;
+}
+
+
+/* CARD LOGIN / REGISTER */
+
+form,
+.dashboard-container {
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+
+  border-radius: 12px;
+
+  padding: 30px;
+
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+
+/* HEADER */
+
+.login-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.login-header h2 {
+  font-size: 26px;
+}
+
+
+/* FORM */
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+
+  border-radius: 6px;
+  border: none;
+
+  background: #1a1a1a;
+  color: white;
+
+  outline: none;
+}
+
+.form-group input:focus {
+  background: #222;
+}
+
+
+/* CHECKBOX */
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+
+/* BOTTONI */
+
+.btn {
+  width: 100%;
+  padding: 12px;
+
+  border: none;
+  border-radius: 6px;
+
+  background: #b66a2a;
+  color: white;
+
+  font-weight: bold;
+  cursor: pointer;
+
+  transition: background 0.2s;
+}
+
+.btn:hover {
+  background: #d4833c;
+}
+
+
+/* SOCIAL BUTTON */
+
+.social-btn {
+  width: 100%;
+  padding: 12px;
+
+  border-radius: 6px;
+  border: none;
+
+  background: #5865f2;
+  color: white;
+
+  cursor: pointer;
+}
+
+.social-btn:hover {
+  background: #6c78ff;
+}
+
+
+/* DIVIDER */
+
+.divider {
+  text-align: center;
+  margin: 16px 0;
+  position: relative;
+}
+
+.divider span {
+  font-size: 12px;
+  color: #aaa;
+}
+
+
+/* FOOTER */
+
+.footer {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.footer a {
+  color: #ffb36b;
+  cursor: pointer;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
