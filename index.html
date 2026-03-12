@@ -1,437 +1,239 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-
-<meta charset="UTF-8" />
-
-<meta name="viewport"
-content="width=device-width,
-initial-scale=1,
-maximum-scale=1,
-user-scalable=no,
-viewport-fit=cover"/>
-
-<meta name="theme-color" content="#0f0617">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<title>LA TAVERNA</title>
-
-<style>
-
-* {
-margin:-1px;
-padding:0;
-box-sizing:border-box;
-font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
--webkit-tap-highlight-color:transparent;
-}
-
-/* FIX VIEWPORT MOBILE */
-
-html{
-
-height:100%;
-width:100%;
-overflow-x:hidden;
-
-background:
-radial-gradient(circle at 20% 30%, rgba(169,83,236,0.25), transparent 40%),
-radial-gradient(circle at 80% 70%, rgba(128,0,128,0.35), transparent 40%),
-linear-gradient(135deg,#0f0617,#1c0828,#260c35);
-
-background-attachment:fixed;
-
-}
-
-body {
-
-height:100%;
-width:100%;
-overflow-x:hidden;
-
-background:transparent;
-
-min-height:100dvh;
-
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-
-padding:
-calc(20px + env(safe-area-inset-top))
-20px
-calc(20px + env(safe-area-inset-bottom))
-20px;
-
-color:white;
-text-align:center;
-
-touch-action:manipulation;
-
--webkit-font-smoothing:antialiased;
--webkit-overflow-scrolling:touch;
-
-}
-
-/* ===== NUOVO BOTTONE GLASS ===== */
-
-#main-title {
-
-display:flex;
-align-items:center;
-justify-content:center;
-
-font-size:38px;
-font-weight:800;
-letter-spacing:2px;
-
-padding:18px 40px;
-
-border-radius:18px;
-
-background:rgba(255,255,255,0.05);
-
-backdrop-filter: blur(12px);
--webkit-backdrop-filter: blur(12px);
-
-border:1px solid rgba(255,255,255,0.15);
-
-color:white;
-
-box-shadow:
-0 10px 40px rgba(0,0,0,0.6),
-inset 0 0 12px rgba(169,83,236,0.3);
-
-cursor:pointer;
-
-transition:all .25s ease;
-
-margin-bottom:30px;
-
-transform:translateZ(0);
-
-}
-
-#main-title:hover{
-
-transform:translateY(-4px) scale(1.04);
-
-background:rgba(169,83,236,0.12);
-
-box-shadow:
-0 20px 60px rgba(169,83,236,0.45),
-inset 0 0 20px rgba(169,83,236,0.6);
-
-}
-
-/* ===== LOGIN ===== */
-
-.login-header h2 { font-size:22px; color:#ccc; margin-bottom:25px; }
-
-.form-group { margin-bottom:18px; text-align:left; }
-
-.form-group label { display:block; margin-bottom:6px; color:#ddd; }
-
-.form-group input {
-width:100%;
-padding:12px 14px;
-border-radius:8px;
-border:none;
-background:#2c1e4a;
-color:#fff;
-font-size:15px;
-box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
-transition:0.2s;
-}
-
-.form-group input:focus {
-outline:none;
-box-shadow:0 0 6px #a953ec;
-border:2px solid #a953ec;
-}
-
-.checkbox-group {
-display:flex;
-align-items:center;
-justify-content:flex-start;
-gap:10px;
-margin-bottom:20px;
-}
-
-.checkbox-group input[type="checkbox"] { width:18px; height:18px; }
-
-.btn {
-width:100%;
-padding:14px;
-background:#a953ec;
-color:white;
-border:none;
-border-radius:8px;
-font-size:16px;
-font-weight:600;
-cursor:pointer;
-transition:0.2s;
-}
-
-.btn:hover {
-transform:translateY(-2px);
-box-shadow:0 5px 15px rgba(169,83,236,0.4);
-}
-
-.divider {
-text-align:center;
-margin:20px 0;
-position:relative;
-}
-
-.divider::before,.divider::after {
-content:"";
-position:absolute;
-top:50%;
-width:30%;
-height:1px;
-background:#ddd;
-}
-
-.divider::before { left:0; }
-.divider::after { right:0; }
-
-.divider span {
-background: transparent;
-padding:0 10px;
-color:#ccc;
-font-size:14px;
-}
-
-.social-login {
-display:flex;
-justify-content:center;
-margin-top:15px;
-}
-
-.social-btn {
-
-display:flex;
-align-items:center;
-justify-content:center;
-gap:8px;
-
-background:#5865F2;
-color:white;
-
-border:none;
-
-padding:12px 16px;
-
-border-radius:8px;
-
-cursor:pointer;
-
-font-weight:bold;
-
-font-size:15px;
-
-transition:0.2s;
-
-}
-
-.social-btn:hover {
-
-background:#4752c4;
-
-transform:translateY(-2px);
-
-box-shadow:0 5px 15px rgba(88,101,242,0.4);
-
-}
-
-.footer {
-
-text-align:center;
-
-margin-top:20px;
-
-font-size:14px;
-
-color:#ccc;
-
-}
-
-.footer a {
-
-color:#a953ec;
-
-text-decoration:none;
-
-cursor:pointer;
-
-}
-
-.footer a:hover { text-decoration:underline; }
-
-/* TUTTO IL RESTO DEL TUO CSS È IDENTICO */
-
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    
+    <meta name="theme-color" content="#0f0617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <title>LA TAVERNA</title>
+
+    <style>
+        /* Reset pulito */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            /* Impedisce lo scroll elastico bianco su iOS */
+            background-color: #0f0617; 
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            /* Usa dvh per occupare SEMPRE tutto lo schermo disponibile */
+            min-height: 100dvh;
+            width: 100%;
+            overflow-x: hidden;
+            
+            /* Background spostato qui per coprire tutto il corpo */
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(169,83,236,0.25), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(128,0,128,0.35), transparent 40%),
+                linear-gradient(135deg,#0f0617,#1c0828,#260c35);
+            background-attachment: fixed;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            /* Gestione rientri di sicurezza (Notch e barra home) */
+            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+            
+            color: white;
+            text-align: center;
+            touch-action: manipulation;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Contenitore UI per dare respiro agli elementi */
+        #ui {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        /* ===== BOTTONE GLASS ===== */
+        #main-title {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px; /* Leggermente ridotto per mobile */
+            font-weight: 800;
+            letter-spacing: 2px;
+            padding: 20px 45px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: white;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5), inset 0 0 15px rgba(169,83,236,0.2);
+            cursor: pointer;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        #main-title:active {
+            transform: scale(0.95);
+        }
+
+        /* ===== FORM STYLE ===== */
+        .login-header h2 { font-size: 26px; margin-bottom: 25px; font-weight: 700; }
+        .form-group { margin-bottom: 20px; text-align: left; width: 100%; }
+        .form-group label { display: block; margin-bottom: 8px; color: #bbb; font-size: 14px; }
+        
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.07);
+            color: #fff;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #a953ec;
+            background: rgba(255,255,255,0.12);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: #a953ec;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(169,83,236,0.3);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: #666;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.1);
+        }
+        .divider span { padding: 0 10px; font-size: 13px; }
+
+        .social-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: #5865F2;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .footer { margin-top: 25px; color: #888; font-size: 14px; }
+        .footer a { color: #a953ec; font-weight: 600; text-decoration: none; }
+    </style>
 </head>
 
 <body>
 
-<div id="main-title">LA TAVERNA</div>
-<div id="ui" style="display:none;"></div>
+    <div id="main-title">LA TAVERNA</div>
+    <div id="ui" style="display:none;"></div>
 
-<script type="module">
+    <script type="module">
+        const CONFIG = {
+            DISCORD_CLIENT_ID: '1478809987357868083',
+            DISCORD_REDIRECT_URI: 'https://nyc.cloud.appwrite.io/v1/account/sessions/oauth2/callback/discord/69a85edc001553a4b931'
+        };
 
-const CONFIG = {
-DISCORD_CLIENT_ID:'1478809987357868083',
-DISCORD_REDIRECT_URI:'https://nyc.cloud.appwrite.io/v1/account/sessions/oauth2/callback/discord/69a85edc001553a4b931'
-};
+        const uiContainer = document.getElementById('ui');
+        const mainTitle = document.getElementById('main-title');
 
-const uiContainer=document.getElementById('ui');
-const mainTitle=document.getElementById('main-title');
+        // Blocco Zoom
+        document.addEventListener('gesturestart', e => e.preventDefault());
 
-/* BLOCCO ZOOM GESTURE */
+        function renderLogin() {
+            document.title = "LaTaverna - Login";
+            uiContainer.style.display = "block";
+            uiContainer.innerHTML = `
+                <div class="login-header"><h2>Accedi</h2></div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" placeholder="nome@esempio.com" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required />
+                    </div>
+                    <button type="submit" class="btn">Entra</button>
+                    <div class="divider"><span>OPPURE</span></div>
+                    <button type="button" class="social-btn" id="discord-login">Login con Discord</button>
+                    <div class="footer">Non hai un account? <a href="#" id="toRegister">Registrati</a></div>
+                </form>
+            `;
 
-document.addEventListener('gesturestart',function(e){
-e.preventDefault();
-});
+            document.getElementById('toRegister').onclick = e => {
+                e.preventDefault();
+                renderRegister();
+            };
 
-document.addEventListener('dblclick',function(e){
-e.preventDefault();
-},{passive:false});
+            document.getElementById('discord-login').onclick = () => {
+                const url = `https://discord.com/oauth2/authorize?client_id=${CONFIG.DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(CONFIG.DISCORD_REDIRECT_URI)}&response_type=code&scope=identify%20email`;
+                window.location.href = url;
+            };
+        }
 
-/* IL TUO JS RESTA IDENTICO */
+        function renderRegister() {
+            document.title = "LaTaverna - Registrati";
+            uiContainer.innerHTML = `
+                <div class="login-header"><h2>Crea Account</h2></div>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="username" placeholder="Il tuo nome" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="email" placeholder="nome@esempio.com" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Minimo 8 caratteri" required />
+                    </div>
+                    <button type="submit" class="btn">Registrati</button>
+                    <div class="footer">Hai già un account? <a href="#" id="toLogin">Login</a></div>
+                </form>
+            `;
+            document.getElementById('toLogin').onclick = e => {
+                e.preventDefault();
+                renderLogin();
+            };
+        }
 
-function renderLogin(){
-document.title="LaTaverna - Login";
-
-uiContainer.style.display="block";
-
-uiContainer.innerHTML=`
-<div class="login-header"><h2>Login</h2></div>
-<form id="login-form">
-
-<div class="form-group">
-<label for="email">Email</label>
-<input type="email" id="email" placeholder="Inserisci la tua email" required />
-</div>
-
-<div class="form-group">
-<label for="password">Password</label>
-<input type="password" id="password" placeholder="Inserisci la tua password" required />
-</div>
-
-<button type="submit" class="btn" id="login-btn">Accedi</button>
-
-<div class="divider"><span>Oppure</span></div>
-
-<div class="social-login">
-<button type="button" class="social-btn" id="discord-login">
-Login con Discord
-</button>
-</div>
-
-<div class="footer">
-Non hai un account? <a id="toRegister">Registrati</a>
-</div>
-
-</form>
-`;
-
-document.getElementById('toRegister').onclick=e=>{
-e.preventDefault();
-renderRegister();
-};
-
-document.getElementById('discord-login').onclick=()=>{
-
-const url=`https://discord.com/oauth2/authorize?client_id=${CONFIG.DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(CONFIG.DISCORD_REDIRECT_URI)}&response_type=code&scope=identify%20email`;
-
-window.location.href=url;
-
-};
-
-document.getElementById('login-form').onsubmit=e=>{
-
-e.preventDefault();
-
-const user={
-email:document.getElementById('email').value,
-username:"Utente"
-};
-
-showPlatform(user);
-
-};
-
-}
-
-function renderRegister(){
-
-document.title="LaTaverna - Registrati";
-
-uiContainer.innerHTML=`
-<div class="login-header"><h2>Registrati</h2></div>
-
-<form id="register-form">
-
-<div class="form-group">
-<label for="username">Username</label>
-<input type="text" id="username" placeholder="Inserisci il tuo username" required />
-</div>
-
-<div class="form-group">
-<label for="email">Email</label>
-<input type="email" id="email" placeholder="Inserisci la tua email" required />
-</div>
-
-<div class="form-group">
-<label for="password">Password</label>
-<input type="password" id="password" placeholder="Inserisci la tua password" required />
-</div>
-
-<div class="checkbox-group">
-<input type="checkbox" id="gdpr"/>
-<label for="gdpr">Accetto il GDPR</label>
-</div>
-
-<button type="submit" class="btn" id="register-btn">
-Registrati
-</button>
-
-<div class="footer">
-Hai già un account? <a id="toLogin">Login</a>
-</div>
-
-</form>
-`;
-
-document.getElementById('toLogin').onclick=e=>{
-e.preventDefault();
-renderLogin();
-};
-
-document.getElementById('register-form').onsubmit=e=>{
-
-e.preventDefault();
-
-const user={
-email:document.getElementById('email').value,
-username:document.getElementById('username').value
-};
-
-showPlatform(user);
-
-};
-
-}
-
-mainTitle.onclick=()=>{
-mainTitle.style.display="none";
-renderLogin();
-};
-
-</script>
-
+        mainTitle.onclick = () => {
+            mainTitle.style.display = "none";
+            renderLogin();
+        };
+    </script>
 </body>
 </html>
