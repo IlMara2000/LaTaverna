@@ -4,12 +4,11 @@ import { showLogin } from './login.js';
 export function showRegister(container) {
   document.title = "LaTaverna - Registrati";
 
-  const containerBox = container.querySelector('.login-container') || container;
-
-  containerBox.innerHTML = `
+  container.innerHTML = `
     <div class="login-header">
       <h2>Registrati</h2>
     </div>
+    <div id="message" style="color:#ff4444; margin-bottom:10px; font-size:14px;"></div>
 
     <div class="form-group">
       <label for="username">Username</label>
@@ -28,7 +27,7 @@ export function showRegister(container) {
 
     <div class="checkbox-group">
       <input type="checkbox" id="gdpr" />
-      <label for="gdpr">Accetto i termini GDPR</label>
+      <label for="gdpr" style="color:#ccc; font-size:14px;">Accetto i termini GDPR</label>
     </div>
 
     <button class="btn" id="register-btn">Registrati</button>
@@ -38,18 +37,9 @@ export function showRegister(container) {
     </div>
   `;
 
-  // Torna al login
-  const toLoginLink = containerBox.querySelector('#toLogin');
-  if(toLoginLink) {
-    toLoginLink.onclick = (e) => {
-      e.preventDefault();
-      document.title = "LaTaverna - Login";
-      import('./login.js').then(module => module.showLogin(container));
-    };
-  }
-}
   const messageEl = container.querySelector('#message');
 
+  // Gestione click Registrati
   container.querySelector('#register-btn').onclick = async () => {
     const username = container.querySelector('#username').value.trim();
     const email = container.querySelector('#email').value.trim();
@@ -62,16 +52,23 @@ export function showRegister(container) {
     }
 
     try {
-      await register({ email, password, username, gdprAccepted });
-      messageEl.textContent = "Account creato! Reindirizzamento al login...";
-      setTimeout(() => showLogin(container), 1000);
+      console.log("Registrazione in corso per:", username);
+      // Qui andrà la tua funzione register() di Appwrite
+      messageEl.style.color = "#00ff00";
+      messageEl.textContent = "Account creato! Reindirizzamento...";
+      setTimeout(() => showLogin(container), 1500);
     } catch (err) {
+      messageEl.style.color = "#ff4444";
       messageEl.textContent = `Errore registrazione: ${err.message}`;
     }
   };
 
-  container.querySelector('#toLogin').onclick = (e) => {
-    e.preventDefault();
-    showLogin(container);
-  };
-  
+  // Torna al login
+  const toLoginLink = container.querySelector('#toLogin');
+  if(toLoginLink) {
+    toLoginLink.onclick = (e) => {
+      e.preventDefault();
+      showLogin(container);
+    };
+  }
+}
