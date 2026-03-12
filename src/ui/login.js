@@ -1,8 +1,11 @@
+import { showRegister } from './register.js';
+
 export function showLogin(container) {
   document.title = "LaTaverna - Login";
   
   container.innerHTML = `
     <div class="login-header"><h2>Accedi</h2></div>
+    <div id="login-msg" style="color:#ff4444; margin-bottom:10px; font-size:14px; min-height:20px;"></div>
     <form id="login-form">
         <div class="form-group">
             <label>Email</label>
@@ -12,41 +15,41 @@ export function showLogin(container) {
             <label>Password</label>
             <input type="password" id="password" placeholder="••••••••" required />
         </div>
-        <button type="submit" class="btn">Entra</button>
+        <button type="submit" class="btn" id="btn-login">Entra</button>
         <div class="divider"><span>OPPURE</span></div>
         <button type="button" class="social-btn" id="discord-login">Login con Discord</button>
         <div class="footer">
-            Non hai un account? <a href="#" id="toRegister">Registrati</a>
+            Non hai un account? <a id="toRegister">Registrati</a>
         </div>
     </form>
   `;
 
-  // Logica Discord originale
-  const clientId = "1478809987357868083";
-  const redirectUri = encodeURIComponent("https://nyc.cloud.appwrite.io/v1/account/sessions/oauth2/callback/discord/69a85edc001553a4b931");
-  const scope = "identify%20email";
+  const msg = container.querySelector('#login-msg');
 
-  const loginWithDiscord = () => {
-    const authUrl = `https://discord.com/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scope}`;
-    window.location.href = authUrl;
-  };
-
-  container.querySelector('#discord-login').onclick = loginWithDiscord;
-
-  // Link Registrati SPA
-  const toRegisterLink = container.querySelector('#toRegister');
-  if (toRegisterLink) {
-    toRegisterLink.onclick = (e) => {
-      e.preventDefault();
-      import('./register.js').then(module => {
-        module.showRegister(container);
-      });
-    };
-  }
-
-  // Gestione Form Login
-  container.querySelector('#login-form').onsubmit = (e) => {
+  // BOTTONE LOGIN (Email/Password)
+  container.querySelector('#login-form').onsubmit = async (e) => {
     e.preventDefault();
-    console.log("Login inviato");
+    const email = container.querySelector('#email').value;
+    const password = container.querySelector('#password').value;
+
+    try {
+      await window.sdk.account.createEmailPasswordSession(email, password);
+      container.innerHTML = "<h2>Benvenuto in Taverna!</h2><p>Accesso effettuato.</p>";
+      // Qui caricherai la dashboard
+    } catch (err) {
+      msg.textContent = "Errore: " + err.message;
+    }
   };
+
+  // BOTTONE DISCORD
+  container.querySelector('#discord-login').onclick = () => {
+    window.sdk.account.createOAuth2Session(
+        'discord',
+        window.location.href, // Ritorna qui dopo il login
+        window.location.href
+    );
+  };
+
+  // Link Registrati
+  container.querySelector('#toRegister').onclick = () => showRegister(container);
 }
