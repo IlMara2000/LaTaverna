@@ -90,8 +90,13 @@ function attachEvents(container) {
         window.location.reload();
     };
 
-    container.querySelector('#btnConnectDiscord').onclick = () => {
-        const redirectUri = encodeURIComponent(window.location.origin);
-        window.location.href = `https://discord.com/oauth2/authorize?client_id=${import.meta.env.VITE_DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=identify%20email`;
-    };
-}
+// Cerca questa riga dentro attachEvents e sostituiscila
+container.querySelector('#btnConnectDiscord').onclick = () => {
+    // Usiamo Appwrite per gestire il collegamento. 
+    // Appwrite creerà l'URL corretto che Discord accetterà.
+    account.createOAuth2Session(
+        'discord', 
+        window.location.origin, // Dove tornare dopo il successo
+        window.location.origin  // Dove tornare se fallisce
+    );
+};
