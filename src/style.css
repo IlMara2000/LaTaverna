@@ -1,241 +1,49 @@
-/* Reset e Base */
-body, html {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    font-family: 'Inter', sans-serif;
-    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
-    color: white;
-    overflow: hidden;
-}
+/* ... mantieni il tuo codice precedente ... */
 
-/* Centratura Universale per Mobile/Desktop */
-#app-content {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 100%;
-    height: 100%;
-    position: fixed;
-    inset: 0;
-    padding: 20px;
-    box-sizing: border-box;
-}
-
-#ui {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-/* Glass Box centrata */
-.glass-box {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 28px;
-    padding: 40px;
-    width: 100%;
-    max-width: 380px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-    box-sizing: border-box;
-    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Elementi Form */
-.form-group { margin-bottom: 20px; width: 100%; }
-input[type="email"], input[type="password"], input[type="text"] {
-    width: 100% !important;
-    padding: 14px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 12px !important;
-    color: white !important;
-    box-sizing: border-box !important;
-}
-
-.btn-primary {
-    width: 100% !important;
-    padding: 16px !important;
-    background: #a953ec !important;
-    border: none !important;
-    border-radius: 12px !important;
-    color: white !important;
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-/* Hero Button originale */
-.hero-btn {
-    padding: 16px 40px;
-    font-size: 1.2rem;
-    font-weight: 800;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: white;
-    background: rgba(169, 83, 236, 0.1);
-    border: 2px solid #a953ec;
-    border-radius: 15px;
-    cursor: pointer;
-    box-shadow: 0 0 20px rgba(169, 83, 236, 0.4);
-    animation: pulseGlow 3s infinite;
-}
-
-@keyframes pulseGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(169, 83, 236, 0.3); border-color: rgba(169, 83, 236, 0.6); }
-    50% { box-shadow: 0 0 30px rgba(169, 83, 236, 0.6); border-color: rgba(169, 83, 236, 1); }
-}
-
-/* Dashboard & Sidebar - FIX SOVRAPPOSIZIONE */
-.sidebar { 
-    position: fixed; 
-    top: 0; 
-    left: -280px; 
-    width: 260px; 
-    height: 100%; 
-    background: rgba(10, 5, 20, 0.98); /* Più coprente per leggibilità */
-    backdrop-filter: blur(20px);
-    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-    z-index: 3000; /* Sopra tutto */
-    padding: 80px 20px; 
-    border-right: 1px solid rgba(169, 83, 236, 0.2);
-    display: flex;
-    flex-direction: column;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
-}
-
-.sidebar.active { left: 0; }
-
-.hamburger {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 3100; /* Sempre visibile sopra la sidebar */
-    background: rgba(169, 83, 236, 0.2);
-    border: 1px solid #a953ec;
-    color: white;
-    width: 45px;
-    height: 45px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: 0.3s;
-}
-
-/* Stili Dashboard per pulizia */
-.dashboard-content {
-    width: 100%;
-    max-width: 500px;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    transition: filter 0.3s ease;
-}
-
-.sidebar.active ~ .dashboard-content {
-    filter: blur(4px); /* Effetto focus quando apri il menu */
-    pointer-events: none;
-}
-
-.sidebar-btn {
-    width: 100%;
-    padding: 14px;
-    margin-bottom: 12px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    color: white;
-    cursor: pointer;
-    text-align: left;
-    font-weight: 600;
-    transition: 0.2s;
-}
-
-.sidebar-btn:hover {
-    background: rgba(169, 83, 236, 0.2);
-    border-color: #a953ec;
-}
-
-/* Session Card */
+/* Session Card con Anteprima */
 .session-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 20px;
     overflow: hidden;
     cursor: pointer;
-    transition: 0.3s;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
 }
 
 .session-card:hover {
     transform: translateY(-5px);
     border-color: #a953ec;
-    background: rgba(169, 83, 236, 0.05);
+}
+
+.session-card:active {
+    transform: scale(0.96);
+    background: rgba(169, 83, 236, 0.1);
 }
 
 .map-preview {
     width: 100%;
-    height: 120px;
-    background-image: url('https://www.cartographersguild.com/attachment.php?attachmentid=101373&d=1510141019');
+    height: 100px;
+    background-image: url('https://img.freepik.com/free-photo/old-map-background-texture_23-2148995712.jpg');
     background-size: cover;
     background-position: center;
-    opacity: 0.4;
+    position: relative;
+    opacity: 0.5;
+}
+
+/* Griglia fittizia sopra l'anteprima */
+.map-preview::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), 
+                      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 20px 20px;
 }
 
 .session-info {
-    padding: 20px;
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-/* Aggiungi queste righe in fondo al tuo style.css */
-
-input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #a953ec;
-    cursor: pointer;
-}
-
-.custom-file-input {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px dashed rgba(169, 83, 236, 0.4) !important;
-    padding: 20px !important;
-    cursor: pointer;
-}
-
-#overlay-content h3 {
-    margin-top: 0;
-    color: #a953ec;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-size: 1.2rem;
-    margin-bottom: 20px;
-}
-
-/* Stile per i select dentro gli overlay */
-select {
-    width: 100%;
-    padding: 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: white;
-    appearance: none;
-}
-
-#main-overlay {
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
 }
