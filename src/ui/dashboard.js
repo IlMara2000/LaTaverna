@@ -12,7 +12,6 @@ export async function showDashboard(container, user = null) {
     catch (err) { import('./login.js').then(m => m.showLogin(container)); return; }
   }
 
-  // Recupero sessioni uniche basate su session_id
   let sessions = [];
   try {
     const res = await databases.listDocuments(DB_ID, COL_ID);
@@ -24,37 +23,43 @@ export async function showDashboard(container, user = null) {
 }
 
 function renderDashboard(container, user, sessions) {
+  // Reset scroll e layout per evitare sovrapposizioni
+  container.style.overflowY = "auto";
+  container.style.alignItems = "flex-start"; // Allinea in alto per scroll mobile
+  container.style.paddingTop = "80px";
+
   container.innerHTML = `
     <button class="hamburger" id="hamburger">☰</button>
     
     <nav class="sidebar" id="sidebar">
-        <h2 style="font-size: 1.2rem; color: #a953ec; margin-bottom: 20px;">MENU</h2>
+        <h2 style="font-size: 1.2rem; color: #a953ec; margin-bottom: 30px; text-align:center;">MENU</h2>
         <button class="sidebar-btn" id="btnConnectDiscord">🎮 Collega Discord</button>
         <button class="sidebar-btn" id="btnSettings">⚙️ Impostazioni</button>
-        <div style="flex-grow: 1;"></div>
-        <button id="btnLogout" style="color: #ff4444; background: none; border: none; cursor: pointer; padding: 10px;">Esci dalla Taverna</button>
+        <div style="margin-top: 40px; text-align: center;">
+            <button id="btnLogout" style="color: #ff4444; background: rgba(255,68,68,0.1); border: 1px solid #ff4444; border-radius: 8px; cursor: pointer; padding: 10px 20px; width: 100%;">Esci dalla Taverna</button>
+        </div>
     </nav>
 
-    <div class="dashboard-content">
-        <div class="user-profile-header">
-            <h2 style="margin: 0; font-size: 1.5rem;">Benvenuto, <span style="color: #a953ec;">${user.name || 'Viandante'}</span></h2>
-            <p style="font-size: 11px; color: #888; margin-top: 5px;">ACCOUNT ID: ${user.$id}</p>
+    <div class="dashboard-content" style="width: 100%; max-width: 400px; margin: 0 auto;">
+        <div class="user-profile-header" style="margin-bottom: 40px; text-align: center;">
+            <h2 style="margin: 0; font-size: 1.8rem;">Benvenuto, <br><span style="color: #a953ec;">${user.name || 'Viandante'}</span></h2>
+            <p style="font-size: 10px; color: #555; margin-top: 10px; letter-spacing: 1px;">ID: ${user.$id}</p>
         </div>
 
         <div class="session-list">
-            <h3 style="font-size: 0.9rem; letter-spacing: 2px; color: #aaa; margin-bottom: 10px; text-transform: uppercase;">Sessioni Attive</h3>
+            <h3 style="font-size: 0.8rem; letter-spacing: 2px; color: #777; margin-bottom: 20px; text-transform: uppercase; text-align: center;">Le Tue Sessioni</h3>
             
             ${sessions.length === 0 
-                ? `<div class="glass-box" style="padding: 30px; text-align: center; max-width: 100%;">
-                    <p style="color: #666; margin: 0;">Nessuna sessione attiva</p>
+                ? `<div class="glass-box" style="padding: 40px 20px; border-style: dashed; opacity: 0.6;">
+                    <p style="color: #888; margin: 0; font-size: 14px;">Nessun tavolo trovato...</p>
                    </div>`
                 : sessions.map(sid => `
-                    <div class="session-card" data-sid="${sid}">
+                    <div class="session-card" data-sid="${sid}" style="margin-bottom: 15px;">
                         <div class="map-preview"></div>
                         <div class="session-info">
                             <div>
-                                <strong style="display: block; font-size: 14px;">TAVOLO: ${sid}</strong>
-                                <span style="font-size: 11px; color: #a953ec;">Entra ora</span>
+                                <strong style="display: block; font-size: 14px; color: #fff;">TAVOLO: ${sid}</strong>
+                                <span style="font-size: 11px; color: #a953ec; font-weight: bold;">ENTRA NEL TAVOLO</span>
                             </div>
                             <span style="font-size: 1.5rem;">🏰</span>
                         </div>
@@ -70,20 +75,21 @@ function attachEvents(container) {
     const sidebar = container.querySelector('#sidebar');
     const hamburger = container.querySelector('#hamburger');
 
-    hamburger.onclick = () => sidebar.classList.toggle('active');
+    // Toggle Sidebar con prevenzione scroll
+    hamburger.onclick = () => {
+        sidebar.classList.toggle('active');
+        document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : 'auto';
+    };
 
-    // Clicca su una sessione
     container.querySelectorAll('.session-card').forEach(card => {
         card.onclick = () => showTabletop(container, card.dataset.sid);
     });
 
-    // Logout
     container.querySelector('#btnLogout').onclick = async () => {
         await account.deleteSession('current');
         window.location.reload();
     };
 
-    // Discord
     container.querySelector('#btnConnectDiscord').onclick = () => {
         const redirectUri = encodeURIComponent(window.location.origin);
         window.location.href = `https://discord.com/oauth2/authorize?client_id=${import.meta.env.VITE_DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=identify%20email`;
