@@ -198,3 +198,44 @@ input[type="email"], input[type="password"], input[type="text"] {
     justify-content: space-between;
     align-items: center;
 }
+
+/* Aggiungi queste righe in fondo al tuo style.css */
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #a953ec;
+    cursor: pointer;
+}
+
+.custom-file-input {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px dashed rgba(169, 83, 236, 0.4) !important;
+    padding: 20px !important;
+    cursor: pointer;
+}
+
+#overlay-content h3 {
+    margin-top: 0;
+    color: #a953ec;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+}
+
+/* Stile per i select dentro gli overlay */
+select {
+    width: 100%;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    appearance: none;
+}
+
+#main-overlay {
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+}
