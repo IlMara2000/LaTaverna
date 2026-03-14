@@ -1,4 +1,4 @@
-import { account, databases, storage } from '@services/appwrite.js'
+import { account, databases, storage } from '../services/appwrite.js' // Import relativo più sicuro per il build
 import { showSession } from './session.js'
 
 const DB_ID = '69a867cc0018c0a6d700';
@@ -18,8 +18,12 @@ export async function showDashboard(container, user = null) {
     const res = await databases.listDocuments(DB_ID, COL_SESSIONS);
     sessions = res.documents;
     
-    const fileRes = await storage.listFiles(BUCKET_ASSETS);
-    allFiles = fileRes.files;
+    // Recupero file con catch specifico per evitare crash totali
+    try {
+        const fileRes = await storage.listFiles(BUCKET_ASSETS);
+        allFiles = fileRes.files;
+    } catch (e) { console.warn("Storage non accessibile:", e); }
+
   } catch (err) { console.error("Errore fetch dati dashboard:", err); }
 
   renderDashboard(container, user, sessions);
@@ -74,9 +78,8 @@ function attachEvents(container, user, sessions, allFiles) {
     const closeOverlay = () => { overlay.style.display = 'none'; };
     hamburger.onclick = () => sidebar.classList.toggle('active');
 
-    // --- NUOVA GENERAZIONE SESSIONE ---
     container.querySelector('#btnNewSession').onclick = () => {
-        sidebar.classList.remove('active'); // Chiude la sidebar per farti vedere l'overlay
+        sidebar.classList.remove('active');
         overlay.style.display = 'flex';
         content.innerHTML = `
             <h3>✨ Nuova Sessione</h3>
@@ -117,7 +120,6 @@ function attachEvents(container, user, sessions, allFiles) {
                     }
                 }
 
-                // Qui passiamo finalmente l'attributo "name" che ci chiedeva Appwrite!
                 await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', {
                     name: name,
                     session_id: sid,
@@ -131,7 +133,6 @@ function attachEvents(container, user, sessions, allFiles) {
         container.querySelector('#cancelCreate').onclick = closeOverlay;
     };
 
-    // --- RE-INSERITI TASTI MANCANTI ---
     container.querySelector('#btnCharacter').onclick = () => {
         alert("Work in progress: Qui metteremo la scheda personaggio!");
         sidebar.classList.remove('active');
@@ -142,7 +143,6 @@ function attachEvents(container, user, sessions, allFiles) {
         sidebar.classList.remove('active');
     };
 
-    // --- LOGICA CARD E ASSETS RIMASTA INVARIATA ---
     container.querySelectorAll('.session-card').forEach(card => {
         let pressTimer;
         const sid = card.dataset.sid;
