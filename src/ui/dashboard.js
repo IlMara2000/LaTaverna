@@ -18,7 +18,6 @@ export async function showDashboard(container, user = null) {
     const res = await databases.listDocuments(DB_ID, COL_SESSIONS);
     sessions = res.documents;
     
-    // Recupero files dallo zaino (storage)
     const fileRes = await storage.listFiles(BUCKET_ASSETS);
     allFiles = fileRes.files;
   } catch (err) { console.error("Errore fetch dati dashboard:", err); }
@@ -52,7 +51,7 @@ function renderDashboard(container, user, sessions) {
                 <div class="session-card" data-sid="${s.session_id}" data-id="${s.$id}">
                     <div class="map-preview"></div>
                     <div class="session-info">
-                        <strong>TAVOLO: ${s.session_id}</strong>
+                        <strong>${s.name || s.session_id}</strong>
                         <span>🏰</span>
                     </div>
                 </div>
@@ -75,7 +74,6 @@ function attachEvents(container, user, sessions, allFiles) {
     const closeOverlay = () => { overlay.style.display = 'none'; };
     hamburger.onclick = () => sidebar.classList.toggle('active');
 
-    // --- GENERAZIONE SESSIONE CON OVERLAY (NOME + ASSETS) ---
     container.querySelector('#btnNewSession').onclick = () => {
         sidebar.classList.remove('active');
         overlay.style.display = 'flex';
@@ -83,7 +81,7 @@ function attachEvents(container, user, sessions, allFiles) {
             <h3>✨ Nuova Sessione</h3>
             <div class="form-group">
                 <label style="font-size:11px; color:#a953ec; font-weight:bold;">NOME SESSIONE</label>
-                <input type="text" id="newSid" placeholder="es. La Miniera Perduta" style="margin-top:5px; width:100%;">
+                <input type="text" id="newSessionName" placeholder="es. La Miniera Perduta" style="margin-top:5px; width:100%;">
             </div>
 
             <div style="text-align:left; margin-bottom:20px;">
@@ -107,38 +105,37 @@ function attachEvents(container, user, sessions, allFiles) {
         `;
 
         container.querySelector('#confirmCreate').onclick = async () => {
-            const sid = container.querySelector('#newSid').value || "TAVOLO-" + Math.floor(1000 + Math.random() * 9000);
+            const name = container.querySelector('#newSessionName').value || "Nuova Sessione";
+            const sid = "TAVOLO-" + Math.floor(1000 + Math.random() * 9000);
             const newFiles = container.querySelector('#quickFileInput').files;
 
             try {
-                // 1. Carica nuovi file se presenti
                 if (newFiles.length > 0) {
                     for (let file of newFiles) {
                         await storage.createFile(BUCKET_ASSETS, 'unique()', file);
                     }
                 }
 
-                // 2. Crea il documento sessione
                 await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', {
+                    name: name,
                     session_id: sid,
                     user_id: user.$id
                 });
 
-                alert(`Sessione ${sid} creata con successo!`);
+                alert(`Sessione "${name}" creata!`);
                 window.location.reload();
-            } catch (err) { alert("Errore durante la creazione: " + err.message); }
+            } catch (err) { alert("Errore creazione: " + err.message); }
         };
         container.querySelector('#cancelCreate').onclick = closeOverlay;
     };
 
-    // --- LOGICA CLICK (ENTRA) E LONG PRESS (MODIFICA) ---
     container.querySelectorAll('.session-card').forEach(card => {
         let pressTimer;
         const sid = card.dataset.sid;
 
         const start = () => {
             pressTimer = setTimeout(() => {
-                pressTimer = null; // Impedisce l'esecuzione del click normale
+                pressTimer = null;
                 openEdit(sid);
             }, 700);
         };
@@ -150,7 +147,7 @@ function attachEvents(container, user, sessions, allFiles) {
         card.ontouchend = cancel;
 
         card.onclick = () => {
-            if (pressTimer) { // Se il timer è ancora attivo, non era un long press
+            if (pressTimer) {
                 clearTimeout(pressTimer);
                 showSession(container, sid);
             }
@@ -169,7 +166,6 @@ function attachEvents(container, user, sessions, allFiles) {
         container.querySelector('#closeEdit').onclick = closeOverlay;
     }
 
-    // --- ASSETS (Zaino generico) ---
     container.querySelector('#btnAssets').onclick = () => {
         sidebar.classList.remove('active');
         overlay.style.display = 'flex';
