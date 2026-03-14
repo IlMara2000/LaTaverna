@@ -2,7 +2,8 @@
 body, html {
     margin: 0;
     padding: 0;
-    height: 100%;
+    width: 100%;
+    height: 100%; 
     font-family: 'Inter', sans-serif;
     background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
     color: white;
@@ -18,10 +19,9 @@ body, html {
     justify-content: center;
     z-index: 1000;
     background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
-    transition: opacity 0.5s ease, visibility 0.5s;
+    transition: opacity 0.5s ease;
 }
 
-/* Pulsante LA TAVERNA - Rimpicciolito e Rifinito */
 .hero-btn {
     padding: 14px 35px;
     font-size: 1.1rem;
@@ -35,37 +35,47 @@ body, html {
     cursor: pointer;
     box-shadow: 0 0 15px rgba(169, 83, 236, 0.2);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    animation: pulseGlow 3s infinite; /* Effetto battito soft */
+    animation: pulseGlow 3s infinite;
 }
 
 @keyframes pulseGlow {
-    0% { box-shadow: 0 0 15px rgba(169, 83, 236, 0.2); border-color: rgba(169, 83, 236, 0.5); }
+    0%, 100% { box-shadow: 0 0 15px rgba(169, 83, 236, 0.2); border-color: rgba(169, 83, 236, 0.5); }
     50% { box-shadow: 0 0 25px rgba(169, 83, 236, 0.5); border-color: rgba(169, 83, 236, 1); }
-    100% { box-shadow: 0 0 15px rgba(169, 83, 236, 0.2); border-color: rgba(169, 83, 236, 0.5); }
 }
 
 .hero-btn:hover {
     background: rgba(169, 83, 236, 0.2);
-    box-shadow: 0 0 35px rgba(169, 83, 236, 0.7);
     transform: translateY(-2px);
-    letter-spacing: 4px; /* Leggera espansione al passaggio */
+    letter-spacing: 4px;
 }
 
-.hero-btn:active {
-    transform: translateY(0) scale(0.96);
+/* Contenitore di App Content - Centratura Totale */
+#app-content {
+    position: fixed; /* Lo blocchiamo su tutto lo schermo */
+    inset: 0;
+    display: flex;
+    align-items: center;      /* Centra verticale */
+    justify-content: center;   /* Centra orizzontale */
+    padding: 20px;
+    box-sizing: border-box;
+    z-index: 1;
 }
 
-/* Glass Box per Login, Register e Dashboard */
+#ui {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+/* Glass Box */
 .glass-box {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 24px;
+    border-radius: 28px;
     padding: 40px;
-    width: 90%;
+    width: 100%;
     max-width: 380px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
     animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
@@ -76,7 +86,7 @@ body, html {
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Input e bottoni dentro la glass box */
+/* Form Elements */
 .form-group input {
     width: 100%;
     background: rgba(255, 255, 255, 0.05);
@@ -86,34 +96,17 @@ body, html {
     color: white;
     margin-bottom: 18px;
     box-sizing: border-box;
-    transition: all 0.3s ease;
-}
-
-.form-group input:focus {
-    outline: none;
-    border-color: #a953ec;
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 10px rgba(169, 83, 236, 0.2);
 }
 
 .btn-primary {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(135deg, #a953ec 0%, #7c2d12 100%); /* Gradiente scuro */
     background: #a953ec;
     border: none;
     border-radius: 12px;
     color: white;
     font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
     text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.btn-primary:hover { 
-    opacity: 0.9; 
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(169, 83, 236, 0.4);
+    cursor: pointer;
+    transition: 0.3s;
 }
