@@ -15,9 +15,8 @@ export async function setupDiscordRedirect(container) {
 
   try {
     // Recuperiamo i dati dalle variabili d'ambiente di Vite o usiamo valori di fallback
-    const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
-    const project = import.meta.env.VITE_APPWRITE_PROJECT || 'IL_TUO_PROJECT_ID';
-
+    const endpoint = import.meta.env.VITE_APPWRITE_ENDPOINT;
+    const project = import.meta.env.VITE_APPWRITE_PROJECT;
     const functionUrl = `${endpoint}/functions/verifyDiscord/executions`;
     
     const response = await fetch(functionUrl, {
