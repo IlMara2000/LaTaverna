@@ -12,15 +12,16 @@ export async function showDashboard(container, user = null) {
   }
 
   let sessions = [];
-  let allFiles = []; // Per recuperare i file già caricati nello zaino
+  let allFiles = []; 
 
   try {
     const res = await databases.listDocuments(DB_ID, COL_SESSIONS);
     sessions = res.documents;
-    // Qui potresti voler recuperare anche la lista file dal bucket o da una collezione dedicata
+    
+    // Recupero files dallo zaino (storage)
     const fileRes = await storage.listFiles(BUCKET_ASSETS);
     allFiles = fileRes.files;
-  } catch (err) { console.error("Errore fetch:", err); }
+  } catch (err) { console.error("Errore fetch dati dashboard:", err); }
 
   renderDashboard(container, user, sessions);
   attachEvents(container, user, sessions, allFiles);
@@ -31,7 +32,7 @@ function renderDashboard(container, user, sessions) {
     <button class="hamburger" id="hamburger">☰</button>
     
     <nav class="sidebar" id="sidebar">
-        <h2 style="font-size: 1.2rem; color: #a953ec; margin-bottom: 25px; text-align:center;">LaTaverna</h2>
+        <h2 style="font-size: 1.2rem; color: #a953ec; margin-bottom: 25px; text-align:center; letter-spacing: 2px;">LaTaverna</h2>
         <button class="sidebar-btn" id="btnNewSession">✨ Genera Sessione</button>
         <button class="sidebar-btn" id="btnAssets">📁 Assets & Docs</button>
         <button class="sidebar-btn" id="btnCharacter">🛡️ Crea Personaggio</button>
@@ -47,7 +48,7 @@ function renderDashboard(container, user, sessions) {
 
         <div class="session-list">
             <h3 style="font-size: 0.7rem; letter-spacing: 2px; color: #555; text-transform: uppercase;">Sessioni Attive</h3>
-            ${sessions.length === 0 ? '<p style="text-align:center; color:#444;">Nessun tavolo attivo</p>' : sessions.map(s => `
+            ${sessions.length === 0 ? '<p style="text-align:center; color:#444; margin-top:20px;">Nessun tavolo attivo</p>' : sessions.map(s => `
                 <div class="session-card" data-sid="${s.session_id}" data-id="${s.$id}">
                     <div class="map-preview"></div>
                     <div class="session-info">
@@ -74,7 +75,7 @@ function attachEvents(container, user, sessions, allFiles) {
     const closeOverlay = () => { overlay.style.display = 'none'; };
     hamburger.onclick = () => sidebar.classList.toggle('active');
 
-    // --- NUOVA GENERAZIONE SESSIONE CON OVERLAY ---
+    // --- GENERAZIONE SESSIONE CON OVERLAY (NOME + ASSETS) ---
     container.querySelector('#btnNewSession').onclick = () => {
         sidebar.classList.remove('active');
         overlay.style.display = 'flex';
@@ -82,7 +83,7 @@ function attachEvents(container, user, sessions, allFiles) {
             <h3>✨ Nuova Sessione</h3>
             <div class="form-group">
                 <label style="font-size:11px; color:#a953ec; font-weight:bold;">NOME SESSIONE</label>
-                <input type="text" id="newSid" placeholder="es. La Miniera Perduta" style="margin-top:5px;">
+                <input type="text" id="newSid" placeholder="es. La Miniera Perduta" style="margin-top:5px; width:100%;">
             </div>
 
             <div style="text-align:left; margin-bottom:20px;">
@@ -98,54 +99,61 @@ function attachEvents(container, user, sessions, allFiles) {
 
             <div class="form-group">
                 <p style="font-size:11px; color:#a953ec; font-weight:bold; margin-bottom:10px;">O CARICA NUOVI FILE ORA</p>
-                <input type="file" id="quickFileInput" multiple class="custom-file-input" style="font-size:12px;">
+                <input type="file" id="quickFileInput" multiple class="custom-file-input" style="font-size:12px; width:100%;">
             </div>
 
-            <button class="btn-primary" id="confirmCreate">CREA SESSIONE</button>
-            <button class="sidebar-btn" style="margin-top:10px; text-align:center;" id="cancelCreate">Annulla</button>
+            <button class="btn-primary" id="confirmCreate" style="width:100%;">CREA SESSIONE</button>
+            <button class="sidebar-btn" style="margin-top:10px; text-align:center; width:100%;" id="cancelCreate">Annulla</button>
         `;
 
         container.querySelector('#confirmCreate').onclick = async () => {
             const sid = container.querySelector('#newSid').value || "TAVOLO-" + Math.floor(1000 + Math.random() * 9000);
-            const selectedExistingFiles = Array.from(container.querySelectorAll('.file-link-checkbox:checked')).map(cb => cb.value);
             const newFiles = container.querySelector('#quickFileInput').files;
 
             try {
-                // 1. Crea la sessione
-                const sessionDoc = await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', {
-                    session_id: sid,
-                    user_id: user.$id
-                    // Qui potresti aggiungere un array 'assets' se lo hai previsto nello schema Appwrite
-                });
-
-                // 2. Carica eventuali nuovi file
+                // 1. Carica nuovi file se presenti
                 if (newFiles.length > 0) {
                     for (let file of newFiles) {
                         await storage.createFile(BUCKET_ASSETS, 'unique()', file);
-                        // Logica opzionale: salva il link file-sessione nel DB
                     }
                 }
 
-                alert(`Sessione ${sid} pronta!`);
+                // 2. Crea il documento sessione
+                await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', {
+                    session_id: sid,
+                    user_id: user.$id
+                });
+
+                alert(`Sessione ${sid} creata con successo!`);
                 window.location.reload();
-            } catch (err) { alert("Errore: " + err.message); }
+            } catch (err) { alert("Errore durante la creazione: " + err.message); }
         };
         container.querySelector('#cancelCreate').onclick = closeOverlay;
     };
 
-    // --- CLICK E LONG PRESS ---
+    // --- LOGICA CLICK (ENTRA) E LONG PRESS (MODIFICA) ---
     container.querySelectorAll('.session-card').forEach(card => {
         let pressTimer;
         const sid = card.dataset.sid;
 
-        const start = () => pressTimer = setTimeout(() => openEdit(sid), 700);
-        const cancel = () => clearTimeout(pressTimer);
+        const start = () => {
+            pressTimer = setTimeout(() => {
+                pressTimer = null; // Impedisce l'esecuzione del click normale
+                openEdit(sid);
+            }, 700);
+        };
+        const cancel = () => { if(pressTimer) clearTimeout(pressTimer); };
 
-        card.onmousedown = start; card.ontouchstart = start;
-        card.onmouseup = cancel; card.ontouchend = cancel;
+        card.onmousedown = start;
+        card.ontouchstart = start;
+        card.onmouseup = cancel;
+        card.ontouchend = cancel;
 
         card.onclick = () => {
-            if (pressTimer) showSession(container, sid);
+            if (pressTimer) { // Se il timer è ancora attivo, non era un long press
+                clearTimeout(pressTimer);
+                showSession(container, sid);
+            }
         };
     });
 
@@ -154,10 +162,11 @@ function attachEvents(container, user, sessions, allFiles) {
         content.innerHTML = `
             <h3>⚙️ Modifica Sessione</h3>
             <p style="font-size:13px; color:#aaa; margin-bottom:20px;">Stai modificando: <b>${sid}</b></p>
-            <button class="btn-primary">Allega Documenti dallo Zaino</button>
-            <button class="sidebar-btn" style="margin-top:10px; color:#ff4444; border-color:#ff4444;" id="btnDelete">Elimina Sessione</button>
-            <button class="sidebar-btn" style="margin-top:20px; text-align:center;" onclick="document.getElementById('main-overlay').style.display='none'">Chiudi</button>
+            <button class="btn-primary" style="width:100%;">Gestisci Allegati</button>
+            <button class="sidebar-btn" style="margin-top:10px; color:#ff4444; border-color:#ff4444; width:100%;" id="btnDelete">Elimina Sessione</button>
+            <button class="sidebar-btn" style="margin-top:20px; text-align:center; width:100%;" id="closeEdit">Chiudi</button>
         `;
+        container.querySelector('#closeEdit').onclick = closeOverlay;
     }
 
     // --- ASSETS (Zaino generico) ---
@@ -166,9 +175,9 @@ function attachEvents(container, user, sessions, allFiles) {
         overlay.style.display = 'flex';
         content.innerHTML = `
             <h3>🎒 Il Tuo Zaino</h3>
-            <div class="form-group"><input type="file" id="fileInput" class="custom-file-input"></div>
-            <button class="btn-primary" id="startUpload">CARICA NEL DATABASE</button>
-            <button class="sidebar-btn" style="margin-top:10px; text-align:center;" id="closeOv">Chiudi</button>
+            <div class="form-group"><input type="file" id="fileInput" class="custom-file-input" style="width:100%;"></div>
+            <button class="btn-primary" id="startUpload" style="width:100%;">CARICA NEL DATABASE</button>
+            <button class="sidebar-btn" style="margin-top:10px; text-align:center; width:100%;" id="closeOv">Chiudi</button>
         `;
         container.querySelector('#closeOv').onclick = closeOverlay;
     };
