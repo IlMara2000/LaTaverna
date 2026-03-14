@@ -54,7 +54,7 @@ function attachEvents(container) {
 
   container.querySelector('#btnConnectDiscord').onclick = () => {
     // Vite usa import.meta.env per le variabili d'ambiente
-    const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || 'INSERISCI_ID_QUI'
+    const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
     const redirectUri = encodeURIComponent(window.location.origin)
     const scope = encodeURIComponent('identify email')
     
