@@ -23,9 +23,8 @@ export async function showDashboard(container, user = null) {
 }
 
 function renderDashboard(container, user, sessions) {
-  // Reset scroll e layout per evitare sovrapposizioni
   container.style.overflowY = "auto";
-  container.style.alignItems = "flex-start"; // Allinea in alto per scroll mobile
+  container.style.alignItems = "flex-start";
   container.style.paddingTop = "80px";
 
   container.innerHTML = `
@@ -33,7 +32,6 @@ function renderDashboard(container, user, sessions) {
     
     <nav class="sidebar" id="sidebar">
         <h2 style="font-size: 1.2rem; color: #a953ec; margin-bottom: 30px; text-align:center;">MENU</h2>
-        <button class="sidebar-btn" id="btnConnectDiscord">🎮 Collega Discord</button>
         <button class="sidebar-btn" id="btnSettings">⚙️ Impostazioni</button>
         <div style="margin-top: 40px; text-align: center;">
             <button id="btnLogout" style="color: #ff4444; background: rgba(255,68,68,0.1); border: 1px solid #ff4444; border-radius: 8px; cursor: pointer; padding: 10px 20px; width: 100%;">Esci dalla Taverna</button>
@@ -75,7 +73,6 @@ function attachEvents(container) {
     const sidebar = container.querySelector('#sidebar');
     const hamburger = container.querySelector('#hamburger');
 
-    // Toggle Sidebar con prevenzione scroll
     hamburger.onclick = () => {
         sidebar.classList.toggle('active');
         document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : 'auto';
@@ -89,14 +86,4 @@ function attachEvents(container) {
         await account.deleteSession('current');
         window.location.reload();
     };
-
-// Cerca questa riga dentro attachEvents e sostituiscila
-container.querySelector('#btnConnectDiscord').onclick = () => {
-    // Usiamo Appwrite per gestire il collegamento. 
-    // Appwrite creerà l'URL corretto che Discord accetterà.
-    account.createOAuth2Session(
-        'discord', 
-        window.location.origin, // Dove tornare dopo il successo
-        window.location.origin  // Dove tornare se fallisce
-    );
-};
+}
