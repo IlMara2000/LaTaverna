@@ -4,13 +4,12 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@services': path.resolve(__dirname, 'src/services'),
-      '@ui': path.resolve(__dirname, 'src/ui'),
-      '@config': path.resolve(__dirname, 'config')
-    }
+      '@': path.resolve(__dirname, './src'),
+      '@ui': path.resolve(__dirname, './src/ui'),
+      '@services': path.resolve(__dirname, './src/services'),
+    },
   },
-  server: {
-    port: 5174
+  build: {
+    outDir: 'dist',
   }
 });
