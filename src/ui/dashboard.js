@@ -27,7 +27,7 @@ function renderDashboard(container, user, sessions) {
     <button class="hamburger" id="hamburger">☰</button>
     
     <nav class="sidebar" id="sidebar">
-        <h2 style="font-size: 1.2rem; color: #a953ec; margin-bottom: 25px; text-align:center;">TAVERNA</h2>
+        <h2 style="font-size: 1.2rem; color: #a953ec; margin-bottom: 25px; text-align:center;">LaTaverna</h2>
         <button class="sidebar-btn" id="btnNewSession">✨ Genera Sessione</button>
         <button class="sidebar-btn" id="btnAssets">📁 Assets & Docs</button>
         <button class="sidebar-btn" id="btnCharacter">🛡️ Crea Personaggio</button>
