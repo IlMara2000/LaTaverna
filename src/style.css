@@ -1,4 +1,32 @@
 /* ... (tieni il codice precedente fino a .btn-primary) ... */
+/* Ripristino tasto originale "LA TAVERNA" */
+.hero-btn {
+    padding: 16px 40px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: white; /* Scritta bianca */
+    background: rgba(169, 83, 236, 0.1); /* Sfondo viola scurissimo e trasparente */
+    border: 2px solid #a953ec; /* Bordo viola neon */
+    border-radius: 15px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(169, 83, 236, 0.4);
+    transition: all 0.3s ease;
+    animation: pulseGlow 3s infinite; /* Riattiva il battito di luce */
+}
+
+.hero-btn:hover {
+    background: #a953ec; /* Diventa viola pieno al passaggio */
+    box-shadow: 0 0 40px rgba(169, 83, 236, 0.8);
+    transform: scale(1.05);
+}
+
+/* Assicurati che questa animazione sia presente in fondo al file */
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 15px rgba(169, 83, 236, 0.3); border-color: rgba(169, 83, 236, 0.6); }
+    50% { box-shadow: 0 0 30px rgba(169, 83, 236, 0.6); border-color: rgba(169, 83, 236, 1); }
+}
 
 /* Sidebar Hamburger Menu */
 .sidebar {
