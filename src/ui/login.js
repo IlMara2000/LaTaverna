@@ -24,5 +24,38 @@ export function showLogin(container) {
         </form>
     </div>
   `
-  // ... (Tieni la tua logica onsubmit e onclick originale)
+
+  const msg = container.querySelector('#login-msg')
+  const form = container.querySelector('#login-form')
+
+  // --- LOGICA LOGIN EMAIL ---
+  form.onsubmit = async (e) => {
+    e.preventDefault()
+    const email = container.querySelector('#email').value
+    const password = container.querySelector('#password').value
+    msg.style.color = "#a953ec"
+    msg.textContent = "Verifica credenziali..."
+
+    try {
+      await account.createEmailPasswordSession(email, password)
+      const user = await account.get()
+      showDashboard(container, user)
+    } catch (err) {
+      msg.style.color = "#ff4444"
+      msg.textContent = "Errore: Credenziali errate"
+    }
+  }
+
+  // --- LOGICA DISCORD ---
+  container.querySelector('#discord-login').onclick = () => {
+    // Il redirect punta alla home. Appwrite gestirà il token nell'URL automaticamente.
+    const redirect = window.location.origin 
+    account.createOAuth2Session('discord', redirect, redirect)
+  }
+
+  // --- SPOSTAMENTO A REGISTRAZIONE ---
+  container.querySelector('#toRegister').onclick = (e) => {
+    e.preventDefault()
+    showRegister(container)
+  }
 }
