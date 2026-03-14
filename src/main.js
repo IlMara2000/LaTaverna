@@ -1,51 +1,58 @@
 // src/main.js
+import './style.css'; // Carichiamo il nuovo stile
 import { showLogin } from '@ui/login.js';
 import { showDashboard } from '@ui/dashboard.js';
 import { setupDiscordRedirect } from '@services/redirectDiscord.js';
 import { account } from '@services/appwrite.js';
 
 const uiContainer = document.getElementById('ui');
-const mainTitle = document.getElementById('main-title');
 
-/**
- * Funzione per pulire la schermata iniziale e mostrare l'interfaccia
- */
-function displayApp() {
-    if (mainTitle) mainTitle.classList.add('hidden');
-    if (uiContainer) uiContainer.style.display = 'block';
-}
+// Iniettiamo la struttura iniziale blindata
+document.body.innerHTML = `
+  <div id="hero-screen">
+    <button class="hero-btn">LA TAVERNA</button>
+  </div>
+  <div id="app-content" style="display:none; min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div id="ui"></div>
+  </div>
+`;
+
+const hero = document.getElementById('hero-screen');
+const appContent = document.getElementById('app-content');
+const ui = document.getElementById('ui');
 
 async function initApp() {
-    console.log("Inizializzazione La Taverna...");
+    console.log("Controllo sessione...");
     
     let user = null;
     try {
-        // Controlliamo se esiste una sessione Appwrite attiva
         user = await account.get(); 
-        console.log("Utente autenticato:", user.name);
     } catch (err) {
-        console.log("Nessun utente loggato.");
+        console.log("Sessione non trovata.");
     }
 
-    if (user && user.$id) {
-        // Se loggato, mostra la dashboard
-        showDashboard(uiContainer, user);
-    } else {
-        // Altrimenti mostra il form di login
-        showLogin(uiContainer);
-    }
+    // Gestione della transizione dopo il click
+    document.querySelector('.hero-btn').onclick = () => {
+        hero.style.opacity = '0';
+        hero.style.pointerEvents = 'none';
 
-    // Gestisce eventuali redirect da Discord (OAuth2)
-    setupDiscordRedirect(uiContainer);
-
-    // Nascondiamo il titolo "Loading" e mostriamo l'UI
-    displayApp();
+        setTimeout(() => {
+            hero.style.display = 'none';
+            appContent.style.display = 'flex'; // Mostra il contenitore principale
+            
+            if (user && user.$id) {
+                showDashboard(ui, user);
+            } else {
+                showLogin(ui);
+            }
+            
+            // Gestione redirect OAuth2
+            setupDiscordRedirect(ui);
+        }, 500);
+    };
 }
 
 // Avvio
 initApp().catch(err => {
-    console.error("Errore critico all'avvio:", err);
-    // In caso di errore critico mostriamo comunque il login per sicurezza
-    showLogin(uiContainer);
-    displayApp();
+    console.error("Errore critico:", err);
 });
