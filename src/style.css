@@ -1,12 +1,60 @@
-/* ... mantieni il tuo codice precedente ... */
+/* Reset e Basi */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body, html {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
+    color: white; overflow-x: hidden;
+}
 
-/* Session Card con Anteprima */
+/* Sidebar Corretta */
+.sidebar { 
+    position: fixed; top: 0; left: -280px; 
+    width: 260px; height: 100%; 
+    background: rgba(15, 6, 23, 0.95);
+    backdrop-filter: blur(20px);
+    transition: 0.3s ease; z-index: 3000;
+    padding: 80px 20px 20px 20px;
+    border-right: 1px solid rgba(169, 83, 236, 0.3);
+    display: flex; flex-direction: column;
+}
+.sidebar.active { left: 0; box-shadow: 10px 0 50px rgba(0,0,0,0.8); }
+
+/* Hamburger Menu */
+.hamburger {
+    position: fixed; top: 20px; left: 20px; z-index: 3100;
+    background: #a953ec; border: none; color: white;
+    width: 45px; height: 45px; border-radius: 12px;
+    font-size: 1.5rem; cursor: pointer;
+}
+
+/* Dashboard Layout */
+.dashboard-content {
+    width: 100%; max-width: 500px;
+    margin: 0 auto; padding: 80px 20px 40px 20px;
+}
+
+/* Bottoni Sidebar */
+.sidebar-btn {
+    width: 100%; padding: 14px 18px; margin-bottom: 12px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; color: white;
+    font-weight: 600; text-align: left;
+    cursor: pointer; transition: 0.2s;
+    display: block; 
+}
+.sidebar-btn:hover { background: rgba(169, 83, 236, 0.2); border-color: #a953ec; }
+
+/* Session Cards */
+.session-list { display: grid; gap: 20px; margin-top: 20px; }
+
 .session-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
+    border-radius: 20px; 
     overflow: hidden;
-    cursor: pointer;
+    cursor: pointer; 
     transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
 }
@@ -23,12 +71,11 @@
 
 .map-preview {
     width: 100%;
-    height: 100px;
-    background-image: url('https://img.freepik.com/free-photo/old-map-background-texture_23-2148995712.jpg');
-    background-size: cover;
-    background-position: center;
+    height: 120px; 
+    background: #1a0b2e url('https://img.freepik.com/free-photo/old-map-background-texture_23-2148995712.jpg') center/cover;
     position: relative;
-    opacity: 0.5;
+    opacity: 0.6; 
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 /* Griglia fittizia sopra l'anteprima */
@@ -41,9 +88,29 @@
     background-size: 20px 20px;
 }
 
-.session-info {
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.session-info { 
+    padding: 15px 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+/* Bottoni Primari */
+.btn-primary {
+    width: 100%; padding: 16px; background: #a953ec;
+    border: none; border-radius: 12px; color: white;
+    font-weight: 800; text-transform: uppercase; cursor: pointer;
+}
+
+/* Form Input */
+input[type="text"], input[type="password"], select {
+    width: 100%; padding: 14px; margin-bottom: 15px;
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px; color: white;
+}
+
+/* Overlay Glass */
+.glass-box {
+    background: rgba(20, 10, 30, 0.95); border: 1px solid rgba(169, 83, 236, 0.3);
+    border-radius: 28px; padding: 30px; width: 100%; max-width: 400px;
 }
