@@ -1,112 +1,106 @@
-/* Reset e Base */
-body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%; 
-    font-family: 'Inter', sans-serif;
-    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
-    color: white;
-    overflow: hidden;
+/* ... (tieni il codice precedente fino a .btn-primary) ... */
+
+/* Sidebar Hamburger Menu */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 260px;
+    height: 100%;
+    background: rgba(10, 5, 20, 0.95);
+    backdrop-filter: blur(20px);
+    z-index: 2000;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 80px 20px 20px;
+    border-right: 1px solid rgba(169, 83, 236, 0.2);
 }
 
-/* Schermata Iniziale Blindata */
-#hero-screen {
+.sidebar.active { left: 0; }
+
+.hamburger {
     position: fixed;
-    inset: 0;
+    top: 25px;
+    left: 25px;
+    z-index: 2100;
+    background: rgba(169, 83, 236, 0.1);
+    border: 1px solid rgba(169, 83, 236, 0.4);
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 1.2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
-    transition: opacity 0.5s ease;
+    transition: 0.3s;
 }
 
-.hero-btn {
-    padding: 14px 35px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: white;
-    background: rgba(169, 83, 236, 0.05);
-    border: 1px solid rgba(169, 83, 236, 0.5);
-    border-radius: 12px;
-    cursor: pointer;
-    box-shadow: 0 0 15px rgba(169, 83, 236, 0.2);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: pulseGlow 3s infinite;
-}
+.hamburger:hover { background: rgba(169, 83, 236, 0.3); }
 
-@keyframes pulseGlow {
-    0%, 100% { box-shadow: 0 0 15px rgba(169, 83, 236, 0.2); border-color: rgba(169, 83, 236, 0.5); }
-    50% { box-shadow: 0 0 25px rgba(169, 83, 236, 0.5); border-color: rgba(169, 83, 236, 1); }
-}
-
-.hero-btn:hover {
-    background: rgba(169, 83, 236, 0.2);
-    transform: translateY(-2px);
-    letter-spacing: 4px;
-}
-
-/* Contenitore di App Content - Centratura Totale */
-#app-content {
-    position: fixed; /* Lo blocchiamo su tutto lo schermo */
-    inset: 0;
+/* Dashboard Layout */
+.dashboard-content {
+    width: 100%;
+    max-width: 500px;
     display: flex;
-    align-items: center;      /* Centra verticale */
-    justify-content: center;   /* Centra orizzontale */
-    padding: 20px;
-    box-sizing: border-box;
-    z-index: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
 }
 
-#ui {
+.user-profile-header {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.session-list {
     width: 100%;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 15px;
 }
 
-/* Glass Box */
-.glass-box {
+/* Session Card */
+.session-card {
     background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 28px;
-    padding: 40px;
-    width: 100%;
-    max-width: 380px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(30px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* Form Elements */
-.form-group input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 14px;
-    border-radius: 12px;
-    color: white;
-    margin-bottom: 18px;
-    box-sizing: border-box;
-}
-
-.btn-primary {
-    width: 100%;
-    padding: 14px;
-    background: #a953ec;
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-weight: 700;
-    text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    overflow: hidden;
     cursor: pointer;
     transition: 0.3s;
+}
+
+.session-card:hover {
+    transform: translateY(-3px);
+    border-color: #a953ec;
+    background: rgba(169, 83, 236, 0.05);
+}
+
+.map-preview {
+    width: 100%;
+    height: 100px;
+    background-image: url('https://www.cartographersguild.com/attachment.php?attachmentid=101373&d=1510141019');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.5;
+    filter: saturate(0.5);
+}
+
+.session-info {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    text-align: left;
 }
