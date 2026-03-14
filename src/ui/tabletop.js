@@ -6,7 +6,6 @@ const COL_ID = 'tokens';
 export function showTabletop(container) {
     document.title = "LaTaverna - Tavolo da Gioco";
     
-    // Stile per Token e Pannello
     const style = document.createElement('style');
     style.innerHTML = `
         .token {
@@ -15,37 +14,53 @@ export function showTabletop(container) {
             cursor: move;
             pointer-events: auto;
             z-index: 100;
-            transition: transform 0.1s linear;
+            transition: border 0.3s ease, box-shadow 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 3px solid rgba(255,255,255,0.5);
+            border: 4px solid #a953ec;
             background-size: cover;
             background-position: center;
+            background-color: #222;
+        }
+        .token:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 15px rgba(169, 83, 236, 0.8);
         }
         .token-hp {
             position: absolute;
-            bottom: -20px;
-            background: rgba(0,0,0,0.8);
+            bottom: -22px;
+            background: rgba(10, 5, 20, 0.9);
             color: #00ff88;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
             white-space: nowrap;
+            border: 1px solid rgba(255,255,255,0.1);
+            pointer-events: none;
         }
         #token-editor {
             position: fixed;
             right: 20px;
             top: 20px;
-            width: 200px;
-            background: rgba(15, 6, 23, 0.95);
+            width: 220px;
+            background: rgba(15, 6, 23, 0.98);
             border: 1px solid #a953ec;
-            padding: 15px;
-            border-radius: 12px;
+            padding: 20px;
+            border-radius: 16px;
             color: white;
             display: none;
             z-index: 10000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
         }
+        .editor-field { margin-bottom: 15px; }
+        .editor-field label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; }
+        .editor-field input { 
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid #333; 
+            color: white; padding: 8px; border-radius: 6px; outline: none;
+        }
+        .editor-field input:focus { border-color: #a953ec; }
     `;
     document.head.appendChild(style);
 
@@ -53,18 +68,30 @@ export function showTabletop(container) {
         <div class="vtt-container" style="display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #050505; position: fixed; top: 0; left: 0;">
             
             <div id="token-editor">
-                <h3 id="edit-name" style="margin-top:0">Nome</h3>
-                <label>HP Attuali</label>
-                <input type="number" id="edit-hp" style="width:100%; margin-bottom:10px;">
-                <label>Colore Cerchio</label>
-                <input type="color" id="edit-color" style="width:100%; margin-bottom:15px;">
-                <button id="save-token" class="btn" style="padding: 5px; font-size:12px;">Salva Modifiche</button>
-                <button id="close-editor" style="background:none; border:none; color:gray; cursor:pointer; display:block; margin-top:10px; width:100%">Chiudi</button>
+                <h3 id="edit-name" style="margin: 0 0 20px 0; color: #a953ec;">Nome Token</h3>
+                
+                <div class="editor-field">
+                    <label>Immagine (URL)</label>
+                    <input type="text" id="edit-asset" placeholder="https://image.url/png">
+                </div>
+
+                <div class="editor-field">
+                    <label>HP Attuali</label>
+                    <input type="number" id="edit-hp">
+                </div>
+
+                <div class="editor-field">
+                    <label>Colore Aura</label>
+                    <input type="color" id="edit-color">
+                </div>
+
+                <button id="save-token" class="btn" style="width:100%; background: #a953ec; padding: 10px;">Salva</button>
+                <button id="close-editor" style="background:none; border:none; color:gray; cursor:pointer; margin-top:15px; width:100%; font-size:12px;">Annulla</button>
             </div>
 
             <div id="map-viewport" style="flex: 1; position: relative; overflow: hidden; cursor: grab;">
                 <div id="map-container" style="position: absolute; transform-origin: 0 0;">
-                    <img src="https://www.cartographersguild.com/attachment.php?attachmentid=101373&d=1510141019" style="display: block; pointer-events: none; min-width: 2500px;" />
+                    <img src="https://www.cartographersguild.com/attachment.php?attachmentid=101373&d=1510141019" style="display: block; pointer-events: none; min-width: 3000px;" />
                     <div id="token-layer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></div>
                 </div>
             </div>
@@ -82,28 +109,30 @@ async function initTabletopLogic() {
     
     let scale = 1, translateX = 0, translateY = 0, currentTokenId = null;
 
-    // --- LOGICA EDITING ---
     const openEditor = (doc) => {
         currentTokenId = doc.$id;
         document.getElementById('edit-name').textContent = doc.name;
         document.getElementById('edit-hp').value = doc.hp_current;
         document.getElementById('edit-color').value = doc.color || '#a953ec';
+        document.getElementById('edit-asset').value = doc.asset_id || '';
         editor.style.display = 'block';
     };
 
     document.getElementById('save-token').onclick = async () => {
         const hp = parseInt(document.getElementById('edit-hp').value);
         const color = document.getElementById('edit-color').value;
+        const asset = document.getElementById('edit-asset').value;
+        
         await databases.updateDocument(DB_ID, COL_ID, currentTokenId, { 
             hp_current: hp, 
-            color: color 
+            color: color,
+            asset_id: asset
         });
         editor.style.display = 'none';
     };
 
     document.getElementById('close-editor').onclick = () => editor.style.display = 'none';
 
-    // --- RENDERING ---
     function renderToken(doc) {
         let el = document.getElementById(`token-${doc.$id}`);
         if (!el) {
@@ -118,18 +147,25 @@ async function initTabletopLogic() {
         el.style.width = `${doc.size}px`;
         el.style.height = `${doc.size}px`;
         el.style.borderColor = doc.color || '#a953ec';
+        el.style.boxShadow = `0 0 10px ${doc.color}55`; // Aura sfumata
         el.style.left = `${doc.x}px`;
         el.style.top = `${doc.y}px`;
-        document.getElementById(`hp-${doc.$id}`).textContent = `${doc.name}: ${doc.hp_current}/${doc.hp_max}`;
         
-        if(doc.asset_id) el.style.backgroundImage = `url(${doc.asset_id})`;
+        // Se c'è un URL immagine, lo applichiamo
+        if(doc.asset_id) {
+            el.style.backgroundImage = `url('${doc.asset_id}')`;
+        } else {
+            el.style.backgroundImage = 'none';
+        }
+
+        document.getElementById(`hp-${doc.$id}`).textContent = `${doc.name}: ${doc.hp_current}/${doc.hp_max}`;
     }
 
     function setupTokenDrag(el, doc) {
         let isDragging = false;
         
         el.onmousedown = (e) => {
-            if(e.button === 0) { // Click sinistro per drag
+            if(e.button === 0) {
                 isDragging = true;
                 e.stopPropagation();
             }
@@ -158,21 +194,19 @@ async function initTabletopLogic() {
         });
     }
 
-    // --- REALTIME ---
     client.subscribe(`databases.${DB_ID}.collections.${COL_ID}.documents`, res => {
         if (res.events.some(e => e.includes('.update') || e.includes('.create'))) {
             renderToken(res.payload);
         }
     });
 
-    // Zoom & Pan
     viewport.onwheel = (e) => {
         e.preventDefault();
         scale = e.deltaY < 0 ? scale * 1.1 : scale / 1.1;
+        scale = Math.min(Math.max(0.2, scale), 4);
         mapContainer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     };
 
-    // Caricamento iniziale
     const res = await databases.listDocuments(DB_ID, COL_ID);
     res.documents.forEach(renderToken);
 }
