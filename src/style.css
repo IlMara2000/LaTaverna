@@ -1,188 +1,88 @@
-/* RESET BASE */
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Reset e Base */
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
+    color: white;
+    overflow: hidden;
 }
 
-html,
-body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
+/* Schermata Iniziale Blindata */
+#hero-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
+    transition: opacity 0.5s ease, visibility 0.5s;
 }
 
-
-/* BACKGROUND PRINCIPALE */
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-
-  /* background taverna */
-  background: radial-gradient(circle at top, #2a1a12 0%, #120a07 100%);
-  
-  color: #ffffff;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-
-  min-height: 100vh;
-  min-width: 100vw;
-
-  overflow-x: hidden;
+.hero-btn {
+    padding: 20px 60px;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: white;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid #a953ec;
+    border-radius: 15px;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(169, 83, 236, 0.4);
+    transition: all 0.3s ease;
 }
 
-
-/* ROOT APP */
-
-#app {
-  width: 100%;
-  max-width: 420px;
-  padding: 30px;
+.hero-btn:hover {
+    background: #a953ec;
+    box-shadow: 0 0 40px rgba(169, 83, 236, 0.8);
+    transform: scale(1.05);
 }
 
-
-/* CARD LOGIN / REGISTER */
-
-form,
-.dashboard-container {
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(8px);
-
-  border-radius: 12px;
-
-  padding: 30px;
-
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+/* Glass Box per Login, Register e Dashboard */
+.glass-box {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 40px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.8s ease-out;
 }
 
-
-/* HEADER */
-
-.login-header {
-  text-align: center;
-  margin-bottom: 20px;
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.login-header h2 {
-  font-size: 26px;
-}
-
-
-/* FORM */
-
-.form-group {
-  margin-bottom: 18px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 14px;
-  color: #ccc;
-}
-
+/* Input e bottoni dentro la glass box */
 .form-group input {
-  width: 100%;
-  padding: 10px;
-
-  border-radius: 6px;
-  border: none;
-
-  background: #1a1a1a;
-  color: white;
-
-  outline: none;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px;
+    border-radius: 10px;
+    color: white;
+    margin-bottom: 15px;
+    box-sizing: border-box;
 }
 
-.form-group input:focus {
-  background: #222;
+.btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: #a953ec;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
 }
 
-
-/* CHECKBOX */
-
-.checkbox-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 15px;
-}
-
-
-/* BOTTONI */
-
-.btn {
-  width: 100%;
-  padding: 12px;
-
-  border: none;
-  border-radius: 6px;
-
-  background: #b66a2a;
-  color: white;
-
-  font-weight: bold;
-  cursor: pointer;
-
-  transition: background 0.2s;
-}
-
-.btn:hover {
-  background: #d4833c;
-}
-
-
-/* SOCIAL BUTTON */
-
-.social-btn {
-  width: 100%;
-  padding: 12px;
-
-  border-radius: 6px;
-  border: none;
-
-  background: #5865f2;
-  color: white;
-
-  cursor: pointer;
-}
-
-.social-btn:hover {
-  background: #6c78ff;
-}
-
-
-/* DIVIDER */
-
-.divider {
-  text-align: center;
-  margin: 16px 0;
-  position: relative;
-}
-
-.divider span {
-  font-size: 12px;
-  color: #aaa;
-}
-
-
-/* FOOTER */
-
-.footer {
-  margin-top: 16px;
-  text-align: center;
-  font-size: 14px;
-}
-
-.footer a {
-  color: #ffb36b;
-  cursor: pointer;
-}
-
-.footer a:hover {
-  text-decoration: underline;
-}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
