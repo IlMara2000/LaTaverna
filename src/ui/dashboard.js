@@ -1,5 +1,5 @@
 import { account, databases, storage } from '@services/appwrite.js'
-import { showSession } from './session.js' // Assicurati di creare questo file
+import { showSession } from './session.js'
 
 const DB_ID = '69a867cc0018c0a6d700';
 const COL_SESSIONS = 'tokens'; 
@@ -12,13 +12,18 @@ export async function showDashboard(container, user = null) {
   }
 
   let sessions = [];
+  let allFiles = []; // Per recuperare i file già caricati nello zaino
+
   try {
     const res = await databases.listDocuments(DB_ID, COL_SESSIONS);
-    sessions = res.documents; // Prendiamo i documenti interi per avere gli ID
-  } catch (err) { console.error("Errore fetch sessioni:", err); }
+    sessions = res.documents;
+    // Qui potresti voler recuperare anche la lista file dal bucket o da una collezione dedicata
+    const fileRes = await storage.listFiles(BUCKET_ASSETS);
+    allFiles = fileRes.files;
+  } catch (err) { console.error("Errore fetch:", err); }
 
   renderDashboard(container, user, sessions);
-  attachEvents(container, user, sessions);
+  attachEvents(container, user, sessions, allFiles);
 }
 
 function renderDashboard(container, user, sessions) {
@@ -60,7 +65,7 @@ function renderDashboard(container, user, sessions) {
   `;
 }
 
-function attachEvents(container, user, sessions) {
+function attachEvents(container, user, sessions, allFiles) {
     const sidebar = container.querySelector('#sidebar');
     const hamburger = container.querySelector('#hamburger');
     const overlay = container.querySelector('#main-overlay');
@@ -69,16 +74,63 @@ function attachEvents(container, user, sessions) {
     const closeOverlay = () => { overlay.style.display = 'none'; };
     hamburger.onclick = () => sidebar.classList.toggle('active');
 
-    // --- GENERAZIONE SESSIONE REALE ---
-    container.querySelector('#btnNewSession').onclick = async () => {
-        const sid = "TAVOLO-" + Math.floor(1000 + Math.random() * 9000);
-        try {
-            await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', {
-                session_id: sid,
-                user_id: user.$id // Assicurati che questo attributo esista su Appwrite
-            });
-            window.location.reload();
-        } catch (err) { alert("Errore creazione: " + err.message); }
+    // --- NUOVA GENERAZIONE SESSIONE CON OVERLAY ---
+    container.querySelector('#btnNewSession').onclick = () => {
+        sidebar.classList.remove('active');
+        overlay.style.display = 'flex';
+        content.innerHTML = `
+            <h3>✨ Nuova Sessione</h3>
+            <div class="form-group">
+                <label style="font-size:11px; color:#a953ec; font-weight:bold;">NOME SESSIONE</label>
+                <input type="text" id="newSid" placeholder="es. La Miniera Perduta" style="margin-top:5px;">
+            </div>
+
+            <div style="text-align:left; margin-bottom:20px;">
+                <p style="font-size:11px; color:#a953ec; font-weight:bold; margin-bottom:10px;">ALLEGA FILE DALLO ZAINO</p>
+                <div style="max-height:100px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; border: 1px solid rgba(255,255,255,0.1);">
+                    ${allFiles.length > 0 ? allFiles.map(file => `
+                        <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:13px;">
+                            <input type="checkbox" class="file-link-checkbox" value="${file.$id}"> ${file.name}
+                        </label>
+                    `).join('') : '<p style="font-size:11px; color:#555;">Zaino vuoto.</p>'}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <p style="font-size:11px; color:#a953ec; font-weight:bold; margin-bottom:10px;">O CARICA NUOVI FILE ORA</p>
+                <input type="file" id="quickFileInput" multiple class="custom-file-input" style="font-size:12px;">
+            </div>
+
+            <button class="btn-primary" id="confirmCreate">CREA SESSIONE</button>
+            <button class="sidebar-btn" style="margin-top:10px; text-align:center;" id="cancelCreate">Annulla</button>
+        `;
+
+        container.querySelector('#confirmCreate').onclick = async () => {
+            const sid = container.querySelector('#newSid').value || "TAVOLO-" + Math.floor(1000 + Math.random() * 9000);
+            const selectedExistingFiles = Array.from(container.querySelectorAll('.file-link-checkbox:checked')).map(cb => cb.value);
+            const newFiles = container.querySelector('#quickFileInput').files;
+
+            try {
+                // 1. Crea la sessione
+                const sessionDoc = await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', {
+                    session_id: sid,
+                    user_id: user.$id
+                    // Qui potresti aggiungere un array 'assets' se lo hai previsto nello schema Appwrite
+                });
+
+                // 2. Carica eventuali nuovi file
+                if (newFiles.length > 0) {
+                    for (let file of newFiles) {
+                        await storage.createFile(BUCKET_ASSETS, 'unique()', file);
+                        // Logica opzionale: salva il link file-sessione nel DB
+                    }
+                }
+
+                alert(`Sessione ${sid} pronta!`);
+                window.location.reload();
+            } catch (err) { alert("Errore: " + err.message); }
+        };
+        container.querySelector('#cancelCreate').onclick = closeOverlay;
     };
 
     // --- CLICK E LONG PRESS ---
@@ -86,15 +138,11 @@ function attachEvents(container, user, sessions) {
         let pressTimer;
         const sid = card.dataset.sid;
 
-        const start = () => {
-            pressTimer = setTimeout(() => openEdit(sid), 700);
-        };
+        const start = () => pressTimer = setTimeout(() => openEdit(sid), 700);
         const cancel = () => clearTimeout(pressTimer);
 
-        card.onmousedown = start;
-        card.ontouchstart = start;
-        card.onmouseup = cancel;
-        card.ontouchend = cancel;
+        card.onmousedown = start; card.ontouchstart = start;
+        card.onmouseup = cancel; card.ontouchend = cancel;
 
         card.onclick = () => {
             if (pressTimer) showSession(container, sid);
@@ -112,27 +160,19 @@ function attachEvents(container, user, sessions) {
         `;
     }
 
-    // --- LOGICA ASSETS ---
+    // --- ASSETS (Zaino generico) ---
     container.querySelector('#btnAssets').onclick = () => {
         sidebar.classList.remove('active');
         overlay.style.display = 'flex';
         content.innerHTML = `
             <h3>🎒 Il Tuo Zaino</h3>
             <div class="form-group"><input type="file" id="fileInput" class="custom-file-input"></div>
-            <div style="text-align:left; margin-bottom:20px;">
-                <p style="font-size:13px; color:#a953ec; font-weight:bold; margin-bottom:10px;">Collega a:</p>
-                <div style="max-height:100px; overflow-y:auto; background:rgba(0,0,0,0.3); padding:10px; border-radius:8px;">
-                    ${sessions.map(s => `<label style="display:flex; align-items:center; gap:10px; margin-bottom:8px;"><input type="checkbox" name="link-session" value="${s.session_id}"> ${s.session_id}</label>`).join('')}
-                </div>
-            </div>
-            <button class="btn-primary" id="startUpload">CARICA FILE</button>
-            <button class="sidebar-btn" style="margin-top:10px; text-align:center;" id="closeOv">Annulla</button>
+            <button class="btn-primary" id="startUpload">CARICA NEL DATABASE</button>
+            <button class="sidebar-btn" style="margin-top:10px; text-align:center;" id="closeOv">Chiudi</button>
         `;
         container.querySelector('#closeOv').onclick = closeOverlay;
     };
 
-    // --- ACCOUNT & LOGOUT (Mantieni esistenti) ---
-    container.querySelector('#btnAccount').onclick = () => { /* ... logica account ... */ };
     container.querySelector('#btnLogout').onclick = async () => {
         await account.deleteSession('current');
         window.location.reload();
