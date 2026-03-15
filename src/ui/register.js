@@ -1,9 +1,7 @@
 import { account } from '../services/appwrite.js';
+// IMPORTANTE: Importiamo ID da appwrite per generare un ID univoco reale
+import { ID } from 'appwrite';
 
-/**
- * Visualizza la schermata di Registrazione
- * @param {HTMLElement} container - Il contenitore UI principale
- */
 export function showRegister(container) {
     document.title = "LaTaverna - Nuovo Viandante";
     
@@ -14,14 +12,14 @@ export function showRegister(container) {
             <div id="reg-msg" style="margin-bottom:15px; font-size:14px; min-height:22px; text-align:center; font-weight:600;"></div>
             
             <form id="register-form">
-                <div class="form-group">
-                    <input type="text" id="reg-username" placeholder="Username" required autocomplete="username" />
+                <div class="form-group" style="margin-bottom:15px;">
+                    <input type="text" id="reg-username" placeholder="Username" required autocomplete="username" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--accent); background:rgba(0,0,0,0.2); color:white;" />
                 </div>
-                <div class="form-group">
-                    <input type="email" id="reg-email" placeholder="Email" required autocomplete="email" />
+                <div class="form-group" style="margin-bottom:15px;">
+                    <input type="email" id="reg-email" placeholder="Email" required autocomplete="email" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--accent); background:rgba(0,0,0,0.2); color:white;" />
                 </div>
-                <div class="form-group">
-                    <input type="password" id="reg-password" placeholder="Password (min. 8 caratteri)" required minlength="8" autocomplete="new-password" />
+                <div class="form-group" style="margin-bottom:15px;">
+                    <input type="password" id="reg-password" placeholder="Password (min. 8 caratteri)" required minlength="8" autocomplete="new-password" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--accent); background:rgba(0,0,0,0.2); color:white;" />
                 </div>
                 
                 <div style="margin: 20px 0; display:flex; align-items:center; gap:12px; padding: 0 5px;">
@@ -31,43 +29,39 @@ export function showRegister(container) {
                     </label>
                 </div>
                 
-                <button type="submit" class="btn-primary" id="reg-submit">CREA ACCOUNT</button>
-                
-                <div style="text-align:center; margin-top:30px; font-size:14px; color:#ccc;">
-                    Hai già un account? <a id="toLogin" style="color:#a953ec; cursor:pointer; font-weight:bold; text-decoration:none; margin-left:5px;">Torna al Login</a>
-                </div>
+                <button type="submit" class="btn-primary" id="reg-submit" style="width:100%;">CREA ACCOUNT</button>
             </form>
+            
+            <div style="text-align:center; margin-top:30px; font-size:14px; color:#ccc;">
+                Hai già un account? <span id="toLogin" style="color:#a953ec; cursor:pointer; font-weight:bold; margin-left:5px;">Torna al Login</span>
+            </div>
         </div>
     `;
 
     const msg = container.querySelector('#reg-msg');
     const form = container.querySelector('#register-form');
+    const btn = container.querySelector('#reg-submit');
 
-    // --- LOGICA REGISTRAZIONE ---
     form.onsubmit = async (e) => {
         e.preventDefault();
         const username = container.querySelector('#reg-username').value.trim();
         const email = container.querySelector('#reg-email').value.trim();
         const password = container.querySelector('#reg-password').value;
-        const btn = container.querySelector('#reg-submit');
 
         msg.style.color = "#a953ec";
         msg.textContent = "Forgiando il tuo profilo...";
         btn.disabled = true;
-        btn.style.opacity = "0.7";
+        btn.style.opacity = "0.5";
 
         try {
-            // 1. Creazione Account su Appwrite
-            // Il quarto parametro 'username' risolve l'errore "Missing required attribute name"
-            await account.create('unique()', email, password, username);
+            // FIX CRITICO: ID.unique() crea un ID vero, non la parola 'unique()'
+            await account.create(ID.unique(), email, password, username);
             
             msg.style.color = "#00ff88";
             msg.textContent = "Account creato! Entriamo...";
 
-            // 2. Login Automatico (Best Practice per Mobile)
+            // Esegue il login automatico dopo la registrazione
             await account.createEmailPasswordSession(email, password);
-            
-            // Ricarichiamo per attivare la dashboard nel main.js
             setTimeout(() => window.location.reload(), 1000);
 
         } catch (err) {
@@ -75,19 +69,15 @@ export function showRegister(container) {
             btn.style.opacity = "1";
             msg.style.color = "#ff4444";
             
-            // Gestione errori specifica
-            if (err.type === 'user_already_exists') {
+            if (err.message.includes('already exists')) {
                 msg.textContent = "Questa email è già registrata.";
             } else {
                 msg.textContent = "Errore: " + err.message;
             }
-            console.error("Register Error:", err);
         }
     };
 
-    // --- RITORNO AL LOGIN (Import Dinamico) ---
-    container.querySelector('#toLogin').onclick = async (e) => {
-        e.preventDefault();
+    container.querySelector('#toLogin').onclick = async () => {
         const { showLogin } = await import('./login.js');
         showLogin(container);
     };
