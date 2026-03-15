@@ -3,12 +3,13 @@ import { showSession } from './session.js';
 
 const DB_ID = '69a867cc0018c0a6d700';
 const COL_SESSIONS = 'tokens'; 
-const BUCKET_ASSETS = 'assets_bucket'; 
+const BUCKET_ASSETS = 'vtt_assets'; 
 
 /**
- * Funzione principale Dashboard
+ * Inizializzazione Dashboard: Recupera i dati e renderizza l'interfaccia
  */
 export async function showDashboard(container, user = null) {
+  // Controllo sessione utente se non passato
   if (!user) {
     try { 
         user = await account.get(); 
@@ -22,19 +23,22 @@ export async function showDashboard(container, user = null) {
   let sessions = [];
 
   try {
-    // Recupero sessioni esistenti
+    // Recupero delle sessioni dal database
     const res = await databases.listDocuments(DB_ID, COL_SESSIONS);
     sessions = res.documents;
   } catch (err) { 
-      console.error("Errore recupero sessioni:", err); 
+      console.error("Errore nel recupero delle sessioni:", err); 
   }
 
+  // 1. Renderizziamo la struttura HTML
   renderDashboard(container, user, sessions);
+  
+  // 2. Colleghiamo tutti gli eventi (Sidebar, Bottoni, Click)
   attachDashboardEvents(container, user, sessions);
 }
 
 /**
- * Rendering Grafico
+ * Renderizza l'HTML della Dashboard
  */
 function renderDashboard(container, user, sessions) {
   container.innerHTML = `
@@ -59,14 +63,14 @@ function renderDashboard(container, user, sessions) {
             <h3 style="margin-bottom:20px; font-size:0.8rem; opacity:0.5; letter-spacing:3px; padding:0 15px; text-transform:uppercase;">Le tue avventure</h3>
             <div class="sessions-grid" style="display:grid; gap:20px; padding:0 15px;">
                 ${sessions.length === 0 ? `
-                    <div class="glass-box" style="text-align:center; padding:50px 20px; border-style: dashed;">
-                        <p style="opacity:0.6; font-style:italic;">Il tavolo è vuoto... Inizia una nuova saga!</p>
+                    <div class="glass-box" style="text-align:center; padding:50px 20px; border: 1px dashed rgba(169, 83, 236, 0.4);">
+                        <p style="opacity:0.6; font-style:italic;">Nessuna saga iniziata... Crea il tuo primo tavolo!</p>
                     </div>
                 ` : sessions.map(s => `
                     <div class="session-card glass-box" data-sid="${s.session_id}" style="cursor:pointer;">
                         <div class="map-preview" style="background-image:url('${s.map_url || ''}'); background-color:#1a0b2e; height:100px;"></div>
                         <div style="padding:15px;">
-                            <h4 style="font-weight:800; text-transform:uppercase; margin-bottom:4px;">${s.name}</h4>
+                            <h4 style="font-weight:800; text-transform:uppercase; margin-bottom:4px; font-size:14px;">${s.name}</h4>
                             <p style="font-size:10px; opacity:0.5; letter-spacing:1px;">ID: ${s.session_id}</p>
                         </div>
                     </div>
@@ -76,13 +80,13 @@ function renderDashboard(container, user, sessions) {
     </div>
 
     <div id="overlay" class="overlay">
-        <div class="glass-box" id="overlay-content" style="max-width:350px;"></div>
+        <div class="glass-box" id="overlay-content" style="max-width:380px; width:90%;"></div>
     </div>
   `;
 }
 
 /**
- * Gestione Eventi e Navigazione
+ * Gestione degli eventi interattivi
  */
 function attachDashboardEvents(container, user, sessions) {
     const sidebar = container.querySelector('#sidebar');
@@ -92,11 +96,11 @@ function attachDashboardEvents(container, user, sessions) {
 
     const closeOverlay = () => { overlay.style.display = 'none'; };
 
-    // Toggle Sidebar
+    // --- SIDEBAR LOGIC ---
     hamburger.onclick = () => sidebar.classList.toggle('active');
 
-    // Chiudi sidebar cliccando fuori (Mobile fix)
-    document.addEventListener('click', (e) => {
+    // Chiusura sidebar cliccando fuori (fondamentale per Safari/iOS)
+    document.addEventListener('pointerdown', (e) => {
         if (sidebar.classList.contains('active') && !sidebar.contains(e.target) && e.target !== hamburger) {
             sidebar.classList.remove('active');
         }
@@ -105,9 +109,15 @@ function attachDashboardEvents(container, user, sessions) {
     // --- NAVIGAZIONE: PERSONAGGI ---
     container.querySelector('#btnCharacters').onclick = async () => {
         sidebar.classList.remove('active');
-        // Import dinamico del file che abbiamo creato prima
         const { showCharacters } = await import('./characters.js');
         showCharacters(container);
+    };
+
+    // --- NAVIGAZIONE: LO ZAINO (ASSETS) ---
+    container.querySelector('#btnAssets').onclick = async () => {
+        sidebar.classList.remove('active');
+        const { showAssets } = await import('./assets.js');
+        showAssets(container);
     };
 
     // --- NAVIGAZIONE: NUOVA SESSIONE ---
@@ -115,15 +125,18 @@ function attachDashboardEvents(container, user, sessions) {
         sidebar.classList.remove('active');
         overlay.style.display = 'flex';
         content.innerHTML = `
-            <h3 style="margin-bottom:20px; text-align:center; letter-spacing:1px;">✨ NUOVO TAVOLO</h3>
-            <input type="text" id="newSessionName" placeholder="Nome dell'avventura..." style="margin-bottom:15px;" />
-            <button class="btn-primary" id="confirmCreate">INIZIA</button>
-            <button class="sidebar-btn" id="cancelCreate" style="background:transparent; text-align:center; margin-top:10px;">ANNULLA</button>
+            <h3 style="margin-bottom:20px; text-align:center; letter-spacing:1px; font-weight:900;">✨ NUOVO TAVOLO</h3>
+            <div class="form-group">
+                <input type="text" id="newSessionName" placeholder="Nome dell'avventura..." style="width:100%;" />
+            </div>
+            <button class="btn-primary" id="confirmCreate" style="margin-top:15px;">INIZIA LA SAGA</button>
+            <button class="sidebar-btn" id="cancelCreate" style="background:transparent; text-align:center; margin-top:10px; border:none; color:rgba(255,255,255,0.5);">ANNULLA</button>
         `;
 
         container.querySelector('#confirmCreate').onclick = async () => {
             const nameValue = container.querySelector('#newSessionName').value.trim() || "Nuova Sessione";
             const sid = "TAVOLO-" + Math.floor(1000 + Math.random() * 9000);
+            
             try {
                 await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', {
                     name: nameValue,
@@ -131,25 +144,25 @@ function attachDashboardEvents(container, user, sessions) {
                     user_id: user.$id
                 });
                 window.location.reload();
-            } catch (err) { alert("Errore: " + err.message); }
+            } catch (err) { 
+                alert("Errore nella creazione: " + err.message); 
+            }
         };
         container.querySelector('#cancelCreate').onclick = closeOverlay;
     };
 
-    // --- APERTURA SESSIONE ---
+    // --- APERTURA TAVOLO DA GIOCO ---
     container.querySelectorAll('.session-card').forEach(card => {
         card.onclick = () => showSession(container, card.dataset.sid);
     });
 
     // --- LOGOUT ---
     container.querySelector('#btnLogout').onclick = async () => {
-        await account.deleteSession('current');
-        window.location.reload();
-    };
-
-    // --- LO ZAINO (Placeholder per ora) ---
-    container.querySelector('#btnAssets').onclick = () => {
-        alert("Lo Zaino degli Assets sarà disponibile a breve!");
-        sidebar.classList.remove('active');
+        try {
+            await account.deleteSession('current');
+            window.location.reload();
+        } catch (err) {
+            window.location.reload();
+        }
     };
 }
