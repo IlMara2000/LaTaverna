@@ -1,59 +1,63 @@
-import { account } from '../services/appwrite.js';
-import { showDashboard } from './dashboard.js';
+import { account } from '@services/appwrite.js'
+import { showDashboard } from '@ui/dashboard.js'
+import { showRegister } from '@ui/register.js'
 
-export function showLogin(container) {
-  document.title = "LaTaverna - Login";
-  container.innerHTML = `
-    <div class="glass-box">
-        <h2 style="text-align:center; margin-bottom:25px; letter-spacing:2px;">ACCEDI</h2>
-        <div id="login-msg" style="margin-bottom:15px; font-size:14px; min-height:20px; text-align:center;"></div>
-        <form id="login-form">
-            <div class="form-group">
-                <input type="email" id="email" placeholder="Email" required autocomplete="email" />
-            </div>
-            <div class="form-group">
-                <input type="password" id="password" placeholder="Password" required autocomplete="current-password" />
-            </div>
-            <button type="submit" class="btn-primary">ENTRA</button>
-            <div style="text-align:center; margin: 20px 0; color: rgba(255,255,255,0.2); font-size: 11px;">OPPURE</div>
-            <button type="button" id="discord-login" style="width:100%; padding:12px; background:#5865F2; border:none; border-radius:12px; color:white; font-weight:bold; cursor:pointer;">Login con Discord</button>
-            <div style="text-align:center; margin-top:25px; font-size:14px; color:#ccc;">
-                Nuovo qui? <a id="toRegister" style="color:#a953ec; cursor:pointer; font-weight:bold;">Registrati</a>
-            </div>
-        </form>
-    </div>
-  `;
+export function showLogin(container){
 
-  const msg = container.querySelector('#login-msg');
-  const form = container.querySelector('#login-form');
+document.title="LaTaverna - Login"
 
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    const email = container.querySelector('#email').value.trim();
-    const password = container.querySelector('#password').value;
-    msg.style.color = "#a953ec";
-    msg.textContent = "Verifica credenziali...";
+container.innerHTML=`
 
-    try {
-      // Login
-      await account.createEmailPasswordSession(email, password);
-      const user = await account.get();
-      showDashboard(container, user);
-    } catch (err) {
-      msg.style.color = "#ff4444";
-      msg.textContent = "Errore: Credenziali errate";
-    }
-  };
+<div class="glass-box">
 
-  // Discord Login Fix per l'errore Project Not Found
-  container.querySelector('#discord-login').onclick = () => {
-    const redirect = window.location.origin; 
-    account.createOAuth2Session('discord', redirect, redirect);
-  };
+<h2>ACCEDI</h2>
 
-  container.querySelector('#toRegister').onclick = async (e) => {
-    e.preventDefault();
-    const { showRegister } = await import('./register.js');
-    showRegister(container);
-  };
+<div id="login-msg"></div>
+
+<form id="login-form">
+
+<input type="email" id="email" placeholder="Email" required>
+
+<input type="password" id="password" placeholder="Password" required>
+
+<button class="btn">Accedi</button>
+
+</form>
+
+<div class="divider"><span>oppure</span></div>
+
+<button id="btn-register" class="btn-alt">Registrati</button>
+
+</div>
+
+`
+
+const form=document.getElementById('login-form')
+
+form.addEventListener('submit',async e=>{
+
+e.preventDefault()
+
+try{
+
+await account.createEmailPasswordSession(
+email.value,
+password.value
+)
+
+const user=await account.get()
+
+showDashboard(container,user)
+
+}catch(err){
+
+document.getElementById('login-msg').innerText=err.message
+
+}
+
+})
+
+document.getElementById('btn-register')
+.onclick=()=>showRegister(container)
+
 }
