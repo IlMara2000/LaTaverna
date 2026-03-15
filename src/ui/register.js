@@ -39,18 +39,18 @@ export function showRegister(container) {
 
     try {
       msg.style.color = "#a953ec";
-      msg.textContent = "Creazione account in corso...";
+      msg.textContent = "Creazione account...";
       
-      // 1. Crea l'utente
+      // Correzione: Passo username come quarto parametro (name)
       await account.create('unique()', email, password, username);
       
-      // 2. Esegui il login automatico (Best practice)
+      // Login automatico immediato
       await account.createEmailPasswordSession(email, password);
       
       msg.style.color = "#00ff88";
-      msg.textContent = "Benvenuto viandante! Entriamo...";
+      msg.textContent = "Registrazione completata!";
       
-      setTimeout(() => window.location.reload(), 1500);
+      setTimeout(() => window.location.reload(), 1000);
     } catch (err) {
       msg.style.color = "#ff4444";
       msg.textContent = "Errore: " + err.message;
