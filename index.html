@@ -1,47 +1,66 @@
 <!DOCTYPE html>
 <html lang="it">
-
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+    <meta name="theme-color" content="#0f0617">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<meta charset="UTF-8">
+    <title>LA TAVERNA</title>
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="stylesheet" href="./style.css?v=2">
 
-<meta name="theme-color" content="#0f0617">
+    <style>
+        /* Reset critico per bloccare zoom e interazioni browser indesiderate */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation; /* Blocca il doppio tocco per lo zoom */
+        }
 
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden; /* Blocca lo scroll orizzontale */
+            background-color: #0f0617;
+            user-select: none; /* Impedisce la selezione del testo involontaria */
+            -webkit-user-select: none;
+        }
 
-<title>LA TAVERNA</title>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            /* Forza lo scroll solo verticale e fluido */
+            overflow-y: auto;
+            overscroll-behavior-y: contain; 
+        }
 
-<link rel="stylesheet" href="/src/style.css">
+        .hidden { 
+            opacity: 0; 
+            pointer-events: none; 
+            transform: scale(0.8); 
+            display: none !important; 
+        }
 
-<style>
-.hidden{
-opacity:0;
-pointer-events:none;
-transform:scale(.8);
-display:none!important;
-}
-</style>
-
+        #ui {
+            width: 100%;
+            max-width: 400px;
+            padding-bottom: env(safe-area-inset-bottom); /* Spazio per le gesture di iPhone */
+        }
+    </style>
 </head>
-
 <body>
 
-<div id="hero-screen">
-<button class="hero-btn">LA TAVERNA</button>
-</div>
+    <button id="main-title" class="hero-btn">LA TAVERNA</button>
 
-<div id="app-content" class="hidden">
+    <div id="ui"></div>
 
-<div id="ui"></div>
-
-</div>
-
-<script type="module" src="/src/main.js"></script>
+    <script type="module" src="/src/main.js?v=2"></script>
 
 </body>
-
 </html>
