@@ -1,10 +1,11 @@
-import { account, databases } from '../services/appwrite.js';
+import { account, databases, APPWRITE_CONFIG, ID } from '../services/appwrite.js';
 import { showSession } from './session.js';
 import { showCharacters } from './characters.js';
 import { showAssets } from './zaino.js';
 
-const DB_ID = '69a867cc0018c0a6d700';
-const COL_SESSIONS = 'tokens';
+// Usiamo la configurazione centralizzata per evitare errori di ID
+const DB_ID = APPWRITE_CONFIG.dbId;
+const COL_SESSIONS = APPWRITE_CONFIG.collections.tokens;
 
 export async function showDashboard(container, user = null) {
     if (!user) {
@@ -16,7 +17,9 @@ export async function showDashboard(container, user = null) {
     try {
         const res = await databases.listDocuments(DB_ID, COL_SESSIONS);
         sessions = res.documents;
-    } catch (err) { console.error("Errore sessioni:", err); }
+    } catch (err) { 
+        console.error("Errore sessioni:", err); 
+    }
 
     container.innerHTML = `
         <button class="hamburger" id="hamburger">☰</button>
@@ -84,10 +87,21 @@ export async function showDashboard(container, user = null) {
         content.querySelector('#confCreate').onclick = async () => {
             const n = document.getElementById('newSessName').value || "Nuova Sessione";
             const sid = "TAVOLO-" + Math.floor(Math.random()*9999);
+            
             try {
-                await databases.createDocument(DB_ID, COL_SESSIONS, 'unique()', { name:n, session_id:sid, user_id:user.$id });
+                // FIX: Inseriamo x e y per soddisfare i requisiti della collezione
+                await databases.createDocument(DB_ID, COL_SESSIONS, ID.unique(), { 
+                    name: n, 
+                    session_id: sid, 
+                    user_id: user.$id,
+                    x: 0, // Obbligatorio come da tuo errore nel video
+                    y: 0  // Obbligatorio come da tuo errore nel video
+                });
                 window.location.reload();
-            } catch(e) { alert(e.message); }
+            } catch(e) { 
+                console.error("Errore creazione:", e);
+                alert("Errore: " + e.message); 
+            }
         };
     };
 }
