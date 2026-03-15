@@ -1,54 +1,74 @@
-import './style.css'
+// src/main.js
+import './style.css';
+import { showLogin } from './ui/login.js'; // Uso percorsi relativi standard
+import { showDashboard } from './ui/dashboard.js';
+import { setupDiscordRedirect } from './services/redirectDiscord.js';
+import { account } from './services/appwrite.js';
 
-import { account } from '@services/appwrite.js'
-import { setupDiscordRedirect } from '@services/redirectDiscord.js'
+// Selezioniamo gli elementi già presenti nel tuo index.html
+const mainTitle = document.getElementById('main-title');
+const uiContainer = document.getElementById('ui');
 
-import { showLogin } from '@ui/login.js'
-import { showDashboard } from '@ui/dashboard.js'
+async function initApp() {
+    /**
+     * 1. GESTIONE DISCORD (Priorità Alta)
+     * Se l'URL contiene parametri di Discord, dobbiamo gestirli subito.
+     */
+    await setupDiscordRedirect(uiContainer);
 
-const heroScreen = document.getElementById('hero-screen')
-const heroBtn = document.querySelector('.hero-btn')
-
-const appContent = document.getElementById('app-content')
-const ui = document.getElementById('ui')
-
-async function initApp(){
-
-    await setupDiscordRedirect(ui)
-
-    let user = null
-
-    try{
-
-        user = await account.get()
-
-    }catch(err){
-
-        console.log("Utente non loggato")
-
+    /**
+     * 2. CONTROLLO SESSIONE SILENZIOSO
+     * Verifichiamo se l'utente è già loggato appena si apre la pagina.
+     */
+    let user = null;
+    try {
+        user = await account.get();
+        console.log("Viandante riconosciuto:", user.name);
+    } catch (err) {
+        console.log("Nessun utente rilevato all'avvio.");
     }
 
-    if(user){
+    /**
+     * 3. LOGICA DEL TASTO "LA TAVERNA"
+     * Gestisce l'ingresso nell'app con effetto transizione.
+     */
+    if (mainTitle) {
+        mainTitle.onclick = async () => {
+            // Blocca tocchi multipli durante l'animazione
+            mainTitle.style.pointerEvents = 'none';
+            
+            // Effetto dissolvenza tasto (usando la classe del tuo CSS)
+            mainTitle.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            mainTitle.style.opacity = '0';
+            mainTitle.style.transform = 'scale(1.1)';
 
-        showDashboard(ui,user)
+            setTimeout(() => {
+                mainTitle.style.display = 'none';
+                
+                // Entrata fluida dell'interfaccia UI
+                uiContainer.style.opacity = '0';
+                uiContainer.style.display = 'block';
+                
+                if (user && user.$id) {
+                    // Se loggato (anche via Discord), vai in Dashboard
+                    showDashboard(uiContainer, user);
+                } else {
+                    // Altrimenti mostra il modulo di accesso
+                    showLogin(uiContainer);
+                }
 
-    }else{
-
-        showLogin(ui)
-
+                // Animazione di comparsa del box UI
+                setTimeout(() => {
+                    uiContainer.style.transition = 'opacity 0.5s ease';
+                    uiContainer.style.opacity = '1';
+                }, 50);
+                
+            }, 500);
+        };
     }
-
 }
 
-heroBtn.addEventListener('click',()=>{
-
-    heroScreen.classList.add('hidden')
-
-    appContent.classList.remove('hidden')
-
-    appContent.style.visibility="visible"
-    appContent.style.opacity="1"
-
-    initApp()
-
-})
+// Avvio con gestione errori globale
+initApp().catch(err => {
+    console.error("Errore fatale nella Taverna:", err);
+});
