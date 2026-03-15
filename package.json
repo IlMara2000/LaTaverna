@@ -1,7 +1,7 @@
 {
   "name": "lataverna",
-  "version": "1.0.0",
   "private": true,
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,14 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "appwrite": "^14.0.0",
-    "@vercel/analytics": "^1.0.0",
-    "@vercel/speed-insights": "^1.0.0"
+    "appwrite": "^16.0.0"
   },
   "devDependencies": {
-    "vite": "^5.2.0",
-    "autoprefixer": "^10.4.19",
-    "postcss": "^8.4.38",
-    "tailwindcss": "^3.4.3"
+    "vite": "^5.4.0"
   }
 }
