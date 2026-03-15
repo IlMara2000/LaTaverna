@@ -4,13 +4,13 @@ export function showRegister(container) {
     container.innerHTML = `
         <div class="glass-box">
             <h2 style="text-align:center; margin-bottom:25px; font-weight:900;">REGISTRATI</h2>
-            <div id="reg-msg" style="margin-bottom:15px; text-align:center; font-weight:600;"></div>
+            <div id="reg-msg" style="margin-bottom:15px; text-align:center; font-weight:600; min-height:20px;"></div>
             
             <form id="register-form">
-                <input type="text" id="reg-username" placeholder="Username" required style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid var(--accent); background:rgba(0,0,0,0.2); color:white;" />
-                <input type="email" id="reg-email" placeholder="Email" required style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid var(--accent); background:rgba(0,0,0,0.2); color:white;" />
-                <input type="password" id="reg-password" placeholder="Password (min. 8)" required minlength="8" style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid var(--accent); background:rgba(0,0,0,0.2); color:white;" />
-                <button type="submit" class="btn-primary" id="reg-submit" style="width:100%;">CREA ACCOUNT</button>
+                <input type="text" id="reg-username" placeholder="Username" required style="width:100%; padding:14px; margin-bottom:15px; border-radius:12px; border:1px solid var(--accent); background:rgba(0,0,0,0.3); color:white;" />
+                <input type="email" id="reg-email" placeholder="Email" required style="width:100%; padding:14px; margin-bottom:15px; border-radius:12px; border:1px solid var(--accent); background:rgba(0,0,0,0.3); color:white;" />
+                <input type="password" id="reg-password" placeholder="Password (min. 8)" required minlength="8" style="width:100%; padding:14px; margin-bottom:20px; border-radius:12px; border:1px solid var(--accent); background:rgba(0,0,0,0.3); color:white;" />
+                <button type="submit" class="btn-primary" id="reg-submit" style="width:100%;">CREA PROFILO</button>
             </form>
             
             <div style="text-align:center; margin-top:30px; font-size:14px;">
@@ -24,18 +24,22 @@ export function showRegister(container) {
 
     form.onsubmit = async (e) => {
         e.preventDefault();
-        const user = container.querySelector('#reg-username').value;
-        const email = container.querySelector('#reg-email').value;
-        const pass = container.querySelector('#reg-password').value;
+        const username = container.querySelector('#reg-username').value.trim();
+        const email = container.querySelector('#reg-email').value.trim();
+        const password = container.querySelector('#reg-password').value;
+
+        msg.style.color = "var(--accent)";
+        msg.textContent = "Creazione in corso...";
 
         try {
-            // FIX: Usiamo ID.unique() importato correttamente
-            await account.create(ID.unique(), email, pass, user);
-            await account.createEmailPasswordSession(email, pass);
-            window.location.reload();
+            // Usa ID.unique() correttamente importato
+            await account.create(ID.unique(), email, password, username);
+            await account.createEmailPasswordSession(email, password);
+            window.location.reload(); 
         } catch (err) {
+            console.error("Reg fail:", err);
             msg.style.color = "#ff4444";
-            msg.textContent = "Errore: " + err.message;
+            msg.textContent = err.message;
         }
     };
 
