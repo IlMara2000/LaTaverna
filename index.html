@@ -1,28 +1,47 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-    <meta name="theme-color" content="#0f0617">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <title>LA TAVERNA</title>
+<meta charset="UTF-8">
 
-    <link rel="stylesheet" href="./style.css?v=2">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-    <style>
-        /* Lascio qui solo il reset base pre-caricamento dell'app */
-        .hidden { opacity: 0; pointer-events: none; transform: scale(0.8); display: none !important; }
-    </style>
+<meta name="theme-color" content="#0f0617">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<title>LA TAVERNA</title>
+
+<link rel="stylesheet" href="/src/style.css">
+
+<style>
+.hidden{
+opacity:0;
+pointer-events:none;
+transform:scale(.8);
+display:none!important;
+}
+</style>
+
 </head>
-<body style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh;">
 
-    <button id="main-title" class="hero-btn">LA TAVERNA</button>
+<body>
 
-    <div id="ui" style="width:100%; max-width:400px;"></div>
+<div id="hero-screen">
+<button class="hero-btn">LA TAVERNA</button>
+</div>
 
-    <script type="module" src="/src/main.js?v=2"></script>
+<div id="app-content" class="hidden">
+
+<div id="ui"></div>
+
+</div>
+
+<script type="module" src="/src/main.js"></script>
 
 </body>
+
 </html>
