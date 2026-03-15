@@ -1,231 +1,92 @@
-/* =========================================
-   RESET E BASE
-   ========================================= */
-* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-body {
-    font-family: 'Inter', sans-serif;
-    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%);
-    background-attachment: fixed;
-    color: white;
-    min-height: 100vh;
-    overflow-x: hidden;
-}
-
-/* =========================================
-   NAVIGAZIONE (SIDEBAR E HAMBURGER)
-   ========================================= */
-.sidebar {
-    position: fixed; top: 0; left: -100%;
-    width: 280px; height: 100%;
-    background: #140620;
-    box-shadow: 10px 0 30px rgba(0,0,0,0.5);
-    z-index: 9000;
-    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: 30px 20px;
-    display: flex; flex-direction: column;
-}
-.sidebar.active { left: 0; }
-
-.sidebar-logo { 
-    color: #a953ec; 
-    font-size: 1.5rem;
-    font-weight: 900;
-    margin-bottom: 40px; 
-    text-align: center; 
-    letter-spacing: 4px;
-    text-transform: uppercase;
-}
-
-.hamburger {
-    position: fixed; top: 20px; left: 20px;
-    background: #a953ec; border: none; color: white;
-    width: 45px; height: 45px; border-radius: 12px;
-    font-size: 1.5rem; z-index: 8000; cursor: pointer;
-    box-shadow: 0 4px 15px rgba(169, 83, 236, 0.4);
-}
-
-/* =========================================
-   DASHBOARD E CARDS
-   ========================================= */
-.dashboard-content { width: 90%; max-width: 500px; margin: 0 auto; padding-top: 100px; padding-bottom: 40px; }
-
-.section-title {
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-    color: #a953ec;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-    opacity: 0.8;
-}
-
-.session-card {
-    background: rgba(255,255,255,0.05); 
-    border-radius: 20px;
-    overflow: hidden; 
-    margin-bottom: 20px; 
-    border: 1px solid rgba(255,255,255,0.1);
-    transition: transform 0.2s;
-}
-.session-card:active { transform: scale(0.98); }
-
-.map-preview { 
-    height: 140px; 
-    background: #1a0b2e url('https://img.freepik.com/free-photo/old-map-background-texture_23-2148995712.jpg') center/cover; 
-    opacity: 0.7;
-}
-
-.session-info { padding: 18px; display: flex; justify-content: space-between; align-items: center; }
-
-/* =========================================
-   INPUT E BOTTONI
-   ========================================= */
-input[type="text"], input[type="password"], input[type="email"], select, textarea {
-    width: 100%; padding: 15px; margin-top: 8px;
-    background: rgba(255,255,255,0.08) !important;
-    border: 1px solid rgba(169, 83, 236, 0.4);
-    border-radius: 12px; color: white !important;
-    font-size: 16px; outline: none;
-}
-
-.btn-primary {
-    background: #a953ec; color: white; border: none;
-    padding: 16px; border-radius: 14px; width: 100%;
-    font-weight: 800; cursor: pointer; margin-top: 15px;
-    text-transform: uppercase; letter-spacing: 1px;
-}
-
-.sidebar-btn {
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-    color: white; padding: 14px; border-radius: 12px; margin-bottom: 12px;
-    text-align: left; cursor: pointer; transition: 0.2s; font-weight: 600;
-}
-.sidebar-btn:hover { background: rgba(169, 83, 236, 0.2); border-color: #a953ec; }
-
-.logout-btn {
-    color: #ff4444; background: rgba(255,68,68,0.1);
-    border: 1px solid #ff4444; padding: 12px; border-radius: 10px; cursor: pointer;
-    margin-top: auto;
-}
-
-/* =========================================
-   NUOVA SEZIONE: CONFIGURAZIONE PERSONAGGIO
-   ========================================= */
-.char-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 colonne per le stats */
-    gap: 12px;
-    margin: 20px 0;
-}
-
-.stat-box {
-    background: rgba(169, 83, 236, 0.1);
-    border: 1px solid rgba(169, 83, 236, 0.3);
-    padding: 12px;
-    border-radius: 15px;
-    text-align: center;
-}
-
-.stat-box label {
-    display: block;
-    font-size: 0.65rem;
-    color: #a953ec;
-    font-weight: 800;
-    margin-bottom: 5px;
-    text-transform: uppercase;
-}
-
-.stat-box input {
-    background: transparent !important;
-    border: none !important;
-    text-align: center;
-    font-size: 1.5rem;
-    font-weight: 900;
-    padding: 0;
-    margin: 0;
-}
-
-.char-header {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 25px;
-}
-
-.char-avatar-upload {
-    width: 80px;
-    height: 80px;
-    background: rgba(255,255,255,0.1);
-    border: 2px dashed #a953ec;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    cursor: pointer;
-}
-
-.char-info-main { flex-grow: 1; }
-
-/* Progress Bar per HP/XP */
-.progress-container {
-    width: 100%;
-    height: 8px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 10px;
-    margin: 10px 0;
-    overflow: hidden;
-}
-.progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #a953ec, #6d28d9);
-    width: 50%; /* Dinamico */
-}
-
-/* =========================================
-   OVERLAY E MODALI
-   ========================================= */
-.overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
-    z-index: 10000; align-items: center; justify-content: center; padding: 20px;
-}
-
-.glass-box { 
-    background: rgba(28, 8, 40, 0.95); 
-    border: 1px solid #a953ec; 
-    padding: 30px; 
-    border-radius: 28px; 
-    width: 100%; 
-    max-width: 400px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-/* Hero Button Iniziale */
-.hero-btn {
-    padding: 20px 40px;
-    font-size: 1.5rem;
-    font-weight: 900;
-    letter-spacing: 5px;
-    text-transform: uppercase;
-    color: white;
-    background: rgba(169, 83, 236, 0.1);
-    border: 3px solid #a953ec;
-    border-radius: 20px;
-    cursor: pointer;
-    box-shadow: 0 0 20px rgba(169, 83, 236, 0.4);
-    transition: 0.3s;
-}
-.hero-btn:hover { background: #a953ec; transform: scale(1.05); }
-
-html,body{
-height:100%;
-min-height:100dvh;
-}
-
 body{
-background-attachment:fixed;
-overscroll-behavior:none;
+
+margin:0;
+
+display:flex;
+align-items:center;
+justify-content:center;
+
+background:#0f0617;
+
+color:white;
+
+font-family:system-ui;
+
+}
+
+.hero-btn{
+
+font-size:34px;
+
+padding:30px 60px;
+
+border-radius:20px;
+
+background:#a953ec;
+
+color:white;
+
+border:none;
+
+cursor:pointer;
+
+}
+
+.hidden{
+display:none;
+}
+
+.glass-box{
+
+padding:35px;
+
+background:rgba(255,255,255,0.05);
+
+border-radius:16px;
+
+width:340px;
+
+}
+
+input{
+
+width:100%;
+
+padding:12px;
+
+margin-bottom:12px;
+
+}
+
+button{
+
+width:100%;
+
+padding:12px;
+
+margin-top:10px;
+
+}
+
+.dashboard{
+
+width:360px;
+
+}
+
+#map{
+
+width:100%;
+height:400px;
+
+background:#111;
+
+margin:20px 0;
+
+}
+
+.dice-panel{
+
+text-align:center;
+
 }
