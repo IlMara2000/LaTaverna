@@ -219,3 +219,13 @@ input[type="text"], input[type="password"], input[type="email"], select, textare
     transition: 0.3s;
 }
 .hero-btn:hover { background: #a953ec; transform: scale(1.05); }
+
+html,body{
+height:100%;
+min-height:100dvh;
+}
+
+body{
+background-attachment:fixed;
+overscroll-behavior:none;
+}
