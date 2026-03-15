@@ -1,7 +1,7 @@
 import { account, databases } from '../services/appwrite.js';
 import { showSession } from './session.js';
 import { showCharacters } from './characters.js';
-import { showAssets } from './assets.js';
+import { showAssets } from './zaino.js';
 
 const DB_ID = '69a867cc0018c0a6d700';
 const COL_SESSIONS = 'tokens';
