@@ -1,8 +1,7 @@
-import { showLogin } from './login.js'
-import { account } from '@services/appwrite.js'
+import { account } from '../services/appwrite.js';
 
 export function showRegister(container) {
-  document.title = "LaTaverna - Registrati"
+  document.title = "LaTaverna - Registrati";
   container.innerHTML = `
     <div class="glass-box">
         <h2 style="text-align:center; margin-bottom:25px; letter-spacing:2px;">REGISTRATI</h2>
@@ -15,7 +14,7 @@ export function showRegister(container) {
                 <input type="email" id="reg-email" placeholder="Email" required />
             </div>
             <div class="form-group">
-                <input type="password" id="reg-password" placeholder="Password" required />
+                <input type="password" id="reg-password" placeholder="Password" required minlength="8" />
             </div>
             <div style="margin-bottom:20px; display:flex; align-items:center; gap:10px;">
                 <input type="checkbox" id="gdpr" required />
@@ -27,39 +26,40 @@ export function showRegister(container) {
             </div>
         </form>
     </div>
-  `
+  `;
 
-  const msg = container.querySelector('#reg-msg')
-  const form = container.querySelector('#register-form')
+  const msg = container.querySelector('#reg-msg');
+  const form = container.querySelector('#register-form');
 
-  // LOGICA REGISTRAZIONE
   form.onsubmit = async (e) => {
-    e.preventDefault()
-    const username = container.querySelector('#reg-username').value.trim()
-    const email = container.querySelector('#reg-email').value.trim()
-    const password = container.querySelector('#reg-password').value
+    e.preventDefault();
+    const username = container.querySelector('#reg-username').value.trim();
+    const email = container.querySelector('#reg-email').value.trim();
+    const password = container.querySelector('#reg-password').value;
 
     try {
-      msg.style.color = "#a953ec"
-      msg.textContent = "Creazione account in corso..."
+      msg.style.color = "#a953ec";
+      msg.textContent = "Creazione account in corso...";
       
-      // Creazione su Appwrite
-      await account.create('unique()', email, password, username)
+      // 1. Crea l'utente
+      await account.create('unique()', email, password, username);
       
-      msg.style.color = "#00ff88"
-      msg.textContent = "Account creato! Reindirizzamento..."
+      // 2. Esegui il login automatico (Best practice)
+      await account.createEmailPasswordSession(email, password);
       
-      // Dopo 1.5 secondi torna al login per permettere l'accesso
-      setTimeout(() => showLogin(container), 1500)
+      msg.style.color = "#00ff88";
+      msg.textContent = "Benvenuto viandante! Entriamo...";
+      
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
-      msg.style.color = "#ff4444"
-      msg.textContent = "Errore: " + err.message
+      msg.style.color = "#ff4444";
+      msg.textContent = "Errore: " + err.message;
     }
-  }
+  };
 
-  // TASTO PER TORNARE AL LOGIN (Sistemato)
-  container.querySelector('#toLogin').onclick = (e) => {
-    e.preventDefault()
-    showLogin(container)
-  }
+  container.querySelector('#toLogin').onclick = async (e) => {
+    e.preventDefault();
+    const { showLogin } = await import('./login.js');
+    showLogin(container);
+  };
 }
