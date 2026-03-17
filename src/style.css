@@ -1,82 +1,180 @@
 /* =========================================
-   1. STRUTTURA & SFONDO TAVERNA
+   1. VARIABILI TEMA (AMETISTA & VIOLA PROFONDO)
+   ========================================= */
+:root {
+    --bg-deep: #0a0e17;
+    --bg-core: #1e0b36;
+    --neon-glow: #d946ef;
+    --glass-bg: rgba(30, 11, 54, 0.45); /* Effetto soffuso ametista */
+    --glass-border: rgba(217, 70, 239, 0.2);
+    --glass-shadow: rgba(0, 0, 0, 0.6);
+}
+
+/* =========================================
+   2. STRUTTURA & SFONDO TAVERNA (BLOCCATO)
    ========================================= */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    width: 100vw;
+    height: 100vh;
+    height: 100svh; /* Altezza sicura per mobile */
+    overflow: hidden; /* Impedisce scroll o deformazioni indesiderate */
+    background-color: var(--bg-deep);
 }
 
 body {
     font-family: 'Inter', -apple-system, sans-serif;
-    /* Usiamo il gradiente scuro uniforme che avevamo per Neumorfismo */
-    background: radial-gradient(circle at center, #1e0b36 0%, #0a0e17 100%) no-repeat fixed;
+    background: radial-gradient(circle at center, var(--bg-core) 0%, var(--bg-deep) 100%) no-repeat fixed;
     color: white;
-    overflow: hidden; 
-    width: 100vw;
-    height: 100vh;
+    /* Centratura assoluta del contenuto della pagina */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* =========================================
-   2. IL SIGILLO (CENTRATURA ASSOLUTA)
+   3. IL SIGILLO (CENTRATURA & IMMUNITÀ)
    ========================================= */
 .auth-wrapper, .landing-container {
     width: 100%;
-    height: 100svh; /* Altezza sicura per mobile */
+    height: 100%;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
+    padding: 20px;
+}
+
+/* IL BOX GLASSED (Ametista, Rounded, Immune al Resize) */
+.glass-box, .auth-card {
+    width: 100%;
+    max-width: 400px; /* Larghezza massima bloccata */
+    min-width: 320px; /* Evita schiacciamenti su schermi microscopici */
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border: 1px solid var(--glass-border);
+    border-radius: 32px; /* Stile moderno e molto arrotondato */
+    padding: 40px 30px;
+    box-shadow: 0 30px 60px var(--glass-shadow), 
+                inset 0 0 20px rgba(217, 70, 239, 0.05);
+    /* Spazio respirabile: distanzia automaticamente tutto ciò che c'è dentro */
+    display: flex;
+    flex-direction: column;
+    gap: 24px; 
     text-align: center;
-    padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+    /* Previene la compressione dell'altezza */
+    flex-shrink: 0;
 }
 
 /* =========================================
-   3. LOGO & TESTO (IL FIX GRAFICO)
+   4. LOGO & TESTO NEON
    ========================================= */
 .landing-logo {
     width: auto;
-    max-width: 280px; /* Larghezza controllata */
-    max-height: 35vh; /* Altezza controllata per non esplodere */
+    max-width: 240px; 
+    max-height: 25vh; /* Controllato per non esplodere */
     object-fit: contain;
-    margin-bottom: 25px !important;
-    /* Applichiamo un glow viola neon al logo coppa */
-    filter: drop-shadow(0 0 20px rgba(217, 70, 239, 0.5));
+    margin: 0 auto 10px auto !important;
+    filter: drop-shadow(0 0 25px rgba(217, 70, 239, 0.6));
+    transition: transform 0.3s ease;
 }
 
 .auth-title, .landing-title {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: -1px;
-    margin-bottom: 10px;
     color: white;
-    /* QUESTO È IL SIGILLO PER IL TESTO NEON VIOLA */
+    margin: 0;
     text-shadow: 
-        0 0 10px rgba(255, 255, 255, 0.6),
-        0 0 20px rgba(217, 70, 239, 0.8),
-        0 0 30px rgba(217, 70, 239, 0.6),
-        0 0 40px rgba(217, 70, 239, 0.4);
+        0 0 10px rgba(255, 255, 255, 0.5),
+        0 0 20px var(--neon-glow),
+        0 0 35px var(--neon-glow);
 }
 
-/* Fix per la scritta piccola sotto il logo (Nera -> Neon) */
-.auth-form input::placeholder {
-    color: #9ca3af !important;
+/* =========================================
+   5. INPUT & BOTTONI (SPAZIOSI E MODERNI)
+   ========================================= */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Spazio vitale tra gli input */
+    width: 100%;
 }
 
-/* Se la scritta che vedi nera è un placeholder di un input o un semplice p */
+input {
+    width: 100%;
+    height: 56px; /* Altezza bloccata per immunità */
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px; /* Bordo moderno */
+    padding: 0 20px;
+    color: white !important;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+input:focus {
+    border-color: var(--neon-glow);
+    background: rgba(0, 0, 0, 0.6) !important;
+    box-shadow: 0 0 15px rgba(217, 70, 239, 0.2);
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.btn-primary, .auth-submit {
+    width: 100%;
+    height: 56px; /* Altezza bloccata */
+    background: linear-gradient(135deg, #d946ef 0%, #9333ea 100%) !important;
+    border: none;
+    border-radius: 16px;
+    color: white;
+    font-weight: 800;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(217, 70, 239, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-primary:active, .auth-submit:active {
+    transform: scale(0.97);
+}
+
+/* =========================================
+   6. TESTI SECONDARI E LINK
+   ========================================= */
 p.auth-link, .auth-footer span {
     color: white !important;
     font-weight: bold;
-    text-decoration: underline;
-    text-underline-offset: 4px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: text-shadow 0.2s;
 }
 
-/* Il messaggio di errore/loading (Nero -> Neon Magenta) */
+p.auth-link:hover, .auth-footer span:hover {
+    text-shadow: 0 0 10px var(--neon-glow);
+}
+
 .auth-message {
-    font-size: 13px;
-    margin-bottom: 20px;
+    font-size: 14px;
     font-weight: bold;
-    color: #d946ef;
+    color: var(--neon-glow);
     text-shadow: 0 0 10px rgba(217, 70, 239, 0.6);
+    margin: 0;
+    min-height: 20px; /* Riserva lo spazio anche se vuoto per evitare scatti */
 }
