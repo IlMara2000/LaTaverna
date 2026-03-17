@@ -33,14 +33,12 @@ async function initApp() {
     // 3. SCHERMATA PORTALE (SIGILLATA)
     // Usiamo le classi landing-container e landing-logo che abbiamo blindato nel CSS
     uiContainer.innerHTML = `
-        <div class="landing-container" id="entry-screen" style="opacity: 1; transition: opacity 0.6s ease, transform 0.6s ease;">
-            <div class="main-logo-wrapper" id="enter-portal" style="cursor: pointer;">
-                <img src="/assets/logo.png" 
-                     alt="La Taverna" 
-                     class="landing-logo" 
-                     id="main-logo"
-                     onerror="this.src='https://via.placeholder.com/150?text=Taverna';">
-            </div>
+    <div class="landing-container" id="entry-screen">
+        <img src="/assets/logo.png" class="landing-logo" id="enter-portal">
+        <p class="landing-title" id="tap-text">Tocca la Coppa per Entrare!</p>
+    </div>
+    <div id="content-overlay" style="display:none; opacity:0; width:100%;"></div>
+`
             <p class="landing-title" style="font-size: 14px; margin-top: 20px; cursor: pointer;">Tocca la Coppa per Entrare!</p>
         </div>
         <div id="content-overlay" style="display:none; opacity:0; width:100%; height:100%;"></div>
