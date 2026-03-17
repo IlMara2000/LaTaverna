@@ -1,115 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-
 :root {
     --bg-deep: #0a0e17;
     --bg-core: #1e0b36;
-    --neon-glow: #d946ef;      /* Ametista */
-    --text-pink: #f4f4f4;      /* Bianco */
-    --glass-bg: rgba(30, 11, 54, 0.45);
-    --glass-border: rgba(217, 70, 239, 0.3);
+    --neon-glow: #f062ff;      /* Rosa/Ametista più acceso */
+    --text-pink: #ffe4ff;      /* Rosa quasi bianco, molto luminoso */
+    --glass-bg: rgba(255, 255, 255, 0.07); /* Più trasparente e "soft" */
+    --glass-border: rgba(240, 98, 255, 0.4);
 }
 
-/* RESET TOTALE E CENTRATURA ASSOLUTA */
-* { 
-    box-sizing: border-box; 
-    margin: 0; padding: 0; 
-    font-family: 'Inter', sans-serif !important; 
-}
-
-html, body {
-    width: 100vw; height: 100vh; height: 100svh;
-    background-color: var(--bg-deep);
-    overflow: hidden;
-    position: fixed;
-}
-
-body {
+/* RESET E BASE */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif !important; }
+body { 
     background: radial-gradient(circle at center, var(--bg-core) 0%, var(--bg-deep) 100%) no-repeat fixed;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
 
-#ui {
-    width: 100%; height: 100%;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+/* LANDING - BOX FANTASMA ELIMINATA */
+.landing-no-box {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
 }
 
-/* BOX DI LOGIN / REGISTER / LANDING */
-.auth-card, .landing-container {
-    width: 400px;
-    max-width: 90vw;
+/* CARD LOGIN/REGISTER PIÙ SOFT */
+.auth-card {
+    width: 380px; max-width: 85vw;
     background: var(--glass-bg);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
+    backdrop-filter: blur(15px);
     border: 1px solid var(--glass-border);
-    border-radius: 32px;
-    padding: 45px;
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    box-shadow: 0 0 40px rgba(217, 70, 239, 0.2);
+    border-radius: 28px;
+    padding: 35px;
+    box-shadow: 0 0 50px rgba(240, 98, 255, 0.15);
     text-align: center;
-    /* Rimuove qualsiasi spostamento residuo */
-    position: relative;
-    margin: 0 auto; 
 }
 
-/* TESTI ROSA CON GLOW AMETISTA */
-h1, h2, .auth-title, .landing-title {
+h1, h2, .auth-title {
     color: var(--text-pink) !important;
-    text-shadow: 0 0 15px var(--neon-glow), 0 0 5px var(--text-pink);
-    font-weight: 900;
+    text-shadow: 0 0 10px var(--neon-glow);
     text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
-.landing-logo {
-    width: 200px;
-    height: auto;
-    margin: 0 auto;
-    filter: drop-shadow(0 0 15px var(--neon-glow));
-}
-
-/* INPUT E BOTTONI */
-input {
-    width: 100%; height: 50px;
-    background: rgba(0,0,0,0.5) !important;
+/* BOTTONE HAMBURGER IN BASSO A DESTRA */
+.hamburger-vercel {
+    position: fixed; bottom: 30px; right: 30px; 
+    z-index: 2500;
+    background: var(--glass-bg); 
     border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    padding: 0 15px;
-    color: var(--text-pink) !important;
-    font-size: 15px;
-    outline: none;
-}
-
-.btn-primary {
-    width: 100%; height: 55px;
-    background: linear-gradient(135deg, #d946ef, #9333ea) !important;
-    color: white !important;
-    border: none; border-radius: 12px;
-    font-weight: 800; cursor: pointer;
-    text-transform: uppercase;
-    box-shadow: 0 5px 15px rgba(217, 70, 239, 0.3);
-}
-
-.auth-link {
-    color: var(--text-pink) !important;
-    font-weight: 700;
+    backdrop-filter: blur(10px);
+    padding: 15px; border-radius: 50%; /* Tondo è più moderno */
     cursor: pointer;
-    text-decoration: underline;
+    box-shadow: 0 0 15px var(--neon-glow);
 }
 
-/* SIDEBAR (Stile Ametista) */
-.sidebar {
-    position: fixed; left: -300px; top: 0;
-    width: 280px; height: 100%;
-    background: rgba(10, 14, 23, 0.98);
-    border-right: 1px solid var(--glass-border);
-    z-index: 2000;
-    transition: 0.4s ease;
-    padding: 40px 20px;
-}
-.sidebar.active { left: 0; }
+.bar { display: block; width: 20px; height: 2px; background: var(--text-pink); margin: 4px 0; }
