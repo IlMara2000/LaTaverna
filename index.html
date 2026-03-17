@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
     
-    <meta name="theme-color" content="#0f0617">
+    <meta name="theme-color" content="#0a0e17">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="La Taverna">
@@ -19,18 +19,36 @@
     <link rel="stylesheet" href="/src/style.css">
 
     <style>
-        /* FIX PRE-CARICAMENTO: impedisce flash bianchi e bande nere */
-        :root { --bg: #0f0617; }
+        /* =========================================
+           IL SIGILLO ASSOLUTO (PRE-CARICAMENTO)
+           ========================================= */
+        :root { --bg-base: #0a0e17; }
+        
         html, body { 
-            background-color: var(--bg) !important; 
+            background-color: var(--bg-base) !important; 
             margin: 0; 
             padding: 0; 
-            height: 100svh; 
             width: 100vw;
-            overflow: hidden;
-            position: fixed; /* Blocca lo scroll del body che causa glitch visivi */
+            height: 100vh;
+            height: 100svh; /* Altezza sicura dinamica per iOS/Android */
+            overflow: hidden !important; /* Nessuno scroll possibile */
+            position: fixed; /* Incolla il body allo schermo */
+            
+            /* REGOLE ANTI-ROTTURA MOBILE */
+            overscroll-behavior: none; /* Uccide l'effetto rimbalzo/elastico */
+            touch-action: none; /* Disattiva pull-to-refresh e swipe-to-back */
+            -webkit-tap-highlight-color: transparent; /* Nasconde il flash blu su mobile al tocco */
         }
-        #ui { width: 100%; height: 100%; }
+        
+        /* Pre-configura il box al centro ancora prima che il CSS esterno carichi */
+        #ui { 
+            width: 100%; 
+            height: 100%; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
