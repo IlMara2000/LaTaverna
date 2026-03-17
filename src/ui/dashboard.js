@@ -2,25 +2,38 @@ import { initSidebar } from './sidebar.js';
 import { account } from '../services/appwrite.js';
 
 export async function showDashboard(container, user) {
+    // Struttura a due colonne: Sidebar a sinistra, Contenuto a destra
     container.innerHTML = `
-        <div class="dashboard-content" style="width:100%; padding: 40px 20px;">
-            <header style="text-align:left; margin-top: 20px;">
-                <h1 style="font-size: 1.5rem; opacity:0.8;">BENTORNATO,</h1>
-                <p class="auth-title" style="font-size: 2rem; line-height:1; text-align:left;">${user.name.toUpperCase()}</p>
-            </header>
+        <div class="dashboard-layout">
+            <div id="sidebar-container"></div>
             
-            <div id="session-list" style="margin-top:30px;">
-                <div class="auth-card" style="width:100%; opacity:0.8;">
-                    <p style="font-size:14px; text-align:center;">Nessuna cronaca attiva nel tomo...</p>
-                </div>
-            </div>
+            <main class="dashboard-main">
+                <header class="dashboard-header">
+                    <h2 class="welcome-text">BENTORNATO,</h2>
+                    <h1 class="user-name-title">${user.name.toUpperCase()}</h1>
+                </header>
+                
+                <section class="session-container">
+                    <div class="empty-state-card">
+                        <span class="icon">📜</span>
+                        <p>Nessuna cronaca attiva nel tomo...</p>
+                        <button class="btn-primary" style="margin-top: 20px; width: auto; padding: 12px 30px;">INIZIA NUOVA AVVENTURA</button>
+                    </div>
+                </section>
+            </main>
         </div>
     `;
 
     const handleLogout = async () => {
-        await account.deleteSession('current');
-        window.location.reload();
+        try {
+            await account.deleteSession('current');
+            window.location.reload();
+        } catch (err) {
+            console.error("Errore logout:", err);
+        }
     };
 
-    initSidebar(container, user, handleLogout);
+    // Inizializza la sidebar nel suo container dedicato
+    const sidebarSlot = container.querySelector('#sidebar-container');
+    initSidebar(sidebarSlot, user, handleLogout);
 }
