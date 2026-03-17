@@ -1,24 +1,30 @@
+/* IMPORTAZIONE FONT GOOGLE */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
 
 :root {
     --bg-deep: #0a0e17;
     --bg-core: #1e0b36;
-    --neon-glow: #d946ef;
-    --purple-link: #e9d5ff;
+    --neon-glow: #d946ef;      /* Ametista Profondo */
+    --text-pink: #ffb7ff;      /* Rosa Brillante */
     --glass-bg: rgba(30, 11, 54, 0.45);
     --glass-border: rgba(217, 70, 239, 0.2);
     --accent: #d946ef;
 }
 
 /* RESET E BLOCCO SCHERMO */
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif !important; }
+* { 
+    box-sizing: border-box; 
+    margin: 0; padding: 0; 
+    font-family: 'Inter', sans-serif !important; 
+    color: var(--text-pink); /* Tutto il testo ora è Rosa */
+}
 
 html, body {
     width: 100vw; height: 100vh; height: 100svh;
     background-color: var(--bg-deep);
     overflow: hidden !important;
     position: fixed;
-    touch-action: none;
+    touch-action: pan-x pan-y;
 }
 
 body {
@@ -29,10 +35,11 @@ body {
 #ui {
     width: 100%; height: 100%;
     display: flex !important; align-items: center !important; justify-content: center !important;
+    position: relative;
 }
 
-/* CARDS & CONTENITORI */
-.auth-card, .glass-box {
+/* LANDING & AUTH CARDS (BOX TEMPORANEE) */
+.landing-container, .auth-card {
     width: 380px; max-width: 90vw;
     background: var(--glass-bg);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -40,66 +47,97 @@ body {
     border-radius: 32px;
     padding: 40px;
     display: flex; flex-direction: column; gap: 20px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 0 30px rgba(217, 70, 239, 0.2);
     text-align: center;
+    z-index: 100;
 }
 
-/* DASHBOARD LAYOUT */
-.dashboard-content {
-    width: 100%; height: 100%;
-    padding: 80px 20px 20px; /* Spazio per hamburger */
-    overflow-y: auto;
-    color: white;
+/* TITOLI CON EFFETTO ROSA + AMETISTA */
+h1, h2, .auth-title, .landing-title {
+    color: var(--text-pink) !important;
+    text-shadow: 0 0 15px var(--neon-glow), 0 0 5px var(--text-pink);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
 }
 
-.sidebar {
-    position: fixed; left: -280px; top: 0;
-    width: 280px; height: 100%;
-    background: rgba(10, 14, 23, 0.95);
-    backdrop-filter: blur(15px);
-    z-index: 1000; transition: 0.3s ease;
-    display: flex; flex-direction: column; padding: 20px;
-    border-right: 1px solid var(--glass-border);
-}
-.sidebar.active { left: 0; }
-
-/* ELEMENTI UI */
+/* INPUT & BOTTONI */
 input {
     width: 100%; height: 50px;
-    background: rgba(0,0,0,0.4) !important;
+    background: rgba(0,0,0,0.5) !important;
     border: 1px solid var(--glass-border);
     border-radius: 12px; padding: 0 15px;
-    color: white !important; outline: none;
+    color: var(--text-pink) !important; outline: none;
 }
+
+input::placeholder { color: var(--text-pink); opacity: 0.5; }
 
 .btn-primary {
     width: 100%; height: 55px;
     background: linear-gradient(135deg, #d946ef, #9333ea) !important;
+    color: white !important; /* Testo bianco sui bottoni per contrasto */
     border: none; border-radius: 12px;
-    color: white; font-weight: 800; cursor: pointer;
-    text-transform: uppercase;
+    font-weight: 800; cursor: pointer;
+    box-shadow: 0 5px 15px rgba(217, 70, 239, 0.4);
+    transition: transform 0.2s;
 }
+.btn-primary:active { transform: scale(0.98); }
+
+.discord-btn {
+    width: 100%; height: 50px;
+    background: #5865f2 !important;
+    border: none; border-radius: 12px;
+    color: white !important; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+
+.auth-link {
+    color: var(--text-pink) !important;
+    font-weight: 800; cursor: pointer;
+    text-decoration: underline;
+    text-shadow: 0 0 8px var(--neon-glow);
+}
+
+/* =========================================
+   DASHBOARD & SIDEBAR
+   ========================================= */
+.dashboard-content {
+    width: 100%; height: 100%;
+    padding: 100px 25px 25px;
+    overflow-y: auto;
+    display: block;
+}
+
+.sidebar {
+    position: fixed; left: -300px; top: 0;
+    width: 280px; height: 100%;
+    background: rgba(10, 14, 23, 0.98);
+    border-right: 1px solid var(--glass-border);
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2000; padding: 40px 20px;
+    display: flex; flex-direction: column;
+}
+.sidebar.active { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.9); }
 
 .sidebar-btn {
     width: 100%; padding: 15px;
-    background: rgba(255,255,255,0.05);
+    background: transparent;
     border: 1px solid var(--glass-border);
-    border-radius: 12px; color: white;
-    font-weight: 700; cursor: pointer; margin-bottom: 10px;
+    border-radius: 12px; color: var(--text-pink);
+    font-weight: 700; cursor: pointer; margin-bottom: 12px;
+    text-align: left; transition: 0.3s;
 }
-
-.auth-link { color: var(--purple-link) !important; font-weight: 800; cursor: pointer; }
-.auth-title { text-shadow: 0 0 15px var(--neon-glow); font-weight: 900; color: white; }
+.sidebar-btn:hover { background: rgba(217, 70, 239, 0.1); border-color: var(--neon-glow); }
 
 /* HAMBURGER VERCEL STYLE */
 .hamburger-vercel {
-    position: fixed; top: 20px; left: 20px; z-index: 1100;
+    position: fixed; top: 25px; left: 25px; z-index: 2100;
     background: var(--glass-bg); border: 1px solid var(--glass-border);
-    padding: 10px; border-radius: 10px; cursor: pointer;
+    padding: 12px; border-radius: 12px; cursor: pointer;
 }
-.bar { display: block; width: 20px; height: 2px; background: white; margin: 4px 0; transition: 0.3s; }
+.bar { display: block; width: 22px; height: 2px; background: var(--text-pink); margin: 5px 0; transition: 0.3s; }
 
-/* ANIMAZIONI */
+/* ANIMAZIONE ERRORE */
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-8px); }
