@@ -1,7 +1,7 @@
 /* =========================================
-   1. GLOBAL & SAFE AREA (STRUTTURA)
+   1. GLOBAL & RESET
    ========================================= */
-   * {
+* {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -9,91 +9,135 @@
 }
 
 :root {
-    --accent: #d946ef; /* Magenta/Viola Neon più acceso come da screen */
+    --accent: #d946ef; 
     --accent-dark: #a855f7;
     --accent-glow: rgba(217, 70, 239, 0.5);
-    --glass-bg: rgba(26, 31, 46, 0.95); /* Sfondo solido neumorfico */
+    --glass-bg: #1a1f2e; 
     --glass-border: rgba(255, 255, 255, 0.08);
     --bg-dark: #0a0e17;
 }
 
-html, body {
-    width: 100%;
-    height: 100%;
-    background-color: var(--bg-dark);
-}
-
 body {
     font-family: 'Inter', -apple-system, sans-serif;
-    /* Gradiente radiale profondo per dare profondità alla Taverna */
     background: radial-gradient(circle at center, #1e0b36 0%, #0a0e17 100%) no-repeat fixed;
     background-size: cover;
     color: white;
     overflow: hidden; 
-    position: fixed;
     width: 100vw;
-    height: 100svh;
+    height: 100vh;
 }
 
 /* =========================================
-   2. CONTENITORI UI & NEUMORFISMO
+   2. SIDEBAR (RIPRISTINATA)
    ========================================= */
-.glass-box, .auth-card {
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 28px;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%; /* Nascosta a sinistra */
+    width: 290px;
+    height: 100vh;
+    z-index: 9999;
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(10, 14, 23, 0.98);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-right: 1px solid var(--accent);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Forza il contenitore generato dal JS a stare al centro */
-#ui, #ui > div {
+.sidebar.active {
+    left: 0; /* Appare quando ha la classe active */
+}
+
+.sidebar-btn {
     width: 100%;
-    height: 100%;
+    min-height: 55px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 12px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.sidebar-btn:hover {
+    background: rgba(217, 70, 239, 0.2);
+    border-color: var(--accent);
+    transform: translateX(8px);
+}
+
+/* =========================================
+   3. BOTTONE HAMBURGER (PER APRIRE SIDEBAR)
+   ========================================= */
+.hamburger-vercel {
+    position: fixed;
+    bottom: 30px;
+    right: 25px;
+    width: 60px;
+    height: 60px;
+    background: var(--accent);
+    border-radius: 50%;
+    z-index: 10000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 5px;
+    box-shadow: 0 10px 30px var(--accent-glow);
+    cursor: pointer;
+    border: none;
+}
+
+.hamburger-vercel .bar {
+    width: 25px;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
 }
 
 /* =========================================
-   3. AUTH WRAPPER
+   4. UI CONTAINERS & CARDS (FIX)
    ========================================= */
-.auth-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center; 
+#ui, #ui > div {
     width: 100%;
     height: 100%;
-    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .auth-card {
+    background: var(--glass-bg);
     padding: 40px 30px;
-    width: 100%;
+    width: 90%;
     max-width: 400px;
+    border-radius: 28px;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+    text-align: center;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    text-align: center;
-}
-
-.auth-card h2 {
-    font-size: 24px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: -0.5px;
-    margin-bottom: 10px;
+    z-index: 10;
 }
 
 /* =========================================
-   4. INPUT & BOTTONI (IL FIX PER LO SCHIACCIAMENTO)
+   5. INPUT & BOTTONI NEON (SISTEMATI)
    ========================================= */
 input {
     width: 100%;
-    min-height: 55px; /* Impedisce il collasso */
+    min-height: 55px; 
     padding: 15px 20px;
     background: #121620 !important;
     border: 1px solid var(--glass-border);
@@ -102,16 +146,11 @@ input {
     font-size: 16px; 
     outline: none;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
-    transition: border 0.3s ease;
-}
-
-input:focus {
-    border-color: var(--accent);
 }
 
 .btn-primary, .auth-submit {
     width: 100%;
-    min-height: 60px; /* Altezza minima garantita */
+    min-height: 60px; 
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%) !important;
     display: flex;
     align-items: center;
@@ -120,44 +159,23 @@ input:focus {
     border: none;
     border-radius: 16px;
     font-weight: 900;
-    font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     box-shadow: 0 10px 25px var(--accent-glow);
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    margin-top: 10px;
-}
-
-.btn-primary:active {
-    transform: scale(0.97);
+    transition: 0.2s;
 }
 
 .discord-btn {
     background: #5865F2 !important;
     min-height: 60px;
     box-shadow: 0 10px 20px rgba(88, 101, 242, 0.3) !important;
-    margin-top: 5px;
-}
-
-.auth-divider {
-    color: rgba(255,255,255,0.2);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 3px;
-    margin: 10px 0;
-}
-
-.auth-footer {
-    margin-top: 15px;
-    font-size: 14px;
-    color: #9ca3af;
-}
-
-.auth-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: none;
     color: white;
+    border-radius: 16px;
     font-weight: bold;
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 4px;
 }
