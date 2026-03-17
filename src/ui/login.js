@@ -2,43 +2,42 @@ import { account } from '../services/appwrite.js'
 import { showDashboard } from './dashboard.js'
 
 export function showLogin(container) {
+    // Usiamo direttamente il container blindato dal CSS
     container.innerHTML = `
-    <div class="auth-wrapper">
-        <div class="glass-box auth-card">
-            <h2 class="auth-title">ACCEDI ALLA TAVERNA</h2>
+    <div class="auth-card">
+        <h2 class="auth-title">ACCEDI ALLA TAVERNA</h2>
 
-            <div id="login-msg" class="auth-message"></div>
+        <div id="login-msg" class="auth-message"></div>
 
-            <form id="login-form" class="auth-form">
-                <input 
-                    type="email" 
-                    id="email" 
-                    placeholder="Email" 
-                    required 
-                    autocomplete="email" 
-                >
-                <input 
-                    type="password" 
-                    id="password" 
-                    placeholder="Password" 
-                    required 
-                    autocomplete="current-password" 
-                >
-                <button type="submit" class="btn-primary auth-submit">
-                    ENTRA NELLA TAVERNA
-                </button>
-            </form>
-
-            <div class="auth-divider">OPPURE</div>
-
-            <button type="button" id="discord-login" class="btn-primary discord-btn">
-                <span>👾</span> LOGIN CON DISCORD
+        <form id="login-form" class="auth-form">
+            <input 
+                type="email" 
+                id="email" 
+                placeholder="Email" 
+                required 
+                autocomplete="email" 
+            >
+            <input 
+                type="password" 
+                id="password" 
+                placeholder="Password" 
+                required 
+                autocomplete="current-password" 
+            >
+            <button type="submit" class="btn-primary auth-submit">
+                ENTRA NELLA TAVERNA
             </button>
+        </form>
 
-            <div class="auth-footer">
-                Nuovo viandante? 
-                <span id="toRegister" class="auth-link">Registrati qui</span>
-            </div>
+        <div style="font-size: 10px; font-weight: 800; opacity: 0.4; letter-spacing: 2px;">OPPURE</div>
+
+        <button type="button" id="discord-login" class="discord-btn">
+            <span>👾</span> LOGIN CON DISCORD
+        </button>
+
+        <div class="auth-footer">
+            Nuovo viandante? 
+            <span id="toRegister" class="auth-link">Registrati qui</span>
         </div>
     </div>
     `
@@ -52,18 +51,31 @@ export function showLogin(container) {
         const email = container.querySelector('#email').value.trim()
         const password = container.querySelector('#password').value
 
-        msg.className = "auth-message loading"
-        msg.textContent = "⚡ Verificando il portale..."
+        // Feedback visivo immediato con glow
+        msg.style.color = "var(--neon-glow)";
+        msg.textContent = "⚡ Verificando il portale...";
         submitBtn.disabled = true
+        submitBtn.style.opacity = "0.7";
 
         try {
             await account.createEmailPasswordSession(email, password)
             const user = await account.get()
-            showDashboard(container, user)
+            
+            // Transizione fluida verso la dashboard
+            container.style.opacity = "0";
+            setTimeout(() => {
+                showDashboard(container, user);
+                container.style.opacity = "1";
+            }, 300);
+
         } catch (err) {
-            msg.className = "auth-message error"
-            msg.textContent = "Accesso negato. Riprova, viandante."
-            submitBtn.disabled = false
+            msg.textContent = "Accesso negato. Riprova, viandante.";
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = "1";
+            
+            // Piccola vibrazione visiva per l'errore
+            form.style.animation = "none";
+            setTimeout(() => form.style.animation = "shake 0.4s", 10);
         }
     }
 
@@ -73,7 +85,11 @@ export function showLogin(container) {
     }
 
     container.querySelector('#toRegister').onclick = async () => {
+        container.style.opacity = "0";
         const { showRegister } = await import('./register.js')
-        showRegister(container)
+        setTimeout(() => {
+            showRegister(container);
+            container.style.opacity = "1";
+        }, 300);
     }
 }
