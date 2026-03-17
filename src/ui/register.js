@@ -4,16 +4,16 @@ export function showRegister(container) {
     container.innerHTML = `
         <div class="auth-card">
             <h2 class="auth-title">REGISTRATI</h2>
-            <div id="reg-msg" class="auth-message"></div>
+            <div id="reg-msg" class="auth-message" style="font-size:14px; min-height:20px; font-weight:600; text-align:center;"></div>
             
-            <form id="register-form" class="auth-form">
+            <form id="register-form" style="display:flex; flex-direction:column; gap:15px;">
                 <input type="text" id="reg-username" placeholder="Nome Viandante" required>
                 <input type="email" id="reg-email" placeholder="Email" required>
                 <input type="password" id="reg-password" placeholder="Password (min. 8)" required minlength="8">
-                <button type="submit" class="btn-primary auth-submit">CREA PROFILO</button>
+                <button type="submit" class="btn-primary">CREA PROFILO</button>
             </form>
             
-            <div class="auth-footer" style="color: rgba(255,255,255,0.6); font-size: 14px;">
+            <div style="text-align:center; margin-top:20px; font-size: 14px; color:rgba(255,255,255,0.6);">
                 Hai già un account? <span id="toLogin" class="auth-link">Torna al Login</span>
             </div>
         </div>
@@ -37,6 +37,7 @@ export function showRegister(container) {
             await account.createEmailPasswordSession(email, password);
             window.location.reload(); 
         } catch (err) {
+            msg.style.color = "#ff4444";
             msg.textContent = "Errore durante il rito.";
             card.classList.add('shake-error');
             setTimeout(() => card.classList.remove('shake-error'), 400);
