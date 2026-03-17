@@ -5,60 +5,46 @@ export function showLogin(container) {
     <div class="auth-wrapper">
         <div class="auth-card">
             <h2 class="auth-title">ACCEDI</h2>
-            
             <div id="login-msg" class="auth-status-msg"></div>
 
             <form id="login-form" class="auth-form">
-                <div class="input-group">
-                    <input type="email" id="email" placeholder="Email" required autocomplete="email">
-                </div>
-                <div class="input-group">
-                    <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
-                </div>
+                <input type="email" id="email" placeholder="Tua Email" required>
+                <input type="password" id="password" placeholder="Password Segreta" required>
                 
+                <label class="gdpr-label">
+                    <input type="checkbox" id="gdpr-check" required>
+                    <span>Accetto il trattamento dati (GDPR)</span>
+                </label>
+
                 <button type="submit" class="btn-primary">ENTRA NELLA TAVERNA</button>
             </form>
 
             <div class="auth-divider">OPPURE</div>
 
             <button type="button" id="discord-login" class="discord-btn">
-                <span class="icon">👾</span> LOGIN CON DISCORD
+                <span>👾</span> LOGIN CON DISCORD
             </button>
 
             <p class="auth-switch-text">
                 Nuovo viandante? <span id="toRegister" class="auth-link">Registrati qui</span>
             </p>
         </div>
-    </div>
-    `;
+    </div>`;
 
+    // ... (manteniamo la logica onsubmit precedente)
     const form = container.querySelector('#login-form');
-    const msg = container.querySelector('#login-msg');
-    const card = container.querySelector('.auth-card');
-
     form.onsubmit = async (e) => {
         e.preventDefault();
-        const email = container.querySelector('#email').value.trim();
-        const password = container.querySelector('#password').value;
-
-        msg.style.color = "var(--neon-glow)";
-        msg.textContent = "⚡ Verificando il portale...";
-
+        const msg = container.querySelector('#login-msg');
         try {
+            const email = container.querySelector('#email').value;
+            const password = container.querySelector('#password').value;
             await account.createEmailPasswordSession(email, password);
-            window.location.reload(); 
+            window.location.reload();
         } catch (err) {
-            console.error("Errore Login:", err);
+            msg.textContent = "Credenziali errate o portale chiuso.";
             msg.style.color = "#ff4444";
-            msg.textContent = "Accesso negato. Controlla le credenziali.";
-            card.classList.add('shake-error');
-            setTimeout(() => card.classList.remove('shake-error'), 400);
         }
-    };
-
-    container.querySelector('#discord-login').onclick = () => {
-        const origin = window.location.origin;
-        account.createOAuth2Session('discord', origin, origin);
     };
 
     container.querySelector('#toRegister').onclick = async () => {
