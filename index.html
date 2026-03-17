@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-    
     <meta name="theme-color" content="#0a0e17">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,43 +11,19 @@
     <title>LA TAVERNA</title>
 
     <link rel="manifest" href="/manifest.json">
-
     <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
     <link rel="apple-touch-icon" href="/assets/favicon.ico">
-    
     <link rel="stylesheet" href="/src/style.css">
 
     <style>
-        /* =========================================
-           IL SIGILLO ASSOLUTO (PRE-CARICAMENTO)
-           ========================================= */
         :root { --bg-base: #0a0e17; }
-        
         html, body { 
             background-color: var(--bg-base) !important; 
-            margin: 0; 
-            padding: 0; 
-            width: 100vw;
-            height: 100vh;
-            height: 100svh; /* Altezza sicura dinamica per iOS/Android */
-            overflow: hidden !important; /* Nessuno scroll possibile */
-            position: fixed; /* Incolla il body allo schermo */
-            
-            /* REGOLE ANTI-ROTTURA MOBILE */
-            overscroll-behavior: none; /* Uccide l'effetto rimbalzo/elastico */
-            touch-action: none; /* Disattiva pull-to-refresh e swipe-to-back */
-            -webkit-tap-highlight-color: transparent; /* Nasconde il flash blu su mobile al tocco */
+            margin: 0; padding: 0; width: 100vw; height: 100svh;
+            overflow: hidden !important; position: fixed;
+            overscroll-behavior: none; -webkit-tap-highlight-color: transparent;
         }
-        
-        /* Pre-configura il box al centro ancora prima che il CSS esterno carichi */
-        #ui { 
-            width: 100%; 
-            height: 100%; 
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
+        #ui { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
