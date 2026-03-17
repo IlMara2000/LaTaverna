@@ -9,11 +9,12 @@
 }
 
 :root {
-    --accent: #a953ec;
-    --accent-glow: rgba(169, 83, 236, 0.6);
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --bg-dark: #0f0617;
+    --accent: #d946ef; /* Magenta/Viola Neon più acceso come da screen */
+    --accent-dark: #a855f7;
+    --accent-glow: rgba(217, 70, 239, 0.5);
+    --glass-bg: rgba(26, 31, 46, 0.95); /* Sfondo solido neumorfico */
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --bg-dark: #0a0e17;
 }
 
 html, body {
@@ -24,7 +25,8 @@ html, body {
 
 body {
     font-family: 'Inter', -apple-system, sans-serif;
-    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%) no-repeat fixed;
+    /* Gradiente radiale profondo per dare profondità alla Taverna */
+    background: radial-gradient(circle at center, #1e0b36 0%, #0a0e17 100%) no-repeat fixed;
     background-size: cover;
     color: white;
     overflow: hidden; 
@@ -34,190 +36,128 @@ body {
 }
 
 /* =========================================
-   2. EFFETTI GLASS & CONTENITORI UI
+   2. CONTENITORI UI & NEUMORFISMO
    ========================================= */
-.glass-box, .session-card, .stat-box, .auth-card {
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+.glass-box, .auth-card {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border-radius: 28px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.6);
 }
 
-/* Forza il contenitore generato dal JS a stare al centro esatto */
-#ui > div {
+/* Forza il contenitore generato dal JS a stare al centro */
+#ui, #ui > div {
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin: 0 !important;
-    padding: 0 !important;
 }
 
 /* =========================================
-   3. LANDING & AUTH WRAPPER (IL FIX DEFINITIVO)
+   3. AUTH WRAPPER
    ========================================= */
-.auth-wrapper, .landing-container {
+.auth-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Usiamo space-around o un padding forte per centrare davvero l'area utile */
     justify-content: center; 
     width: 100%;
-    height: 100svh;
-    /* Questo crea una "bolla" centrale sicura */
-    padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
-    box-sizing: border-box;
+    height: 100%;
+    padding: 20px;
 }
 
-.landing-logo {
-    /* Usiamo max-height per evitare che la coppa diventi enorme su schermi lunghi */
-    width: auto;
-    max-width: 280px;
-    max-height: 35vh; 
-    object-fit: contain;
-    margin-bottom: 30px !important;
-    filter: drop-shadow(0 0 25px var(--accent-glow));
-}
-
-/* =========================================
-   4. LOGIN CARD (BLOCCATA NELLE DIMENSIONI)
-   ========================================= */
 .auth-card {
-    padding: 30px 25px;
+    padding: 40px 30px;
     width: 100%;
-    max-width: 360px;
-    /* Impediamo alla card di schiacciarsi o allungarsi */
-    flex-shrink: 0; 
+    max-width: 400px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    /* Margine di sicurezza dal fondo se lo schermo è piccolo */
-    margin-bottom: 20px;
+    gap: 20px;
+    text-align: center;
 }
 
-/* Fix per i testi dentro la card che sembrano sfalsati */
 .auth-card h2 {
-    font-size: 22px;
-    margin-bottom: 5px;
-    line-height: 1.2;
-}
-
-.auth-card p {
-    margin-top: 5px;
-    line-height: 1.4;
+    font-size: 24px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
 }
 
 /* =========================================
-   5. SIDEBAR & HAMBURGER
+   4. INPUT & BOTTONI (IL FIX PER LO SCHIACCIAMENTO)
    ========================================= */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: -100%;
-    width: 290px;
-    height: 100svh;
-    z-index: 9999;
-    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: rgba(10, 5, 15, 0.98);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border-right: 1px solid var(--accent);
-    padding: calc(40px + env(safe-area-inset-top)) 20px env(safe-area-inset-bottom) 20px;
-    overflow-y: auto;
-}
-
-.sidebar.active { left: 0; }
-
-.sidebar-btn {
+input {
     width: 100%;
-    min-height: 55px;
-    margin-bottom: 12px;
-    background: rgba(255, 255, 255, 0.05);
+    min-height: 55px; /* Impedisce il collasso */
+    padding: 15px 20px;
+    background: #121620 !important;
     border: 1px solid var(--glass-border);
     border-radius: 14px;
-    color: white;
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    display: flex;
-    align-items: center;
-    padding: 0 18px;
-    gap: 12px;
-    transition: 0.3s ease;
+    color: white !important;
+    font-size: 16px; 
+    outline: none;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+    transition: border 0.3s ease;
 }
 
-.sidebar-btn:hover {
-    background: rgba(169, 83, 236, 0.2);
+input:focus {
     border-color: var(--accent);
-    transform: translateX(8px);
 }
 
-.hamburger-vercel {
-    position: fixed;
-    bottom: calc(30px + env(safe-area-inset-bottom));
-    right: 25px;
-    width: 65px;
-    height: 65px;
-    background: var(--accent);
-    border-radius: 50%;
-    z-index: 10000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    box-shadow: 0 10px 30px var(--accent-glow);
-}
-
-.hamburger-vercel .bar {
-    width: 25px;
-    height: 3px;
-    background: white;
-    border-radius: 2px;
-}
-
-/* =========================================
-   6. BOTTONI & INPUT
-   ========================================= */
-.btn-primary {
-    background: var(--accent);
-    height: 55px; /* Forza un'altezza coerente per tutti gli elementi cliccabili */
+.btn-primary, .auth-submit {
+    width: 100%;
+    min-height: 60px; /* Altezza minima garantita */
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%) !important;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     border: none;
-    padding: 18px;
-    border-radius: 15px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    box-shadow: 0 8px 25px var(--accent-glow);
+    border-radius: 16px;
+    font-weight: 900;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    box-shadow: 0 10px 25px var(--accent-glow);
     cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 10px;
+}
+
+.btn-primary:active {
+    transform: scale(0.97);
 }
 
 .discord-btn {
     background: #5865F2 !important;
-    box-shadow: 0 8px 20px rgba(88, 101, 242, 0.3) !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+    min-height: 60px;
+    box-shadow: 0 10px 20px rgba(88, 101, 242, 0.3) !important;
     margin-top: 5px;
 }
 
-input {
-    width: 100%;
-    padding: 16px;
-    background: rgba(0, 0, 0, 0.4) !important;
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    color: white !important;
-    font-size: 16px; 
-    margin-bottom: 5px;
-    outline: none;
+.auth-divider {
+    color: rgba(255,255,255,0.2);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    margin: 10px 0;
+}
+
+.auth-footer {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #9ca3af;
+}
+
+.auth-link {
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 4px;
 }
