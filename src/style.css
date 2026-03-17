@@ -1,0 +1,223 @@
+/* =========================================
+   1. GLOBAL & SAFE AREA (STRUTTURA)
+   ========================================= */
+   * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+    --accent: #a953ec;
+    --accent-glow: rgba(169, 83, 236, 0.6);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --bg-dark: #0f0617;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-dark);
+}
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: radial-gradient(circle at center, #2e1065 0%, #0f0617 100%) no-repeat fixed;
+    background-size: cover;
+    color: white;
+    overflow: hidden; 
+    position: fixed;
+    width: 100vw;
+    height: 100svh;
+}
+
+/* =========================================
+   2. EFFETTI GLASS & CONTENITORI UI
+   ========================================= */
+.glass-box, .session-card, .stat-box, .auth-card {
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* Forza il contenitore generato dal JS a stare al centro esatto */
+#ui > div {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* =========================================
+   3. LANDING & AUTH WRAPPER (IL FIX DEFINITIVO)
+   ========================================= */
+.auth-wrapper, .landing-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Usiamo space-around o un padding forte per centrare davvero l'area utile */
+    justify-content: center; 
+    width: 100%;
+    height: 100svh;
+    /* Questo crea una "bolla" centrale sicura */
+    padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+    box-sizing: border-box;
+}
+
+.landing-logo {
+    /* Usiamo max-height per evitare che la coppa diventi enorme su schermi lunghi */
+    width: auto;
+    max-width: 280px;
+    max-height: 35vh; 
+    object-fit: contain;
+    margin-bottom: 30px !important;
+    filter: drop-shadow(0 0 25px var(--accent-glow));
+}
+
+/* =========================================
+   4. LOGIN CARD (BLOCCATA NELLE DIMENSIONI)
+   ========================================= */
+.auth-card {
+    padding: 30px 25px;
+    width: 100%;
+    max-width: 360px;
+    /* Impediamo alla card di schiacciarsi o allungarsi */
+    flex-shrink: 0; 
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    /* Margine di sicurezza dal fondo se lo schermo è piccolo */
+    margin-bottom: 20px;
+}
+
+/* Fix per i testi dentro la card che sembrano sfalsati */
+.auth-card h2 {
+    font-size: 22px;
+    margin-bottom: 5px;
+    line-height: 1.2;
+}
+
+.auth-card p {
+    margin-top: 5px;
+    line-height: 1.4;
+}
+
+/* =========================================
+   5. SIDEBAR & HAMBURGER
+   ========================================= */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 290px;
+    height: 100svh;
+    z-index: 9999;
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(10, 5, 15, 0.98);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-right: 1px solid var(--accent);
+    padding: calc(40px + env(safe-area-inset-top)) 20px env(safe-area-inset-bottom) 20px;
+    overflow-y: auto;
+}
+
+.sidebar.active { left: 0; }
+
+.sidebar-btn {
+    width: 100%;
+    min-height: 55px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 12px;
+    transition: 0.3s ease;
+}
+
+.sidebar-btn:hover {
+    background: rgba(169, 83, 236, 0.2);
+    border-color: var(--accent);
+    transform: translateX(8px);
+}
+
+.hamburger-vercel {
+    position: fixed;
+    bottom: calc(30px + env(safe-area-inset-bottom));
+    right: 25px;
+    width: 65px;
+    height: 65px;
+    background: var(--accent);
+    border-radius: 50%;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-shadow: 0 10px 30px var(--accent-glow);
+}
+
+.hamburger-vercel .bar {
+    width: 25px;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
+}
+
+/* =========================================
+   6. BOTTONI & INPUT
+   ========================================= */
+.btn-primary {
+    background: var(--accent);
+    height: 55px; /* Forza un'altezza coerente per tutti gli elementi cliccabili */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: none;
+    padding: 18px;
+    border-radius: 15px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    box-shadow: 0 8px 25px var(--accent-glow);
+    cursor: pointer;
+}
+
+.discord-btn {
+    background: #5865F2 !important;
+    box-shadow: 0 8px 20px rgba(88, 101, 242, 0.3) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+input {
+    width: 100%;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    color: white !important;
+    font-size: 16px; 
+    margin-bottom: 5px;
+    outline: none;
+}

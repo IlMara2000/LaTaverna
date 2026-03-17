@@ -1,0 +1,18 @@
+
+{
+    "name": "La Taverna",
+    "short_name": "Taverna",
+    "description": "Benvenuti nella Taverna",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f0617",
+    "theme_color": "#0f0617",
+    "icons": [
+      {
+        "src": "/assets/favicon.ico",
+        "sizes": "64x64 32x32 24x24 16x16",
+        "type": "image/x-icon"
+      }
+    ]
+  }
+  
