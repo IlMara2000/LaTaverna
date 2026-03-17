@@ -22,7 +22,7 @@ export async function setupDiscordRedirect(container) {
             Sincronia Magica...
         </div>
         <div style="margin-top: 10px; font-size: 11px; opacity: 0.6; letter-spacing: 1px;">
-            L'OSTE TI STA FACENDO SPAZIO AL BANCONE
+            L'OSTE TI STA FACENDO SPAZIO SUL BANCONE
         </div>
     `
     document.body.appendChild(statusOverlay)
