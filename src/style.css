@@ -1,177 +1,70 @@
-/* =========================================
-   1. CORE & RESET (STABILITÀ)
-   ========================================= */
-:root {
-    --bg-deep: #0a0e17;
-    --bg-core: #1e0b36;
-    --neon-glow: #f062ff;
-    --text-pink: #ffe4ff;
-    --glass-bg: rgba(255, 255, 255, 0.07);
-    --glass-border: rgba(240, 98, 255, 0.4);
-    --accent: #f062ff;
-}
-
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif !important; }
-
-body { 
-    background: radial-gradient(circle at center, var(--bg-core) 0%, var(--bg-deep) 100%) no-repeat fixed;
-    background-size: cover;
-    color: white;
-    width: 100vw;
-    height: 100svh;
-    overflow: hidden;
-    position: fixed;
-}
-
-/* =========================================
-   2. LAYOUT CONTAINERS (PROPORZIONI)
-   ========================================= */
-#ui > div {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.auth-wrapper, .landing-container {
-    width: 100%;
-    height: 100svh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: env(safe-area-inset-top) 25px env(safe-area-inset-bottom) 25px;
-}
-
-/* =========================================
-   3. LANDING & CARD (ESTETICA)
-   ========================================= */
-.landing-logo {
-    width: auto;
-    max-width: 250px;
-    max-height: 35vh;
-    filter: drop-shadow(0 0 20px var(--neon-glow));
-    margin-bottom: 20px !important;
-    transition: transform 0.3s ease;
-}
-
-.auth-card {
-    width: 380px; 
-    max-width: 90vw;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid var(--glass-border);
-    border-radius: 28px;
-    padding: 30px;
-    box-shadow: 0 0 40px rgba(240, 98, 255, 0.1);
+/* Correzione Input e Form */
+.auth-form {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    width: 100%;
 }
 
-h1, h2, .auth-title {
-    color: var(--text-pink) !important;
-    text-shadow: 0 0 10px var(--neon-glow);
-    text-transform: uppercase;
+.input-group input {
+    width: 100%;
+    padding: 14px 18px !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 12px !important;
+    color: white !important;
+    font-size: 15px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.input-group input:focus {
+    border-color: var(--neon-glow) !important;
+    box-shadow: 0 0 10px rgba(240, 98, 255, 0.2);
+}
+
+.auth-status-msg {
+    height: 20px;
+    font-size: 13px;
+    margin-bottom: 10px;
     text-align: center;
 }
 
-/* =========================================
-   4. SIDEBAR & NAVIGATION (NEW)
-   ========================================= */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: -100%;
-    width: 280px;
-    height: 100svh;
-    z-index: 9000;
-    background: rgba(10, 5, 20, 0.95);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid var(--glass-border);
-    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    padding: calc(40px + env(safe-area-inset-top)) 20px 20px 20px;
+.gdpr-label {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--text-pink);
+    cursor: pointer;
 }
 
-.sidebar.active { left: 0; }
-
-.sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 8500;
-    opacity: 0;
-    pointer-events: none;
-    transition: 0.3s;
+.gdpr-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--neon-glow);
 }
 
-.sidebar-overlay.active { opacity: 1; pointer-events: auto; }
-
-.sidebar-btn {
-    width: 100%;
-    padding: 15px;
-    margin-bottom: 10px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 15px;
+.auth-divider {
+    font-size: 10px;
+    font-weight: 800;
+    opacity: 0.5;
+    letter-spacing: 2px;
+    margin: 10px 0;
+    text-align: center;
     color: white;
-    font-weight: 700;
-    text-align: left;
-    transition: 0.3s;
 }
 
-.sidebar-btn:active { transform: scale(0.98); background: var(--glass-border); }
-
-/* HAMBURGER */
-.hamburger-vercel {
-    position: fixed;
-    bottom: calc(25px + env(safe-area-inset-bottom));
-    right: 25px;
-    z-index: 9500;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    width: 60px; height: 60px;
-    border-radius: 50%;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+.auth-switch-text {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
 }
 
-.bar { width: 22px; height: 2px; background: white; border-radius: 2px; transition: 0.3s; }
-
-/* =========================================
-   5. INPUTS & BUTTONS
-   ========================================= */
-input {
-    width: 100%; padding: 16px;
-    background: rgba(0,0,0,0.3) !important;
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    color: white !important;
-    outline: none;
-}
-
-.btn-primary {
-    background: var(--neon-glow);
-    color: white; border: none; padding: 18px;
-    border-radius: 15px; font-weight: 800;
-    box-shadow: 0 5px 20px rgba(240, 98, 255, 0.4);
-}
-
-.discord-btn {
-    background: #5865F2; color: white; border: none;
-    padding: 15px; border-radius: 15px; font-weight: 700;
-}
-
-/* ANIMAZIONI */
-@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-.shake-error { animation: shake 0.4s ease-in-out; }
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-10px); }
-    75% { transform: translateX(10px); }
+.auth-link {
+    color: var(--neon-glow);
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: underline;
 }
