@@ -1,0 +1,32 @@
+{
+  "name": "la-taverna-vtt",
+  "private": true,
+  "version": "1.1.0",
+  "description": "Virtual Tabletop immersivo in stile Ametista & Void",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "echo 'Sguardo dell'Oste: Tutto in ordine!'"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.10",
+    "terser": "^5.31.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "vtt",
+    "rpg",
+    "supabase",
+    "gaming",
+    "tabletop"
+  ],
+  "author": "Il Viandante",
+  "license": "MIT"
+}

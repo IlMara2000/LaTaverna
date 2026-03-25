@@ -1,0 +1,177 @@
+/* =========================================
+   1. CORE & VARIABLES (AMETISTA & VOID)
+   ========================================= */
+   :root {
+    --void-black: #05020a;
+    --deep-purple: #1a0833;
+    --amethyst: #9d4edd;
+    --amethyst-bright: #c77dff;
+    --pure-white: #ffffff;
+    --error-red: #ff4444;
+    --glass-bg: rgba(26, 8, 51, 0.4);
+    --glass-border: rgba(199, 125, 255, 0.2);
+    --amethyst-glow: rgba(157, 78, 221, 0.5);
+}
+
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    -webkit-tap-highlight-color: transparent; 
+}
+
+body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: radial-gradient(circle at top right, var(--deep-purple) 0%, var(--void-black) 100%) no-repeat fixed;
+    color: var(--pure-white);
+    height: 100svh;
+    width: 100vw;
+    overflow: hidden;
+    position: fixed;
+}
+
+/* =========================================
+   2. ENTRY PORTAL (L'effetto Coppa)
+   ========================================= */
+.entry-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    gap: 30px;
+}
+
+.main-logo-wrapper {
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.main-logo-wrapper:active { transform: scale(0.9); }
+
+#main-logo {
+    width: 150px;
+    height: 150px;
+    filter: drop-shadow(0 0 30px var(--amethyst-glow));
+}
+
+.tap-instruction {
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    opacity: 0.4;
+    animation: pulse 2s infinite;
+}
+
+/* =========================================
+   3. SIDEBAR & NAVIGATION
+   ========================================= */
+.sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    width: 280px;
+    height: 100%;
+    background: rgba(10, 5, 18, 0.95);
+    backdrop-filter: blur(20px);
+    z-index: 1000;
+    padding: 40px 20px;
+    transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--glass-border);
+}
+
+.sidebar.active { left: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.5); }
+
+.sidebar-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.sidebar-btn:hover {
+    background: rgba(157, 78, 221, 0.1);
+    border-color: var(--amethyst-bright);
+    transform: translateX(5px);
+}
+
+/* HAMBURGER VERCEL STYLE */
+.hamburger-vercel {
+    position: fixed;
+    top: 25px;
+    left: 20px;
+    z-index: 1100;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+}
+
+/* =========================================
+   4. UI COMPONENTS (GLASS-MORPHISM)
+   ========================================= */
+.glass-box {
+    background: linear-gradient(135deg, var(--glass-bg), rgba(5, 2, 10, 0.8));
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 20px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--amethyst-bright), var(--amethyst));
+    border: none;
+    color: white;
+    padding: 18px;
+    border-radius: 16px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 8px 20px var(--amethyst-glow);
+    cursor: pointer;
+}
+
+.auth-input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 15px;
+    border-radius: 12px;
+    outline: none;
+    transition: 0.3s;
+}
+
+.auth-input:focus { border-color: var(--amethyst-bright); background: rgba(255,255,255,0.08); }
+
+/* =========================================
+   5. ANIMATIONS
+   ========================================= */
+@keyframes pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.7; }
+}
+
+/* Fix per Mobile Safari (Banda nera sotto) */
+@supports (-webkit-touch-callout: none) {
+    .dashboard-content { padding-bottom: 120px; }
+}
