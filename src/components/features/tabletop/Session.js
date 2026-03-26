@@ -1,10 +1,10 @@
-import { supabase, SUPABASE_CONFIG } from '../../services/supabase.js';
+// CORRETTO: 3 livelli per uscire da tabletop -> features -> components
+import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 import { showTabletop } from './Map.js';
 
-const { tables } = SUPABASE_CONFIG;
+const tables = SUPABASE_CONFIG?.tables || { maps: 'maps', chat: 'chat' };
 
 export async function showSession(container, sessionId) {
-    // --- 1. GESTIONE UTENTE (AUTH) ---
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
         window.location.reload();
@@ -12,7 +12,6 @@ export async function showSession(container, sessionId) {
     }
     const currentUserName = user.user_metadata?.full_name || user.email.split('@')[0];
 
-    // --- 2. RECUPERO NOME SESSIONE ---
     let sessionData = { name: "Tavolo Live" };
     try {
         const { data } = await supabase
@@ -25,11 +24,9 @@ export async function showSession(container, sessionId) {
         console.log("Errore recupero titolo sessione."); 
     }
 
-    // --- 3. RENDER UI SESSIONE ---
     container.innerHTML = `
         <div class="session-container" style="display: flex; height: 100vh; width: 100vw; overflow: hidden; background: #05020a; position: fixed; inset: 0;">
-            
-            <aside id="side-zaino" class="glass-box" style="width: 0; padding: 0; overflow: hidden; transition: 0.4s; border-radius: 0; border-y: none; position: relative; z-index: 100;">
+            <aside id="side-zaino" class="glass-box" style="width: 0; padding: 0; overflow: hidden; transition: 0.4s; border-radius: 0; position: relative; z-index: 100;">
                 <div style="padding: 20px; width: 250px;">
                     <h2 style="font-size: 14px; margin-bottom: 20px; color: var(--amethyst-bright);">ZAINO RAPIDO</h2>
                     <div id="quick-assets" style="display: grid; gap: 10px;"></div>
@@ -54,20 +51,18 @@ export async function showSession(container, sessionId) {
                 </div>
             </main>
 
-            <section id="chat-section" class="glass-box" style="width: 300px; border-radius: 0; border-y: none; border-right: none; display: flex; flex-direction: column; background: rgba(5,2,10,0.6);">
+            <section id="chat-section" class="glass-box" style="width: 300px; border-radius: 0; display: flex; flex-direction: column; background: rgba(5,2,10,0.6);">
                 <div id="chat-msgs" style="flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px;"></div>
-                <div style="padding: 15px; border-top: 1px solid var(--glass-border);">
+                <div style="padding: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
                     <input type="text" id="chat-input" placeholder="Scrivi un messaggio..." class="auth-input" style="width: 100%; font-size: 13px;">
                 </div>
             </section>
         </div>
     `;
 
-    // --- 4. INIZIALIZZAZIONE MAPPA ---
     const tabletopDiv = container.querySelector('#tabletop-container');
     showTabletop(tabletopDiv, sessionId);
 
-    // --- 5. LOGICA CHAT & DADI ---
     const chatMsgs = container.querySelector('#chat-msgs');
     const chatInput = container.querySelector('#chat-input');
 
@@ -100,7 +95,6 @@ export async function showSession(container, sessionId) {
     function renderMessage(doc) {
         const div = document.createElement('div');
         div.style.background = doc.is_roll ? 'rgba(157, 78, 221, 0.2)' : 'rgba(255,255,255,0.05)';
-        div.style.border = doc.is_roll ? '1px solid var(--amethyst)' : '1px solid var(--glass-border)';
         div.style.padding = '10px 12px'; 
         div.style.borderRadius = '12px'; 
         div.style.fontSize = '13px';
@@ -112,7 +106,6 @@ export async function showSession(container, sessionId) {
         chatMsgs.scrollTop = chatMsgs.scrollHeight;
     }
 
-    // Caricamento storico messaggi
     const { data: oldMsgs } = await supabase
         .from(tables.chat)
         .select('*')
@@ -121,13 +114,11 @@ export async function showSession(container, sessionId) {
         .limit(50);
     if (oldMsgs) oldMsgs.forEach(renderMessage);
 
-    // Realtime Chat
     supabase.channel(`chat-${sessionId}`)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: tables.chat, filter: `session_id=eq.${sessionId}` }, 
         payload => renderMessage(payload.new))
         .subscribe();
 
-    // --- 6. GESTIONE UI (TOGGLE & ESCI) ---
     const sideZaino = container.querySelector('#side-zaino');
     container.querySelector('#toggleZaino').onclick = () => {
         sideZaino.style.width = sideZaino.style.width === '0px' ? '250px' : '0px';

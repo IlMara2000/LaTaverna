@@ -1,6 +1,8 @@
-import { supabase, SUPABASE_CONFIG } from '../../services/supabase.js';
+// CORRETTO: 3 livelli per uscire da tabletop -> features -> components
+import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 
-const { tables } = SUPABASE_CONFIG;
+// Fallback se SUPABASE_CONFIG non fosse disponibile durante il build
+const tables = SUPABASE_CONFIG?.tables || { tokens: 'tokens' };
 
 /**
  * Gestisce la griglia interattiva e i token della sessione
@@ -35,12 +37,12 @@ export function showTabletop(container, sessionId) {
             width: 100%; height: 100%; border-radius: 50%; 
             border: 3px solid var(--amethyst-bright); 
             box-shadow: 0 0 15px var(--amethyst-glow); 
-            object-fit: cover; background: var(--void-black); 
+            object-fit: cover; background: #05020a; 
         }
         .token-name { 
             position: absolute; top: -20px; background: rgba(0,0,0,0.8); 
             padding: 2px 8px; border-radius: 4px; font-size: 10px; 
-            white-space: nowrap; color: white; border: 1px solid var(--glass-border); 
+            white-space: nowrap; color: white; border: 1px solid rgba(255,255,255,0.1); 
         }
     `;
     document.head.appendChild(style);
@@ -54,7 +56,6 @@ export function showTabletop(container, sessionId) {
     const viewport = container.querySelector('#viewport');
     const mapLayer = container.querySelector('#map-layer');
 
-    // --- 2. LOGICA PAN & ZOOM ---
     const updateTransform = () => {
         mapLayer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     };
@@ -82,7 +83,6 @@ export function showTabletop(container, sessionId) {
         updateTransform();
     };
 
-    // --- 3. RENDER E DRAG DEI TOKEN ---
     function renderToken(doc) {
         let el = document.getElementById(`token-${doc.id}`);
         if (!el) {
@@ -136,7 +136,6 @@ export function showTabletop(container, sessionId) {
         };
     }
 
-    // --- 4. REALTIME ---
     async function loadTokens() {
         const { data } = await supabase
             .from(tables.tokens)
@@ -161,4 +160,12 @@ export function showTabletop(container, sessionId) {
             }
         })
         .subscribe();
+}
+
+// Supporto per l'inizializzazione da main.js
+export function initMap() {
+    const canvas = document.getElementById('map-canvas');
+    if (canvas) {
+        showTabletop(canvas, canvas.dataset.sessionId || 'default');
+    }
 }
