@@ -1,43 +1,57 @@
+/**
+ * SIDEBAR (Il Menu a comparsa laterale)
+ */
 export function initSidebar(container, user, onLogout) {
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Viandante";
     const mainContent = document.getElementById('main-content');
 
     container.innerHTML = `
-        <nav id="sidebar-menu" style="position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: #0a0512; z-index: 2000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding: 40px 20px; display: flex; flex-direction: column; border-right: 1px solid var(--glass-border);">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <img src="/assets/logo.png" style="width: 60px; filter: drop-shadow(0 0 10px var(--amethyst-glow));" onerror="this.style.display='none'">
-                <p style="font-size: 10px; margin-top: 15px; opacity: 0.5; letter-spacing: 1px;">MENU DI NAVIGAZIONE</p>
+        <nav id="sidebar-menu" class="sidebar" style="
+            position: fixed;
+            right: -100%; /* Parte da destra fuori schermo */
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 2, 10, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 2500;
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        ">
+            <div style="text-align: center; margin-bottom: 50px;">
+                <img src="/assets/logo.png" style="width: 100px; filter: drop-shadow(0 0 15px var(--amethyst-glow));" onerror="this.style.display='none'">
+                <h2 style="margin-top: 20px; letter-spacing: 2px; font-weight: 900;">${userName}</h2>
             </div>
             
-            <div class="nav-links" style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="sidebar-btn" id="sideNavCronache">✨ CRONACHE</button>
-                <button class="sidebar-btn" id="sideNavCharacters">🎭 PERSONAGGI</button>
-                <button class="sidebar-btn" id="sideNavAssets">🎒 LO ZAINO</button>
+            <div class="nav-links" style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 300px;">
+                <button class="sidebar-btn" id="sideNavCronache" style="width: 100%; padding: 20px; font-size: 16px;">✨ CRONACHE</button>
+                <button class="sidebar-btn" id="sideNavCharacters" style="width: 100%; padding: 20px; font-size: 16px;">🎭 PERSONAGGI</button>
+                <button class="sidebar-btn" id="sideNavAssets" style="width: 100%; padding: 20px; font-size: 16px;">🎒 LO ZAINO</button>
             </div>
 
-            <div style="flex-grow: 1;"></div>
+            <button id="close-sidebar" style="margin-top: 50px; background: none; border: 1px solid var(--glass-border); color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">✕</button>
             
-            <button class="sidebar-btn" id="sideNavLogout" style="color: #ff4444; border-color: rgba(255,68,68,0.2);">🚪 ESCI</button>
+            <button class="sidebar-btn" id="sideNavLogout" style="position: absolute; bottom: 40px; color: #ff4444; border: none; background: none; opacity: 0.6;">ESCI</button>
         </nav>
-        <div id="sidebar-overlay-shadow" style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; z-index: 1500; backdrop-filter: blur(4px);"></div>
     `;
 
     const sidebar = document.getElementById('sidebar-menu');
-    const overlay = document.getElementById('sidebar-overlay-shadow');
+    const closeBtn = document.getElementById('close-sidebar');
 
     const toggleMenu = () => {
-        const isOpen = sidebar.style.left === '0px';
-        sidebar.style.left = isOpen ? '-280px' : '0px';
-        overlay.style.display = isOpen ? 'none' : 'block';
+        const isOpen = sidebar.style.right === '0px';
+        sidebar.style.right = isOpen ? '-100%' : '0px';
     };
 
-    // ASCOLTA L'EVENTO DALLA NAVBAR
+    // Ascolta il pulsante fluttuante (la Navbar)
     window.addEventListener('toggleSidebar', toggleMenu);
-    
-    // Chiude se clicchi l'overlay
-    overlay.onclick = toggleMenu;
+    closeBtn.onclick = toggleMenu;
 
-    // --- AZIONI ---
+    // Navigazione
     document.getElementById('sideNavCronache').onclick = () => { toggleMenu(); window.location.reload(); };
     
     document.getElementById('sideNavCharacters').onclick = async () => {

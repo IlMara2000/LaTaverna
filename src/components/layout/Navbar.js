@@ -1,23 +1,41 @@
-export function initNavbar(container, user) {
-    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Viandante";
-
+/**
+ * NAVBAR (Il Pulsante Fluttuante in basso a destra)
+ */
+export function initNavbar(container) {
+    // Il container sarà lo spazio per il bottone
     container.innerHTML = `
-        <header class="main-navbar" style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: rgba(5, 2, 10, 0.8); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000; border-bottom: 1px solid var(--glass-border);">
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <button id="open-sidebar-trigger" style="background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 10px;">
-                    <span style="width: 20px; height: 2px; background: white;"></span>
-                    <span style="width: 20px; height: 2px; background: white;"></span>
-                    <span style="width: 20px; height: 2px; background: white;"></span>
-                </button>
-                <span style="font-weight: 900; letter-spacing: 2px; font-size: 14px; color: var(--amethyst-bright);">LA TAVERNA</span>
-            </div>
-            <div style="font-size: 10px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px;">${userName}</div>
-        </header>
+        <button id="navbar-trigger" class="floating-btn" style="
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--amethyst-bright);
+            border: none;
+            cursor: pointer;
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 0 20px var(--amethyst-glow);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        ">
+            <span class="bar" style="width: 25px; height: 3px; background: white; border-radius: 2px;"></span>
+            <span class="bar" style="width: 25px; height: 3px; background: white; border-radius: 2px;"></span>
+            <span class="bar" style="width: 25px; height: 3px; background: white; border-radius: 2px;"></span>
+        </button>
     `;
 
-    // Quando clicco il tasto nella Navbar, invio un evento personalizzato
-    document.getElementById('open-sidebar-trigger').onclick = () => {
-        const event = new CustomEvent('toggleSidebar');
-        window.dispatchEvent(event);
+    const btn = document.getElementById('navbar-trigger');
+    
+    btn.onclick = () => {
+        btn.style.transform = 'scale(0.9) rotate(90deg)';
+        setTimeout(() => btn.style.transform = 'scale(1) rotate(0deg)', 200);
+        
+        // Comunica alla Sidebar di aprirsi
+        window.dispatchEvent(new CustomEvent('toggleSidebar'));
     };
 }
