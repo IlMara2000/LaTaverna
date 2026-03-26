@@ -1,5 +1,5 @@
 // Import degli stili globali
-import './globals.css';
+import './styles/globals.css';
 
 // Import dei servizi e delle componenti UI
 import { supabase } from './services/supabase.js';
