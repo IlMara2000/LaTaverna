@@ -7,7 +7,7 @@ export function initLogin(container) {
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; background: #05020a;">
             <div class="glass-box" style="width: 100%; max-width: 400px; padding: 40px; text-align: center; border-radius: 28px; background: rgba(88, 101, 242, 0.05); border: 1px solid rgba(88, 101, 242, 0.2); backdrop-filter: blur(20px); box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
                 
-                <img src="/assets/logo.png" style="width: 80px; margin-bottom: 20px; filter: drop-shadow(0 0 10px #5865F2);">
+                <img src="/assets/logo.png" style="width: 80px; margin-bottom: 20px; filter: drop-shadow(0 0 10px #5865F2);" onerror="this.src='https://placehold.co/80x80?text=Logo'">
                 
                 <h1 style="font-size: 1.8rem; font-weight: 900; color: white; margin-bottom: 10px; letter-spacing: -1px;">L'ACCESSO È RISERVATO</h1>
                 <p style="font-size: 14px; opacity: 0.7; color: #8e9297; margin-bottom: 30px; line-height: 1.5;">
@@ -20,20 +20,29 @@ export function initLogin(container) {
                 </button>
 
                 <p style="margin-top: 25px; font-size: 11px; opacity: 0.5; color: #fff;">
-                    Loggandoti verrai reindirizzato a Discord per l'autorizzazione.
+                    Registrazione e Login sono automatici tramite Discord.
                 </p>
             </div>
         </div>
     `;
 
     document.getElementById('login-discord').onclick = async () => {
+        // Forza il redirect all'URL di produzione se siamo su Vercel
+        const siteUrl = window.location.hostname === 'localhost' 
+            ? window.location.origin 
+            : 'https://lataverna.xyz'; // Inserisci qui il tuo dominio reale
+
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'discord',
             options: {
-                redirectTo: window.location.origin,
-                scopes: 'identify email guilds' // Chiediamo l'accesso ai server (guilds)
+                redirectTo: siteUrl,
+                scopes: 'identify email guilds'
             }
         });
-        if (error) alert("Errore Discord: " + error.message);
+        
+        if (error) {
+            console.error("Errore OAuth:", error);
+            alert("Errore durante l'accesso: " + error.message);
+        }
     };
 }
