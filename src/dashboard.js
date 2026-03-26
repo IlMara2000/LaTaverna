@@ -1,7 +1,5 @@
 import { supabase, SUPABASE_CONFIG } from './services/supabase.js';
-import { showCharacters } from './features/characters/CharList.js';
-import { showAssets } from './features/zaino/Assets.js';
-import { showSession } from './features/tabletop/Session.js';
+// CORRETTO: I percorsi ora devono puntare alle sottocartelle corrette
 import { initSidebar } from './components/layout/Sidebar.js';
 
 const { tables } = SUPABASE_CONFIG;
@@ -39,17 +37,17 @@ export async function showDashboard(container, user = null) {
             <div id="sidebar-container"></div>
 
             <main class="dashboard-content" id="main-content">
-                <div style="max-width: 600px; margin: 0 auto; padding-bottom: 100px;">
+                <div style="max-width: 600px; margin: 0 auto; padding-bottom: 100px; padding-top: 20px;">
                     
-                    <header style="margin-bottom: 40px; margin-top: 20px;">
-                        <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing: -1px;">BENTORNATO,<br>
+                    <header style="margin-bottom: 40px;">
+                        <h1 style="font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; line-height: 1.1;">BENTORNATO,<br>
                         <span style="color: var(--amethyst-bright); text-transform: uppercase;">${userName}</span></h1>
                         <p style="opacity: 0.5; font-size: 12px; margin-top: 10px; letter-spacing: 1px;">LE TUE CRONACHE ATTIVE</p>
                     </header>
 
                     <div id="session-list" style="display: flex; flex-direction: column; gap: 15px;">
                         ${sessions.map(s => `
-                            <div class="glass-box session-card" data-id="${s.session_id}" style="cursor:pointer; transition: 0.3s; display: flex; justify-content: space-between; align-items: center;">
+                            <div class="glass-box session-card" data-id="${s.session_id}" style="cursor:pointer; transition: 0.3s; display: flex; justify-content: space-between; align-items: center; padding: 20px; border-radius: 16px;">
                                 <div>
                                     <h3 style="margin:0; font-size: 1.1rem;">${s.name}</h3>
                                     <p style="margin:5px 0 0 0; font-size: 10px; opacity:0.4; text-transform:uppercase;">ID: ${s.session_id.slice(0,8)}...</p>
@@ -58,7 +56,7 @@ export async function showDashboard(container, user = null) {
                             </div>
                         `).join('')}
 
-                        <button class="btn-primary" id="createNew" style="margin-top: 20px; width: 100%;">
+                        <button class="btn-primary" id="createNew" style="margin-top: 20px; width: 100%; padding: 18px; font-weight: 800; border-radius: 14px;">
                             ✨ NUOVA CRONACA
                         </button>
                     </div>
@@ -67,24 +65,28 @@ export async function showDashboard(container, user = null) {
             </main>
         </div>
 
-        <div id="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:1000; align-items:center; justify-content:center; padding:20px;">
-            <div class="glass-box" id="modal-content" style="width:100%; max-width:400px; text-align:center;">
-                </div>
+        <div id="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(5, 2, 10, 0.85); backdrop-filter:blur(10px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+            <div class="glass-box" id="modal-content" style="width:100%; max-width:400px; text-align:center; padding: 30px; border-radius: 24px;">
+            </div>
         </div>
     `;
 
     // --- 4. INIZIALIZZAZIONE SIDEBAR ---
     const sidebarContainer = container.querySelector('#sidebar-container');
-    initSidebar(sidebarContainer, user, () => {
-        supabase.auth.signOut().then(() => window.location.reload());
-    });
+    if (sidebarContainer) {
+        initSidebar(sidebarContainer, user, () => {
+            supabase.auth.signOut().then(() => window.location.reload());
+        });
+    }
 
-    // --- 5. EVENTI ---
+    // --- 5. EVENTI CON IMPORT DINAMICI ---
     
     // Click sulle sessioni esistenti
     container.querySelectorAll('.session-card').forEach(card => {
-        card.onclick = () => {
+        card.onclick = async () => {
             const sid = card.getAttribute('data-id');
+            // Carichiamo la sessione solo al click per alleggerire il build
+            const { showSession } = await import('./components/features/tabletop/Session.js');
             showSession(container, sid);
         };
     });
@@ -96,10 +98,11 @@ export async function showDashboard(container, user = null) {
     container.querySelector('#createNew').onclick = () => {
         overlay.style.display = 'flex';
         modalBody.innerHTML = `
-            <h2 style="margin-bottom:20px;">Nuovo Tavolo</h2>
-            <input type="text" id="newSessName" placeholder="Nome dell'avventura..." class="auth-input" style="margin-bottom:20px; width:100%; border-radius:12px;">
-            <button class="btn-primary" id="confCreate" style="width:100%; padding:15px;">Inizia Avventura</button>
-            <button class="sidebar-btn" id="cancelCreate" style="margin-top:10px; width:100%; border:none; background:transparent; justify-content:center; opacity:0.6;">ANNULLA</button>
+            <h2 style="margin-bottom:10px; font-weight: 900;">NUOVO TAVOLO</h2>
+            <p style="opacity: 0.6; font-size: 13px; margin-bottom: 25px;">Scegli un nome evocativo per la tua avventura.</p>
+            <input type="text" id="newSessName" placeholder="Es: I Segreti di Ravenloft..." class="auth-input" style="margin-bottom:20px; width:100%; border-radius:12px; padding: 15px;">
+            <button class="btn-primary" id="confCreate" style="width:100%; padding:15px; border-radius: 12px;">INIZIA AVVENTURA</button>
+            <button id="cancelCreate" style="margin-top:15px; width:100%; background:transparent; border:none; color:white; opacity:0.5; cursor:pointer; font-size: 12px;">ANNULLA</button>
         `;
 
         modalBody.querySelector('#cancelCreate').onclick = () => overlay.style.display = 'none';
@@ -121,6 +124,8 @@ export async function showDashboard(container, user = null) {
                 if (error) throw error;
 
                 overlay.style.display = 'none';
+                // Import dinamico anche qui per coerenza
+                const { showSession } = await import('./components/features/tabletop/Session.js');
                 showSession(container, sessionId);
 
             } catch (err) {
