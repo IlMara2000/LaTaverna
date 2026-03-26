@@ -1,9 +1,9 @@
-import { showCharacters } from '../../features/characters/CharList.js';
-import { showAssets } from '../../features/zaino/Assets.js';
-
+/**
+ * Inizializza la navigazione laterale della Taverna
+ */
 export function initSidebar(container, user, onLogout) {
-    // Supabase salva il nome in user_metadata. Se non c'è, usiamo l'email.
-    const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+    // 1. Gestione sicura dell'utente (evita crash se l'oggetto è nullo)
+    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Viandante";
 
     const sidebarHtml = `
         <button class="hamburger-vercel" id="hamburger" aria-label="Menu">
@@ -28,7 +28,6 @@ export function initSidebar(container, user, onLogout) {
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
     `;
 
-    // Inseriamo la sidebar nel container dedicato
     container.innerHTML = sidebarHtml;
 
     const sidebar = document.getElementById('sidebar');
@@ -37,32 +36,44 @@ export function initSidebar(container, user, onLogout) {
     const mainContent = document.getElementById('main-content');
 
     const toggleMenu = () => {
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
+        if (sidebar) sidebar.classList.toggle('active');
+        if (overlay) overlay.classList.toggle('active');
         if (hamburger) hamburger.classList.toggle('open');
     };
 
     if (hamburger) hamburger.onclick = toggleMenu;
     if (overlay) overlay.onclick = toggleMenu;
 
-    // --- LOGICA DI NAVIGAZIONE ---
+    // --- LOGICA DI NAVIGAZIONE CON IMPORT DINAMICI ---
 
-    // 1. Torna alla lista Sessioni (Ricarica la dashboard)
+    // 1. Cronache (Reload)
     document.getElementById('navNewSession').onclick = () => {
         toggleMenu();
         window.location.reload(); 
     };
 
-    // 2. Mostra Personaggi
-    document.getElementById('navCharacters').onclick = () => {
+    // 2. Personaggi (Import Dinamico)
+    document.getElementById('navCharacters').onclick = async () => {
         toggleMenu();
-        if (mainContent) showCharacters(mainContent);
+        try {
+            // Usciamo da layout/ ed entriamo in features/
+            const { showCharacters } = await import('../features/characters/CharList.js');
+            if (mainContent) showCharacters(mainContent);
+        } catch (err) {
+            console.error("Errore nel caricamento dei Personaggi:", err);
+        }
     };
 
-    // 3. Mostra lo Zaino (Assets)
-    document.getElementById('navAssets').onclick = () => {
+    // 3. Zaino / Assets (Import Dinamico)
+    document.getElementById('navAssets').onclick = async () => {
         toggleMenu();
-        if (mainContent) showAssets(mainContent);
+        try {
+            // Usciamo da layout/ ed entriamo in features/
+            const { showAssets } = await import('../features/zaino/Assets.js');
+            if (mainContent) showAssets(mainContent);
+        } catch (err) {
+            console.error("Errore nel caricamento dello Zaino:", err);
+        }
     };
 
     // 4. Logout
