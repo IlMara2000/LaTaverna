@@ -3,38 +3,29 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-    
     <meta name="theme-color" content="#05020a">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="La Taverna">
-    
     <title>LA TAVERNA 🍷</title>
 
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
-    <link rel="apple-touch-icon" href="/assets/favicon.ico">
-    
-    <link rel="stylesheet" href="/src/styles/globals.css">
+    <link rel="stylesheet" href="/src/styles/global.css">
 
     <style>
-        /* Pre-loader critico per evitare il flash bianco al caricamento */
-        :root { --bg: #05020a; }
+        :root { --bg: #05020a; --amethyst-bright: #9d4ede; }
         html, body { 
             background-color: var(--bg) !important; 
             margin: 0; padding: 0; 
             height: 100%; width: 100%;
             overflow: hidden;
-            position: fixed; 
+            color: white;
+            font-family: sans-serif;
         }
-        #ui { width: 100%; height: 100%; }
+        #ui { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .entry-container { text-align: center; cursor: pointer; transition: 0.5s; }
+        .tap-instruction { margin-top: 20px; opacity: 0.5; letter-spacing: 2px; font-size: 12px; text-transform: uppercase; }
+        #main-logo { width: 120px; filter: drop-shadow(0 0 15px var(--amethyst-bright)); }
     </style>
 </head>
 <body>
-
     <div id="ui"></div>
-
     <script type="module" src="/src/main.js"></script>
-
 </body>
 </html>
