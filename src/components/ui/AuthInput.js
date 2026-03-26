@@ -1,61 +1,87 @@
 /**
- * Genera un input stilizzato in linea con il design della Taverna
- * @param {Object} props - Proprietà dell'input
- * @returns {string} - Stringa HTML dell'input
+ * LOGICA TIMER (10 MINUTI)
  */
-export function createAuthInput({ 
-    id, 
-    type = 'text', 
-    placeholder, 
-    required = true, 
-    icon = '', 
-    value = '',
-    autocomplete = '' 
-}) {
-    return `
-        <div class="input-group" style="position: relative; width: 100%; margin-bottom: 15px;">
-            ${icon ? `<span style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); opacity: 0.5; font-size: 16px;">${icon}</span>` : ''}
-            <input 
-                type="${type}" 
-                id="${id}" 
-                placeholder="${placeholder}" 
-                ${required ? 'required' : ''} 
-                ${autocomplete ? `autocomplete="${autocomplete}"` : ''}
-                value="${value}"
-                class="auth-input" 
-                style="width: 100%; padding: 15px 15px 15px ${icon ? '45px' : '15px'}; 
-                       background: rgba(255, 255, 255, 0.03); 
-                       border: 1px solid var(--glass-border); 
-                       border-radius: 12px; 
-                       color: white; 
-                       font-size: 14px; 
-                       outline: none; 
-                       transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);"
-            >
-        </div>
-    `;
+export function shouldShowPortalButton() {
+    const lastAccess = localStorage.getItem('taverna_last_access');
+    if (!lastAccess) return true; 
+
+    const now = Date.now();
+    const tenMinutes = 10 * 60 * 1000; 
+    return (now - parseInt(lastAccess)) > tenMinutes;
+}
+
+export function updateLastAccess() {
+    localStorage.setItem('taverna_last_access', Date.now().toString());
 }
 
 /**
- * Aggiunge gli effetti di focus dinamici agli input generati
- * @param {HTMLElement} container - Il contenitore dove sono stati iniettati gli input
+ * Crea un bottone primario in stile Taverna (Ametista Glow)
  */
-export function initInputEffects(container) {
-    const inputs = container.querySelectorAll('.auth-input');
-    
-    inputs.forEach(input => {
-        // Effetto Glow al Focus
-        input.onfocus = () => {
-            input.style.borderColor = 'var(--amethyst-bright)';
-            input.style.background = 'rgba(157, 78, 221, 0.08)';
-            input.style.boxShadow = '0 0 15px rgba(157, 78, 221, 0.2)';
-        };
+export function createPrimaryBtn({ 
+    id, 
+    text, 
+    icon = '', 
+    fullWidth = true, 
+    style = '',
+    disabled = false 
+}) {
+    const widthStyle = fullWidth ? 'width: 100%;' : 'padding: 12px 30px;';
+    const disabledAttr = disabled ? 'disabled' : '';
+    const opacityStyle = disabled ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;';
 
-        // Ritorno allo stato normale
-        input.onblur = () => {
-            input.style.borderColor = 'var(--glass-border)';
-            input.style.background = 'rgba(255, 255, 255, 0.03)';
-            input.style.boxShadow = 'none';
+    return `
+        <button id="${id}" ${disabledAttr} class="btn-primary" style="
+            position: relative;
+            background: linear-gradient(135deg, var(--amethyst-bright), var(--amethyst));
+            border: none;
+            color: white;
+            border-radius: 16px;
+            font-weight: 800;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 8px 25px var(--amethyst-glow);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            height: 55px;
+            overflow: hidden;
+            ${widthStyle}
+            ${opacityStyle}
+            ${style}
+        ">
+            <div class="btn-glint" style="
+                position: absolute;
+                top: 0; left: -100%;
+                width: 50%; height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                transform: skewX(-25deg);
+                transition: 0.5s;
+            "></div>
+
+            <span class="btn-icon">${icon}</span>
+            <span class="btn-text">${text}</span>
+        </button>
+    `;
+}
+
+export function initBtnEffects(container) {
+    const btns = container.querySelectorAll('.btn-primary');
+    btns.forEach(btn => {
+        if (btn.disabled) return;
+        btn.onmouseenter = () => {
+            btn.style.transform = 'translateY(-3px) scale(1.02)';
+            const glint = btn.querySelector('.btn-glint');
+            if (glint) glint.style.left = '150%';
         };
+        btn.onmouseleave = () => {
+            btn.style.transform = 'translateY(0) scale(1)';
+            const glint = btn.querySelector('.btn-glint');
+            if (glint) glint.style.left = '-100%';
+        };
+        btn.onmousedown = () => btn.style.transform = 'translateY(1px) scale(0.97)';
+        btn.onmouseup = () => btn.style.transform = 'translateY(-3px) scale(1.02)';
     });
 }

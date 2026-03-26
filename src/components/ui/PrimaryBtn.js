@@ -1,7 +1,5 @@
 /**
  * Crea un bottone primario in stile Taverna (Ametista Glow)
- * @param {Object} props - Proprietà del bottone
- * @returns {string} - Stringa HTML del bottone
  */
 export function createPrimaryBtn({ 
     id, 
@@ -53,60 +51,21 @@ export function createPrimaryBtn({
     `;
 }
 
-/**
- * Inizializza le animazioni e i feedback per i bottoni
- * @param {HTMLElement} container - Il contenitore dei bottoni
- */
 export function initBtnEffects(container) {
     const btns = container.querySelectorAll('.btn-primary');
-    
     btns.forEach(btn => {
         if (btn.disabled) return;
-
-        // Effetto Hover & Glint
         btn.onmouseenter = () => {
             btn.style.transform = 'translateY(-3px) scale(1.02)';
-            btn.style.boxShadow = '0 12px 35px var(--amethyst-glow)';
             const glint = btn.querySelector('.btn-glint');
             if (glint) glint.style.left = '150%';
         };
-
         btn.onmouseleave = () => {
             btn.style.transform = 'translateY(0) scale(1)';
-            btn.style.boxShadow = '0 8px 25px var(--amethyst-glow)';
             const glint = btn.querySelector('.btn-glint');
             if (glint) glint.style.left = '-100%';
         };
-
-        // Feedback Tattile (Click)
-        btn.onmousedown = () => {
-            btn.style.transform = 'translateY(1px) scale(0.97)';
-        };
-
-        btn.onmouseup = () => {
-            btn.style.transform = 'translateY(-3px) scale(1.02)';
-        };
+        btn.onmousedown = () => btn.style.transform = 'translateY(1px) scale(0.97)';
+        btn.onmouseup = () => btn.style.transform = 'translateY(-3px) scale(1.02)';
     });
-}
-
-/**
- * Cambia lo stato del bottone in "Caricamento"
- */
-export function setBtnLoading(btnElement, isLoading, originalText = "ENTRA") {
-    const textSpan = btnElement.querySelector('.btn-text');
-    const iconSpan = btnElement.querySelector('.btn-icon');
-
-    if (isLoading) {
-        btnElement.disabled = true;
-        btnElement.style.opacity = "0.7";
-        if (textSpan) textSpan.textContent = "INCANTANDO...";
-        if (iconSpan) iconSpan.innerHTML = "🔮";
-        btnElement.style.filter = "grayscale(0.5)";
-    } else {
-        btnElement.disabled = false;
-        btnElement.style.opacity = "1";
-        if (textSpan) textSpan.textContent = originalText;
-        if (iconSpan) iconSpan.innerHTML = ""; // O l'icona originale
-        btnElement.style.filter = "none";
-    }
 }
