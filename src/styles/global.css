@@ -186,3 +186,17 @@ body {
 @supports (-webkit-touch-callout: none) {
     .dashboard-content { padding-bottom: 140px; }
 }
+
+/* Feedback alla pressione per i bottoni ametista */
+.btn-primary:active {
+    transform: scale(0.95);
+    box-shadow: 0 4px 10px var(--amethyst-glow);
+    filter: brightness(1.2);
+}
+
+/* Hover per il tasto chiusura */
+#close-sidebar:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--amethyst);
+    transform: rotate(90deg);
+}

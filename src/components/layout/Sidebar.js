@@ -1,41 +1,75 @@
-/**
- * SIDEBAR (Il Menu a comparsa laterale)
- */
 export function initSidebar(container, user, onLogout) {
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Viandante";
     const mainContent = document.getElementById('main-content');
 
     container.innerHTML = `
-        <nav id="sidebar-menu" class="sidebar" style="
-            position: fixed;
-            right: -100%; /* Parte da destra fuori schermo */
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(5, 2, 10, 0.95);
-            backdrop-filter: blur(20px);
-            z-index: 2500;
-            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        <nav id="sidebar-menu" style="
+            position: fixed; 
+            right: -100%; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: radial-gradient(circle at center, var(--deep-purple) 0%, var(--void-black) 100%);
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 9000; 
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
             justify-content: center;
             padding: 40px;
         ">
-            <div style="text-align: center; margin-bottom: 50px;">
-                <img src="/assets/logo.png" style="width: 100px; filter: drop-shadow(0 0 15px var(--amethyst-glow));" onerror="this.style.display='none'">
-                <h2 style="margin-top: 20px; letter-spacing: 2px; font-weight: 900;">${userName}</h2>
+            <div style="text-align: center; margin-bottom: 60px;">
+                <img src="/assets/logo.png" style="width: 100px; filter: drop-shadow(0 0 20px var(--amethyst-glow)); margin-bottom: 20px;" onerror="this.style.display='none'">
+                <h2 style="font-size: 2rem; font-weight: 900; letter-spacing: -1px; text-transform: uppercase;">
+                    ${userName}
+                </h2>
+                <div style="width: 40px; height: 4px; background: var(--amethyst); margin: 15px auto; border-radius: 2px;"></div>
             </div>
             
-            <div class="nav-links" style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 300px;">
-                <button class="sidebar-btn" id="sideNavCronache" style="width: 100%; padding: 20px; font-size: 16px;">✨ CRONACHE</button>
-                <button class="sidebar-btn" id="sideNavCharacters" style="width: 100%; padding: 20px; font-size: 16px;">🎭 PERSONAGGI</button>
-                <button class="sidebar-btn" id="sideNavAssets" style="width: 100%; padding: 20px; font-size: 16px;">🎒 LO ZAINO</button>
+            <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px;">
+                <button class="btn-primary" id="sideNavCronache" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    ✨ CRONACHE
+                </button>
+                <button class="btn-primary" id="sideNavCharacters" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    🎭 PERSONAGGI
+                </button>
+                <button class="btn-primary" id="sideNavAssets" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    🎒 LO ZAINO
+                </button>
             </div>
 
-            <button id="close-sidebar" style="margin-top: 50px; background: none; border: 1px solid var(--glass-border); color: white; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; cursor: pointer;">✕</button>
+            <button id="close-sidebar" style="
+                margin-top: 60px; 
+                background: var(--glass-bg); 
+                border: 1px solid var(--glass-border); 
+                color: white; 
+                width: 60px; 
+                height: 60px; 
+                border-radius: 50%; 
+                font-size: 24px; 
+                cursor: pointer;
+                transition: 0.3s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(10px);
+            ">✕</button>
             
-            <button class="sidebar-btn" id="sideNavLogout" style="position: absolute; bottom: 40px; color: #ff4444; border: none; background: none; opacity: 0.6;">ESCI</button>
+            <button id="sideNavLogout" style="
+                position: absolute; 
+                bottom: 40px; 
+                background: none; 
+                border: none; 
+                color: #ff4444; 
+                font-size: 12px; 
+                font-weight: 800; 
+                letter-spacing: 2px; 
+                text-transform: uppercase; 
+                cursor: pointer;
+                opacity: 0.6;
+            ">ESCI</button>
         </nav>
     `;
 
@@ -47,11 +81,10 @@ export function initSidebar(container, user, onLogout) {
         sidebar.style.right = isOpen ? '-100%' : '0px';
     };
 
-    // Ascolta il pulsante fluttuante (la Navbar)
     window.addEventListener('toggleSidebar', toggleMenu);
     closeBtn.onclick = toggleMenu;
 
-    // Navigazione
+    // --- LOGICA NAVIGAZIONE ---
     document.getElementById('sideNavCronache').onclick = () => { toggleMenu(); window.location.reload(); };
     
     document.getElementById('sideNavCharacters').onclick = async () => {
