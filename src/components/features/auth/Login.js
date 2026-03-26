@@ -1,5 +1,14 @@
-import { supabase } from '../../services/supabase.js';
-import { showDashboard } from './Dashboard.js';
+// CORREZIONE: Tre livelli per uscire da auth -> features -> components ed entrare in services
+import { supabase } from '../../../services/supabase.js';
+
+// Import degli altri componenti nella stessa cartella (auth)
+import { showDashboard } from '../../../dashboard.js'; 
+
+export function initLogin() {
+    const container = document.getElementById('auth-container') || document.getElementById('content-overlay');
+    if (!container) return;
+    showLogin(container);
+}
 
 export function showLogin(container) {
     container.innerHTML = `
@@ -55,6 +64,7 @@ export function showLogin(container) {
             setTimeout(() => {
                 container.innerHTML = ""; 
                 container.style.opacity = "1";
+                // Assicurati che showDashboard sia importata correttamente dal file dashboard.js
                 showDashboard(container, data.user);
             }, 300);
 
@@ -80,6 +90,7 @@ export function showLogin(container) {
 
     // --- NAVIGAZIONE A REGISTER ---
     container.querySelector('#toRegister').onclick = async () => {
+        // Percorso relativo per Register.js nella stessa cartella
         const { showRegister } = await import('./Register.js');
         showRegister(container);
     };
