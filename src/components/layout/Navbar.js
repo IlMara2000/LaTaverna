@@ -1,86 +1,23 @@
-/**
- * Inizializza la Navbar orizzontale con Hamburger Menu
- */
-export function initNavbar(container, user, onLogout) {
+export function initNavbar(container, user) {
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Viandante";
-    const mainContent = document.getElementById('main-content');
 
-    const navbarHtml = `
-        <header class="main-navbar">
-            <div class="nav-left">
-                <button class="hamburger-vercel" id="hamburger" aria-label="Menu">
-                    <span class="bar"></span>
-                    <span class="bar"></span>
-                    <span class="bar"></span>
+    container.innerHTML = `
+        <header class="main-navbar" style="position: fixed; top: 0; left: 0; width: 100%; height: 60px; background: rgba(5, 2, 10, 0.8); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 1000; border-bottom: 1px solid var(--glass-border);">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button id="open-sidebar-trigger" style="background: none; border: none; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 10px;">
+                    <span style="width: 20px; height: 2px; background: white;"></span>
+                    <span style="width: 20px; height: 2px; background: white;"></span>
+                    <span style="width: 20px; height: 2px; background: white;"></span>
                 </button>
-                <span class="nav-title">LA TAVERNA</span>
+                <span style="font-weight: 900; letter-spacing: 2px; font-size: 14px; color: var(--amethyst-bright);">LA TAVERNA</span>
             </div>
-            <div class="nav-right">
-                <span class="nav-user-status">${userName}</span>
-            </div>
+            <div style="font-size: 10px; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px;">${userName}</div>
         </header>
-
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <img src="/assets/logo.png" class="sidebar-logo" onerror="this.style.display='none'">
-                <p class="sidebar-user-name">${userName}</p>
-            </div>
-            
-            <div class="nav-links">
-                <button class="sidebar-btn" id="navNewSession">✨ CRONACHE</button>
-                <button class="sidebar-btn" id="navCharacters">🎭 PERSONAGGI</button>
-                <button class="sidebar-btn" id="navAssets">🎒 LO ZAINO</button>
-            </div>
-
-            <div style="flex-grow:1;"></div>
-            
-            <button class="sidebar-btn logout-btn" id="navLogout">
-                🚪 ESCI
-            </button>
-        </nav>
-
-        <div class="sidebar-overlay" id="sidebar-overlay"></div>
     `;
 
-    container.innerHTML = navbarHtml;
-
-    // --- LOGICA UI ---
-    const sidebar = document.getElementById('sidebar');
-    const hamburger = document.getElementById('hamburger');
-    const overlay = document.getElementById('sidebar-overlay');
-
-    const toggleMenu = () => {
-        sidebar?.classList.toggle('active');
-        overlay?.classList.toggle('active');
-        hamburger?.classList.toggle('open');
-    };
-
-    if (hamburger) hamburger.onclick = toggleMenu;
-    if (overlay) overlay.onclick = toggleMenu;
-
-    // --- NAVIGAZIONE ---
-    document.getElementById('navNewSession').onclick = () => {
-        toggleMenu();
-        window.location.reload(); 
-    };
-
-    document.getElementById('navCharacters').onclick = async () => {
-        toggleMenu();
-        try {
-            const { showCharacters } = await import('../features/characters/CharList.js');
-            if (mainContent) showCharacters(mainContent);
-        } catch (err) { console.error("Errore Personaggi:", err); }
-    };
-
-    document.getElementById('navAssets').onclick = async () => {
-        toggleMenu();
-        try {
-            const { showAssets } = await import('../features/zaino/Assets.js');
-            if (mainContent) showAssets(mainContent);
-        } catch (err) { console.error("Errore Zaino:", err); }
-    };
-
-    document.getElementById('navLogout').onclick = () => {
-        if (confirm("Vuoi davvero lasciare la Taverna?")) onLogout();
+    // Quando clicco il tasto nella Navbar, invio un evento personalizzato
+    document.getElementById('open-sidebar-trigger').onclick = () => {
+        const event = new CustomEvent('toggleSidebar');
+        window.dispatchEvent(event);
     };
 }
