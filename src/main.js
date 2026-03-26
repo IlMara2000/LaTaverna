@@ -1,32 +1,40 @@
-// Import degli stili globali
-import './styles/global.css';
-
-// Import dei servizi e delle componenti UI
+// 1. STILI E SERVIZI
+import './styles/global.css'; // Senza la S, come concordato!
 import { supabase } from './services/supabase.js';
-import { showLogin } from './components/ui/Login.js';
-import { showDashboard } from './components/ui/Dashboard.js';
+import { generateRoomDescription } from './services/ai.js';
 
-// Handler errori globale per il debug in taverna
+// 2. COMPONENTI (Percorsi corretti per la struttura Factory)
+import { initLogin } from './components/features/auth/Login.js';
+import { initDiscord } from './components/features/auth/Discord.js';
+import { initMap } from './components/features/tabletop/Map.js';
+import { initNavbar } from './components/layout/Navbar.js';
+import { showDashboard } from './dashboard.js'; // Assicurati che il percorso sia corretto
+
+// 3. DEBUG ERROR HANDLER
 window.onerror = function(message, source, lineno, colno, error) {
-    console.error("ERRORE RILEVATO:", message, "in", source, "riga:", lineno);
+    console.error("🚨 ERRORE TAVERNA:", message, "in", source, "riga:", lineno);
 };
 
 const uiContainer = document.getElementById('ui');
 
+// 4. LOGICA PORTALE E INIZIALIZZAZIONE
 async function initApp() {
     if (!uiContainer) {
-        console.error("Container #ui non trovato nel DOM");
+        console.error("⚠️ Container #ui non trovato nel DOM");
         return;
     }
 
-    // 1. CONTROLLO SESSIONE (Supabase)
-    const { data: { user }, error } = await supabase.auth.getUser();
+    console.log("🏰 La Taverna sta preparando i boccale...");
 
-    // 2. RENDER SCHERMATA PORTALE (L'ingresso alla Taverna)
+    // Controllo sessione Supabase immediato
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // RENDER SCHERMATA INGRESSO
     uiContainer.innerHTML = `
         <div class="entry-container" id="entry-screen">
             <div class="main-logo-wrapper" id="enter-portal">
-                <img src="/assets/logo.png" alt="La Taverna" id="main-logo" onerror="this.style.border='2px solid var(--amethyst-bright)'; this.style.borderRadius='50%';">
+                <img src="/assets/logo.png" alt="La Taverna" id="main-logo" 
+                     onerror="this.style.border='2px solid var(--amethyst-bright)'; this.style.borderRadius='50%';">
             </div>
             <p class="tap-instruction">Tocca la Coppa per Entrare</p>
         </div>
@@ -41,42 +49,55 @@ async function initApp() {
         enterBtn.onclick = () => {
             enterBtn.style.pointerEvents = 'none';
 
-            // Animazione fluida di uscita del portale
+            // Animazione Portale
             entryScreen.style.transition = 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s ease';
             entryScreen.style.opacity = '0';
             entryScreen.style.transform = 'scale(0.95)';
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 entryScreen.style.display = 'none';
                 contentOverlay.style.display = 'block';
+                contentOverlay.style.opacity = '1';
 
-                // 3. DECISIONE: DASHBOARD O LOGIN
+                // Inizializza i componenti globali (Navbar, etc)
+                initNavbar();
+
+                // DECISIONE: Carica Dashboard o Login
                 if (user) {
-                    showDashboard(contentOverlay, user);
+                    console.log("👤 Utente loggato:", user.email);
+                    if (typeof showDashboard === 'function') {
+                        showDashboard(contentOverlay, user);
+                    }
                 } else {
-                    showLogin(contentOverlay);
+                    console.log("🔒 Accesso Anonimo: Caricamento Login...");
+                    // Inizializza il sistema di login nel contenitore overlay
+                    contentOverlay.innerHTML = '<div id="auth-container"></div>';
+                    initLogin(); // Carica la logica login
+                    initDiscord(); // Carica il tasto Discord
                 }
 
-                // Animazione di entrata del contenuto
-                setTimeout(() => {
-                    contentOverlay.style.transition = 'opacity 0.5s ease';
-                    contentOverlay.style.opacity = '1';
-                }, 50);
+                // Se esiste una mappa nella pagina, inizializzala
+                if (document.getElementById('map-canvas')) {
+                    initMap();
+                }
+
             }, 600);
         };
     }
 }
 
-// Avvio dell'applicazione
-initApp().catch(err => {
-    console.error("Errore fatale all'apertura del portale:", err);
-    if(uiContainer) {
-        uiContainer.innerHTML = `
-            <div style="color:white; text-align:center; padding:50px;">
-                <h2 style="color:var(--amethyst-bright);">Il portale è sigillato 🛡️</h2>
-                <p style="opacity:0.6; margin-top:10px;">Errore magico nel caricamento della Taverna.</p>
-                <button onclick="window.location.reload()" class="btn-primary" style="margin-top:20px; width:auto; padding:10px 30px;">RIPROVA IL RITO</button>
-            </div>
-        `;
-    }
+// 5. AVVIO RITO
+document.addEventListener('DOMContentLoaded', () => {
+    initApp().catch(err => {
+        console.error("🔥 Errore fatale nel rito d'apertura:", err);
+        if (uiContainer) {
+            uiContainer.innerHTML = `
+                <div style="color:white; text-align:center; padding:50px;">
+                    <h2 style="color:var(--amethyst-bright);">Il portale è sigillato 🛡️</h2>
+                    <p style="opacity:0.6; margin-top:10px;">${err.message}</p>
+                    <button onclick="window.location.reload()" class="btn-primary" style="margin-top:20px; width:auto; padding:10px 30px;">RIPROVA IL RITO</button>
+                </div>
+            `;
+        }
+    });
 });
