@@ -1,14 +1,14 @@
 // 1. STILI E SERVIZI
-import './styles/global.css'; // Senza la S, come concordato!
+import './styles/global.css'; 
 import { supabase } from './services/supabase.js';
 import { generateRoomDescription } from './services/ai.js';
 
-// 2. COMPONENTI (Percorsi corretti per la struttura Factory)
+// 2. COMPONENTI
 import { initLogin } from './components/features/auth/Login.js';
-import { initDiscord } from './components/features/auth/Discord.js';
+import { setupDiscordRedirect, initDiscord } from './components/features/auth/Discord.js';
 import { initMap } from './components/features/tabletop/Map.js';
 import { initNavbar } from './components/layout/Navbar.js';
-import { showDashboard } from './dashboard.js'; // Assicurati che il percorso sia corretto
+import { showDashboard } from './dashboard.js'; 
 
 // 3. DEBUG ERROR HANDLER
 window.onerror = function(message, source, lineno, colno, error) {
@@ -24,12 +24,16 @@ async function initApp() {
         return;
     }
 
+    // --- A. GESTIONE REDIRECT DISCORD ---
+    // Questo intercetta il ritorno da Discord PRIMA di mostrare il portale
+    await setupDiscordRedirect(uiContainer);
+
     console.log("🏰 La Taverna sta preparando i boccale...");
 
-    // Controllo sessione Supabase immediato
+    // Controllo sessione Supabase
     const { data: { user } } = await supabase.auth.getUser();
 
-    // RENDER SCHERMATA INGRESSO
+    // --- B. RENDER SCHERMATA INGRESSO ---
     uiContainer.innerHTML = `
         <div class="entry-container" id="entry-screen">
             <div class="main-logo-wrapper" id="enter-portal">
@@ -59,10 +63,10 @@ async function initApp() {
                 contentOverlay.style.display = 'block';
                 contentOverlay.style.opacity = '1';
 
-                // Inizializza i componenti globali (Navbar, etc)
+                // Inizializza Navbar
                 initNavbar();
 
-                // DECISIONE: Carica Dashboard o Login
+                // DECISIONE: Dashboard o Login
                 if (user) {
                     console.log("👤 Utente loggato:", user.email);
                     if (typeof showDashboard === 'function') {
@@ -70,13 +74,12 @@ async function initApp() {
                     }
                 } else {
                     console.log("🔒 Accesso Anonimo: Caricamento Login...");
-                    // Inizializza il sistema di login nel contenitore overlay
                     contentOverlay.innerHTML = '<div id="auth-container"></div>';
-                    initLogin(); // Carica la logica login
-                    initDiscord(); // Carica il tasto Discord
+                    initLogin(); 
+                    // initDiscord viene ora chiamato internamente da initLogin
                 }
 
-                // Se esiste una mappa nella pagina, inizializzala
+                // Se esiste una mappa, inizializzala
                 if (document.getElementById('map-canvas')) {
                     initMap();
                 }
