@@ -35,7 +35,7 @@ function renderSidebarContent(container, context) {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         ">
             <div style="text-align: center; margin-bottom: 40px;">
-                <h2 style="color: var(--amethyst-bright); margin:0;">${userName.toUpperCase()}</h2>
+                <h2 style="color: var(--amethyst-bright); margin:0; letter-spacing:1px;">${userName.toUpperCase()}</h2>
                 <span style="font-size: 10px; opacity: 0.5; letter-spacing: 2px;">
                     ${context === 'home' ? 'HUB PRINCIPALE' : 'SISTEMA: ' + context.toUpperCase()}
                 </span>
@@ -44,7 +44,7 @@ function renderSidebarContent(container, context) {
             <div style="display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 300px;">
                 ${menuConfigs[context] || menuConfigs.home}
                 <hr style="width: 100%; opacity: 0.1; margin: 10px 0;">
-                <button class="btn-primary" id="sideLogout" style="background: none; border: 1px solid #ff4444; color: #ff4444; box-shadow: none;">ESCI</button>
+                <button class="btn-primary" id="sideLogout" style="background: none; border: 1px solid #ff4444; color: #ff4444; box-shadow: none;">ESCI DALLA TAVERNA</button>
             </div>
         </nav>
     `;
@@ -62,12 +62,11 @@ function renderSidebarContent(container, context) {
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // --- LOGICA BOTTONI ---
+    // --- LOGICA CLICK BOTTONI ---
     
-    // Logout
     document.getElementById('sideLogout').onclick = currentLogoutFn;
 
-    // Profilo (Solo in Home)
+    // Profilo
     const btnProfile = document.getElementById('sideProfile');
     if (btnProfile) {
         btnProfile.onclick = () => {
@@ -76,7 +75,7 @@ function renderSidebarContent(container, context) {
         };
     }
 
-    // Impostazioni (Solo in Home)
+    // Impostazioni
     const btnSettings = document.getElementById('sideSettings');
     if (btnSettings) {
         btnSettings.onclick = () => {
