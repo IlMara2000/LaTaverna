@@ -1,3 +1,6 @@
+import { showProfile } from '../../features/user/Profile.js';
+import { showSettings } from '../../features/user/Settings.js';
+
 let currentSidebarUser = null;
 let currentLogoutFn = null;
 
@@ -10,7 +13,6 @@ export function initSidebar(container, user, onLogout, context = "home") {
 function renderSidebarContent(container, context) {
     const userName = currentSidebarUser?.user_metadata?.full_name || "Viandante";
 
-    // MENU DINAMICI
     const menuConfigs = {
         home: `
             <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
@@ -47,10 +49,9 @@ function renderSidebarContent(container, context) {
         </nav>
     `;
 
-    // RE-ATTACH EVENTI
     const sidebar = document.getElementById('sidebar-menu');
+    const mainContent = document.getElementById('main-content');
     
-    // Toggle Sidebar tramite evento globale
     const toggle = () => {
         const isOpen = sidebar.style.right === '0px';
         sidebar.style.right = isOpen ? '-100%' : '0px';
@@ -61,10 +62,30 @@ function renderSidebarContent(container, context) {
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
+    // --- LOGICA BOTTONI ---
+    
+    // Logout
     document.getElementById('sideLogout').onclick = currentLogoutFn;
+
+    // Profilo (Solo in Home)
+    const btnProfile = document.getElementById('sideProfile');
+    if (btnProfile) {
+        btnProfile.onclick = () => {
+            toggle();
+            showProfile(mainContent, currentSidebarUser);
+        };
+    }
+
+    // Impostazioni (Solo in Home)
+    const btnSettings = document.getElementById('sideSettings');
+    if (btnSettings) {
+        btnSettings.onclick = () => {
+            toggle();
+            showSettings(mainContent);
+        };
+    }
 }
 
-// FUNZIONE PER CAMBIARE MENU SENZA RICARICARE
 export function updateSidebarContext(newContext) {
     const container = document.getElementById('sidebar-container');
     if (container) {
