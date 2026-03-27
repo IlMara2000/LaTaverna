@@ -25,7 +25,22 @@ export function showLobby(container) {
                     </div>
                 </div>
 
-                <div style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.1); height: 350px; border-radius: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+                <div class="game-card" id="btn-solo" style="
+                    background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.3)), 
+                                linear-gradient(135deg, #ff4444 0%, #0066ff 33%, #33cc33 66%, #ffcc00 100%);
+                    background-size: cover;
+                    height: 350px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.3);
+                    cursor: pointer; display: flex; align-items: flex-end; padding: 30px; transition: 0.4s;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                ">
+                    <div>
+                        <div style="background: var(--amethyst-bright); color: black; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 10px; letter-spacing: 1px;">MINIGIOCO</div>
+                        <h2 style="margin:0; font-size: 2rem; font-weight: 900;">SOLO</h2>
+                        <p style="opacity:0.9; font-size: 14px; font-weight: 500;">La sfida all'ultima carta</p>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.01); border: 2px dashed rgba(255,255,255,0.05); height: 350px; border-radius: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.3;">
                     <p style="letter-spacing: 2px; font-size: 10px;">PROSSIMAMENTE...</p>
                 </div>
 
@@ -33,9 +48,17 @@ export function showLobby(container) {
         </div>
     `;
 
-    // Evento per caricare la dashboard di D&D
+    // --- GESTIONE EVENTI ---
+
+    // Carica la dashboard di D&D
     document.getElementById('btn-dnd5e').onclick = async () => {
         const { initDndDashboard } = await import('./dashboards/dnd5e.js');
         initDndDashboard(container);
+    };
+
+    // Carica la dashboard di SOLO
+    document.getElementById('btn-solo').onclick = async () => {
+        const { initSoloGame } = await import('./dashboards/solo.js');
+        initSoloGame(container);
     };
 }
