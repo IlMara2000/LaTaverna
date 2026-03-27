@@ -2,58 +2,141 @@ import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { showLobby } from '../lobby.js';
 
 export function initDndDashboard(container) {
-    // Aggiorna la Sidebar con i menu di D&D (Personaggi, Incantesimi, etc.)
     updateSidebarContext("dnd5e");
 
     container.innerHTML = `
-        <div style="padding: 30px 20px; max-width: 1000px; margin: 0 auto;" class="fade-in">
+        <style>
+            .dnd-hero {
+                background: linear-gradient(135deg, rgba(40, 10, 60, 0.8) 0%, rgba(10, 5, 20, 0.9) 100%),
+                            url('https://www.transparenttextures.com/patterns/dark-matter.png');
+                border: 1px solid rgba(157, 78, 221, 0.3);
+                border-radius: 30px;
+                padding: 40px;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(157, 78, 221, 0.1);
+                margin-bottom: 30px;
+            }
+
+            .dnd-hero::before {
+                content: '20';
+                position: absolute;
+                right: -20px;
+                bottom: -30px;
+                font-size: 250px;
+                font-weight: 900;
+                color: rgba(157, 78, 221, 0.03);
+                font-family: 'Serif';
+                transform: rotate(-15deg);
+                pointer-events: none;
+            }
+
+            .dnd-badge {
+                background: var(--amethyst-bright);
+                color: black;
+                padding: 6px 15px;
+                border-radius: 50px;
+                font-size: 10px;
+                font-weight: 900;
+                letter-spacing: 2px;
+                display: inline-block;
+                margin-bottom: 15px;
+            }
+
+            .action-card {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                padding: 25px;
+                border-radius: 20px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                cursor: pointer;
+                text-align: left;
+            }
+
+            .action-card:hover {
+                background: rgba(157, 78, 221, 0.1);
+                border-color: var(--amethyst-bright);
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(157, 78, 221, 0.2);
+            }
+
+            .icon-circle {
+                width: 50px;
+                height: 50px;
+                background: rgba(157, 78, 221, 0.1);
+                border-radius: 15px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 20px;
+                color: var(--amethyst-bright);
+            }
+        </style>
+
+        <div style="padding: 30px 20px; max-width: 1100px; margin: 0 auto;" class="fade-in">
             
             <button id="back-to-lobby" style="
                 display: flex; align-items: center; gap: 10px;
-                background: rgba(157, 78, 221, 0.1); 
-                border: 1px solid rgba(157, 78, 221, 0.4);
-                color: var(--amethyst-bright); 
-                padding: 12px 20px; border-radius: 14px;
-                cursor: pointer; font-size: 11px; font-weight: 800; 
-                letter-spacing: 1.5px; margin-bottom: 30px; 
+                background: rgba(0, 0, 0, 0.3); 
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: white; 
+                padding: 10px 20px; border-radius: 12px;
+                cursor: pointer; font-size: 10px; font-weight: 700; 
+                letter-spacing: 1px; margin-bottom: 30px; 
                 transition: all 0.3s ease;
                 backdrop-filter: blur(10px);
             ">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                TORNA ALLA HOME
+                TORNA ALLA LIBRERIA
             </button>
 
-            <header style="margin-bottom: 30px;">
-                <h1 style="font-size: 2.5rem; font-weight: 900; text-transform: uppercase; margin: 0;">
-                    DASHBOARD <span style="color:var(--amethyst-bright);">D&D</span>
+            <div class="dnd-hero">
+                <div class="dnd-badge">SISTEMA UFFICIALE</div>
+                <h1 style="font-size: 3.5rem; font-weight: 900; margin: 0; line-height: 1;">
+                    DUNGEONS <br> & <span style="color:var(--amethyst-bright); text-shadow: 0 0 20px rgba(157,78,221,0.5);">DRAGONS</span>
                 </h1>
-                <div style="width: 60px; height: 4px; background: var(--amethyst-bright); border-radius: 2px; margin-top: 10px;"></div>
-            </header>
+                <p style="opacity: 0.6; margin-top: 20px; max-width: 500px; font-size: 16px; line-height: 1.6;">
+                    Benvenuto, Avventuriero. Gestisci le tue campagne, consulta il grimorio degli incantesimi e forgia il destino dei tuoi eroi.
+                </p>
+            </div>
 
-            <div id="dnd-content">
-                <div style="
-                    background: rgba(157, 78, 221, 0.05); 
-                    border: 1px solid rgba(157, 78, 221, 0.2); 
-                    border-radius: 24px; 
-                    padding: 80px 20px; 
-                    text-align: center;
-                    backdrop-filter: blur(5px);
-                ">
-                    <p style="opacity: 0.5; font-style: italic; font-size: 14px;">
-                        Caricamento sessioni di gioco in corso...
-                    </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                
+                <div class="action-card">
+                    <div class="icon-circle">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; font-size: 18px;">Gestione Personaggi</h3>
+                    <p style="margin: 0; font-size: 13px; opacity: 0.5;">Crea, livella e modifica le tue schede eroe.</p>
                 </div>
+
+                <div class="action-card">
+                    <div class="icon-circle">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; font-size: 18px;">Grimorio Incantesimi</h3>
+                    <p style="margin: 0; font-size: 13px; opacity: 0.5;">Cerca tra centinaia di magie e filtri per livello.</p>
+                </div>
+
+                <div class="action-card">
+                    <div class="icon-circle">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; font-size: 18px;">Sessioni Attive</h3>
+                    <p style="margin: 0; font-size: 13px; opacity: 0.5;">Unisciti al tuo party e lancia i dadi in tempo reale.</p>
+                </div>
+
+            </div>
+
+            <div style="margin-top: 50px; padding: 40px; border-top: 1px solid rgba(157, 78, 221, 0.1); text-align: center;">
+                 <p style="opacity: 0.3; font-size: 12px; letter-spacing: 1px;">DRAGONS & DUNGEONS 5TH EDITION SYSTEM</p>
             </div>
         </div>
     `;
 
-    // Torna alla Lobby cliccando il tasto
     document.getElementById('back-to-lobby').onclick = () => {
         showLobby(container);
     };
-
-    // Qui sotto caricherai le sessioni specifiche da Supabase filtrando per 'dnd5e'
-    // loadDndSessions(); 
 }
