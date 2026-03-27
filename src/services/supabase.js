@@ -1,28 +1,38 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Recuperiamo le chiavi dalle variabili d'ambiente di Vite/Vercel
+// 1. Recupero chiavi con fallback per evitare crash fatali durante il build
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Inizializzazione del client unico per tutta l'app
+// Controllo di sicurezza: se mancano le chiavi, avvisa chiaramente lo sviluppatore
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("❌ ERRORE SUPABASE: Chiavi mancanti nel file .env! Controlla VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
+}
+
+// 2. Inizializzazione del client unico
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 /**
  * CONFIGURAZIONE TABELLE E BUCKET
- * Centralizziamo qui i nomi per evitare di cercarli in giro per i file
+ * Centralizziamo qui i nomi per evitare errori di battitura nei file
  */
 export const SUPABASE_CONFIG = {
     tables: {
-        maps: 'session',         // Le tue sessioni/tavoli
-        tokens: 'tokens',       // Token sulla mappa
-        characters: 'characters', // Personaggi/Eroi (aggiornato per coerenza SQL)
-        chat: 'chat_messages',  // Messaggi live
-        manuals: 'assets',      // PDF e manuali
+        maps: 'session',          
+        tokens: 'tokens',       
+        characters: 'characters', 
+        chat: 'chat_messages',  
+        manuals: 'assets',      
     },
     buckets: {
-        zaino: 'vtt_assets'     // Il nome del bucket nello Storage
+        zaino: 'vtt_assets'     
     }
 };
 
-// Log di conferma (visibile solo in console per debug)
+// 3. Helper per ricaricare la sessione (utile per la logica Discord che stiamo facendo)
+export const getSession = async () => {
+    const { data, error } = await supabase.auth.getSession();
+    return data.session;
+};
+
 console.log("🛡️ Taverna Supabase: Sistema Centralizzato Pronto.");
