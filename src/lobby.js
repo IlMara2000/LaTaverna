@@ -1,0 +1,41 @@
+import { updateSidebarContext } from './components/layout/Sidebar.js';
+
+export function showLobby(container) {
+    // Reset della Sidebar allo stato "Home"
+    updateSidebarContext("home");
+
+    container.innerHTML = `
+        <div style="padding: 40px 20px; max-width: 1200px; margin: 0 auto;" class="fade-in">
+            <header style="margin-bottom: 40px;">
+                <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px;">LA <span style="color:var(--amethyst-bright);">LIBRERIA</span></h1>
+                <p style="opacity:0.5; text-transform: uppercase; font-size: 12px; letter-spacing: 2px;">Seleziona un sistema di gioco</p>
+            </header>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
+                
+                <div class="game-card" id="btn-dnd5e" style="
+                    background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.1)), url('https://images.unsplash.com/photo-1519074063261-bb8207ce2433?q=80&w=800');
+                    background-size: cover; background-position: center;
+                    height: 350px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.2);
+                    cursor: pointer; display: flex; align-items: flex-end; padding: 30px; transition: 0.4s;
+                ">
+                    <div>
+                        <h2 style="margin:0; font-size: 2rem; font-weight: 900;">D&D 5E</h2>
+                        <p style="opacity:0.7; font-size: 14px;">Dungeons & Dragons Fifth Edition</p>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.1); height: 350px; border-radius: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.5;">
+                    <p style="letter-spacing: 2px; font-size: 10px;">PROSSIMAMENTE...</p>
+                </div>
+
+            </div>
+        </div>
+    `;
+
+    // Evento per caricare la dashboard di D&D
+    document.getElementById('btn-dnd5e').onclick = async () => {
+        const { initDndDashboard } = await import('./dashboards/dnd5e.js');
+        initDndDashboard(container);
+    };
+}
