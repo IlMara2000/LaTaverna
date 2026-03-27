@@ -22,12 +22,12 @@ export function initDndDashboard(container) {
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                TORNA ALLA LIBRERIA
+                TORNA ALLA HOME
             </button>
 
             <header style="margin-bottom: 30px;">
                 <h1 style="font-size: 2.5rem; font-weight: 900; text-transform: uppercase; margin: 0;">
-                    DASHBOARD <span style="color:var(--amethyst-bright);">DND5E</span>
+                    DASHBOARD <span style="color:var(--amethyst-bright);">D&D</span>
                 </h1>
                 <div style="width: 60px; height: 4px; background: var(--amethyst-bright); border-radius: 2px; margin-top: 10px;"></div>
             </header>
