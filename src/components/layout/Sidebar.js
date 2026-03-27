@@ -59,29 +59,34 @@ function renderSidebarContent(container, context) {
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // --- LOGICA CLICK CON IMPORT DINAMICI (PER EVITARE ERRORI VERCEL) ---
-    
+    // Logout
     document.getElementById('sideLogout').onclick = currentLogoutFn;
 
-    // Profilo
+    // Profilo - IMPORT DINAMICO CON PERCORSO FISSA-ERRORE
     const btnProfile = document.getElementById('sideProfile');
     if (btnProfile) {
         btnProfile.onclick = async () => {
             toggle();
-            // Carica il file solo al click
-            const { showProfile } = await import('../../features/user/Profile.js');
-            showProfile(mainContent, currentSidebarUser);
+            try {
+                const { showProfile } = await import('../features/user/Profile.js');
+                showProfile(mainContent, currentSidebarUser);
+            } catch (err) {
+                console.error("Errore caricamento Profilo:", err);
+            }
         };
     }
 
-    // Impostazioni
+    // Impostazioni - IMPORT DINAMICO CON PERCORSO FISSA-ERRORE
     const btnSettings = document.getElementById('sideSettings');
     if (btnSettings) {
         btnSettings.onclick = async () => {
             toggle();
-            // Carica il file solo al click
-            const { showSettings } = await import('../../features/user/Settings.js');
-            showSettings(mainContent);
+            try {
+                const { showSettings } = await import('../features/user/Settings.js');
+                showSettings(mainContent);
+            } catch (err) {
+                console.error("Errore caricamento Impostazioni:", err);
+            }
         };
     }
 }
