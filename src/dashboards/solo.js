@@ -20,7 +20,6 @@ export function initSoloGame(container) {
     gameContainer = container;
     updateSidebarContext("home"); 
     
-    // Nascondi l'hamburger menu (sidebar trigger)
     const hamburger = document.querySelector('.sidebar-trigger') || document.getElementById('hamburger-menu');
     if (hamburger) hamburger.style.display = 'none';
 
@@ -44,7 +43,7 @@ window.backToModeSelection = function() {
 }
 
 window.mockMultiplayer = function() {
-    alert("🛠️ I server Multiplayer sono in costruzione! Questa interfaccia è pronta per essere collegata a Firebase/Socket.io. Nel frattempo, gioca VS Bot!");
+    alert("🛠️ I server Multiplayer sono in costruzione! Nel frattempo, gioca VS Bot!");
 }
 
 function startGame() {
@@ -75,24 +74,29 @@ function setupDeck() {
     shuffle(gameState.deck);
 }
 
-// Distribuzione con animazione rapida iniziale
+// Distribuzione VISIBILE
 function fastInitialDeal(onComplete) {
     gameState.players = Array.from({ length: gameState.numPlayers }, () => []);
     let cardsDealt = 0;
     const totalCards = 7 * gameState.numPlayers;
     
-    // Animazione a raffica
+    // Intervallo più lento (250ms tra una carta e l'altra)
     let interval = setInterval(() => {
         let pIdx = cardsDealt % gameState.numPlayers;
-        gameState.players[pIdx].push(drawCardSync());
-        animateCardDeal(pIdx, 0.15); // volo veloce
-        renderGameView();
+        
+        // Avvia l'animazione di volo (dura 0.4 secondi)
+        animateCardDeal(pIdx, 0.4); 
+        
+        // Ritardiamo l'aggiunta alla mano per farla comparire SOLO quando atterra
+        setTimeout(() => {
+            gameState.players[pIdx].push(drawCardSync());
+            renderGameView();
+        }, 350);
         
         cardsDealt++;
         if (cardsDealt >= totalCards) {
             clearInterval(interval);
             setTimeout(() => {
-                // Prima carta al centro
                 let firstCard;
                 do {
                     firstCard = drawCardSync();
@@ -104,13 +108,13 @@ function fastInitialDeal(onComplete) {
                 gameState.currentValue = firstCard.value;
                 renderGameView();
                 onComplete();
-            }, 500);
+            }, 800); // Pausa finale prima di iniziare
         }
-    }, 120);
+    }, 250); 
 }
 
-// Funzione core per far volare le carte dal deck al giocatore
-function animateCardDeal(targetIndex, duration = 0.4, callback = null) {
+// Animazione Carta Volante FIXATA
+function animateCardDeal(targetIndex, duration = 0.5, callback = null) {
     const deckEl = document.getElementById('deck-element');
     const targets = ['player-hand', 'bot-top', 'bot-left', 'bot-right'];
     const targetEl = document.getElementById(targets[targetIndex]);
@@ -124,17 +128,20 @@ function animateCardDeal(targetIndex, duration = 0.4, callback = null) {
     flyingCard.className = 'flying-card';
     flyingCard.style.left = `${deckRect.left}px`;
     flyingCard.style.top = `${deckRect.top}px`;
-    flyingCard.style.transitionDuration = `${duration}s`;
+    // Imposta la durata esatta del CSS in base alla variabile
+    flyingCard.style.transition = `all ${duration}s cubic-bezier(0.25, 0.8, 0.25, 1)`;
     document.body.appendChild(flyingCard);
 
-    // Forza il reflow del browser
-    flyingCard.getBoundingClientRect();
-
-    // Sposta la carta verso il centro del bersaglio
-    flyingCard.style.left = `${targetRect.left + (targetRect.width / 2) - 30}px`;
-    flyingCard.style.top = `${targetRect.top + (targetRect.height / 2) - 45}px`;
-    flyingCard.style.transform = `scale(0.5) rotate(${Math.random() * 60 - 30}deg)`;
-    flyingCard.style.opacity = '0';
+    // Il requestAnimationFrame forza il browser a renderizzare la posizione iniziale
+    // prima di spostarla, evitando che l'animazione venga saltata
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            flyingCard.style.left = `${targetRect.left + (targetRect.width / 2) - 30}px`;
+            flyingCard.style.top = `${targetRect.top + (targetRect.height / 2) - 45}px`;
+            flyingCard.style.transform = `scale(0.6) rotate(${Math.random() * 360}deg)`;
+            // Rimosso opacity: 0, ora la carta si vede per tutto il volo
+        });
+    });
 
     setTimeout(() => {
         if (document.body.contains(flyingCard)) document.body.removeChild(flyingCard);
@@ -173,7 +180,7 @@ window.playerPlayCard = function(cardIndex) {
 window.playerDrawCard = function() {
     if (gameState.turn !== 0 || !gameState.gameActive || isAnimating) return;
     isAnimating = true;
-    animateCardDeal(0, 0.4, () => {
+    animateCardDeal(0, 0.5, () => {
         gameState.players[0].push(drawCardSync());
         gameState.hasCalledSolo = false;
         isAnimating = false;
@@ -214,7 +221,7 @@ function botPlay() {
         if (!gameState.forcedColorChange) nextTurn();
     } else {
         isAnimating = true;
-        animateCardDeal(pIdx, 0.4, () => {
+        animateCardDeal(pIdx, 0.5, () => {
             gameState.players[pIdx].push(drawCardSync());
             isAnimating = false;
             nextTurn();
@@ -244,16 +251,16 @@ function penalizePlayer(pIdx, amount) {
     isAnimating = true;
     let count = 0;
     let intv = setInterval(() => {
-        animateCardDeal(pIdx, 0.3, () => {
+        animateCardDeal(pIdx, 0.4, () => {
             gameState.players[pIdx].push(drawCardSync());
             renderGameView();
         });
         count++;
         if (count >= amount) {
             clearInterval(intv);
-            setTimeout(() => { isAnimating = false; }, 400);
+            setTimeout(() => { isAnimating = false; }, 500);
         }
-    }, 200);
+    }, 400); // Distanziate meglio le penalità
 }
 
 function canPlay(card) { return card.type === 'wild' || card.color === gameState.currentColor || card.value === gameState.currentValue; }
@@ -295,20 +302,17 @@ function renderLayout(container) {
             .playable { border: 2px solid var(--amethyst-bright) !important; box-shadow: 0 0 15px var(--amethyst-bright); transform: translateY(-10px); }
             .bot-pos { position: absolute; display: flex; gap: 5px; align-items: center; padding: 10px; transition: 0.3s; border-radius: 15px; }
             
-            /* Glow per il giocatore attivo */
             .active-turn { 
                 box-shadow: 0 0 25px 5px var(--amethyst-bright); 
                 background: rgba(157, 78, 221, 0.1); 
             }
             
-            /* Animazione Carta Volante */
             .flying-card {
                 position: fixed; width: 60px; height: 90px; border-radius: 8px;
                 background: linear-gradient(135deg, #331155, #110522);
                 border: 2px solid var(--amethyst-bright);
                 z-index: 9999; pointer-events: none;
-                transition-property: top, left, transform, opacity;
-                transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
+                /* Rimosso opacity dalla transizione, ora viaggia visibile */
             }
 
             .main-btn {
@@ -404,11 +408,9 @@ function renderLayout(container) {
 function renderGameView() {
     if (!gameState.gameActive) return;
 
-    // Turno: Evidenzia il div corretto
     const turnTxt = ["TUO TURNO", "BOT 1", "BOT 2", "BOT 3"];
     document.getElementById('turn-indicator').innerText = turnTxt[gameState.turn];
     
-    // Assegna la classe 'active-turn' a chi sta giocando per il bagliore
     const containers = ['player-hand-container', 'bot-top', 'bot-left', 'bot-right'];
     containers.forEach((id, idx) => {
         const el = document.getElementById(id);
@@ -418,7 +420,6 @@ function renderGameView() {
         }
     });
 
-    // Discard
     const lastCard = gameState.discardPile[gameState.discardPile.length - 1];
     if (lastCard) {
         const discardDiv = document.getElementById('discard-card');
@@ -429,7 +430,6 @@ function renderGameView() {
     document.getElementById('current-color-txt').innerText = gameState.currentColor.toUpperCase();
     document.getElementById('current-color-txt').style.color = getHex(gameState.currentColor === 'wild' ? 'rosso' : gameState.currentColor);
 
-    // Render Bots
     const renderBot = (id, playerIdx) => {
         const el = document.getElementById(id);
         if (!el) return;
@@ -441,7 +441,6 @@ function renderGameView() {
     renderBot('bot-left', 2);
     renderBot('bot-right', 3);
 
-    // Player Hand
     const handDiv = document.getElementById('player-hand');
     if (handDiv) {
         handDiv.innerHTML = gameState.players[0].map((card, i) => {
