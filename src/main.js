@@ -2,7 +2,8 @@ import './styles/global.css';
 import { supabase } from './services/supabase.js';
 import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';
-import { showDashboard } from './dashboard.js'; 
+import { initSidebar } from './components/layout/Sidebar.js'; // Aggiunto import Sidebar
+import { showLobby } from './lobby.js'; // Sostituito dashboard.js con lobby.js
 import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthInput.js';
 
 const uiContainer = document.getElementById('ui');
@@ -15,20 +16,19 @@ async function initApp() {
     const { data: { user } } = await supabase.auth.getUser();
     const loader = document.getElementById('app-loader');
 
-    // Funzione per mostrare il contenuto e nascondere il loader
+    // Funzione per nascondere il loader
     const hideLoader = () => {
         if(loader) loader.classList.add('fade-out');
     };
 
-    // LOGICA DI REDIRECT AUTOMATICO (ENTRATA VELOCE)
-    // Se loggato E verificato E non sono passati 10 minuti: Dashboard diretta
+    // LOGICA DI REDIRECT AUTOMATICO
     if (user && localStorage.getItem('taverna_member_verified') === 'true' && !shouldShowPortalButton()) {
         renderDashboard(user);
         hideLoader();
         return;
     }
 
-    // Altrimenti: Mostra la Schermata della Coppa
+    // Altrimenti mostra la Coppa
     renderPortal(user);
     hideLoader();
 }
@@ -66,10 +66,9 @@ function checkAccess(user, container) {
     const isVerified = localStorage.getItem('taverna_member_verified') === 'true';
 
     if (isVerified) {
-        updateLastAccess(); // Aggiorna il timer dei 10 minuti
+        updateLastAccess();
         renderDashboard(user);
     } else {
-        // Schermata Obbligo Discord
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px;">
                 <h2 style="color: #5865F2; font-weight: 900;">QUASI CI SEI! ⚔️</h2>
@@ -87,16 +86,25 @@ function checkAccess(user, container) {
 }
 
 function renderDashboard(user) {
+    // Prepariamo l'interfaccia con Navbar e Sidebar
     uiContainer.innerHTML = `
         <div id="nav-container"></div>
+        <div id="sidebar-container"></div>
         <main id="main-content" style="width:100%; height:100%;"></main>
     `;
-    initNavbar(document.getElementById('nav-container'), user, async () => {
+
+    // Inizializza Navbar
+    initNavbar(document.getElementById('nav-container'), user);
+
+    // Inizializza Sidebar con logica di logout
+    initSidebar(document.getElementById('sidebar-container'), user, async () => {
         await supabase.auth.signOut();
         localStorage.removeItem('taverna_member_verified');
         window.location.reload();
-    });
-    showDashboard(document.getElementById('main-content'), user);
+    }, "home");
+
+    // Mostra la Lobby (la libreria dei giochi)
+    showLobby(document.getElementById('main-content'));
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
