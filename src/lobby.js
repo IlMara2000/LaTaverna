@@ -48,17 +48,25 @@ export function showLobby(container) {
         </div>
     `;
 
-    // --- GESTIONE EVENTI ---
+    // --- LOGICA CLICK ---
 
-    // Carica la dashboard di D&D
     document.getElementById('btn-dnd5e').onclick = async () => {
-        const { initDndDashboard } = await import('./dashboards/dnd5e.js');
-        initDndDashboard(container);
+        try {
+            const { initDndDashboard } = await import('./dashboards/dnd5e.js');
+            initDndDashboard(container);
+        } catch (err) {
+            console.error("Errore caricamento D&D:", err);
+        }
     };
 
-    // Carica la dashboard di SOLO
     document.getElementById('btn-solo').onclick = async () => {
-        const { initSoloGame } = await import('./dashboards/solo.js');
-        initSoloGame(container);
+        try {
+            // Se Vercel rompe ancora, prova a rinominare il file in SoloGame.js
+            const { initSoloGame } = await import('./dashboards/solo.js');
+            initSoloGame(container);
+        } catch (err) {
+            console.error("Errore caricamento SOLO:", err);
+            alert("Il gioco è in fase di caricamento nel server, riprova tra un istante.");
+        }
     };
 }
