@@ -48,8 +48,19 @@ export function showLobby(container) {
                         </div>
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.01); border: 2px dashed rgba(255,255,255,0.05); height: 350px; border-radius: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.3;">
-                        <p style="letter-spacing: 2px; font-size: 10px;">PROSSIMAMENTE...</p>
+                    <div class="game-card" id="btn-briscola" style="
+                        background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), 
+                                    linear-gradient(45deg, #2a0a4a 0%, #4a1a6a 100%);
+                        height: 350px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4);
+                        cursor: pointer; display: flex; align-items: flex-end; padding: 30px; transition: 0.4s;
+                        position: relative; overflow: hidden;
+                    ">
+                        <div style="position: absolute; top: 20px; right: 20px; font-size: 40px; opacity: 0.1; transform: rotate(15deg);">🪵🏆💰⚔️</div>
+                        <div style="z-index: 1;">
+                            <div style="background: #9d4ede; color: black; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 10px; letter-spacing: 1px;">CLASSICO</div>
+                            <h2 style="margin:0; font-size: 2rem; font-weight: 900;">BRISCOLA</h2>
+                            <p style="opacity:0.8; font-size: 14px;">Tradizione e strategia</p>
+                        </div>
                     </div>
 
                     <div style="background: rgba(255,255,255,0.01); border: 2px dashed rgba(255,255,255,0.05); height: 350px; border-radius: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.3;">
@@ -61,8 +72,9 @@ export function showLobby(container) {
         </div>
     `;
 
-    // --- LOGICA CLICK ---
+    // --- LOGICA DI NAVIGAZIONE (Import Dinamici) ---
 
+    // D&D 5E
     document.getElementById('btn-dnd5e').onclick = async () => {
         try {
             const { initDndDashboard } = await import('./dashboards/dnd5e.js');
@@ -72,6 +84,7 @@ export function showLobby(container) {
         }
     };
 
+    // SOLO
     document.getElementById('btn-solo').onclick = async () => {
         try {
             const { initSoloGame } = await import('./dashboards/solo.js');
@@ -80,4 +93,17 @@ export function showLobby(container) {
             console.error("Errore caricamento SOLO:", err);
         }
     };
+
+    // BRISCOLA
+    const btnBriscola = document.getElementById('btn-briscola');
+    if (btnBriscola) {
+        btnBriscola.onclick = async () => {
+            try {
+                const { initBriscola } = await import('./dashboards/briscola.js');
+                initBriscola(container);
+            } catch (err) {
+                console.error("Errore caricamento BRISCOLA:", err);
+            }
+        };
+    }
 }
