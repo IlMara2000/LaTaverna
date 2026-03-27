@@ -23,59 +23,55 @@
             --amethyst-glow: rgba(157, 78, 221, 0.5);
         }
 
-        /* Reset e Base Layout */
         html, body { 
             background-color: var(--bg) !important; 
-            margin: 0; 
-            padding: 0; 
-            height: 100%; 
-            width: 100%;
-            overflow: hidden; /* Evita scroll indesiderati fuori dalla UI */
+            margin: 0; padding: 0; 
+            height: 100%; width: 100%;
+            overflow: hidden;
             color: white;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
-        /* Container principale dove il JS inietterà la Dashboard/Portal */
-        #ui { 
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            flex-direction: column;
-            position: relative;
+        #ui { width: 100%; height: 100%; position: relative; }
+
+        /* LOADER PULSANTE */
+        #app-loader {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; width: 100%; background: var(--bg);
+            position: fixed; top: 0; left: 0; z-index: 10000;
         }
 
-        /* Classi di utilità per le immagini caricate */
-        .coppa-glow {
+        .pulse-logo {
+            width: 80px;
+            animation: pulse 1.5s infinite ease-in-out;
             filter: drop-shadow(0 0 15px var(--amethyst-glow));
-            transition: transform 0.3s ease;
-            max-width: 150px;
         }
 
-        /* Animazione di caricamento fluida */
-        @keyframes fadeInUI {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 25px var(--amethyst-bright)); }
+            100% { transform: scale(0.95); opacity: 0.6; }
         }
 
-        .fade-in {
-            animation: fadeInUI 0.5s ease-out forwards;
-        }
-
-        /* Nascondi scrollbar per pulizia visiva */
+        .fade-out { opacity: 0; pointer-events: none; transition: 0.5s; }
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
     
-    <div id="ui" class="fade-in">
+    <div id="ui">
+        <div id="app-loader">
+            <img src="/assets/logo.png" class="pulse-logo" alt="Caricamento...">
+            <p style="margin-top: 20px; font-size: 10px; letter-spacing: 3px; opacity: 0.5; text-transform: uppercase;">
+                Chiamando l'oste...
+            </p>
         </div>
+    </div>
 
     <script type="module" src="/src/main.js"></script>
 
     <script>
-        // Piccola protezione per evitare il refresh "pull-to-refresh" su mobile
         document.body.addEventListener('touchmove', function(e) {
             if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
