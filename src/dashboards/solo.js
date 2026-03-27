@@ -18,6 +18,135 @@ export function initSoloGame(container) {
     renderLayout(container);
 }
 
+// --- LOGICA MAZZO E REGOLE ---
+function setupDeck() {
+    gameState.deck = [];
+    COLORS.forEach(color => {
+        VALUES.forEach(val => {
+            gameState.deck.push({ color, value: val });
+            if (val !== '0') gameState.deck.push({ color, value: val });
+        });
+    });
+    for (let i = 0; i < 4; i++) {
+        gameState.deck.push({ color: 'wild', value: 'cambio_colore' });
+        gameState.deck.push({ color: 'wild', value: 'piu_quattro' });
+    }
+    shuffle(gameState.deck);
+}
+
+function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+}
+
+function drawCardSync() {
+    if (gameState.deck.length === 0) {
+        const top = gameState.discardPile.pop();
+        gameState.deck = [...gameState.discardPile];
+        shuffle(gameState.deck);
+        gameState.discardPile = [top];
+    }
+    return gameState.deck.pop();
+}
+
+// --- AZIONI GIOCO ---
+window.playerDraw = function() {
+    if (gameState.turn !== 0 || gameState.isAnimating) return;
+    gameState.players[0].push(drawCardSync());
+    nextTurn();
+};
+
+window.playerPlay = function(index) {
+    if (gameState.turn !== 0 || gameState.isAnimating) return;
+    const card = gameState.players[0][index];
+    if (isPlayable(card)) {
+        gameState.players[0].splice(index, 1);
+        playCard(card, 'player-area');
+    }
+};
+
+function isPlayable(card) {
+    return card.color === 'wild' || card.color === gameState.currentColor || card.value === gameState.currentValue;
+}
+
+function playCard(card, fromId) {
+    gameState.isAnimating = true;
+    animateCardPlay(fromId, card, () => {
+        gameState.discardPile.push(card);
+        gameState.currentValue = card.value;
+        
+        if (card.color === 'wild') {
+            if (gameState.turn === 0) {
+                document.getElementById('picker').style.display = 'flex';
+            } else {
+                selectWildColor(COLORS[Math.floor(Math.random() * 4)]);
+            }
+        } else {
+            gameState.currentColor = card.color;
+            applyEffect(card);
+            gameState.isAnimating = false;
+            nextTurn();
+        }
+    });
+}
+
+window.selectWildColor = function(color) {
+    gameState.currentColor = color;
+    document.getElementById('picker').style.display = 'none';
+    
+    if (gameState.currentValue === 'piu_quattro') {
+        const target = getNextPlayer();
+        for(let i=0; i<4; i++) gameState.players[target].push(drawCardSync());
+    }
+    
+    gameState.isAnimating = false;
+    nextTurn();
+};
+
+function applyEffect(card) {
+    if (card.value === 'salta_turno') {
+        gameState.turn = getNextPlayer();
+    } else if (card.value === 'cambio_giro') {
+        gameState.direction *= -1;
+    } else if (card.value === 'piu_due') {
+        const target = getNextPlayer();
+        gameState.players[target].push(drawCardSync());
+        gameState.players[target].push(drawCardSync());
+    }
+}
+
+function getNextPlayer() {
+    let next = gameState.turn + gameState.direction;
+    if (next >= 4) next = 0;
+    if (next < 0) next = 3;
+    return next;
+}
+
+function nextTurn() {
+    if (gameState.players[gameState.turn].length === 0) {
+        alert(gameState.turn === 0 ? "HAI VINTO!" : `BOT ${gameState.turn} HA VINTO!`);
+        location.reload();
+        return;
+    }
+    gameState.turn = getNextPlayer();
+    renderGameView();
+    if (gameState.turn !== 0) setTimeout(botPlay, 1500);
+}
+
+function botPlay() {
+    const hand = gameState.players[gameState.turn];
+    const index = hand.findIndex(c => isPlayable(c));
+    if (index !== -1) {
+        const card = hand.splice(index, 1)[0];
+        playCard(card, `bot-${gameState.turn}`);
+    } else {
+        hand.push(drawCardSync());
+        nextTurn();
+    }
+}
+
 // --- ANIMAZIONE LANCIO ---
 function animateCardPlay(fromId, card, callback) {
     const fromEl = document.getElementById(fromId);
@@ -110,7 +239,6 @@ function renderLayout(container) {
     };
 }
 
-// --- LOGICA REGOLE E TURNI (INVARIATA MA PULITA) ---
 window.showMode = function(mode) {
     if (mode === 'multi') return alert("🛠️ Online in arrivo!");
     document.getElementById('start-overlay').style.display = 'none';
@@ -122,13 +250,12 @@ function startGame() {
     gameState.players = Array.from({ length: 4 }, () => []);
     for(let i=0; i < 28; i++) gameState.players[i % 4].push(drawCardSync());
     let first = drawCardSync();
-    while(first.type === 'wild') { gameState.deck.push(first); first = drawCardSync(); }
+    while(first.color === 'wild') { gameState.deck.push(first); shuffle(gameState.deck); first = drawCardSync(); }
     gameState.discardPile.push(first);
     gameState.currentColor = first.color;
     gameState.currentValue = first.value;
     gameState.gameActive = true;
     renderGameView();
-    if (gameState.turn !== 0) setTimeout(botPlay, 1500);
 }
 
 function renderGameView() {
@@ -140,6 +267,7 @@ function renderGameView() {
     
     document.getElementById('cur-color').innerText = gameState.currentColor.toUpperCase();
     document.getElementById('cur-color').style.color = getHex(gameState.currentColor);
+    document.getElementById('dir-icon').innerText = gameState.direction === 1 ? '↻' : '↺';
     
     [1,2,3].forEach(id => {
         const area = document.getElementById(`bot-${id}`);
@@ -149,14 +277,10 @@ function renderGameView() {
 
     const pArea = document.getElementById('player-area');
     pArea.innerHTML = gameState.players[0].map((c, i) => {
-        const playable = (c.color === 'wild' || c.color === gameState.currentColor || c.value === gameState.currentValue) && gameState.turn === 0;
+        const playable = isPlayable(c) && gameState.turn === 0;
         return `<div onclick="playerPlay(${i})" class="card ${playable?'playable':''}" style="background:${getHex(c.color)}; margin-left:-25px; z-index:${i}">${getSym(c.value)}</div>`;
     }).join('');
 }
 
-// Funzioni utility (setupDeck, shuffle, drawCardSync, getHex, getSym, ecc.) rimangono le stesse delle versioni precedenti.
 function getHex(c) { return { rosso:'#ff4444', blu:'#0066ff', verde:'#33cc33', giallo:'#ffcc00', wild:'linear-gradient(45deg, #ff4444, #0066ff, #33cc33, #ffcc00)' }[c] || '#fff'; }
 function getSym(v) { return { cambio_giro:'🔄', salta_turno:'🚫', piu_due:'+2', piu_quattro:'+4', cambio_colore:'🎨' }[v] || v; }
-function setupDeck() { /* ... */ }
-function shuffle(a) { /* ... */ }
-function drawCardSync() { return gameState.deck.length ? gameState.deck.pop() : (shuffle(gameState.discardPile), gameState.discardPile.pop()); }
