@@ -4,28 +4,81 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
     <meta name="theme-color" content="#05020a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <title>LA TAVERNA 🍷</title>
+    
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="shortcut icon" href="/assets/favicon.ico">
+    <link rel="apple-touch-icon" href="/assets/logo.png">
 
     <link rel="stylesheet" href="/src/styles/global.css">
 
     <style>
-        :root { --bg: #05020a; --amethyst-bright: #9d4ede; }
+        :root { 
+            --bg: #05020a; 
+            --amethyst: #7b2cbf;
+            --amethyst-bright: #9d4ede; 
+            --amethyst-glow: rgba(157, 78, 221, 0.5);
+        }
+
+        /* Reset e Base Layout */
         html, body { 
             background-color: var(--bg) !important; 
-            margin: 0; padding: 0; 
-            height: 100%; width: 100%;
-            overflow: hidden;
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            width: 100%;
+            overflow: hidden; /* Evita scroll indesiderati fuori dalla UI */
             color: white;
-            font-family: sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
-        #ui { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        .entry-container { text-align: center; cursor: pointer; transition: 0.5s; }
-        .tap-instruction { margin-top: 20px; opacity: 0.5; letter-spacing: 2px; font-size: 12px; text-transform: uppercase; }
-        #main-logo { width: 120px; filter: drop-shadow(0 0 15px var(--amethyst-bright)); }
+
+        /* Container principale dove il JS inietterà la Dashboard/Portal */
+        #ui { 
+            width: 100%; 
+            height: 100%; 
+            display: flex; 
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Classi di utilità per le immagini caricate */
+        .coppa-glow {
+            filter: drop-shadow(0 0 15px var(--amethyst-glow));
+            transition: transform 0.3s ease;
+            max-width: 150px;
+        }
+
+        /* Animazione di caricamento fluida */
+        @keyframes fadeInUI {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeInUI 0.5s ease-out forwards;
+        }
+
+        /* Nascondi scrollbar per pulizia visiva */
+        ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
-    <div id="ui"></div>
+    
+    <div id="ui" class="fade-in">
+        </div>
+
     <script type="module" src="/src/main.js"></script>
+
+    <script>
+        // Piccola protezione per evitare il refresh "pull-to-refresh" su mobile
+        document.body.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+    </script>
 </body>
 </html>
