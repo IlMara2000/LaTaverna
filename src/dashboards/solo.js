@@ -96,7 +96,6 @@ window.callSolo = function() {
     if (gameState.turn !== 0 || !gameState.gameActive) return;
     gameState.hasCalledSolo = true;
     renderGameView();
-    alert("📢 HAI CHIAMATO SOLO!");
 }
 
 window.selectWildColor = function(color) {
@@ -112,13 +111,7 @@ function botPlay() {
     gameState.players[1].forEach((card, i) => { if (canPlay(card)) playable.push(i); });
 
     if (playable.length > 0) {
-        playable.sort((a,b) => {
-            let tA = gameState.players[1][a].type, tB = gameState.players[1][b].type;
-            if (tA === 'wild') return -1;
-            if (tA === 'action' && tB === 'number') return -1;
-            return 1;
-        });
-        let chosenIndex = playable[0];
+        let chosenIndex = playable[Math.floor(Math.random() * playable.length)];
         const card = gameState.players[1][chosenIndex];
         gameState.players[1].splice(chosenIndex, 1);
         handleCardEffects(card);
@@ -158,7 +151,7 @@ function nextTurn(skip = false) { if (!gameState.gameActive) return; gameState.t
 function drawCard() {
     if (gameState.deck.length === 0) {
         const top = gameState.discardPile.pop();
-        gameState.deck = gameState.discardPile;
+        gameState.deck = [...gameState.discardPile];
         gameState.discardPile = [top];
         shuffle(gameState.deck);
     }
@@ -169,36 +162,75 @@ function endGame(msg) { gameState.gameActive = false; alert(`🏆 ${msg}`); show
 
 function renderLayout(container) {
     container.innerHTML = `
-        <div class="fade-in" style="width:100%; height:100vh; position:relative; overflow:hidden; background:#05020a; color:white;">
-            <button id="back-to-lobby-solo" style="position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(157, 78, 221, 0.1); border: 1px solid rgba(157, 78, 221, 0.4); color: var(--amethyst-bright); padding: 10px 15px; border-radius: 12px; cursor: pointer; font-size: 10px; font-weight: 800; letter-spacing: 1px; backdrop-filter: blur(10px);">← LIBRERIA</button>
-            <div id="game-status" style="position:absolute; top:25px; left:50%; transform:translateX(-50%); text-transform:uppercase; letter-spacing:1px; color:var(--amethyst-bright); font-weight:900;"></div>
-            <div id="bot-hand" style="position:absolute; top:20px; right:20px; display:flex; gap:5px;"></div>
-            <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; gap:20px; align-items:center;">
-                <div id="deck-pile" onclick="playerDrawCard()" style="width:80px; height:120px; background:linear-gradient(135deg, #1a0a2a, #0a020f); border:2px solid #333; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:900;">SOLO</div>
-                <div id="discard-card" style="width:100px; height:150px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(157, 78, 221, 0.3);"></div>
-                <div style="font-size:12px; text-transform:uppercase; opacity:0.6;">Colore: <span id="current-color" style="font-weight:bold;"></span></div>
-            </div>
-            <div id="player-hand" style="position:absolute; bottom:120px; left:50%; transform:translateX(-50%); display:flex; gap:-15px; padding: 0 40px; width:90%; justify-content:center; overflow-x:auto;"></div>
-            <button onclick="callSolo()" style="position:absolute; bottom:30px; right:30px; background:#ff4444; color:white; border:none; padding:15px 30px; border-radius:12px; font-weight:900; cursor:pointer; box-shadow:0 0 15px rgba(255,68,68,0.4);">SOLO!</button>
-            <button id="open-rules" style="position:absolute; bottom:30px; left:30px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(255,255,255,0.2); padding:10px 15px; border-radius:8px; cursor:pointer; font-size:11px;">REGOLE</button>
+        <style>
+            .solo-card {
+                width: 70px; height: 110px; border-radius: 12px;
+                display: flex; align-items: center; justify-content: center;
+                font-weight: 900; font-size: 1.8rem; cursor: pointer;
+                transition: transform 0.3s, box-shadow 0.3s;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                position: relative; border: 1px solid rgba(255,255,255,0.1);
+                user-select: none;
+            }
+            .hand-container {
+                display: flex; justify-content: center; align-items: flex-end;
+                padding-bottom: 20px; width: 100%; height: 180px;
+                perspective: 1000px;
+            }
+            .player-card-wrapper {
+                margin-left: -25px; transition: transform 0.2s;
+            }
+            .player-card-wrapper:hover { transform: translateY(-30px) scale(1.1); z-index: 100 !important; }
+            .playable { border: 2px solid var(--amethyst-bright) !important; box-shadow: 0 0 15px var(--amethyst-bright); }
+            .btn-action {
+                background: rgba(157, 78, 221, 0.2); border: 1px solid var(--amethyst-bright);
+                color: white; padding: 12px 20px; border-radius: 50px;
+                font-weight: 800; letter-spacing: 1px; cursor: pointer; transition: 0.3s;
+            }
+            .btn-action:hover { background: var(--amethyst-bright); color: black; }
+        </style>
+
+        <div class="fade-in" style="width:100%; height:100dvh; background: radial-gradient(circle at center, #1a0a2a 0%, #05020a 100%); position:relative; overflow:hidden;">
             
-            <div id="color-picker-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; align-items:center; justify-content:center; backdrop-filter:blur(5px);">
-                <div style="background:#0a020f; border:1px solid var(--amethyst-bright); padding:30px; border-radius:20px; text-align:center;">
-                    <h3>SCEGLI UN COLORE</h3>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
-                        <div onclick="selectWildColor('rosso')" style="width:60px; height:60px; background:#ff4444; border-radius:10px; cursor:pointer;"></div>
-                        <div onclick="selectWildColor('blu')" style="width:60px; height:60px; background:#0066ff; border-radius:10px; cursor:pointer;"></div>
-                        <div onclick="selectWildColor('verde')" style="width:60px; height:60px; background:#33cc33; border-radius:10px; cursor:pointer;"></div>
-                        <div onclick="selectWildColor('giallo')" style="width:60px; height:60px; background:#ffcc00; border-radius:10px; cursor:pointer;"></div>
+            <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; position: absolute; width: 100%; z-index: 10;">
+                <button id="back-to-lobby-solo" class="btn-action" style="font-size: 10px; padding: 8px 15px;">← LIBRERIA</button>
+                <div id="game-status" style="font-size: 12px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase;"></div>
+                <div id="bot-hand-info" style="background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 20px; font-size: 12px; border: 1px solid rgba(255,255,255,0.1);"></div>
+            </div>
+
+            <div style="position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 30px; width: 100%;">
+                
+                <div style="display: flex; gap: 40px; align-items: center;">
+                    <div id="deck-pile" onclick="playerDrawCard()" style="width: 85px; height: 130px; background: linear-gradient(135deg, #331155, #110522); border: 2px solid var(--amethyst-bright); border-radius: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: rotate(-5deg);">
+                        <span style="font-weight: 900; color: var(--amethyst-bright); font-size: 14px;">SOLO</span>
                     </div>
+
+                    <div id="discard-card" class="solo-card" style="width: 100px; height: 150px; cursor: default; transform: rotate(3deg);"></div>
+                </div>
+
+                <div id="color-indicator" style="background: rgba(0,0,0,0.4); padding: 8px 20px; border-radius: 30px; font-size: 11px; letter-spacing: 2px; border: 1px solid rgba(255,255,255,0.1);">
+                    COLORE ATTUALE: <span id="current-color-name" style="font-weight: 900;"></span>
                 </div>
             </div>
 
-            <div id="rules-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto; padding:30px; backdrop-filter:blur(10px);">
-                <button id="close-rules" style="position:fixed; top:20px; right:20px; background:none; border:1px solid #ff4444; color:#ff4444; padding:5px 10px; border-radius:5px; cursor:pointer;">CHIUDI X</button>
-                <div style="max-width:600px; margin: 40px auto; line-height:1.6;">
-                    <h2 style="color:var(--amethyst-bright);">REGOLE: SOLO - LA SFIDA</h2>
-                    <p>Abbina per colore o numero. Se rimani con una carta premi SOLO!</p>
+            <div style="position: absolute; bottom: 0; width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding-top: 40px;">
+                <div id="player-hand" class="hand-container"></div>
+                
+                <div style="padding: 20px; display: flex; justify-content: space-between; align-items: center; max-width: 500px; margin: 0 auto;">
+                    <button id="open-rules" style="background:none; border:none; color:rgba(255,255,255,0.4); font-size:10px; cursor:pointer;">REGOLE</button>
+                    <button onclick="callSolo()" id="solo-btn" class="btn-action" style="background: #ff4444; border-color: #ff4444; box-shadow: 0 0 20px rgba(255,68,68,0.3);">SOLO!</button>
+                </div>
+            </div>
+
+            <div id="color-picker-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(10px);">
+                <div style="text-align:center;">
+                    <h3 style="letter-spacing:3px; margin-bottom:30px; font-size:14px;">SCEGLI IL NUOVO COLORE</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                        <div onclick="selectWildColor('rosso')" style="width:80px; height:80px; background:#ff4444; border-radius:20px; cursor:pointer; box-shadow: 0 0 20px rgba(255,68,68,0.4);"></div>
+                        <div onclick="selectWildColor('blu')" style="width:80px; height:80px; background:#0066ff; border-radius:20px; cursor:pointer; box-shadow: 0 0 20px rgba(0,102,255,0.4);"></div>
+                        <div onclick="selectWildColor('verde')" style="width:80px; height:80px; background:#33cc33; border-radius:20px; cursor:pointer; box-shadow: 0 0 20px rgba(51,204,51,0.4);"></div>
+                        <div onclick="selectWildColor('giallo')" style="width:80px; height:80px; background:#ffcc00; border-radius:20px; cursor:pointer; box-shadow: 0 0 20px rgba(255,204,0,0.4);"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -208,23 +240,55 @@ function renderLayout(container) {
         gameState.gameActive = false;
         showLobby(container);
     };
-    document.getElementById('open-rules').onclick = () => document.getElementById('rules-overlay').style.display = 'block';
-    document.getElementById('close-rules').onclick = () => document.getElementById('rules-overlay').style.display = 'none';
 }
 
 function renderGameView() {
-    document.getElementById('game-status').innerText = gameState.turn === 0 ? "⚠️ TUO TURNO" : "🤖 BOT STA GIOCANDO...";
+    const statusEl = document.getElementById('game-status');
+    statusEl.innerText = gameState.turn === 0 ? "Tuo Turno" : "Bot sta pensando...";
+    statusEl.style.color = gameState.turn === 0 ? "var(--amethyst-bright)" : "rgba(255,255,255,0.4)";
+
+    document.getElementById('bot-hand-info').innerText = `BOT: ${gameState.players[1].length} CARTE`;
+
+    // Discard Card
     const discardCard = gameState.discardPile[gameState.discardPile.length - 1];
     const discardDiv = document.getElementById('discard-card');
     discardDiv.style.background = getHex(discardCard.color);
-    discardDiv.innerHTML = `<span style="font-size:4rem; font-weight:900; color:${['blu','rosso'].includes(discardCard.color) ? 'white' : 'black'}">${getSymbol(discardCard.value)}</span>`;
-    document.getElementById('current-color').innerText = gameState.currentColor.toUpperCase();
-    document.getElementById('current-color').style.color = getHex(gameState.currentColor);
-    document.getElementById('bot-hand').innerHTML = gameState.players[1].map(() => `<div style="width:25px; height:40px; background:#1a0a2a; border-radius:4px; border:1px solid rgba(255,255,255,0.1);"></div>`).join('') + `<span style="opacity:0.5; font-size:12px; margin-left:5px;">${gameState.players[1].length}</span>`;
-    document.getElementById('player-hand').innerHTML = gameState.players[0].map((card, index) => {
-        const playable = canPlay(card);
-        return `<div onclick="playerPlayCard(${index})" style="width:80px; height:120px; background:${getHex(card.color)}; border-radius:10px; margin-left:-10px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:900; border: 2px solid ${playable ? 'var(--amethyst-bright)' : 'black'}; transform: translateY(${playable ? '0px' : '20px'}); opacity: ${playable || gameState.turn !== 0 ? '1' : '0.5'};"><span style="font-size:2rem; color:${['blu','rosso','wild'].includes(card.color) ? 'white' : 'black'}">${getSymbol(card.value)}</span></div>`;
-    }).join('');
+    discardDiv.innerHTML = `<span style="color:${['blu','rosso','wild'].includes(discardCard.color) ? 'white' : '#1a0a2a'}">${getSymbol(discardCard.value)}</span>`;
+
+    // Color Indicator
+    document.getElementById('current-color-name').innerText = gameState.currentColor.toUpperCase();
+    document.getElementById('current-color-name').style.color = getHex(gameState.currentColor === 'wild' ? 'rosso' : gameState.currentColor);
+
+    // Solo Button Highlight
+    const soloBtn = document.getElementById('solo-btn');
+    if (gameState.players[0].length === 2 && gameState.turn === 0) {
+        soloBtn.style.animation = "pulse 1s infinite";
+    } else {
+        soloBtn.style.animation = "none";
+    }
+
+    // Player Hand
+    const handDiv = document.getElementById('player-hand');
+    handDiv.innerHTML = '';
+    
+    gameState.players[0].forEach((card, index) => {
+        const playable = canPlay(card) && gameState.turn === 0;
+        const rotation = (index - (gameState.players[0].length / 2)) * 6;
+        const translateY = Math.abs(index - (gameState.players[0].length / 2)) * 4;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'player-card-wrapper';
+        wrapper.style.zIndex = index;
+        wrapper.style.transform = `rotate(${rotation}deg) translateY(${translateY}px)`;
+        
+        wrapper.innerHTML = `
+            <div onclick="playerPlayCard(${index})" class="solo-card ${playable ? 'playable' : ''}" 
+                 style="background: ${getHex(card.color)}; opacity: ${gameState.turn === 0 ? 1 : 0.7}">
+                <span style="color:${['blu','rosso','wild'].includes(card.color) ? 'white' : '#1a0a2a'}">${getSymbol(card.value)}</span>
+            </div>
+        `;
+        handDiv.appendChild(wrapper);
+    });
 }
 
 function showColorPicker() {
@@ -232,5 +296,22 @@ function showColorPicker() {
     document.getElementById('color-picker-modal').style.display = 'flex';
 }
 
-function getHex(c) { return { rosso:'#ff4444', giallo:'#ffcc00', verde:'#33cc33', blu:'#0066ff', wild:'linear-gradient(135deg, #ff4444, #0066ff, #33cc33)' }[c] || '#333'; }
-function getSymbol(v) { return { cambio_giro:'🔄', salta_turno:'🚫', piu_due:'+2', cambio_colore:'🎨', piu_quattro:'+4' }[v] || v; }
+function getHex(c) { 
+    return { 
+        rosso:'#ff4444', 
+        giallo:'#ffcc00', 
+        verde:'#33cc33', 
+        blu:'#0066ff', 
+        wild:'linear-gradient(135deg, #ff4444, #0066ff, #33cc33, #ffcc00)' 
+    }[c] || '#333'; 
+}
+
+function getSymbol(v) { 
+    return { 
+        cambio_giro:'🔄', 
+        salta_turno:'🚫', 
+        piu_due:'+2', 
+        cambio_colore:'🎨', 
+        piu_quattro:'+4' 
+    }[v] || v; 
+}
