@@ -1,104 +1,103 @@
-import { supabase, SUPABASE_CONFIG } from './services/supabase.js';
+import { supabase } from './services/supabase.js';
 import { initNavbar } from './components/layout/Navbar.js';
-import { initSidebar } from './components/layout/Sidebar.js';
-
-const { tables } = SUPABASE_CONFIG;
+import { initSidebar, updateSidebarContext } from './components/layout/Sidebar.js';
 
 export async function showDashboard(container, user = null) {
     if (!user) {
         const { data: { user: sbUser } } = await supabase.auth.getUser();
-        if (!sbUser) { window.location.reload(); return; }
         user = sbUser;
     }
 
-    // 1. LOGICA DI VERIFICA AUTOMATICA DISCORD
-    const isDiscordUser = user.app_metadata.provider === 'discord';
+    // --- VERIFICA DISCORD ---
     let isVerified = localStorage.getItem('taverna_member_verified') === 'true';
-
-    if (isDiscordUser && !isVerified) {
+    if (user.app_metadata.provider === 'discord' && !isVerified) {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.provider_token;
-
         if (token) {
             try {
                 const res = await fetch('https://discord.com/api/users/@me/guilds', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const guilds = await res.json();
-                
-                // --- INSERISCI QUI L'ID DEL TUO SERVER DISCORD ---
-                const MY_DISCORD_SERVER_ID = '123456789012345678'; 
-                
-                const found = guilds.some(g => g.id === MY_DISCORD_SERVER_ID);
-                if (found) {
+                const MY_SERVER_ID = '123456789012345678'; // <-- Sostituisci con il tuo ID
+                if (guilds.some(g => g.id === MY_SERVER_ID)) {
                     localStorage.setItem('taverna_member_verified', 'true');
                     isVerified = true;
                 }
-            } catch (e) { console.error("Discord Auth Error:", e); }
+            } catch (e) { console.error("Discord Error:", e); }
         }
     }
 
-    // 2. SOVRASCRITTURA DATI (Usa Discord se presente, altrimenti dati Supabase)
-    const displayAvatar = user.user_metadata?.avatar_url || '';
-    const userName = user.user_metadata?.full_name || user.user_metadata?.custom_claims?.global_name || user.email.split('@')[0];
-
+    const userName = user.user_metadata?.full_name || user.email.split('@')[0];
     const uiContainer = document.getElementById('ui') || container;
 
-    // 3. RENDER UI
+    // RENDER LAYOUT BASE
     uiContainer.innerHTML = `
         <div id="nav-container"></div>
         <div id="sidebar-container"></div>
-        
-        <main class="dashboard-content" id="main-content">
-            <div class="dashboard-container">
-                <header class="dashboard-header">
-                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:10px;">
-                        ${displayAvatar ? `<img src="${displayAvatar}" style="width:50px; border-radius:50%; border:2px solid var(--amethyst);">` : ''}
-                        <h1>Bentornato,<br>
-                        <span style="color:var(--amethyst-bright); text-transform:uppercase;">${userName}</span></h1>
-                    </div>
-                    <p class="subtitle">${isVerified ? '🛡️ MEMBRO DELLA TAVERNA' : '📜 LE TUE CRONACHE'}</p>
-                </header>
-
-                <div id="session-list" class="session-list">
-                    <p style="text-align:center; opacity:0.5; padding:20px;">Consultando i registri...📜</p>
-                </div>
-            </div>
-        </main>
+        <main id="main-content" class="fade-in" style="padding: 20px; padding-bottom: 100px;"></main>
     `;
 
-    // 4. INIZIALIZZAZIONE NAVBAR E SIDEBAR
+    // Inizializza componenti globali
     initNavbar(document.getElementById('nav-container'));
-    initSidebar(document.getElementById('sidebar-container'), user, async () => {
-        await supabase.auth.signOut();
-        localStorage.removeItem('taverna_member_verified');
-        window.location.reload();
-    });
+    initSidebar(document.getElementById('sidebar-container'), user, () => {
+        supabase.auth.signOut().then(() => window.location.reload());
+    }, "home");
 
-    // 5. CARICAMENTO SESSIONI (Invariato)
-    loadSessions();
+    // Mostra la selezione del gioco
+    renderGameSelector();
 }
 
-async function loadSessions() {
-    const sessionList = document.getElementById('session-list');
-    const { data, error } = await supabase.from(tables.maps).select('*').order('created_at', { ascending: false });
-    
-    if (error || !data || data.length === 0) {
-        sessionList.innerHTML = `<p style="text-align:center; opacity:0.3; padding:50px;">Nessuna cronaca attiva.</p>`;
-        return;
-    }
+function renderGameSelector() {
+    const mainContent = document.getElementById('main-content');
+    mainContent.innerHTML = `
+        <header style="text-align:center; margin: 40px 0;">
+            <h1 style="font-size: 2.5rem; letter-spacing: -1px;">Scegli il tuo <span style="color:var(--amethyst-bright);">Destino</span></h1>
+            <p style="opacity:0.6;">Seleziona un sistema di gioco per accedere ai tuoi registri</p>
+        </header>
 
-    sessionList.innerHTML = data.map(s => `
-        <div class="session-card" data-id="${s.session_id}">
-            <div><h3>${s.name}</h3><p>ID: ${s.session_id.slice(0, 8)}...</p></div>
-            <span class="arrow">➔</span>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto;">
+            
+            <div class="game-card" data-system="dnd5e" style="
+                background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.2)), url('https://images.unsplash.com/photo-1519074063261-bb8207ce2433?auto=format&fit=crop&q=80&w=800');
+                background-size: cover; height: 400px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.3);
+                cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; padding: 30px; transition: 0.4s;
+            ">
+                <h2 style="margin:0; font-weight: 900; font-size: 2rem;">D&D 5E</h2>
+                <p style="opacity:0.8; font-size: 14px; margin: 10px 0 20px 0;">Il Re dei Giochi di Ruolo. Crea eroi, lancia dadi, scrivi la storia.</p>
+                <button class="btn-primary" style="width: fit-content; height: 45px; padding: 0 25px;">APRI GRIMORIO</button>
+            </div>
+
+            <div style="background: rgba(255,255,255,0.03); border: 2px dashed rgba(255,255,255,0.1); height: 400px; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.5;">
+                <span style="font-size: 3rem; margin-bottom: 10px;">🎲</span>
+                <p style="letter-spacing: 2px; font-size: 12px;">PROSSIMAMENTE</p>
+            </div>
         </div>
-    `).join('');
+    `;
 
-    document.querySelectorAll('.session-card').forEach(card => {
-        card.onclick = async () => {
-            const { showSession } = await import('./components/features/tabletop/Session.js');
-            showSession(document.getElementById('ui'), card.dataset.id);
+    // Eventi sulle card
+    mainContent.querySelectorAll('.game-card').forEach(card => {
+        card.onclick = () => {
+            const system = card.dataset.system;
+            enterSystem(system);
         };
     });
+}
+
+function enterSystem(system) {
+    const mainContent = document.getElementById('main-content');
+    
+    // 1. Aggiorna la Sidebar con i comandi del gioco scelto
+    updateSidebarContext(system);
+
+    // 2. Carica l'interfaccia specifica (Esempio D&D)
+    mainContent.innerHTML = `
+        <div class="fade-in">
+            <button onclick="window.location.reload()" style="background:none; border:none; color:var(--amethyst-bright); cursor:pointer; margin-bottom: 20px;">← Torna alla Libreria</button>
+            <h1 style="text-transform: uppercase;">Dashboard ${system}</h1>
+            <div id="game-workspace" style="background: rgba(255,255,255,0.05); border-radius: 20px; padding: 40px; text-align: center; border: 1px solid var(--amethyst-glow);">
+                <p>Caricamento sessioni di gioco in corso...</p>
+            </div>
+        </div>
+    `;
 }
