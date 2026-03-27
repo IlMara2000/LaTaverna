@@ -1,6 +1,3 @@
-import { showProfile } from '../../features/user/Profile.js';
-import { showSettings } from '../../features/user/Settings.js';
-
 let currentSidebarUser = null;
 let currentLogoutFn = null;
 
@@ -62,15 +59,17 @@ function renderSidebarContent(container, context) {
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // --- LOGICA CLICK BOTTONI ---
+    // --- LOGICA CLICK CON IMPORT DINAMICI (PER EVITARE ERRORI VERCEL) ---
     
     document.getElementById('sideLogout').onclick = currentLogoutFn;
 
     // Profilo
     const btnProfile = document.getElementById('sideProfile');
     if (btnProfile) {
-        btnProfile.onclick = () => {
+        btnProfile.onclick = async () => {
             toggle();
+            // Carica il file solo al click
+            const { showProfile } = await import('../../features/user/Profile.js');
             showProfile(mainContent, currentSidebarUser);
         };
     }
@@ -78,8 +77,10 @@ function renderSidebarContent(container, context) {
     // Impostazioni
     const btnSettings = document.getElementById('sideSettings');
     if (btnSettings) {
-        btnSettings.onclick = () => {
+        btnSettings.onclick = async () => {
             toggle();
+            // Carica il file solo al click
+            const { showSettings } = await import('../../features/user/Settings.js');
             showSettings(mainContent);
         };
     }
