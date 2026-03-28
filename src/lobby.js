@@ -8,10 +8,9 @@ export function showLobby(container) {
 
     container.innerHTML = `
         <div id="lobby-wrapper" style="
-            height: 100dvh; /* 100dvh si adatta meglio alla barra di navigazione mobile rispetto a vh */
-            box-sizing: border-box; /* FONDAMENTALE: impedisce al padding di sbordare creando spazio extra */
-            overflow-y: auto; 
-            padding: 40px 20px; 
+            min-height: 100dvh; /* Usato min-height per evitare lo spazio nero! */
+            box-sizing: border-box; 
+            padding: 40px 20px 80px 20px; /* Padding extra sotto per sicurezza */
             background: #05020a; 
             scrollbar-width: thin; 
             scrollbar-color: var(--amethyst-bright) transparent;
@@ -67,6 +66,18 @@ export function showLobby(container) {
                             </div>
                         </div>
 
+                        <div class="game-card" id="btn-impostore" style="
+                            background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), 
+                                        linear-gradient(135deg, #ff3366 0%, #330011 100%);
+                            height: 350px; border-radius: 24px; border: 1px solid rgba(255, 51, 102, 0.4);
+                            cursor: pointer; display: flex; align-items: flex-end; padding: 30px; transition: 0.4s;
+                        ">
+                            <div>
+                                <h2 style="margin:0; font-size: 2rem; font-weight: 900; color: white;">IMPOSTORE</h2>
+                                <p style="opacity:0.7; font-size: 14px; color: white;">Ruoli Nascosti Multiplayer</p>
+                            </div>
+                        </div>
+
                         <div style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.05); height: 350px; border-radius: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.3;">
                             <p style="letter-spacing: 2px; font-size: 10px;">PROSSIMAMENTE...</p>
                         </div>
@@ -79,11 +90,20 @@ export function showLobby(container) {
 
     // Logic
     document.getElementById('btn-portal-carte').onclick = () => showCardGamesLobby(container);
+    
     document.getElementById('btn-dnd5e').onclick = async () => {
         try {
             const { initDndDashboard } = await import('./dashboards/dnd5e.js');
             initDndDashboard(container);
         } catch (err) { console.error("Errore D&D:", err); }
+    };
+
+    // LOGICA IMPOSTORE
+    document.getElementById('btn-impostore').onclick = async () => {
+        try {
+            const { initImpostore } = await import('./dashboards/impostore.js');
+            initImpostore(container);
+        } catch (err) { console.error("Errore Impostore:", err); }
     };
 }
 
@@ -93,10 +113,9 @@ export function showLobby(container) {
 export function showCardGamesLobby(container) {
     container.innerHTML = `
         <div id="lobby-wrapper" style="
-            height: 100dvh; 
+            min-height: 100dvh; /* Usato min-height per evitare lo spazio nero! */
             box-sizing: border-box; 
-            overflow-y: auto; 
-            padding: 40px 20px; 
+            padding: 40px 20px 80px 20px; 
             background: #05020a;
         " class="fade-in">
             
