@@ -6,6 +6,13 @@ export function initDndDashboard(container) {
 
     container.innerHTML = `
         <style>
+            /* SISTEMA SCROLLING MOBILE */
+            #main-content, .fade-in {
+                height: 100vh;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+            }
+
             .dnd-hero {
                 background: linear-gradient(135deg, rgba(40, 10, 60, 0.8) 0%, rgba(10, 5, 20, 0.9) 100%),
                             url('https://www.transparenttextures.com/patterns/dark-matter.png');
@@ -16,6 +23,23 @@ export function initDndDashboard(container) {
                 overflow: hidden;
                 box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(157, 78, 221, 0.1);
                 margin-bottom: 30px;
+            }
+
+            /* FIX TESTO PROPORZIONATO SU MOBILE */
+            .dnd-title {
+                font-size: 3.5rem; 
+                font-weight: 900; 
+                margin: 0; 
+                line-height: 1;
+            }
+
+            @media (max-width: 768px) {
+                .dnd-title {
+                    font-size: 2.2rem; /* Ridotto per non rompere il layout mobile */
+                }
+                .dnd-hero {
+                    padding: 25px;
+                }
             }
 
             .dnd-hero::before {
@@ -94,7 +118,7 @@ export function initDndDashboard(container) {
 
             <div class="dnd-hero">
                 <div class="dnd-badge">SISTEMA UFFICIALE</div>
-                <h1 style="font-size: 3.5rem; font-weight: 900; margin: 0; line-height: 1;">
+                <h1 class="dnd-title">
                     DUNGEONS <br> & <span style="color:var(--amethyst-bright); text-shadow: 0 0 20px rgba(157,78,221,0.5);">DRAGONS</span>
                 </h1>
                 <p style="opacity: 0.6; margin-top: 20px; max-width: 500px; font-size: 16px; line-height: 1.6;">
