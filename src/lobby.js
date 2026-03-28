@@ -8,15 +8,16 @@ export function showLobby(container) {
 
     container.innerHTML = `
         <div id="lobby-wrapper" style="
-            min-height: 100%; 
-            width: 100%;
+            height: 100dvh; /* 100dvh si adatta meglio alla barra di navigazione mobile rispetto a vh */
+            box-sizing: border-box; /* FONDAMENTALE: impedisce al padding di sbordare creando spazio extra */
+            overflow-y: auto; 
             padding: 40px 20px; 
             background: #05020a; 
-            display: block;
-            overflow-x: hidden;
+            scrollbar-width: thin; 
+            scrollbar-color: var(--amethyst-bright) transparent;
         " class="fade-in">
             
-            <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 40px;">
+            <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 20px;">
                 <header style="margin-bottom: 40px;">
                     <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; margin: 0;">LA <span style="color:var(--amethyst-bright);">LIBRERIA</span></h1>
                     <p style="opacity:0.5; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; margin-top: 5px;">Seleziona un sistema di gioco</p>
@@ -76,6 +77,7 @@ export function showLobby(container) {
         </div>
     `;
 
+    // Logic
     document.getElementById('btn-portal-carte').onclick = () => showCardGamesLobby(container);
     document.getElementById('btn-dnd5e').onclick = async () => {
         try {
@@ -91,12 +93,11 @@ export function showLobby(container) {
 export function showCardGamesLobby(container) {
     container.innerHTML = `
         <div id="lobby-wrapper" style="
-            min-height: 100%; 
-            width: 100%;
+            height: 100dvh; 
+            box-sizing: border-box; 
+            overflow-y: auto; 
             padding: 40px 20px; 
             background: #05020a;
-            display: block;
-            overflow-x: hidden;
         " class="fade-in">
             
             <button id="btn-back-main" style="
@@ -105,7 +106,7 @@ export function showCardGamesLobby(container) {
                 font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 30px;
             ">← TORNA ALLA LIBRERIA</button>
 
-            <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 40px;">
+            <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 20px;">
                 <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 40px;">I TUOI <span style="color:var(--amethyst-bright);">MAZZI</span></h1>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
