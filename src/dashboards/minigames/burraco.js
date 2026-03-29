@@ -97,7 +97,6 @@ function updateUI(state) {
     const isPlayer = state.turn === 'player';
     const selectedCards = state.selectedIndices.map(i => state.hands.player[i]);
     
-    // Validazione estesa: combo nuova (>=3) o aggiunta a pila esistente
     const targetPilaIndex = findTargetPila(selectedCards, state.tables.team1);
     const isNewCombo = validateCombo(selectedCards);
     const canMeld = (isNewCombo || (selectedCards.length > 0 && targetPilaIndex !== -1));
@@ -127,7 +126,6 @@ function updateUI(state) {
     btnMeld.onclick = () => handleMeld(state, targetPilaIndex);
 }
 
-// Trova se le carte selezionate possono essere attaccate a una pila esistente
 function findTargetPila(selectedCards, table) {
     if (selectedCards.length === 0) return -1;
     for (let i = 0; i < table.length; i++) {
@@ -186,12 +184,10 @@ function renderDiscard(state) {
     });
 }
 
-// --- AZIONI ---
 function drawFromDeck(state) {
     if(state.deck.length > 0) {
         state.hands.player.push(state.deck.pop());
         state.phase = 'play';
-        state.tutorMsg = "Hai pescato.";
         updateUI(state);
     }
 }
@@ -209,11 +205,10 @@ function handleMeld(state, targetPilaIndex) {
     const cards = state.selectedIndices.sort((a,b)=>b-a).map(i => state.hands.player.splice(i,1)[0]);
     
     if (targetPilaIndex !== -1) {
-        // Aggiungi alla pila esistente e riordina
         state.tables.team1[targetPilaIndex].push(...cards);
+        // Ordinamento intelligente che tiene conto dei Joker
         state.tables.team1[targetPilaIndex].sort((a, b) => getCardValue(a) - getCardValue(b));
     } else {
-        // Crea nuova pila
         cards.sort((a, b) => getCardValue(a) - getCardValue(b));
         state.tables.team1.push(cards);
     }
@@ -236,7 +231,6 @@ function botAction(state) {
     if (state.turn !== 'bot') return;
     if(state.deck.length > 0) state.hands.bot1.push(state.deck.pop());
     
-    // Il bot prova prima ad attaccare carte alle sue pile, poi a crearne di nuove
     const botHand = state.hands.bot1;
     let moved = false;
     
@@ -250,14 +244,16 @@ function botAction(state) {
         }
     }
 
-    const combos = findCombinations(state.hands.bot1);
-    if(!moved && combos.length >= 3) {
-        const val = combos[0].val;
-        const group = [];
-        for(let i = state.hands.bot1.length - 1; i >= 0; i--) {
-            if(state.hands.bot1[i].val === val) group.push(state.hands.bot1.splice(i, 1)[0]);
+    if(!moved) {
+        const combos = findCombinations(state.hands.bot1);
+        if(combos.length >= 3) {
+            const val = combos[0].val;
+            const group = [];
+            for(let i = state.hands.bot1.length - 1; i >= 0; i--) {
+                if(state.hands.bot1[i].val === val || state.hands.bot1[i].isJolly) group.push(state.hands.bot1.splice(i, 1)[0]);
+            }
+            state.tables.team2.push(group);
         }
-        state.tables.team2.push(group);
     }
 
     setTimeout(() => {
@@ -271,24 +267,46 @@ function botAction(state) {
 // --- UTILS ---
 function validateCombo(cards) {
     if (cards.length < 3) return false;
-    const allSameValue = cards.every(c => c.val === cards[0].val || c.isJolly);
-    if (allSameValue) return true;
+    
+    const jollies = cards.filter(c => c.isJolly).length;
+    const normalCards = cards.filter(c => !c.isJolly);
+    
+    if (jollies > 1) return false; // Regola Burraco: max 1 jolly per sequenza
 
-    const sameSuit = cards.every(c => c.suit === cards[0].suit || c.isJolly);
-    if (sameSuit) {
-        const values = cards.map(c => getCardValue(c)).sort((a, b) => a - b);
-        let gaps = 0;
-        for (let i = 0; i < values.length - 1; i++) {
-            if (values[i+1] - values[i] !== 1) gaps += (values[i+1] - values[i] - 1);
-        }
-        const jollies = cards.filter(c => c.isJolly).length;
-        return gaps <= jollies;
+    // CASO 1: Tris/Quartetti (Tutti lo stesso valore)
+    if (normalCards.length > 0) {
+        const firstVal = normalCards[0].val;
+        const allSameValue = normalCards.every(c => c.val === firstVal);
+        if (allSameValue) return true;
     }
+
+    // CASO 2: Scale (Sequenza dello stesso seme)
+    if (normalCards.length > 0) {
+        const suit = normalCards[0].suit;
+        const sameSuit = normalCards.every(c => c.suit === suit);
+        if (sameSuit) {
+            const values = normalCards.map(c => getCardValue(c)).sort((a, b) => a - b);
+            
+            // Verifica duplicati nelle scale (non ammessi tranne jolly)
+            const hasDuplicates = new Set(values).size !== values.length;
+            if (hasDuplicates) return false;
+
+            let gaps = 0;
+            for (let i = 0; i < values.length - 1; i++) {
+                gaps += (values[i+1] - values[i] - 1);
+            }
+            
+            // Se i buchi tra le carte sono colmabili dal numero di jolly, è valida
+            return gaps <= jollies;
+        }
+    }
+    
     return false;
 }
 
 function getCardValue(card) {
-    const mapping = { 'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'JK': 0 };
+    if (card.isJolly) return 0; // Per ordinamento, il jolly sta spesso in fondo o all'inizio
+    const mapping = { 'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13 };
     return mapping[card.val];
 }
 
@@ -314,9 +332,9 @@ function createBurracoDeck() {
 
 function findCombinations(hand) {
     let counts = {};
-    hand.forEach(c => counts[c.val] = (counts[c.val] || 0) + 1);
-    let vals = Object.keys(counts).filter(v => counts[v] >= 3);
-    return hand.filter(c => vals.includes(c.val));
+    hand.forEach(c => { if(!c.isJolly) counts[c.val] = (counts[c.val] || 0) + 1; });
+    let vals = Object.keys(counts).filter(v => counts[v] >= 2); // 2 carte + 1 jolly possibile
+    return hand.filter(c => vals.includes(c.val) || c.isJolly);
 }
 
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
