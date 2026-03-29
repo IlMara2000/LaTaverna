@@ -8,12 +8,14 @@ const getHex = (color) => {
     return hex[color] || '#ffffff';
 };
 
-// Mappatura icone: Solo per effetti, i numeri (+2, +4) restano testo come richiesto
+// Mappatura Emoji per rendere il gioco più "videogame"
 const getCardContent = (val) => {
     const symbols = {
         'SKIP': '🚫',
         'REV': '🔄',
-        'WILD': '🌈'
+        '+2': '💎💎',
+        'WILD': '🌈',
+        '+4': '🚀'
     };
     return symbols[val] || val;
 };
@@ -39,15 +41,10 @@ function renderLayout(container) {
 
         .game-bg { width:100%; height:100dvh; background: #0f0c29; background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); position:relative; overflow:hidden; color:white; font-family: 'Poppins', sans-serif; }
         
-        /* Turn Indicator Rings */
-        .turn-glow { position: absolute; width: 120px; height: 120px; border-radius: 50%; border: 2px solid transparent; transition: all 0.5s ease; pointer-events: none; opacity: 0; }
-        .turn-glow.active { opacity: 1; border-color: #00d2ff; box-shadow: 0 0 30px #00d2ff; animation: turnPulse 2s infinite; }
-        @keyframes turnPulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.2); opacity: 0.4; } 100% { transform: scale(1); opacity: 0.8; } }
-
         .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: 0; width: 100%; z-index: 10; }
-        .bot-status { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 15px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); min-width: 85px; position: relative; }
-        .bot-status.active { border-color: #00d2ff; box-shadow: 0 0 25px rgba(0, 210, 255, 0.4); transform: translateY(10px); background: rgba(0, 210, 255, 0.1); }
-        .card-count { font-weight: 900; color: #00d2ff; font-size: 1.3rem; }
+        .bot-status { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 15px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); min-width: 85px; }
+        .bot-status.active { border-color: #00d2ff; box-shadow: 0 0 25px rgba(0, 210, 255, 0.4); transform: translateY(10px) scale(1.1); background: rgba(0, 210, 255, 0.1); }
+        .card-count { font-weight: 900; color: #00d2ff; font-size: 1.3rem; text-shadow: 0 0 10px rgba(0,210,255,0.5); }
 
         .table-center { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
         .pile-container { display: flex; justify-content: center; gap: 40px; align-items: center; perspective: 1200px; }
@@ -56,35 +53,35 @@ function renderLayout(container) {
         .card-back { background: linear-gradient(135deg, #1a1a1a 0%, #434343 100%); border-color: #555; }
         .card-back::after { content: '🃏'; font-size: 2.5rem; filter: grayscale(1) opacity(0.3); }
         
-        .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
+        .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); }
 
         .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: 30px; }
-        .hand-container { width: 100%; display: flex; justify-content: center; overflow: visible; position: relative; }
+        .hand-container { width: 100%; display: flex; justify-content: center; overflow: visible; }
         .hand-scroll { display: flex; gap: 10px; padding: 20px 40px; overflow-x: auto; scrollbar-width: none; overflow-y: visible; min-height: 160px; align-items: flex-end; }
-        .player-status-ring { position: absolute; inset: 0; border: 4px solid transparent; border-radius: 20px; pointer-events: none; transition: 0.3s; }
-        .player-status-ring.active { border-color: #00d2ff; box-shadow: inset 0 0 20px #00d2ff44; }
+        .hand-scroll::-webkit-scrollbar { display: none; }
+        
+        .card-solo.playable { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease; cursor: pointer; }
+        .card-solo.playable:active { transform: scale(1.15) translateY(-30px) rotate(2deg); z-index: 100; box-shadow: 0 20px 40px rgba(0,0,0,0.7); }
 
-        .card-solo.playable { transition: transform 0.3s ease, box-shadow 0.3s ease; cursor: pointer; }
-        .card-solo.playable:hover { transform: translateY(-15px) scale(1.05); }
-
-        .btn-solo { background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; padding: 14px 40px; border-radius: 50px; font-weight: 900; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; display: none; }
+        .btn-solo { background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; padding: 14px 40px; border-radius: 50px; font-weight: 900; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 20px rgba(255, 65, 108, 0.5); display: none; border: 2px solid rgba(255,255,255,0.3); }
         .btn-solo.pulse { display: block; animation: gamePulse 0.8s infinite alternate; }
         
-        @keyframes gamePulse { from { transform: scale(1); } to { transform: scale(1.1); box-shadow: 0 0 30px rgba(255, 65, 108, 0.8); } }
+        @keyframes gamePulse { from { transform: scale(1); filter: brightness(1); } to { transform: scale(1.1); filter: brightness(1.3); box-shadow: 0 0 30px rgba(255, 65, 108, 0.8); } }
 
         #picker-wild { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 20px; padding: 40px; align-content: center; }
-        .color-tile { height: 140px; border-radius: 25px; cursor: pointer; }
+        .color-tile { height: 140px; border-radius: 25px; border: 4px solid rgba(255,255,255,0.1); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
         #start-overlay { position:fixed; inset:0; background:#090a0f; z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-        .title-anim { font-size: 5rem; font-weight: 900; background: linear-gradient(to right, #00d2ff, #9d4ede); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .title-anim { font-size: 5rem; font-weight: 900; letter-spacing: -2px; background: linear-gradient(to right, #00d2ff, #9d4ede); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: titleFloat 3s infinite ease-in-out; }
+        @keyframes titleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
-        @keyframes cardEnter { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes cardEnter { from { opacity: 0; transform: translateY(50px) scale(0.5); } to { opacity: 1; transform: translateY(0) scale(1); } }
     </style>
 
     <div class="game-bg">
         <div id="start-overlay">
             <h1 class="title-anim">SOLO</h1>
-            <button id="btn-start" style="margin-top:40px; background:white; border:none; padding:20px 60px; border-radius:50px; color:#090a0f; font-weight:900; font-size:1.2rem; cursor:pointer;">GIOCA</button>
+            <button id="btn-start" style="margin-top:40px; background:white; border:none; padding:20px 60px; border-radius:50px; color:#090a0f; font-weight:900; font-size:1.2rem; cursor:pointer; box-shadow: 0 10px 40px rgba(255,255,255,0.1);">GIOCA</button>
         </div>
 
         <div class="opponents-container">
@@ -94,24 +91,23 @@ function renderLayout(container) {
         </div>
 
         <div class="table-center">
-            <div id="direction-info" style="font-size:2.5rem; margin-bottom:20px; transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);">↻</div>
+            <div id="direction-info" style="font-size:2.5rem; margin-bottom:20px; transition: 1s ease;">↻</div>
             <div class="pile-container">
-                <div id="deck-draw" class="card-solo card-back"></div>
-                <div id="discard-pile" class="card-solo" style="background:white; color:black;"></div>
+                <div id="deck-draw" class="card-solo card-back" style="transform: translateZ(20px);"></div>
+                <div id="discard-pile" class="card-solo" style="background:white; color:black; transform: rotateY(0deg);"></div>
             </div>
-            <div id="color-line" style="width: 120px; height: 6px; margin: 35px auto; border-radius: 10px; transition: 0.5s;"></div>
+            <div id="color-line" style="width: 120px; height: 6px; margin: 35px auto; border-radius: 10px; transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);"></div>
         </div>
 
         <div class="player-ui">
             <button id="solo-alert" class="btn-solo">SOLO!</button>
             <div class="hand-container">
-                <div id="player-status-ring" class="player-status-ring"></div>
                 <div id="player-hand" class="hand-scroll"></div>
             </div>
         </div>
 
         <div id="picker-wild">
-            ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)};"></div>`).join('')}
+            ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)}; box-shadow: 0 10px 30px ${getHex(c)}44;"></div>`).join('')}
         </div>
     </div>
     `;
@@ -140,19 +136,24 @@ async function animateCard(fromEl, toEl, cardData, isBack = false) {
 
         flyer.style.left = `${toRect.left}px`;
         flyer.style.top = `${toRect.top}px`;
-        flyer.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+        flyer.style.transform = `rotate(${Math.random() * 40 - 20}deg) scale(1.1)`;
 
         setTimeout(() => {
-            flyer.remove();
-            resolve();
+            flyer.style.transform = `rotate(${Math.random() * 10 - 5}deg) scale(1)`;
+            setTimeout(() => {
+                flyer.remove();
+                resolve();
+            }, 150);
         }, 500);
     });
 }
 
 function attachInitialListeners(container, state) {
     document.getElementById('btn-start').onclick = () => {
-        document.getElementById('start-overlay').style.display = 'none';
-        startGame(state);
+        const overlay = document.getElementById('start-overlay');
+        overlay.style.transition = '0.5s';
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; startGame(state); }, 500);
     };
 
     document.getElementById('deck-draw').onclick = () => {
@@ -199,10 +200,7 @@ function startGame(state) {
     }
 
     let first = state.deck.pop();
-    while(first.color === 'wild' || first.val === '+2' || first.val === 'SKIP' || first.val === 'REV') { 
-        state.deck.unshift(first); 
-        first = state.deck.pop(); 
-    }
+    while(first.color === 'wild') { state.deck.unshift(first); first = state.deck.pop(); }
 
     state.currentColor = first.color;
     state.currentVal = first.val;
@@ -231,7 +229,7 @@ async function drawCard(pIdx, state, manual = false) {
     
     if (pIdx === 0 && manual) {
         const canPlay = card.color === 'wild' || card.color === state.currentColor || card.val === state.currentVal;
-        if (!canPlay) setTimeout(() => endTurn(state), 500);
+        if (!canPlay) setTimeout(() => endTurn(state), 400);
     }
     updateUI(state);
 }
@@ -261,50 +259,34 @@ async function playCard(pIdx, cardIdx, state) {
         document.getElementById('direction-info').style.transform = `rotate(${state.direction === 1 ? 0 : 180}deg)`;
     }
     
-    if (card.val === 'SKIP') {
-        state.isAnimating = false;
-        nextTurn(state); 
-        endTurn(state);
-        return;
-    }
-
+    if (card.val === 'SKIP') nextTurn(state);
     if (card.val === '+2') {
         const target = (state.turn + state.direction + 4) % 4;
         state.isAnimating = false;
-        await drawCard(target, state);
-        await drawCard(target, state);
+        await drawCard(target, state); await drawCard(target, state);
+        state.isAnimating = true;
         nextTurn(state);
-        endTurn(state);
-        return;
     }
-
     if (card.val === '+4') {
         const target = (state.turn + state.direction + 4) % 4;
         state.isAnimating = false;
         for(let i=0; i<4; i++) await drawCard(target, state);
+        state.isAnimating = true;
         nextTurn(state);
-        if (pIdx === 0) {
-             document.getElementById('picker-wild').style.display = 'grid';
-        } else {
-             autoPickColor(pIdx, state);
-        }
-        return;
     }
 
     state.isAnimating = false;
     if (card.color === 'wild') {
         if (pIdx === 0) document.getElementById('picker-wild').style.display = 'grid';
-        else autoPickColor(pIdx, state);
+        else {
+            const counts = {};
+            state.players[pIdx].forEach(c => { if(c.color !== 'wild') counts[c.color] = (counts[c.color] || 0) + 1; });
+            state.currentColor = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, COLORS[0]);
+            endTurn(state);
+        }
     } else {
         endTurn(state);
     }
-}
-
-function autoPickColor(pIdx, state) {
-    const counts = {};
-    state.players[pIdx].forEach(c => { if(c.color !== 'wild') counts[c.color] = (counts[c.color] || 0) + 1; });
-    state.currentColor = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, COLORS[Math.floor(Math.random()*4)]);
-    endTurn(state);
 }
 
 function nextTurn(state) {
@@ -322,11 +304,10 @@ function endTurn(state) {
     if (checkWin(state)) return;
     nextTurn(state);
     updateUI(state);
-    if (state.turn !== 0) setTimeout(() => botLogic(state), 1000);
+    if (state.turn !== 0) setTimeout(() => botLogic(state), 800);
 }
 
 function botLogic(state) {
-    if (!state.gameActive || state.isAnimating) return;
     const hand = state.players[state.turn];
     const playableIdx = hand.findIndex(c => c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal);
     if (playableIdx !== -1) playCard(state.turn, playableIdx, state);
@@ -351,21 +332,14 @@ function updateUI(state) {
     dp.style.color = (top.color === 'yellow' || top.color === 'wild') ? 'black' : 'white';
     dp.innerText = getCardContent(top.val);
     
-    document.getElementById('color-line').style.backgroundColor = getHex(state.currentColor);
-    document.getElementById('color-line').style.boxShadow = `0 0 30px ${getHex(state.currentColor)}`;
-
-    // Turn Animations
-    document.getElementById('player-status-ring').classList.toggle('active', state.turn === 0);
-    for(let i=1; i<=3; i++) {
-        const el = document.getElementById(`bot-stat-${i}`);
-        el.classList.toggle('active', state.turn === i);
-        document.getElementById(`cnt-${i}`).innerText = state.players[i].length;
-    }
+    const colorLine = document.getElementById('color-line');
+    colorLine.style.backgroundColor = getHex(state.currentColor);
+    colorLine.style.boxShadow = `0 0 30px ${getHex(state.currentColor)}`;
 
     const pArea = document.getElementById('player-hand');
     pArea.innerHTML = state.players[0].map((c, i) => `
         <div class="card-solo playable" 
-             style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'}; animation: cardEnter 0.3s ease-out backwards; animation-delay: ${i * 0.05}s;" 
+             style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'}; animation: cardEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;" 
              data-idx="${i}">
             ${getCardContent(c.val)}
         </div>
@@ -376,4 +350,10 @@ function updateUI(state) {
     });
 
     document.getElementById('solo-alert').classList.toggle('pulse', state.players[0].length === 2 && state.turn === 0);
+
+    for(let i=1; i<=3; i++) {
+        const el = document.getElementById(`bot-stat-${i}`);
+        el.classList.toggle('active', state.turn === i);
+        document.getElementById(`cnt-${i}`).innerText = state.players[i].length;
+    }
 }
