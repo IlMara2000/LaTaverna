@@ -45,8 +45,8 @@ function renderLayout(container, state) {
     container.innerHTML = `
     <style>
         .burraco-bg { width:100%; height:100dvh; background: radial-gradient(circle at center, #0a2a1a 0%, #020a05 100%); color:white; font-family:'Inter',sans-serif; position:relative; overflow:hidden; display:flex; flex-direction:column; }
-        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 20px; margin-top: 40px; }
-        .mats { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 10px; position: relative; display: flex; align-items: center; gap: 10px; overflow-x: auto; min-height:100px; }
+        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 20px; margin-top: 40px; overflow-y: auto; }
+        .mats { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 15px; position: relative; display: flex; align-items: flex-start; gap: 15px; overflow-x: auto; min-height:140px; }
         .tutor-box { position: absolute; top: 70px; right: 20px; width: 220px; background: rgba(0,0,0,0.85); border-left: 4px solid #9d4ede; padding: 15px; border-radius: 8px; font-size: 12px; z-index: 10; border: 1px solid rgba(157,78,221,0.3); }
         .card-b { width: 45px; height: 65px; background: white; border-radius: 6px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.3); transition: transform 0.2s; cursor: pointer; border: 1px solid #ddd; flex-shrink: 0; }
         .card-b.selected { transform: translateY(-20px); border: 2px solid #9d4ede; z-index: 10; box-shadow: 0 0 15px #9d4ede; }
@@ -55,10 +55,11 @@ function renderLayout(container, state) {
         .player-hand-container { padding-bottom: 95px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .hand-wrapper { display: flex; justify-content: center; height: 90px; align-items: flex-end; width: 100%; }
         .btn-action { padding: 12px 24px; border-radius: 12px; border: none; font-weight: 900; font-size: 13px; cursor: pointer; transition: 0.3s; }
-        #btn-meld { background: #2ecc71; color: white; }
+        #btn-meld { background: #2ecc71; color: white; box-shadow: 0 0 0px #2ecc71; }
+        #btn-meld.valid-combo { box-shadow: 0 0 20px #2ecc71; transform: scale(1.05); }
         #btn-discard { background: #e74c3c; color: white; }
-        .btn-action:disabled { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; }
-        .meld-group { display: flex; margin-right: 15px; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 5px; }
+        .btn-action:disabled { opacity: 0.3; filter: grayscale(1); cursor: not-allowed; transform: scale(1) !important; box-shadow: none !important; }
+        .meld-group { display: flex; flex-direction: column; height: fit-content; min-width: 45px; }
     </style>
 
     <div class="burraco-bg">
@@ -94,13 +95,25 @@ function initLogic(state) {
 
 function updateUI(state) {
     const isPlayer = state.turn === 'player';
+    
+    // Controllo combo per aiuto utente
+    const selectedCards = state.selectedIndices.map(i => state.hands.player[i]);
+    const isValid = validateCombo(selectedCards);
+    
+    if (isPlayer && state.phase === 'play' && isValid) {
+        state.tutorMsg = "Ottima mossa! Questa è una combinazione valida.";
+    }
+
     document.getElementById('tutor-text').innerText = state.tutorMsg;
 
     const btnDiscard = document.getElementById('btn-discard');
     const btnMeld = document.getElementById('btn-meld');
     
     btnDiscard.disabled = !isPlayer || state.selectedIndices.length !== 1 || state.phase !== 'play';
-    btnMeld.disabled = !isPlayer || state.selectedIndices.length < 3 || state.phase !== 'play';
+    btnMeld.disabled = !isPlayer || !isValid || state.phase !== 'play';
+    
+    if (isValid && isPlayer && state.phase === 'play') btnMeld.classList.add('valid-combo');
+    else btnMeld.classList.remove('valid-combo');
 
     renderHand(state);
     renderTables(state);
@@ -137,8 +150,10 @@ function renderTables(state) {
             gDiv.className = 'meld-group';
             group.forEach((card, i) => {
                 const c = createCardElement(card);
-                c.style.marginLeft = i === 0 ? '0' : '-30px';
-                c.style.transform = 'scale(0.8)';
+                // Effetto sovrapposizione verticale (a cascata)
+                c.style.marginTop = i === 0 ? '0' : '-45px';
+                c.style.transform = 'scale(0.85)';
+                c.style.zIndex = i;
                 gDiv.appendChild(c);
             });
             el.appendChild(gDiv);
@@ -164,7 +179,7 @@ function drawFromDeck(state) {
     if(state.deck.length > 0) {
         state.hands.player.push(state.deck.pop());
         state.phase = 'play';
-        state.tutorMsg = "Hai pescato. Ora cala una combo o scarta.";
+        state.tutorMsg = "Hai pescato. Seleziona almeno 3 carte per calare o 1 per scartare.";
         updateUI(state);
     }
 }
@@ -174,13 +189,15 @@ function pickDiscard(state) {
         state.hands.player.push(...state.discardPile);
         state.discardPile = [];
         state.phase = 'play';
-        state.tutorMsg = "Hai preso gli scarti. Gioca o scarta una carta.";
+        state.tutorMsg = "Hai preso gli scarti. Cerca una combo!";
         updateUI(state);
     }
 }
 
 function handleMeld(state) {
     const cards = state.selectedIndices.sort((a,b)=>b-a).map(i => state.hands.player.splice(i,1)[0]);
+    // Ordina le carte per la visualizzazione sul tavolo (valore crescente)
+    cards.sort((a, b) => getCardValue(a) - getCardValue(b));
     state.tables.team1.push(cards);
     state.selectedIndices = [];
     state.tutorMsg = "Combinazione calata! Puoi calarne altre o scartare.";
@@ -195,45 +212,59 @@ function handleDiscard(state) {
     state.phase = 'draw';
     state.tutorMsg = "Hai scartato. Ora tocca al bot...";
     updateUI(state);
-    
-    // Attivazione garantita del bot
     setTimeout(() => botAction(state), 1500);
 }
 
 function botAction(state) {
     if (state.turn !== 'bot') return;
-
-    // 1. Pesca dal mazzo
-    if(state.deck.length > 0) {
-        state.hands.bot1.push(state.deck.pop());
-    }
+    if(state.deck.length > 0) state.hands.bot1.push(state.deck.pop());
     
-    // 2. Logica per calare (cerca tris)
     const combos = findCombinations(state.hands.bot1);
     if(combos.length >= 3) {
         const val = combos[0].val;
         const group = [];
         for(let i = state.hands.bot1.length - 1; i >= 0; i--) {
-            if(state.hands.bot1[i].val === val) {
-                group.push(state.hands.bot1.splice(i, 1)[0]);
-            }
+            if(state.hands.bot1[i].val === val) group.push(state.hands.bot1.splice(i, 1)[0]);
         }
         state.tables.team2.push(group);
     }
 
-    // 3. Scarta e torna al player
     setTimeout(() => {
-        if(state.hands.bot1.length > 0) {
-            state.discardPile.push(state.hands.bot1.pop());
-        }
+        if(state.hands.bot1.length > 0) state.discardPile.push(state.hands.bot1.pop());
         state.turn = 'player';
         state.phase = 'draw';
-        state.tutorMsg = "Il bot ha giocato. Tocca a te!";
+        state.tutorMsg = "Il bot ha finito. Tocca a te!";
         updateUI(state);
     }, 1000);
 }
 
 // --- UTILS ---
+function validateCombo(cards) {
+    if (cards.length < 3) return false;
+    
+    // Tris o Quartetti (Stesso valore)
+    const allSameValue = cards.every(c => c.val === cards[0].val || c.isJolly);
+    if (allSameValue) return true;
+
+    // Scale (Stesso seme, valori consecutivi)
+    const sameSuit = cards.every(c => c.suit === cards[0].suit || c.isJolly);
+    if (sameSuit) {
+        const values = cards.map(c => getCardValue(c)).sort((a, b) => a - b);
+        let gaps = 0;
+        for (let i = 0; i < values.length - 1; i++) {
+            if (values[i+1] - values[i] !== 1) gaps += (values[i+1] - values[i] - 1);
+        }
+        const jollies = cards.filter(c => c.isJolly).length;
+        return gaps <= jollies;
+    }
+    return false;
+}
+
+function getCardValue(card) {
+    const mapping = { 'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'JK': 0 };
+    return mapping[card.val];
+}
+
 function createCardElement(card) {
     const el = document.createElement('div');
     el.className = `card-b ${card.suit} ${card.isJolly ? 'jolly' : ''}`;
