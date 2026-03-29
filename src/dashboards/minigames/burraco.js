@@ -95,24 +95,27 @@ function initLogic(state) {
 
 function updateUI(state) {
     const isPlayer = state.turn === 'player';
-    
-    // Controllo combo per aiuto utente
     const selectedCards = state.selectedIndices.map(i => state.hands.player[i]);
-    const isValid = validateCombo(selectedCards);
     
-    if (isPlayer && state.phase === 'play' && isValid) {
-        state.tutorMsg = "Ottima mossa! Questa è una combinazione valida.";
+    // Validazione estesa: combo nuova (>=3) o aggiunta a pila esistente
+    const targetPilaIndex = findTargetPila(selectedCards, state.tables.team1);
+    const isNewCombo = validateCombo(selectedCards);
+    const canMeld = (isNewCombo || (selectedCards.length > 0 && targetPilaIndex !== -1));
+
+    if (isPlayer && state.phase === 'play') {
+        if (isNewCombo) state.tutorMsg = "Puoi calare questa nuova combinazione!";
+        else if (targetPilaIndex !== -1) state.tutorMsg = "Puoi aggiungere queste carte a una pila esistente.";
+        else state.tutorMsg = "Seleziona una combo (min 3) o carte da attaccare.";
     }
 
     document.getElementById('tutor-text').innerText = state.tutorMsg;
-
     const btnDiscard = document.getElementById('btn-discard');
     const btnMeld = document.getElementById('btn-meld');
     
     btnDiscard.disabled = !isPlayer || state.selectedIndices.length !== 1 || state.phase !== 'play';
-    btnMeld.disabled = !isPlayer || !isValid || state.phase !== 'play';
+    btnMeld.disabled = !isPlayer || !canMeld || state.phase !== 'play';
     
-    if (isValid && isPlayer && state.phase === 'play') btnMeld.classList.add('valid-combo');
+    if (canMeld && isPlayer && state.phase === 'play') btnMeld.classList.add('valid-combo');
     else btnMeld.classList.remove('valid-combo');
 
     renderHand(state);
@@ -121,7 +124,17 @@ function updateUI(state) {
 
     document.getElementById('main-deck').onclick = () => { if(isPlayer && state.phase === 'draw') drawFromDeck(state); };
     btnDiscard.onclick = () => handleDiscard(state);
-    btnMeld.onclick = () => handleMeld(state);
+    btnMeld.onclick = () => handleMeld(state, targetPilaIndex);
+}
+
+// Trova se le carte selezionate possono essere attaccate a una pila esistente
+function findTargetPila(selectedCards, table) {
+    if (selectedCards.length === 0) return -1;
+    for (let i = 0; i < table.length; i++) {
+        let potentialGroup = [...table[i], ...selectedCards];
+        if (validateCombo(potentialGroup)) return i;
+    }
+    return -1;
 }
 
 function renderHand(state) {
@@ -150,7 +163,6 @@ function renderTables(state) {
             gDiv.className = 'meld-group';
             group.forEach((card, i) => {
                 const c = createCardElement(card);
-                // Effetto sovrapposizione verticale (a cascata)
                 c.style.marginTop = i === 0 ? '0' : '-45px';
                 c.style.transform = 'scale(0.85)';
                 c.style.zIndex = i;
@@ -179,7 +191,7 @@ function drawFromDeck(state) {
     if(state.deck.length > 0) {
         state.hands.player.push(state.deck.pop());
         state.phase = 'play';
-        state.tutorMsg = "Hai pescato. Seleziona almeno 3 carte per calare o 1 per scartare.";
+        state.tutorMsg = "Hai pescato.";
         updateUI(state);
     }
 }
@@ -189,18 +201,24 @@ function pickDiscard(state) {
         state.hands.player.push(...state.discardPile);
         state.discardPile = [];
         state.phase = 'play';
-        state.tutorMsg = "Hai preso gli scarti. Cerca una combo!";
         updateUI(state);
     }
 }
 
-function handleMeld(state) {
+function handleMeld(state, targetPilaIndex) {
     const cards = state.selectedIndices.sort((a,b)=>b-a).map(i => state.hands.player.splice(i,1)[0]);
-    // Ordina le carte per la visualizzazione sul tavolo (valore crescente)
-    cards.sort((a, b) => getCardValue(a) - getCardValue(b));
-    state.tables.team1.push(cards);
+    
+    if (targetPilaIndex !== -1) {
+        // Aggiungi alla pila esistente e riordina
+        state.tables.team1[targetPilaIndex].push(...cards);
+        state.tables.team1[targetPilaIndex].sort((a, b) => getCardValue(a) - getCardValue(b));
+    } else {
+        // Crea nuova pila
+        cards.sort((a, b) => getCardValue(a) - getCardValue(b));
+        state.tables.team1.push(cards);
+    }
+    
     state.selectedIndices = [];
-    state.tutorMsg = "Combinazione calata! Puoi calarne altre o scartare.";
     updateUI(state);
 }
 
@@ -210,7 +228,6 @@ function handleDiscard(state) {
     state.selectedIndices = [];
     state.turn = 'bot';
     state.phase = 'draw';
-    state.tutorMsg = "Hai scartato. Ora tocca al bot...";
     updateUI(state);
     setTimeout(() => botAction(state), 1500);
 }
@@ -219,8 +236,22 @@ function botAction(state) {
     if (state.turn !== 'bot') return;
     if(state.deck.length > 0) state.hands.bot1.push(state.deck.pop());
     
+    // Il bot prova prima ad attaccare carte alle sue pile, poi a crearne di nuove
+    const botHand = state.hands.bot1;
+    let moved = false;
+    
+    for (let i = botHand.length - 1; i >= 0; i--) {
+        let targetIdx = findTargetPila([botHand[i]], state.tables.team2);
+        if (targetIdx !== -1) {
+            state.tables.team2[targetIdx].push(botHand.splice(i, 1)[0]);
+            state.tables.team2[targetIdx].sort((a,b) => getCardValue(a) - getCardValue(b));
+            moved = true;
+            break; 
+        }
+    }
+
     const combos = findCombinations(state.hands.bot1);
-    if(combos.length >= 3) {
+    if(!moved && combos.length >= 3) {
         const val = combos[0].val;
         const group = [];
         for(let i = state.hands.bot1.length - 1; i >= 0; i--) {
@@ -233,7 +264,6 @@ function botAction(state) {
         if(state.hands.bot1.length > 0) state.discardPile.push(state.hands.bot1.pop());
         state.turn = 'player';
         state.phase = 'draw';
-        state.tutorMsg = "Il bot ha finito. Tocca a te!";
         updateUI(state);
     }, 1000);
 }
@@ -241,12 +271,9 @@ function botAction(state) {
 // --- UTILS ---
 function validateCombo(cards) {
     if (cards.length < 3) return false;
-    
-    // Tris o Quartetti (Stesso valore)
     const allSameValue = cards.every(c => c.val === cards[0].val || c.isJolly);
     if (allSameValue) return true;
 
-    // Scale (Stesso seme, valori consecutivi)
     const sameSuit = cards.every(c => c.suit === cards[0].suit || c.isJolly);
     if (sameSuit) {
         const values = cards.map(c => getCardValue(c)).sort((a, b) => a - b);
