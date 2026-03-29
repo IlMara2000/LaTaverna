@@ -10,11 +10,11 @@ export function initBurraco(container) {
         botHand: [],
         pozzetto1: [],
         pozzetto2: [],
-        playerTable: [], // Array di array (sequenze/combinazioni)
+        playerTable: [], 
         botTable: [],
         discardPile: [],
         turn: 'player',
-        phase: 'draw', // 'draw', 'play', 'discard'
+        phase: 'draw', 
         hasTakenPozzetto: false
     };
 
@@ -22,86 +22,71 @@ export function initBurraco(container) {
     startBurraco(state);
 }
 
-function startBurraco(state) {
-    // 2 Mazzi di carte francesi incluse le matte (108 carte)
-    state.deck = createBurracoDeck();
-    shuffle(state.deck);
-
-    // Distribuzione
-    state.playerHand = state.deck.splice(0, 11);
-    state.botHand = state.deck.splice(0, 11);
-    state.pozzetto1 = state.deck.splice(0, 11);
-    state.pozzetto2 = state.deck.splice(0, 11);
-    state.discardPile.push(state.deck.pop());
-
-    updateUI(state);
-}
-
-function createBurracoDeck() {
-    const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-    let deck = [];
-    // Due mazzi
-    for (let i = 0; i < 2; i++) {
-        suits.forEach(s => values.forEach(v => deck.push({ suit: s, val: v, isJolly: false })));
-        deck.push({ suit: 'joker', val: 'JK', isJolly: true });
-        deck.push({ suit: 'joker', val: 'JK', isJolly: true });
-    }
-    return deck;
-}
-
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
-
 function renderLayout(container) {
     container.innerHTML = `
     <style>
-        .burraco-bg { width:100%; height:100dvh; background: radial-gradient(circle at center, #0a2a1a 0%, #020a05 100%); color:white; font-family:'Inter',sans-serif; position:relative; overflow:hidden; }
+        .burraco-bg { width:100%; height:100dvh; background: radial-gradient(circle at center, #0a2a1a 0%, #020a05 100%); color:white; font-family:'Inter',sans-serif; position:relative; overflow:hidden; display: flex; flex-direction: column; }
         
-        .table-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; height: 50%; margin-top: 60px; }
-        .mats { background: rgba(255,255,255,0.03); border: 2px dashed rgba(255,255,255,0.1); border-radius: 20px; padding: 15px; overflow-y: auto; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
-        
-        .card-b { width: 50px; height: 75px; background: white; border-radius: 6px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; position: relative; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; border: 1px solid #ddd; }
-        .card-b:hover { transform: translateY(-10px) rotate(2deg); z-index: 10; }
+        /* Area Tavoli: Sovrapposti Verticalmente */
+        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 20px; margin-top: 40px; }
+        .mats { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 10px; position: relative; overflow-x: auto; display: flex; align-items: center; gap: 10px; }
+        .label-team { position: absolute; top: 5px; left: 10px; font-size: 9px; opacity: 0.4; letter-spacing: 1.5px; text-transform: uppercase; pointer-events: none; }
+
+        /* Area Centrale: Mazzo e Scarti */
+        .center-area { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 10px; }
+        .deck-stack { width: 55px; height: 80px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; box-shadow: 4px 4px 0px rgba(0,0,0,0.4); cursor: pointer; }
+        .discard-stack { width: 55px; height: 80px; position: relative; }
+
+        /* Carte */
+        .card-b { width: 48px; height: 70px; background: white; border-radius: 6px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.3); transition: 0.2s; cursor: pointer; border: 1px solid #ddd; }
         .card-b.hearts, .card-b.diamonds { color: #d63031; }
         .card-b.clubs, .card-b.spades { color: #2d3436; }
-        .card-b.jolly { background: #9d4ede; color: white; }
+        .card-b.jolly { background: #9d4ede; color: white; border-color: #7b2cbf; }
 
-        .center-area { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 30px; }
-        .deck-stack { width: 60px; height: 90px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; box-shadow: 5px 5px 0px rgba(0,0,0,0.5); cursor: pointer; }
+        /* Mano del giocatore: ALZATA sopra la navbar */
+        .player-hand-container { 
+            padding-bottom: 90px; /* Spazio per la navbar/hamburger */
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 15px;
+        }
+        .hand-card-wrapper { display: flex; justify-content: center; }
         
-        .player-hand-container { position: absolute; bottom: 20px; width: 100%; display: flex; justify-content: center; padding: 0 50px; }
-        .hand-card-wrapper { display: flex; transition: 0.5s; }
+        .btn-calate { 
+            background: #2ecc71; 
+            color: white; 
+            padding: 10px 25px; 
+            border-radius: 50px; 
+            border: none; 
+            font-weight: 900; 
+            cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+            font-size: 13px;
+        }
         
-        .btn-game { padding: 10px 20px; border-radius: 50px; border: none; font-weight: 900; cursor: pointer; transition: 0.2s; }
-        .btn-calate { background: #2ecc71; color: white; position: absolute; bottom: 120px; right: 20px; }
-        
-        .label-team { font-size: 10px; opacity: 0.5; letter-spacing: 2px; margin-bottom: 10px; width: 100%; }
-        
-        @keyframes deal { from { transform: translateY(-500px) rotate(20deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
-        .deal-anim { animation: deal 0.6s backwards; }
+        #game-info { position: absolute; top: 15px; width: 100%; text-align: center; pointer-events: none; }
     </style>
 
     <div class="burraco-bg">
-        <div class="table-grid">
+        <div id="game-info">
+            <div id="turn-display" style="color:#2ecc71; font-weight:900; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">TUO TURNO</div>
+            <div id="phase-display" style="font-size:11px; opacity:0.8;">Pesca una carta</div>
+        </div>
+
+        <div class="tables-container">
             <div class="mats" id="bot-table"><span class="label-team">AVVERSARIO</span></div>
             <div class="mats" id="player-table"><span class="label-team">IL TUO TAVOLO</span></div>
         </div>
 
         <div class="center-area">
             <div id="main-deck" class="deck-stack">MAZZO</div>
-            <div id="discard-stack" style="display:flex; gap: -30px;">
-                </div>
+            <div id="discard-stack-ui" class="discard-stack"></div>
         </div>
-
-        <button class="btn-game btn-calate" id="btn-play-meld">CALA COMBINAZIONE</button>
 
         <div class="player-hand-container">
+            <button class="btn-calate" id="btn-play-meld">CALA COMBINAZIONE</button>
             <div id="player-hand" class="hand-card-wrapper"></div>
-        </div>
-        
-        <div id="game-info" style="position:absolute; top:20px; right:20px; text-align:right;">
-            <div id="turn-display" style="color:#2ecc71; font-weight:900;">TUO TURNO</div>
-            <div id="phase-display" style="font-size:12px; opacity:0.7;">Pescate una carta</div>
         </div>
     </div>
     `;
@@ -109,17 +94,16 @@ function renderLayout(container) {
 
 function updateUI(state) {
     const handUI = document.getElementById('player-hand');
-    const playerTableUI = document.getElementById('player-table');
-    const discardUI = document.getElementById('discard-stack');
+    const discardUI = document.getElementById('discard-stack-ui');
     const phaseLabel = document.getElementById('phase-display');
 
-    // Rendering Mano (Ventaglio)
+    // Rendering Mano
     handUI.innerHTML = '';
-    state.playerHand.sort((a,b) => a.val.localeCompare(b.val)).forEach((card, i) => {
+    state.playerHand.forEach((card, i) => {
         const cEl = createCardElement(card);
-        cEl.style.marginLeft = i === 0 ? '0' : '-20px';
-        cEl.classList.add('deal-anim');
-        cEl.style.animationDelay = `${i * 0.05}s`;
+        // Effetto ventaglio sovrapposto
+        cEl.style.marginLeft = i === 0 ? '0' : '-15px';
+        cEl.style.zIndex = i;
         
         cEl.onclick = () => {
             if (state.phase === 'play' || state.phase === 'discard') {
@@ -129,7 +113,7 @@ function updateUI(state) {
         handUI.appendChild(cEl);
     });
 
-    // Rendering Scarti (solo l'ultima)
+    // Rendering Scarti
     discardUI.innerHTML = '';
     if (state.discardPile.length > 0) {
         const topDiscard = state.discardPile[state.discardPile.length - 1];
@@ -138,29 +122,31 @@ function updateUI(state) {
         discardUI.appendChild(dEl);
     }
 
-    // Info fase
     phaseLabel.innerText = state.phase === 'draw' ? 'Pesca dal mazzo o dagli scarti' : 
-                          state.phase === 'play' ? 'Cala combinazioni o scarta per finire' : 'Seleziona carta da scartare';
+                          state.phase === 'play' ? 'Cala o scarta per finire' : 'Seleziona scarto';
 
-    // Gestione Deck
     document.getElementById('main-deck').onclick = () => { if(state.phase === 'draw') drawFromDeck(state); };
 }
+
+// ... restanti funzioni createCardElement, drawFromDeck, pickDiscard, handleCardAction, botTurn, createBurracoDeck rimangono invariate ...
 
 function createCardElement(card) {
     const el = document.createElement('div');
     el.className = `card-b ${card.suit} ${card.isJolly ? 'jolly' : ''}`;
     const suitIcon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠', joker: '★' }[card.suit];
-    el.innerHTML = `<span>${card.val}</span><span style="font-size:20px">${suitIcon}</span>`;
+    el.innerHTML = `<span>${card.val}</span><span style="font-size:18px">${suitIcon}</span>`;
     return el;
 }
 
 function drawFromDeck(state) {
+    if(state.deck.length === 0) return;
     state.playerHand.push(state.deck.pop());
     state.phase = 'play';
     updateUI(state);
 }
 
 function pickDiscard(state) {
+    if(state.discardPile.length === 0) return;
     state.playerHand.push(...state.discardPile);
     state.discardPile = [];
     state.phase = 'play';
@@ -168,20 +154,31 @@ function pickDiscard(state) {
 }
 
 function handleCardAction(card, index, state) {
-    // Per ora, cliccare una carta nella fase 'play' la scarta per chiudere il turno
-    // In una versione completa qui gestiremo la selezione multipla per le calate
     state.discardPile.push(state.playerHand.splice(index, 1)[0]);
     state.phase = 'draw';
     state.turn = 'bot';
     updateUI(state);
-    setTimeout(() => botTurn(state), 1500);
+    setTimeout(() => botTurn(state), 1200);
 }
 
 function botTurn(state) {
-    // IA Semplice: Pesca e scarta
-    state.botHand.push(state.deck.pop());
+    if(state.deck.length > 0) state.botHand.push(state.deck.pop());
     state.discardPile.push(state.botHand.pop());
     state.turn = 'player';
     state.phase = 'draw';
     updateUI(state);
 }
+
+function createBurracoDeck() {
+    const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    let deck = [];
+    for (let i = 0; i < 2; i++) {
+        suits.forEach(s => values.forEach(v => deck.push({ suit: s, val: v, isJolly: false })));
+        deck.push({ suit: 'joker', val: 'JK', isJolly: true });
+        deck.push({ suit: 'joker', val: 'JK', isJolly: true });
+    }
+    return deck;
+}
+
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
