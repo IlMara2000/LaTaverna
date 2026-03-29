@@ -76,9 +76,6 @@ export function showLobby(container) {
     };
 }
 
-// ==========================================
-// SOTTO-LOBBY: TUTTI I MINI GIOCHI
-// ==========================================
 export function showMinigamesLobby(container) {
     updateSidebarContext("minigames");
 
@@ -97,9 +94,7 @@ export function showMinigamesLobby(container) {
         <div id="lobby-wrapper" style="min-height: 100dvh; box-sizing: border-box; padding: 40px 20px 80px 20px; background: #05020a;" class="fade-in">
             <div style="max-width: 1200px; margin: 0 auto;">
                 <button id="btn-back-main" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 24px; border-radius: 14px; font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 30px; letter-spacing: 1px;">← TORNA ALLA LIBRERIA</button>
-                
                 <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 40px; color: white;">MINI <span style="color:var(--amethyst-bright);">GIOCHI</span></h1>
-                
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
                     ${games.map(game => `
                         <div class="game-card" id="btn-${game.id}" style="
@@ -119,16 +114,12 @@ export function showMinigamesLobby(container) {
 
     document.getElementById('btn-back-main').onclick = () => showLobby(container);
 
-    // LOGICA DI CARICAMENTO DINAMICO
     games.forEach(game => {
-        document.getElementById(`btn-${game.id}`).onclick = async () => {
+        const btn = document.getElementById(`btn-${game.id}`);
+        if (!btn) return;
+        btn.onclick = async () => {
             try {
-                // Carica dinamicamente il file basandosi sull'id (che corrisponde al nome file nella foto)
                 const module = await import(`./dashboards/minigames/${game.id}.js`);
-                
-                // Cerca la funzione di init (es: initSoloGame, initBriscola, ecc)
-                // Se i file hanno nomi funzioni standard tipo "init", usiamo quello, 
-                // altrimenti mappiamo i nomi specifici:
                 const initFunctions = {
                     solo: 'initSoloGame',
                     impostore: 'initImpostore',
@@ -139,16 +130,12 @@ export function showMinigamesLobby(container) {
                     solitario: 'initSolitario',
                     numeri: 'initNumeri'
                 };
-
                 const fnName = initFunctions[game.id];
-                if (module[fnName]) {
+                if (module && module[fnName]) {
                     module[fnName](container);
-                } else {
-                    console.error(`Funzione ${fnName} non trovata in ${game.id}.js`);
                 }
             } catch (e) {
-                console.error(e);
-                alert(`Errore: Impossibile caricare dashboards/minigames/${game.id}.js`);
+                console.warn("Errore durante il caricamento del modulo:", e);
             }
         };
     });
