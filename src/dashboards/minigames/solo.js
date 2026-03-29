@@ -26,47 +26,45 @@ function renderLayout(container) {
     <style>
         .game-bg { width:100%; height:100dvh; background: #0f0c29; background: linear-gradient(to bottom, #24243e, #302b63, #0f0c29); position:relative; overflow:hidden; color:white; font-family: 'Poppins', sans-serif; }
         
-        /* Bots con Glassmorphism */
-        .opponents-container { display: flex; justify-content: space-around; padding: 20px; position: absolute; top: 0; width: 100%; z-index: 10; }
-        .bot-status { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; border-radius: 15px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); min-width: 90px; }
-        .bot-status.active { background: rgba(157, 78, 221, 0.2); border: 1px solid #9d4ede; box-shadow: 0 0 20px rgba(157, 78, 221, 0.4); transform: translateY(10px); }
-        .card-count { font-weight: 900; color: #9d4ede; font-size: 1.2rem; }
+        /* Bots Status */
+        .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: 0; width: 100%; z-index: 10; }
+        .bot-status { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1); transition: all 0.4s ease; min-width: 80px; }
+        .bot-status.active { border-color: #9d4ede; box-shadow: 0 0 15px rgba(157, 78, 221, 0.5); transform: translateY(5px); background: rgba(157, 78, 221, 0.1); }
+        .card-count { font-weight: 900; color: #9d4ede; font-size: 1.1rem; }
 
         /* Centro Tavolo */
-        .table-center { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
-        .pile-container { display: flex; justify-content: center; gap: 40px; align-items: center; perspective: 1000px; }
+        .table-center { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
+        .pile-container { display: flex; justify-content: center; gap: 30px; align-items: center; perspective: 1000px; }
         
-        /* Carte Accattivanti */
-        .card-solo { width: 85px; height: 125px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.8rem; border: 3px solid rgba(255,255,255,0.8); position: relative; transition: all 0.4s ease; box-shadow: 0 8px 16px rgba(0,0,0,0.4); text-shadow: 2px 2px 4px rgba(0,0,0,0.5); cursor: pointer; }
-        .card-back { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); border-color: white; color: white; }
-        .card-back::after { content: 'SOLO'; font-size: 0.8rem; letter-spacing: 2px; }
+        .card-solo { width: 80px; height: 115px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.6rem; border: 3px solid rgba(255,255,255,0.9); position: relative; transition: transform 0.3s ease, box-shadow 0.3s ease; box-shadow: 0 6px 12px rgba(0,0,0,0.3); cursor: pointer; user-select: none; }
+        .card-back { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; }
+        .card-back::after { content: 'SOLO'; font-size: 0.7rem; letter-spacing: 1px; }
         
-        /* Animazione di Volo */
-        .flying-card { position: fixed; z-index: 1000; pointer-events: none; transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.7s cubic-bezier(0.19, 1, 0.22, 1); }
 
-        /* HUD Giocatore */
-        .player-ui { position: absolute; bottom: 0; width: 100%; padding-bottom: 30px; z-index: 20; }
-        .hand-container { display: flex; justify-content: center; height: 160px; align-items: flex-end; padding: 0 40px; }
-        .hand-scroll { display: flex; gap: -20px; overflow-x: auto; padding: 20px; max-width: 95vw; scrollbar-width: none; }
+        /* Area Giocatore Ottimizzata */
+        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .hand-container { width: 100%; display: flex; justify-content: center; overflow: visible; padding: 20px 0; }
+        .hand-scroll { display: flex; gap: 8px; padding: 10px 30px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; overflow-y: visible; min-height: 140px; }
         .hand-scroll::-webkit-scrollbar { display: none; }
         
-        .card-solo.playable:hover { transform: translateY(-30px) scale(1.1); z-index: 100; box-shadow: 0 15px 30px rgba(0,0,0,0.6); }
+        /* Carta Libera nella mano */
+        .card-solo.playable { flex-shrink: 0; transform-origin: bottom center; }
+        .card-solo.playable:active { transform: scale(1.1) translateY(-20px); z-index: 100; }
 
-        .btn-solo { background: #ff416c; background: linear-gradient(to right, #ff4b2b, #ff416c); color: white; border: none; padding: 15px 40px; border-radius: 50px; font-weight: 900; box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4); cursor: pointer; display: none; margin: 20px auto; }
-        .btn-solo.pulse { display: block; animation: pulseSolo 1.5s infinite; }
+        .btn-solo { background: linear-gradient(to right, #ff4b2b, #ff416c); color: white; border: none; padding: 12px 35px; border-radius: 50px; font-weight: 900; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3); display: none; }
+        .btn-solo.pulse { display: block; animation: pulseSolo 1.2s infinite; }
         
-        @keyframes pulseSolo { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 20px rgba(255, 75, 43, 0); } 100% { transform: scale(1); } }
+        @keyframes pulseSolo { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-        /* Wild Picker */
-        #picker-wild { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index:9000; grid-template-columns: 1fr 1fr; gap: 20px; padding: 50px; align-content: center; }
-        .color-tile { height: 140px; border-radius: 25px; border: 4px solid rgba(255,255,255,0.2); transition: 0.3s; }
-        .color-tile:active { transform: scale(0.9); }
+        #picker-wild { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 15px; padding: 40px; align-content: center; }
+        .color-tile { height: 120px; border-radius: 20px; border: 3px solid rgba(255,255,255,0.1); }
     </style>
 
     <div class="game-bg">
-        <div id="start-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-            <h1 style="font-size:5rem; font-weight:900; background: linear-gradient(to right, #6a11cb, #2575fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 30px;">SOLO</h1>
-            <button id="btn-start" style="background:white; border:none; padding:18px 60px; border-radius:50px; color:#302b63; font-weight:900; font-size:1.3rem; cursor:pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">INIZIA SFIDA</button>
+        <div id="start-overlay" style="position:fixed; inset:0; background:#0f0c29; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <h1 style="font-size:4rem; font-weight:900; background: linear-gradient(to right, #6a11cb, #2575fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SOLO</h1>
+            <button id="btn-start" style="margin-top:20px; background:white; border:none; padding:15px 45px; border-radius:50px; color:#302b63; font-weight:900; cursor:pointer;">GIOCA ORA</button>
         </div>
 
         <div class="opponents-container">
@@ -76,12 +74,12 @@ function renderLayout(container) {
         </div>
 
         <div class="table-center">
-            <div id="direction-info" style="font-size:2rem; margin-bottom:20px; transition: 0.8s;">↻</div>
+            <div id="direction-info" style="font-size:2rem; margin-bottom:15px; opacity:0.6;">↻</div>
             <div class="pile-container">
                 <div id="deck-draw" class="card-solo card-back"></div>
-                <div id="discard-pile" class="card-solo" style="background:white; color:black; transform: rotate(-5deg);"></div>
+                <div id="discard-pile" class="card-solo" style="background:white; color:black;"></div>
             </div>
-            <div id="color-line" style="width: 150px; height: 6px; margin: 30px auto; border-radius: 10px; box-shadow: 0 0 15px currentColor;"></div>
+            <div id="color-line" style="width: 100px; height: 4px; margin: 25px auto; border-radius: 10px; transition: 0.5s;"></div>
         </div>
 
         <div class="player-ui">
@@ -92,7 +90,7 @@ function renderLayout(container) {
         </div>
 
         <div id="picker-wild">
-            ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)}; box-shadow: 0 0 20px ${getHex(c)}66;"></div>`).join('')}
+            ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)}"></div>`).join('')}
         </div>
     </div>
     `;
@@ -118,19 +116,17 @@ async function animateCard(fromEl, toEl, cardData, isBack = false) {
         
         document.body.appendChild(flyer);
         
-        // Trigger animazione
-        requestAnimationFrame(() => {
-            flyer.style.left = `${toRect.left}px`;
-            flyer.style.top = `${toRect.top}px`;
-            flyer.style.width = `${toRect.width}px`;
-            flyer.style.height = `${toRect.height}px`;
-            flyer.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
-        });
+        // Forza reflow
+        flyer.offsetWidth;
+
+        flyer.style.left = `${toRect.left}px`;
+        flyer.style.top = `${toRect.top}px`;
+        flyer.style.transform = `rotate(${Math.random() * 10 - 5}deg)`;
 
         setTimeout(() => {
             flyer.remove();
             resolve();
-        }, 800);
+        }, 700);
     });
 }
 
@@ -141,9 +137,7 @@ function attachInitialListeners(container, state) {
     };
 
     document.getElementById('deck-draw').onclick = () => {
-        if (state.turn === 0 && !state.isAnimating) {
-            drawCard(0, state, true);
-        }
+        if (state.turn === 0 && !state.isAnimating) drawCard(0, state, true);
     };
 
     document.getElementById('solo-alert').onclick = () => {
@@ -168,9 +162,10 @@ function startGame(state) {
             state.deck.push({color: c, val: i.toString()});
             state.deck.push({color: c, val: i.toString()});
         }
-        for(let j=0; j<2; j++) {
-            ['SKIP', 'REV', '+2'].forEach(v => state.deck.push({color: c, val: v}));
-        }
+        ['SKIP', 'REV', '+2'].forEach(v => {
+            state.deck.push({color: c, val: v});
+            state.deck.push({color: c, val: v});
+        });
     });
     for(let i=0; i<4; i++) {
         state.deck.push({color: 'wild', val: 'WILD'});
@@ -214,7 +209,7 @@ async function drawCard(pIdx, state, manual = false) {
     
     if (pIdx === 0 && manual) {
         const canPlay = card.color === 'wild' || card.color === state.currentColor || card.val === state.currentVal;
-        if (!canPlay) setTimeout(() => endTurn(state), 500);
+        if (!canPlay) setTimeout(() => endTurn(state), 400);
     }
     updateUI(state);
 }
@@ -222,13 +217,6 @@ async function drawCard(pIdx, state, manual = false) {
 async function playCard(pIdx, cardIdx, state) {
     if (state.isAnimating) return;
     const card = state.players[pIdx][cardIdx];
-
-    if (card.val === '+4' && pIdx === 0) {
-        if (state.players[0].some(c => c.color === state.currentColor)) {
-            alert("Puoi giocare il +4 solo se non hai il colore corrente!");
-            return;
-        }
-    }
 
     if (card.color !== 'wild' && card.color !== state.currentColor && card.val !== state.currentVal) return;
 
@@ -248,13 +236,13 @@ async function playCard(pIdx, cardIdx, state) {
 
     if (card.val === 'REV') {
         state.direction *= -1;
-        document.getElementById('direction-info').style.transform = `rotate(${state.direction === 1 ? 0 : 180}deg)`;
+        document.getElementById('direction-info').innerText = state.direction === 1 ? '↻' : '↺';
     }
     
     if (card.val === 'SKIP') nextTurn(state);
     if (card.val === '+2') {
         const target = (state.turn + state.direction + 4) % 4;
-        state.isAnimating = false; // Permetti pesca
+        state.isAnimating = false;
         await drawCard(target, state); await drawCard(target, state);
         state.isAnimating = true;
         nextTurn(state);
@@ -287,36 +275,29 @@ function nextTurn(state) {
 
 function endTurn(state) {
     if (state.pendingPenalty) {
-        alert("Non hai detto SOLO! +2 carte di penalità.");
+        alert("Non hai detto SOLO! +2 penalità.");
         drawCard(0, state); drawCard(0, state);
         state.pendingPenalty = false;
     }
-    
     state.hasSaidSolo = false;
     updateUI(state);
     if (checkWin(state)) return;
-    
     nextTurn(state);
     updateUI(state);
-
-    if (state.turn !== 0) {
-        setTimeout(() => botLogic(state), 1000);
-    }
+    if (state.turn !== 0) setTimeout(() => botLogic(state), 1000);
 }
 
 function botLogic(state) {
-    const pIdx = state.turn;
-    const hand = state.players[pIdx];
+    const hand = state.players[state.turn];
     const playableIdx = hand.findIndex(c => c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal);
-    
-    if (playableIdx !== -1) playCard(pIdx, playableIdx, state);
-    else drawCard(pIdx, state, true);
+    if (playableIdx !== -1) playCard(state.turn, playableIdx, state);
+    else drawCard(state.turn, state);
 }
 
 function checkWin(state) {
     for(let i=0; i<4; i++) {
         if (state.players[i].length === 0) {
-            alert(i === 0 ? "VITTORIA!" : `IL BOT ${i} HA VINTO!`);
+            alert(i === 0 ? "VITTORIA!" : `BOT ${i} VINCE!`);
             location.reload();
             return true;
         }
@@ -333,11 +314,11 @@ function updateUI(state) {
     
     const colorLine = document.getElementById('color-line');
     colorLine.style.backgroundColor = getHex(state.currentColor);
-    colorLine.style.color = getHex(state.currentColor);
+    colorLine.style.boxShadow = `0 0 15px ${getHex(state.currentColor)}`;
 
     const pArea = document.getElementById('player-hand');
     pArea.innerHTML = state.players[0].map((c, i) => `
-        <div class="card-solo playable" style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'}; min-width:85px; margin-left:-25px;" data-idx="${i}">
+        <div class="card-solo playable" style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'};" data-idx="${i}">
             ${c.val}
         </div>
     `).join('');
@@ -346,8 +327,7 @@ function updateUI(state) {
         el.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(0, parseInt(el.dataset.idx), state); };
     });
 
-    const soloBtn = document.getElementById('solo-alert');
-    soloBtn.classList.toggle('pulse', state.players[0].length === 2 && state.turn === 0);
+    document.getElementById('solo-alert').classList.toggle('pulse', state.players[0].length === 2 && state.turn === 0);
 
     for(let i=1; i<=3; i++) {
         const el = document.getElementById(`bot-stat-${i}`);
