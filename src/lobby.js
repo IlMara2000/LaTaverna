@@ -23,8 +23,8 @@ export function showLobby(container) {
             
             <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 20px;">
                 <header style="margin-bottom: 40px;">
-                    <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; margin: 0;">LA <span style="color:var(--amethyst-bright);">LIBRERIA</span></h1>
-                    <p style="opacity:0.5; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; margin-top: 5px;">
+                    <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; margin: 0; color: white;">LA <span style="color:var(--amethyst-bright);">LIBRERIA</span></h1>
+                    <p style="opacity:0.5; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; margin-top: 5px; color: white;">
                         ${isGuest ? '🔴 MODALITÀ OSPITE (LIMITATA)' : '🟢 ACCESSO COMPLETO'}
                     </p>
                 </header>
@@ -47,10 +47,10 @@ export function showLobby(container) {
                     <div style="z-index: 1;">
                         <div style="background: var(--amethyst-bright); color: black; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; letter-spacing: 1px;">DISPONIBILE</div>
                         <h2 style="margin:0; font-size: 1.8rem; font-weight: 900; color: white;">GIOCHI DI <span style="color:var(--amethyst-bright);">CARTE</span></h2>
-                        <p style="opacity:0.6; font-size: 14px; margin-top: 5px;">Minigiochi e classici della Taverna (Offline)</p>
+                        <p style="opacity:0.6; font-size: 14px; margin-top: 5px; color: white;">Minigiochi e classici della Taverna (Offline)</p>
                     </div>
                     <div style="font-size: 3rem; opacity: 0.8; z-index: 1;">🃏</div>
-                </section>
+                </div>
 
                 <section>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
@@ -89,7 +89,7 @@ export function showLobby(container) {
                         </div>
 
                         <div style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(255,255,255,0.05); height: 350px; border-radius: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.3;">
-                            <p style="letter-spacing: 2px; font-size: 10px;">PROSSIMAMENTE...</p>
+                            <p style="letter-spacing: 2px; font-size: 10px; color: white;">PROSSIMAMENTE...</p>
                         </div>
 
                     </div>
@@ -98,40 +98,40 @@ export function showLobby(container) {
         </div>
     `;
 
-    // Logic Eventi
+    // --- LOGICA EVENTI ---
     document.getElementById('btn-portal-carte').onclick = () => showCardGamesLobby(container);
     
     document.getElementById('btn-dnd5e').onclick = async () => {
-        if (isGuest) return alert("Questa funzione richiede l'accesso con Discord per salvare i tuoi personaggi!");
+        if (isGuest) return alert("Questa funzione richiede l'accesso con Discord!");
         try {
             const { initDndDashboard } = await import('./dashboards/dnd5e.js');
             initDndDashboard(container);
-        } catch (err) { console.error("Errore D&D:", err); }
+        } catch (err) { console.error("Errore caricamento D&D:", err); }
     };
 
     document.getElementById('btn-impostore').onclick = async () => {
-        if (isGuest) return alert("Il gioco 'Impostore' è solo Multiplayer. Accedi con Discord per giocare!");
+        if (isGuest) return alert("Il gioco 'Impostore' è solo Multiplayer. Accedi con Discord!");
         try {
-            // PERCORSO AGGIORNATO: cartella minigames
-            const { initImpostore } = await import('./minigames/impostore.js');
+            // PERCORSO AGGIORNATO: dashboards/minigames/
+            const { initImpostore } = await import('./dashboards/minigames/impostore.js');
             initImpostore(container);
-        } catch (err) { console.error("Errore Impostore:", err); }
+        } catch (err) { console.error("Errore caricamento Impostore:", err); }
     };
 }
 
 // ==========================================
-// SOTTO-LOBBY: GIOCHI DI CARTE (Sempre accessibile)
+// SOTTO-LOBBY: GIOCHI DI CARTE
 // ==========================================
 export function showCardGamesLobby(container) {
     container.innerHTML = `
         <div id="lobby-wrapper" style="min-height: 100dvh; box-sizing: border-box; padding: 40px 20px 80px 20px; background: #05020a;" class="fade-in">
             <button id="btn-back-main" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 20px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 30px;">← TORNA ALLA LIBRERIA</button>
             <div style="max-width: 1200px; margin: 0 auto;">
-                <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 40px;">I TUOI <span style="color:var(--amethyst-bright);">MAZZI</span></h1>
+                <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 40px; color: white;">I TUOI <span style="color:var(--amethyst-bright);">MAZZI</span></h1>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                    <div class="game-card" id="btn-solo" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.3)), linear-gradient(135deg, #ff4444 0%, #0066ff 33%, #33cc33 66%, #ffcc00 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.3); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900;">SOLO</h2></div>
-                    <div class="game-card" id="btn-briscola" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), linear-gradient(45deg, #2a0a4a 0%, #4a1a6a 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900;">BRISCOLA</h2></div>
-                    <div class="game-card" id="btn-scopa" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), linear-gradient(135deg, #825a2c 0%, #05020a 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900;">SCOPA</h2></div>
+                    <div class="game-card" id="btn-solo" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.3)), linear-gradient(135deg, #ff4444 0%, #0066ff 33%, #33cc33 66%, #ffcc00 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.3); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900; color: white;">SOLO</h2></div>
+                    <div class="game-card" id="btn-briscola" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), linear-gradient(45deg, #2a0a4a 0%, #4a1a6a 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900; color: white;">BRISCOLA</h2></div>
+                    <div class="game-card" id="btn-scopa" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), linear-gradient(135deg, #825a2c 0%, #05020a 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900; color: white;">SCOPA</h2></div>
                 </div>
             </div>
         </div>
@@ -139,8 +139,25 @@ export function showCardGamesLobby(container) {
 
     document.getElementById('btn-back-main').onclick = () => showLobby(container);
 
-    // PERCORSI AGGIORNATI: tutti i giochi di carte sono in minigames
-    document.getElementById('btn-solo').onclick = async () => { const { initSoloGame } = await import('./minigames/solo.js'); initSoloGame(container); };
-    document.getElementById('btn-briscola').onclick = async () => { const { initBriscola } = await import('./minigames/briscola.js'); initBriscola(container); };
-    document.getElementById('btn-scopa').onclick = async () => { const { initScopa } = await import('./minigames/scopa.js'); initScopa(container); };
+    // PERCORSI AGGIORNATI: dashboards/minigames/
+    document.getElementById('btn-solo').onclick = async () => { 
+        try {
+            const { initSoloGame } = await import('./dashboards/minigames/solo.js'); 
+            initSoloGame(container); 
+        } catch (e) { console.error(e); }
+    };
+    
+    document.getElementById('btn-briscola').onclick = async () => { 
+        try {
+            const { initBriscola } = await import('./dashboards/minigames/briscola.js'); 
+            initBriscola(container); 
+        } catch (e) { console.error(e); }
+    };
+    
+    document.getElementById('btn-scopa').onclick = async () => { 
+        try {
+            const { initScopa } = await import('./dashboards/minigames/scopa.js'); 
+            initScopa(container); 
+        } catch (e) { console.error(e); }
+    };
 }
