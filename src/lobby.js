@@ -6,20 +6,27 @@ import { updateSidebarContext } from './components/layout/Sidebar.js';
 export function showLobby(container) {
     updateSidebarContext("home");
 
+    // Controllo se l'utente è un Ospite
+    const isGuest = localStorage.getItem('taverna_guest_user') !== null;
+    
+    // Stili dinamici per funzioni bloccate
+    const lockStyle = isGuest ? "opacity: 0.4; cursor: not-allowed; filter: grayscale(0.8);" : "cursor: pointer;";
+    const badgeGuest = isGuest ? `<div style="background: #ff4444; color: white; font-size: 8px; font-weight: 900; padding: 2px 6px; border-radius: 4px; position: absolute; top: 20px; right: 20px; letter-spacing: 1px;">SOLO ONLINE</div>` : "";
+
     container.innerHTML = `
         <div id="lobby-wrapper" style="
-            min-height: 100dvh; /* Usato min-height per evitare lo spazio nero! */
+            min-height: 100dvh; 
             box-sizing: border-box; 
-            padding: 40px 20px 80px 20px; /* Padding extra sotto per sicurezza */
+            padding: 40px 20px 80px 20px; 
             background: #05020a; 
-            scrollbar-width: thin; 
-            scrollbar-color: var(--amethyst-bright) transparent;
         " class="fade-in">
             
             <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 20px;">
                 <header style="margin-bottom: 40px;">
                     <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; margin: 0;">LA <span style="color:var(--amethyst-bright);">LIBRERIA</span></h1>
-                    <p style="opacity:0.5; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; margin-top: 5px;">Seleziona un sistema di gioco</p>
+                    <p style="opacity:0.5; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; margin-top: 5px;">
+                        ${isGuest ? '🔴 MODALITÀ OSPITE (LIMITATA)' : '🟢 ACCESSO COMPLETO'}
+                    </p>
                 </header>
                 
                 <div id="btn-portal-carte" style="
@@ -38,12 +45,11 @@ export function showLobby(container) {
                     overflow: hidden;
                 " class="game-card">
                     <div style="z-index: 1;">
-                        <div style="background: var(--amethyst-bright); color: black; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; letter-spacing: 1px;">COLLEZIONE</div>
+                        <div style="background: var(--amethyst-bright); color: black; font-size: 9px; font-weight: 900; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; letter-spacing: 1px;">DISPONIBILE</div>
                         <h2 style="margin:0; font-size: 1.8rem; font-weight: 900; color: white;">GIOCHI DI <span style="color:var(--amethyst-bright);">CARTE</span></h2>
-                        <p style="opacity:0.6; font-size: 14px; margin-top: 5px;">Solo, Briscola, Scopa e classici della Taverna</p>
+                        <p style="opacity:0.6; font-size: 14px; margin-top: 5px;">Minigiochi e classici della Taverna (Offline)</p>
                     </div>
                     <div style="font-size: 3rem; opacity: 0.8; z-index: 1;">🃏</div>
-                    <div style="position: absolute; top: -50%; right: -20%; width: 200px; height: 200px; background: var(--amethyst-glow); filter: blur(60px); opacity: 0.3;"></div>
                 </div>
 
                 <section>
@@ -58,11 +64,13 @@ export function showLobby(container) {
                             background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.2)), url('https://images.unsplash.com/photo-1519074063261-bb8207ce2433?q=80&w=800');
                             background-size: cover; background-position: center;
                             height: 350px; border-radius: 24px; border: 1px solid rgba(255, 255, 255, 0.05);
-                            cursor: pointer; display: flex; align-items: flex-end; padding: 30px; transition: 0.4s;
+                            display: flex; align-items: flex-end; padding: 30px; transition: 0.4s; position: relative;
+                            ${lockStyle}
                         ">
+                            ${badgeGuest}
                             <div>
                                 <h2 style="margin:0; font-size: 2rem; font-weight: 900; color: white;">D&D 5E</h2>
-                                <p style="opacity:0.7; font-size: 14px; color: white;">Dungeons & Dragons Fifth Edition</p>
+                                <p style="opacity:0.7; font-size: 14px; color: white;">Dashboard Personaggi Online</p>
                             </div>
                         </div>
 
@@ -70,8 +78,10 @@ export function showLobby(container) {
                             background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), 
                                         linear-gradient(135deg, #ff3366 0%, #330011 100%);
                             height: 350px; border-radius: 24px; border: 1px solid rgba(255, 51, 102, 0.4);
-                            cursor: pointer; display: flex; align-items: flex-end; padding: 30px; transition: 0.4s;
+                            display: flex; align-items: flex-end; padding: 30px; transition: 0.4s; position: relative;
+                            ${lockStyle}
                         ">
+                            ${badgeGuest}
                             <div>
                                 <h2 style="margin:0; font-size: 2rem; font-weight: 900; color: white;">IMPOSTORE</h2>
                                 <p style="opacity:0.7; font-size: 14px; color: white;">Ruoli Nascosti Multiplayer</p>
@@ -88,18 +98,19 @@ export function showLobby(container) {
         </div>
     `;
 
-    // Logic
+    // Logic Eventi
     document.getElementById('btn-portal-carte').onclick = () => showCardGamesLobby(container);
     
     document.getElementById('btn-dnd5e').onclick = async () => {
+        if (isGuest) return alert("Questa funzione richiede l'accesso con Discord per salvare i tuoi personaggi!");
         try {
             const { initDndDashboard } = await import('./dashboards/dnd5e.js');
             initDndDashboard(container);
         } catch (err) { console.error("Errore D&D:", err); }
     };
 
-    // LOGICA IMPOSTORE
     document.getElementById('btn-impostore').onclick = async () => {
+        if (isGuest) return alert("Il gioco 'Impostore' è solo Multiplayer. Accedi con Discord per giocare!");
         try {
             const { initImpostore } = await import('./dashboards/impostore.js');
             initImpostore(container);
@@ -108,74 +119,25 @@ export function showLobby(container) {
 }
 
 // ==========================================
-// SOTTO-LOBBY: GIOCHI DI CARTE
+// SOTTO-LOBBY: GIOCHI DI CARTE (Sempre accessibile)
 // ==========================================
 export function showCardGamesLobby(container) {
     container.innerHTML = `
-        <div id="lobby-wrapper" style="
-            min-height: 100dvh; /* Usato min-height per evitare lo spazio nero! */
-            box-sizing: border-box; 
-            padding: 40px 20px 80px 20px; 
-            background: #05020a;
-        " class="fade-in">
-            
-            <button id="btn-back-main" style="
-                background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
-                color: white; padding: 10px 20px; border-radius: 12px; 
-                font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 30px;
-            ">← TORNA ALLA LIBRERIA</button>
-
-            <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 20px;">
+        <div id="lobby-wrapper" style="min-height: 100dvh; box-sizing: border-box; padding: 40px 20px 80px 20px; background: #05020a;" class="fade-in">
+            <button id="btn-back-main" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 20px; border-radius: 12px; font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 30px;">← TORNA ALLA LIBRERIA</button>
+            <div style="max-width: 1200px; margin: 0 auto;">
                 <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 40px;">I TUOI <span style="color:var(--amethyst-bright);">MAZZI</span></h1>
-                
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                    
-                    <div class="game-card" id="btn-solo" style="
-                        background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.3)), 
-                                    linear-gradient(135deg, #ff4444 0%, #0066ff 33%, #33cc33 66%, #ffcc00 100%);
-                        height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.3);
-                        cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;
-                    ">
-                        <h2 style="margin:0; font-size: 2rem; font-weight: 900;">SOLO</h2>
-                    </div>
-
-                    <div class="game-card" id="btn-briscola" style="
-                        background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), 
-                                    linear-gradient(45deg, #2a0a4a 0%, #4a1a6a 100%);
-                        height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4);
-                        cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;
-                    ">
-                        <h2 style="margin:0; font-size: 2rem; font-weight: 900;">BRISCOLA</h2>
-                    </div>
-
-                    <div class="game-card" id="btn-scopa" style="
-                        background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), 
-                                    linear-gradient(135deg, #825a2c 0%, #05020a 100%);
-                        height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4);
-                        cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;
-                    ">
-                        <h2 style="margin:0; font-size: 2rem; font-weight: 900;">SCOPA</h2>
-                    </div>
-
+                    <div class="game-card" id="btn-solo" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.3)), linear-gradient(135deg, #ff4444 0%, #0066ff 33%, #33cc33 66%, #ffcc00 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.3); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900;">SOLO</h2></div>
+                    <div class="game-card" id="btn-briscola" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), linear-gradient(45deg, #2a0a4a 0%, #4a1a6a 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900;">BRISCOLA</h2></div>
+                    <div class="game-card" id="btn-scopa" style="background: linear-gradient(to top, rgba(5,2,10,1), rgba(5,2,10,0.4)), linear-gradient(135deg, #825a2c 0%, #05020a 100%); height: 300px; border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.4); cursor: pointer; display: flex; align-items: flex-end; padding: 25px; transition: 0.4s;"><h2 style="margin:0; font-size: 2rem; font-weight: 900;">SCOPA</h2></div>
                 </div>
             </div>
         </div>
     `;
 
     document.getElementById('btn-back-main').onclick = () => showLobby(container);
-
-    document.getElementById('btn-solo').onclick = async () => {
-        const { initSoloGame } = await import('./dashboards/solo.js');
-        initSoloGame(container);
-    };
-
-    document.getElementById('btn-briscola').onclick = async () => {
-        const { initBriscola } = await import('./dashboards/briscola.js');
-        initBriscola(container);
-    };
-
-    document.getElementById('btn-scopa').onclick = async () => {
-        const { initScopa } = await import('./dashboards/scopa.js');
-        initScopa(container);
-    };
+    document.getElementById('btn-solo').onclick = async () => { const { initSoloGame } = await import('./dashboards/solo.js'); initSoloGame(container); };
+    document.getElementById('btn-briscola').onclick = async () => { const { initBriscola } = await import('./dashboards/briscola.js'); initBriscola(container); };
+    document.getElementById('btn-scopa').onclick = async () => { const { initScopa } = await import('./dashboards/scopa.js'); initScopa(container); };
 }

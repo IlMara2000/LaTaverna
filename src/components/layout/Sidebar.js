@@ -2,26 +2,55 @@ let currentSidebarUser = null;
 let currentLogoutFn = null;
 
 export function initSidebar(container, user, onLogout, context = "home") {
-    currentSidebarUser = user;
+    // Se 'user' è null, prova a caricare il Guest dal localStorage
+    const guestData = localStorage.getItem('taverna_guest_user');
+    currentSidebarUser = user || (guestData ? JSON.parse(guestData) : null);
+    
     currentLogoutFn = onLogout;
     renderSidebarContent(container, context);
 }
 
 function renderSidebarContent(container, context) {
-    const userName = currentSidebarUser?.user_metadata?.full_name || "Viandante";
+    const isGuest = currentSidebarUser?.isGuest === true;
+    const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
-    const menuConfigs = {
-        home: `
-            <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
-            <button class="btn-primary" id="sideSettings">IMPOSTAZIONI</button>
-        `,
-        dnd5e: `
-            <button class="btn-primary" id="sideCharacters">I MIEI EROI (D&D)</button>
-            <button class="btn-primary" id="sideSpells">INCANTESIMI</button>
-            <button class="btn-primary" id="sideMaps">MAPPE & GRID</button>
-            <button class="btn-primary" id="sideBestiary">BESTIARIO</button>
-        `
-    };
+    // Configurazione Menu dinamica
+    let buttonsHtml = "";
+
+    if (isGuest) {
+        // Menu per OSPITE
+        if (context === "home") {
+            buttonsHtml = `
+                <div style="padding: 15px; background: rgba(157, 78, 221, 0.1); border: 1px solid rgba(157, 78, 221, 0.3); border-radius: 12px; font-size: 11px; color: #d8b4fe; text-align: center; line-height: 1.4;">
+                    Ti trovi in modalità Offline.<br>Accedi con Discord per salvare i progressi e giocare online.
+                </div>
+            `;
+        } else if (context === "minigames") {
+            buttonsHtml = `<p style="font-size: 12px; opacity: 0.5; text-align: center;">Modalità Offline Attiva</p>`;
+        }
+    } else {
+        // Menu per UTENTE REGISTRATO
+        const menuConfigs = {
+            home: `
+                <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
+                <button class="btn-primary" id="sideSettings">IMPOSTAZIONI</button>
+            `,
+            dnd5e: `
+                <button class="btn-primary" id="sideCharacters">I MIEI EROI (D&D)</button>
+                <button class="btn-primary" id="sideSpells">INCANTESIMI</button>
+                <button class="btn-primary" id="sideMaps">MAPPE & GRID</button>
+            `,
+            minigames: `
+                <button class="btn-primary" id="sideMultiplayer" style="background: linear-gradient(135deg, #4444ff, #0000aa);">
+                    🌐 MODALITÀ MULTIPLAYER
+                </button>
+                <button class="btn-primary" id="sideStats">STATISTICHE PERSONALI</button>
+            `
+        };
+        buttonsHtml = menuConfigs[context] || menuConfigs.home;
+    }
+
+    const isMainHub = context === "home";
 
     container.innerHTML = `
         <nav id="sidebar-menu" style="
@@ -34,14 +63,24 @@ function renderSidebarContent(container, context) {
             <div style="text-align: center; margin-bottom: 40px;">
                 <h2 style="color: var(--amethyst-bright); margin:0; letter-spacing:1px;">${userName.toUpperCase()}</h2>
                 <span style="font-size: 10px; opacity: 0.5; letter-spacing: 2px;">
-                    ${context === 'home' ? 'HUB PRINCIPALE' : 'SISTEMA: ' + context.toUpperCase()}
+                    ${isGuest ? 'ACCESSO OSPITE' : 'SISTEMA: ' + context.toUpperCase()}
                 </span>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 300px;">
-                ${menuConfigs[context] || menuConfigs.home}
+                ${buttonsHtml}
+                
                 <hr style="width: 100%; opacity: 0.1; margin: 10px 0;">
-                <button class="btn-primary" id="sideLogout" style="background: none; border: 1px solid #ff4444; color: #ff4444; box-shadow: none;">ESCI DALLA TAVERNA</button>
+
+                ${isMainHub ? `
+                    <button class="btn-primary" id="sideLogout" style="background: none; border: 1px solid #ff4444; color: #ff4444; box-shadow: none;">
+                        ${isGuest ? 'TORNA AL LOGIN' : 'ESCI DALLA TAVERNA'}
+                    </button>
+                ` : `
+                    <button class="btn-primary" id="sideBackToLobby" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                        ⬅ TORNA ALLA LIBRERIA
+                    </button>
+                `}
             </div>
         </nav>
     `;
@@ -59,41 +98,39 @@ function renderSidebarContent(container, context) {
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // Logout
-    document.getElementById('sideLogout').onclick = currentLogoutFn;
-
-    // Profilo - IMPORT DINAMICO CON PERCORSO FISSA-ERRORE
-    const btnProfile = document.getElementById('sideProfile');
-    if (btnProfile) {
-        btnProfile.onclick = async () => {
-            toggle();
-            try {
-                const { showProfile } = await import('../features/user/Profile.js');
-                showProfile(mainContent, currentSidebarUser);
-            } catch (err) {
-                console.error("Errore caricamento Profilo:", err);
+    // --- LOGICA BOTTONI ---
+    const btnLogout = document.getElementById('sideLogout');
+    if (btnLogout) {
+        btnLogout.onclick = () => {
+            if (isGuest) {
+                localStorage.removeItem('taverna_guest_user');
+                window.location.reload();
+            } else {
+                currentLogoutFn();
             }
         };
     }
 
-    // Impostazioni - IMPORT DINAMICO CON PERCORSO FISSA-ERRORE
-    const btnSettings = document.getElementById('sideSettings');
-    if (btnSettings) {
-        btnSettings.onclick = async () => {
+    const btnBack = document.getElementById('sideBackToLobby');
+    if (btnBack) {
+        btnBack.onclick = async () => {
             toggle();
-            try {
-                const { showSettings } = await import('../features/user/Settings.js');
-                showSettings(mainContent);
-            } catch (err) {
-                console.error("Errore caricamento Impostazioni:", err);
-            }
+            const { showLobby } = await import('../../lobby.js');
+            showLobby(mainContent);
+        };
+    }
+
+    const btnProfile = document.getElementById('sideProfile');
+    if (btnProfile) {
+        btnProfile.onclick = async () => {
+            toggle();
+            const { showProfile } = await import('../features/user/Profile.js');
+            showProfile(mainContent, currentSidebarUser);
         };
     }
 }
 
 export function updateSidebarContext(newContext) {
     const container = document.getElementById('sidebar-container');
-    if (container) {
-        renderSidebarContent(container, newContext);
-    }
+    if (container) renderSidebarContent(container, newContext);
 }

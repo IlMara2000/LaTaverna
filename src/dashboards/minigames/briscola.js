@@ -1,10 +1,8 @@
-import { updateSidebarContext } from '../components/layout/Sidebar.js';
-import { showLobby } from '../lobby.js';
+import { updateSidebarContext } from '../../components/layout/Sidebar.js';
+import { showLobby } from '../../lobby.js';
 
 export function initBriscola(container) {
-    updateSidebarContext("home"); 
-    const menuTrigger = document.querySelector('.sidebar-trigger') || document.getElementById('hamburger-menu');
-    if (menuTrigger) menuTrigger.style.display = 'none';
+    updateSidebarContext("minigames"); 
 
     const SUITS = ['bastoni', 'coppe', 'denari', 'spade'];
     const VALUES = [
@@ -27,12 +25,9 @@ export function initBriscola(container) {
         .b-card { width: 75px; height: 110px; border-radius: 12px; background: #fff; color: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 900; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; transition: 0.2s; border: 2px solid rgba(255,255,255,0.1); user-select: none; }
         .b-card.back { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; color: #9d4ede; font-size: 10px; }
         .active-glow { box-shadow: 0 0 20px #9d4edeaa; background: rgba(157, 78, 221, 0.1); border-radius: 15px; }
-        .btn-exit { position: absolute; top: 20px; left: 20px; background: rgba(255,68,68,0.2); border: 1px solid #ff4444; color: white; padding: 8px 15px; border-radius: 10px; font-size: 11px; cursor: pointer; z-index: 100; font-weight: bold; }
         .btn-start { background: #9d4ede; color: black; padding: 18px 60px; border-radius: 50px; font-weight: 900; border: none; cursor: pointer; font-size: 1.2rem; box-shadow: 0 0 20px #9d4ede66; }
     </style>
-    <div class="briscola-wrapper">
-        <button class="btn-exit" id="exit-briscola">ESCI</button>
-        
+    <div class="briscola-wrapper fade-in">
         <div id="briscola-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:5000; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:20px; backdrop-filter: blur(10px);">
             <h1 style="color:#9d4ede; font-size:3.5rem; font-weight:900; text-shadow: 0 0 20px #9d4ede66;">BRISCOLA</h1>
             <button class="btn-start" id="start-game-btn">INIZIA PARTITA</button>
@@ -57,6 +52,7 @@ export function initBriscola(container) {
     </div>
     `;
 
+    // ... (Logica Shuffle e Game rimane identica, rimossa per brevità ma integrata nell'export)
     const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } };
 
     const getCardUI = (c) => {
@@ -71,13 +67,9 @@ export function initBriscola(container) {
 
     const renderView = () => {
         if (!state.gameActive) return;
-        
         const briscolaSlot = document.getElementById('briscola-slot');
-        if (state.deck.length > 0 || state.briscola) {
-             briscolaSlot.innerHTML = `<div class="b-card">${getCardUI(state.briscola)}</div>`;
-        } else {
-             briscolaSlot.innerHTML = '';
-        }
+        if (state.deck.length > 0 || state.briscola) { briscolaSlot.innerHTML = `<div class="b-card">${getCardUI(state.briscola)}</div>`; }
+        else { briscolaSlot.innerHTML = ''; }
         
         const botSide = document.getElementById('bot-side');
         botSide.innerHTML = state.players[1].map(() => `<div class="b-card back"></div>`).join('');
@@ -100,47 +92,29 @@ export function initBriscola(container) {
         state.isAnimating = true;
         state.table.push({ card: state.players[pIdx].splice(idx, 1)[0], owner: pIdx });
         renderView();
-
-        if (state.table.length === 2) {
-            setTimeout(resolveRound, 1000);
-        } else {
-            state.turn = 1 - pIdx;
-            state.isAnimating = false;
-            renderView();
-            if (state.turn === 1) setTimeout(() => playCard(0, 1), 1000);
-        }
+        if (state.table.length === 2) { setTimeout(resolveRound, 1000); } 
+        else { state.turn = 1 - pIdx; state.isAnimating = false; renderView(); if (state.turn === 1) setTimeout(() => playCard(0, 1), 1000); }
     };
 
     const resolveRound = () => {
         const [t1, t2] = state.table;
         let winIdx;
-
-        if (t1.card.suit === t2.card.suit) {
-            winIdx = t1.card.rank > t2.card.rank ? t1.owner : t2.owner;
-        } else if (t2.card.suit === state.briscola.suit) {
-            winIdx = t2.owner;
-        } else {
-            winIdx = t1.owner;
-        }
-
+        if (t1.card.suit === t2.card.suit) { winIdx = t1.card.rank > t2.card.rank ? t1.owner : t2.owner; } 
+        else if (t2.card.suit === state.briscola.suit) { winIdx = t2.owner; } 
+        else { winIdx = t1.owner; }
         state.scores[winIdx] += (t1.card.points + t2.card.points);
         state.table = [];
-
         setTimeout(() => {
             if (state.deck.length > 0) {
                 state.players[winIdx].push(state.deck.pop());
                 state.players[1 - winIdx].push(state.deck.pop());
             }
-
             if (state.players[0].length === 0 && state.deck.length === 0) {
                 const msg = state.scores[0] > 60 ? "HAI VINTO!" : (state.scores[0] === 60 ? "PAREGGIO!" : "HAI PERSO!");
                 alert(`${msg}\nPunteggio: ${state.scores[0]} a ${state.scores[1]}`);
                 return initBriscola(container);
             }
-
-            state.turn = winIdx;
-            state.isAnimating = false;
-            renderView();
+            state.turn = winIdx; state.isAnimating = false; renderView();
             if (state.turn === 1) setTimeout(() => playCard(0, 1), 1000);
         }, 500);
     };
@@ -150,19 +124,8 @@ export function initBriscola(container) {
         state.deck = [];
         SUITS.forEach(s => VALUES.forEach(v => state.deck.push({ suit: s, ...v })));
         shuffle(state.deck);
-        
-        for(let i=0; i<3; i++) { 
-            state.players[0].push(state.deck.pop()); 
-            state.players[1].push(state.deck.pop()); 
-        }
-        
-        state.briscola = state.deck[0]; 
-        state.gameActive = true;
+        for(let i=0; i<3; i++) { state.players[0].push(state.deck.pop()); state.players[1].push(state.deck.pop()); }
+        state.briscola = state.deck[0]; state.gameActive = true;
         renderView();
-    };
-
-    document.getElementById('exit-briscola').onclick = () => {
-        if (menuTrigger) menuTrigger.style.display = 'flex';
-        showLobby(container);
     };
 }
