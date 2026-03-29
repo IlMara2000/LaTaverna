@@ -6,7 +6,7 @@ export function initBurraco(container) {
     renderSelectionMenu(container);
 }
 
-// --- 1. SELEZIONE MODALITÀ (Solo 1 vs 1) ---
+// --- 1. SELEZIONE MODALITÀ ---
 function renderSelectionMenu(container) {
     container.innerHTML = `
     <style>
@@ -28,7 +28,7 @@ function startGame(container, players) {
         mode: players,
         deck: [],
         hands: { player: [], bot1: [] },
-        tables: { team1: [], team2: [] }, // team1 = player, team2 = bot
+        tables: { team1: [], team2: [] },
         discardPile: [],
         turn: 'player',
         phase: 'draw',
@@ -98,6 +98,7 @@ function updateUI(state) {
 
     const btnDiscard = document.getElementById('btn-discard');
     const btnMeld = document.getElementById('btn-meld');
+    
     btnDiscard.disabled = !isPlayer || state.selectedIndices.length !== 1 || state.phase !== 'play';
     btnMeld.disabled = !isPlayer || state.selectedIndices.length < 3 || state.phase !== 'play';
 
@@ -160,24 +161,29 @@ function renderDiscard(state) {
 
 // --- AZIONI ---
 function drawFromDeck(state) {
-    state.hands.player.push(state.deck.pop());
-    state.phase = 'play';
-    state.tutorMsg = "Hai pescato. Ora cala una combo o scarta.";
-    updateUI(state);
+    if(state.deck.length > 0) {
+        state.hands.player.push(state.deck.pop());
+        state.phase = 'play';
+        state.tutorMsg = "Hai pescato. Ora cala una combo o scarta.";
+        updateUI(state);
+    }
 }
 
 function pickDiscard(state) {
-    state.hands.player.push(...state.discardPile);
-    state.discardPile = [];
-    state.phase = 'play';
-    updateUI(state);
+    if(state.discardPile.length > 0) {
+        state.hands.player.push(...state.discardPile);
+        state.discardPile = [];
+        state.phase = 'play';
+        state.tutorMsg = "Hai preso gli scarti. Gioca o scarta una carta.";
+        updateUI(state);
+    }
 }
 
 function handleMeld(state) {
-    // Sposta le carte selezionate dalla mano al tavolo
     const cards = state.selectedIndices.sort((a,b)=>b-a).map(i => state.hands.player.splice(i,1)[0]);
     state.tables.team1.push(cards);
     state.selectedIndices = [];
+    state.tutorMsg = "Combinazione calata! Puoi calarne altre o scartare.";
     updateUI(state);
 }
 
@@ -187,32 +193,42 @@ function handleDiscard(state) {
     state.selectedIndices = [];
     state.turn = 'bot';
     state.phase = 'draw';
-    state.tutorMsg = "Hai scartato. Attendi l'avversario...";
+    state.tutorMsg = "Hai scartato. Ora tocca al bot...";
     updateUI(state);
+    
+    // Attivazione garantita del bot
     setTimeout(() => botAction(state), 1500);
 }
 
 function botAction(state) {
-    // 1. Pesca
-    state.hands.bot1.push(state.deck.pop());
+    if (state.turn !== 'bot') return;
+
+    // 1. Pesca dal mazzo
+    if(state.deck.length > 0) {
+        state.hands.bot1.push(state.deck.pop());
+    }
     
-    // 2. Prova a calare (semplice)
+    // 2. Logica per calare (cerca tris)
     const combos = findCombinations(state.hands.bot1);
     if(combos.length >= 3) {
         const val = combos[0].val;
         const group = [];
         for(let i = state.hands.bot1.length - 1; i >= 0; i--) {
-            if(state.hands.bot1[i].val === val) group.push(state.hands.bot1.splice(i, 1)[0]);
+            if(state.hands.bot1[i].val === val) {
+                group.push(state.hands.bot1.splice(i, 1)[0]);
+            }
         }
         state.tables.team2.push(group);
     }
 
-    // 3. Scarta
+    // 3. Scarta e torna al player
     setTimeout(() => {
-        state.discardPile.push(state.hands.bot1.pop());
+        if(state.hands.bot1.length > 0) {
+            state.discardPile.push(state.hands.bot1.pop());
+        }
         state.turn = 'player';
         state.phase = 'draw';
-        state.tutorMsg = "Tocca a te! Pesca dal mazzo o prendi gli scarti.";
+        state.tutorMsg = "Il bot ha giocato. Tocca a te!";
         updateUI(state);
     }, 1000);
 }
