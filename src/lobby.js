@@ -50,7 +50,7 @@ export function showLobby(container) {
                         <p style="opacity:0.6; font-size: 14px; margin-top: 5px;">Minigiochi e classici della Taverna (Offline)</p>
                     </div>
                     <div style="font-size: 3rem; opacity: 0.8; z-index: 1;">🃏</div>
-                </div>
+                </section>
 
                 <section>
                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px;">
@@ -112,7 +112,8 @@ export function showLobby(container) {
     document.getElementById('btn-impostore').onclick = async () => {
         if (isGuest) return alert("Il gioco 'Impostore' è solo Multiplayer. Accedi con Discord per giocare!");
         try {
-            const { initImpostore } = await import('./dashboards/impostore.js');
+            // PERCORSO AGGIORNATO: cartella minigames
+            const { initImpostore } = await import('./minigames/impostore.js');
             initImpostore(container);
         } catch (err) { console.error("Errore Impostore:", err); }
     };
@@ -137,7 +138,9 @@ export function showCardGamesLobby(container) {
     `;
 
     document.getElementById('btn-back-main').onclick = () => showLobby(container);
-    document.getElementById('btn-solo').onclick = async () => { const { initSoloGame } = await import('./dashboards/solo.js'); initSoloGame(container); };
-    document.getElementById('btn-briscola').onclick = async () => { const { initBriscola } = await import('./dashboards/briscola.js'); initBriscola(container); };
-    document.getElementById('btn-scopa').onclick = async () => { const { initScopa } = await import('./dashboards/scopa.js'); initScopa(container); };
+
+    // PERCORSI AGGIORNATI: tutti i giochi di carte sono in minigames
+    document.getElementById('btn-solo').onclick = async () => { const { initSoloGame } = await import('./minigames/solo.js'); initSoloGame(container); };
+    document.getElementById('btn-briscola').onclick = async () => { const { initBriscola } = await import('./minigames/briscola.js'); initBriscola(container); };
+    document.getElementById('btn-scopa').onclick = async () => { const { initScopa } = await import('./minigames/scopa.js'); initScopa(container); };
 }
