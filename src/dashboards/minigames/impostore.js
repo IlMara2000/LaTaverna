@@ -1,3 +1,5 @@
+import { updateSidebarContext } from '../../components/layout/Sidebar.js';
+
 // ==========================================
 // GIOCO: IMPOSTORE (Local Party Mode)
 // ==========================================
