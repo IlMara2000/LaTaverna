@@ -15,7 +15,8 @@ export function initBurraco(container) {
         discardPile: [],
         turn: 'player',
         phase: 'draw', 
-        hasTakenPozzetto: false
+        hasTakenPozzetto: false,
+        selectedCardIndex: null // Traccia la carta alzata
     };
 
     renderLayout(container);
@@ -25,14 +26,11 @@ export function initBurraco(container) {
 function startBurraco(state) {
     state.deck = createBurracoDeck();
     shuffle(state.deck);
-
     state.playerHand = state.deck.splice(0, 11);
     state.botHand = state.deck.splice(0, 11);
     state.pozzetto1 = state.deck.splice(0, 11);
     state.pozzetto2 = state.deck.splice(0, 11);
     state.discardPile.push(state.deck.pop());
-
-    // Inizializza l'interfaccia con i dati generati
     updateUI(state);
 }
 
@@ -46,35 +44,43 @@ function renderLayout(container) {
         .label-team { position: absolute; top: 5px; left: 10px; font-size: 9px; opacity: 0.4; letter-spacing: 1.5px; text-transform: uppercase; pointer-events: none; }
 
         .center-area { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 10px; }
-        .deck-stack { width: 55px; height: 80px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; box-shadow: 4px 4px 0px rgba(0,0,0,0.4); cursor: pointer; }
+        .deck-stack { width: 55px; height: 80px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; box-shadow: 4px 4px 0px rgba(0,0,0,0.4); cursor: pointer; transition: transform 0.3s; }
+        .deck-stack:active { transform: scale(0.9); }
         .discard-stack { width: 55px; height: 80px; position: relative; }
 
-        .card-b { width: 48px; height: 70px; background: white; border-radius: 6px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.3); transition: 0.2s; cursor: pointer; border: 1px solid #ddd; }
+        /* Stile base carta */
+        .card-b { 
+            width: 48px; height: 70px; background: white; border-radius: 6px; color: black; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            font-weight: 800; font-size: 11px; position: relative; 
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3); 
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s, filter 0.4s; 
+            cursor: pointer; border: 1px solid #ddd; 
+        }
+
+        /* Animazione selezione (Carta Alzata) */
+        .card-b.selected { 
+            transform: translateY(-25px) scale(1.1) !important; 
+            box-shadow: 0 15px 25px rgba(0,0,0,0.5);
+            border: 2px solid var(--amethyst-bright, #9d4ede);
+            z-index: 100 !important;
+        }
+
+        /* Animazione spostamento verso gli scarti */
+        .card-moving-to-discard {
+            transform: translate(0, -200px) scale(0.5) rotate(15deg) !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .card-b.hearts, .card-b.diamonds { color: #d63031; }
         .card-b.clubs, .card-b.spades { color: #2d3436; }
         .card-b.jolly { background: #9d4ede; color: white; border-color: #7b2cbf; }
 
-        .player-hand-container { 
-            padding-bottom: 95px; /* Alzate per visibilità sopra Navbar */
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 15px;
-        }
-        .hand-card-wrapper { display: flex; justify-content: center; }
+        .player-hand-container { padding-bottom: 95px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .hand-card-wrapper { display: flex; justify-content: center; height: 80px; align-items: flex-end; }
         
-        .btn-calate { 
-            background: #2ecc71; 
-            color: white; 
-            padding: 10px 25px; 
-            border-radius: 50px; 
-            border: none; 
-            font-weight: 900; 
-            cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
-            font-size: 13px;
-        }
-        
+        .btn-calate { background: #2ecc71; color: white; padding: 10px 25px; border-radius: 50px; border: none; font-weight: 900; cursor: pointer; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); font-size: 13px; }
         #game-info { position: absolute; top: 15px; width: 100%; text-align: center; pointer-events: none; }
     </style>
 
@@ -83,17 +89,14 @@ function renderLayout(container) {
             <div id="turn-display" style="color:#2ecc71; font-weight:900;">TUO TURNO</div>
             <div id="phase-display" style="font-size:11px; opacity:0.8;">Pesca una carta</div>
         </div>
-
         <div class="tables-container">
             <div class="mats" id="bot-table"><span class="label-team">AVVERSARIO</span></div>
             <div class="mats" id="player-table"><span class="label-team">IL TUO TAVOLO</span></div>
         </div>
-
         <div class="center-area">
             <div id="main-deck" class="deck-stack">MAZZO</div>
             <div id="discard-stack-ui" class="discard-stack"></div>
         </div>
-
         <div class="player-hand-container">
             <button class="btn-calate" id="btn-play-meld">CALA COMBINAZIONE</button>
             <div id="player-hand" class="hand-card-wrapper"></div>
@@ -114,8 +117,24 @@ function updateUI(state) {
         const cEl = createCardElement(card);
         cEl.style.marginLeft = i === 0 ? '0' : '-15px';
         cEl.style.zIndex = i;
+        
+        // Applica classe "selected" se è la carta cliccata
+        if (state.selectedCardIndex === i) {
+            cEl.classList.add('selected');
+        }
+
         cEl.onclick = () => {
-            if (state.phase === 'play' || state.phase === 'discard') handleCardAction(card, i, state);
+            if (state.phase === 'draw') return;
+
+            // Se clicco una carta già selezionata, la scarto (spostamento)
+            if (state.selectedCardIndex === i) {
+                cEl.classList.add('card-moving-to-discard');
+                setTimeout(() => handleCardAction(card, i, state), 400);
+            } else {
+                // Altrimenti la seleziono (si alza)
+                state.selectedCardIndex = i;
+                updateUI(state);
+            }
         };
         handUI.appendChild(cEl);
     });
@@ -129,7 +148,7 @@ function updateUI(state) {
     }
 
     phaseLabel.innerText = state.phase === 'draw' ? 'Pesca dal mazzo o dagli scarti' : 
-                          state.phase === 'play' ? 'Cala o scarta per finire' : 'Seleziona scarto';
+                          state.phase === 'play' ? 'Tocca una carta per selezionarla, toccala di nuovo per scartare' : 'Seleziona scarto';
 
     document.getElementById('main-deck').onclick = () => { if(state.phase === 'draw') drawFromDeck(state); };
 }
@@ -144,8 +163,10 @@ function createCardElement(card) {
 
 function drawFromDeck(state) {
     if(state.deck.length === 0) return;
-    state.playerHand.push(state.deck.pop());
+    const card = state.deck.pop();
+    state.playerHand.push(card);
     state.phase = 'play';
+    state.selectedCardIndex = state.playerHand.length - 1; // Seleziona automaticamente la carta pescata
     updateUI(state);
 }
 
@@ -159,6 +180,7 @@ function pickDiscard(state) {
 
 function handleCardAction(card, index, state) {
     state.discardPile.push(state.playerHand.splice(index, 1)[0]);
+    state.selectedCardIndex = null;
     state.phase = 'draw';
     state.turn = 'bot';
     updateUI(state);
