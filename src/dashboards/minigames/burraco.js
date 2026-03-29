@@ -15,7 +15,7 @@ function renderSelectionMenu(container) {
         .mode-btn:hover { background:#9d4ede; transform:scale(1.05); }
     </style>
     <div class="menu-overlay">
-        <h1 style="margin-bottom:30px;">BURRACO</h1>
+        <h1 style="margin-bottom:30px; letter-spacing:5px;">BURRACO</h1>
         <button class="mode-btn" id="mode-2">1 VS 1</button>
         <button class="mode-btn" id="mode-4">2 VS 2</button>
     </div>
@@ -31,11 +31,11 @@ function startGame(container, players) {
         deck: [],
         hands: { player: [], bot1: [], bot2: [], bot3: [] },
         pozzetti: [[], []],
-        tables: { team1: [], team2: [] }, // team1: giocatore+bot2, team2: bot1+bot3
+        tables: { team1: [], team2: [] },
         discardPile: [],
         turn: 'player',
         phase: 'draw',
-        selectedCardIndex: null,
+        selectedIndices: [], // Supporto selezione multipla
         tutorMsg: "Benvenuto! Inizia pescando una carta dal mazzo."
     };
 
@@ -43,12 +43,10 @@ function startGame(container, players) {
     initLogic(state);
 }
 
-// --- 2. LOGICA DI GIOCO & DIDATTICA ---
+// --- 2. LOGICA & LAYOUT ---
 function initLogic(state) {
     state.deck = createBurracoDeck();
     shuffle(state.deck);
-    
-    // Distribuzione
     state.hands.player = state.deck.splice(0, 11);
     state.hands.bot1 = state.deck.splice(0, 11);
     if(state.mode === 4) {
@@ -58,7 +56,6 @@ function initLogic(state) {
     state.pozzetti[0] = state.deck.splice(0, 11);
     state.pozzetti[1] = state.deck.splice(0, 11);
     state.discardPile.push(state.deck.pop());
-
     updateUI(state);
 }
 
@@ -69,20 +66,36 @@ function renderLayout(container, state) {
         .tables-container { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 20px; margin-top: 40px; }
         .mats { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 10px; position: relative; display: flex; align-items: center; gap: 10px; overflow-x: auto; }
         
-        /* TUTOR BOX */
-        .tutor-box { position: absolute; top: 70px; right: 20px; width: 200px; background: rgba(0,0,0,0.8); border-left: 4px solid #9d4ede; padding: 15px; border-radius: 8px; font-size: 12px; z-index: 10; animation: slideIn 0.5s; }
+        .tutor-box { position: absolute; top: 70px; right: 20px; width: 220px; background: rgba(0,0,0,0.85); border-left: 4px solid #9d4ede; padding: 15px; border-radius: 8px; font-size: 12px; z-index: 10; border: 1px solid rgba(157,78,221,0.3); }
         
-        .card-b { width: 45px; height: 65px; background: white; border-radius: 6px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.3); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; border: 1px solid #ddd; }
-        .card-b.selected { transform: translateY(-20px) scale(1.1) !important; box-shadow: 0 10px 20px rgba(157,78,221,0.4); border: 2px solid #9d4ede; z-index: 100; }
-        .card-b.hint { box-shadow: 0 0 15px #2ecc71; border: 2px solid #2ecc71; }
+        /* CARD STYLES */
+        .card-b { width: 45px; height: 65px; background: white; border-radius: 6px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.3); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s; cursor: pointer; border: 1px solid #ddd; }
+        .card-b.selected { transform: translateY(-25px) scale(1.1) !important; box-shadow: 0 10px 20px rgba(157,78,221,0.6); border: 2px solid #9d4ede; z-index: 100; }
+        .card-b.jolly { background: #9d4ede !important; color: white !important; border-color: #7b2cbf; }
         
-        .center-area { display: flex; justify-content: center; align-items: center; gap: 25px; padding: 10px; }
+        /* ANIMAZIONE COMBINAZIONE (Glow pulsante) */
+        @keyframes comboGlow { 0% { box-shadow: 0 0 5px #2ecc71; } 50% { box-shadow: 0 0 15px #2ecc71; } 100% { box-shadow: 0 0 5px #2ecc71; } }
+        .card-combo-hint { animation: comboGlow 1.5s infinite; border: 2px solid #2ecc71 !important; }
+
+        /* ANIMAZIONE SPOSTAMENTO */
+        .card-flying { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.6s cubic-bezier(0.5, 0, 0.2, 1); }
+
+        .center-area { display: flex; justify-content: center; align-items: center; gap: 30px; padding: 10px; }
         .deck-stack { width: 55px; height: 80px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; box-shadow: 4px 4px 0px rgba(0,0,0,0.4); cursor: pointer; }
         
-        .player-hand-container { padding-bottom: 95px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .hand-wrapper { display: flex; justify-content: center; height: 80px; }
+        .player-hand-container { padding-bottom: 95px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .hand-wrapper { display: flex; justify-content: center; height: 90px; align-items: flex-end; }
         
-        @keyframes slideIn { from { opacity:0; transform:translateX(50px); } to { opacity:1; transform:translateX(0); } }
+        /* BOTTONI MIGLIORATI */
+        .btn-action { 
+            padding: 12px 24px; border-radius: 12px; border: none; font-weight: 900; font-size: 13px; cursor: pointer; 
+            text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; display: flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+        }
+        .btn-action:active { transform: translateY(2px); box-shadow: none; }
+        #btn-meld { background: linear-gradient(to bottom, #2ecc71, #27ae60); color: white; border: 1px solid #27ae60; }
+        #btn-discard { background: linear-gradient(to bottom, #e74c3c, #c0392b); color: white; border: 1px solid #c0392b; }
+        .btn-action:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
     </style>
 
     <div class="burraco-bg">
@@ -97,14 +110,18 @@ function renderLayout(container, state) {
         </div>
 
         <div class="center-area">
-            <div id="main-deck" class="deck-stack">MAZZO</div>
-            <div id="discard-pile-ui" style="display:flex;"></div>
+            <div id="main-deck" class="deck-stack" id="deck-anchor">MAZZO</div>
+            <div id="discard-pile-ui" style="display:flex;" id="discard-anchor"></div>
         </div>
 
         <div class="player-hand-container">
-            <div style="display:flex; gap:10px; margin-bottom:5px;">
-                <button class="btn-calate" id="btn-meld" style="background:#2ecc71;">CALA COMBO</button>
-                <button class="btn-calate" id="btn-discard" style="background:#e74c3c;">SCARTA</button>
+            <div style="display:flex; gap:15px;">
+                <button class="btn-action" id="btn-meld">
+                    <span>🎴</span> CALA SUL TAVOLO
+                </button>
+                <button class="btn-action" id="btn-discard">
+                    <span>🗑️</span> SCARTA
+                </button>
             </div>
             <div id="player-hand" class="hand-wrapper"></div>
         </div>
@@ -112,90 +129,118 @@ function renderLayout(container, state) {
     `;
 }
 
-// --- 3. AGGIORNAMENTO UI CON SUGGERIMENTI ---
+// --- 3. UI & ANIMAZIONI ---
 function updateUI(state) {
     const handUI = document.getElementById('player-hand');
     const discardUI = document.getElementById('discard-pile-ui');
     const tutorText = document.getElementById('tutor-text');
+    const btnDiscard = document.getElementById('btn-discard');
+    const btnMeld = document.getElementById('btn-meld');
 
-    // Update Tutor
     tutorText.innerText = state.tutorMsg;
+    btnDiscard.disabled = state.selectedIndices.length !== 1 || state.phase !== 'play';
+    btnMeld.disabled = state.selectedIndices.length < 3 || state.phase !== 'play';
 
-    // Render Mano
+    // Rilevamento combinazioni per animazione didattica
+    const combos = findCombinations(state.hands.player);
+
     handUI.innerHTML = '';
     state.hands.player.forEach((card, i) => {
         const cEl = createCardElement(card);
         cEl.style.marginLeft = i === 0 ? '0' : '-18px';
-        if (state.selectedCardIndex === i) cEl.classList.add('selected');
+        cEl.dataset.index = i;
         
-        // Suggerimento Didattico: Evidenzia Pinelle e Jolly
-        if (card.val === '2' || card.isJolly) cEl.style.border = "1px solid gold";
+        if (state.selectedIndices.includes(i)) cEl.classList.add('selected');
+        
+        // Evidenzia se fa parte di una combo possibile
+        if (combos.some(c => c.includes(card))) {
+            cEl.classList.add('card-combo-hint');
+        }
 
-        cEl.onclick = () => {
-            state.selectedCardIndex = i;
-            analyzeHand(state, card); // Analisi Tutor
+        cEl.onclick = (e) => {
+            if (state.phase === 'draw') return;
+            const idx = state.selectedIndices.indexOf(i);
+            if (idx > -1) state.selectedIndices.splice(idx, 1);
+            else state.selectedIndices.push(i);
             updateUI(state);
         };
         handUI.appendChild(cEl);
     });
 
-    // Render Scarti
     discardUI.innerHTML = '';
     state.discardPile.slice(-3).forEach((card, i) => {
         const dEl = createCardElement(card);
         dEl.style.marginLeft = i === 0 ? '0' : '-35px';
-        dEl.onclick = () => { if(state.phase === 'draw') pickDiscard(state); };
+        dEl.onclick = () => { if(state.phase === 'draw') animateTravel('discard', 'hand', () => pickDiscard(state)); };
         discardUI.appendChild(dEl);
     });
 
-    document.getElementById('main-deck').onclick = () => { if(state.phase === 'draw') drawFromDeck(state); };
-    document.getElementById('btn-discard').onclick = () => { 
-        if(state.phase === 'play' && state.selectedCardIndex !== null) handleDiscard(state);
+    document.getElementById('main-deck').onclick = () => { 
+        if(state.phase === 'draw') animateTravel('deck', 'hand', () => drawFromDeck(state)); 
     };
+    
+    btnDiscard.onclick = () => handleDiscard(state);
 }
 
-// --- 4. ANALISI TUTOR (Didattica) ---
-function analyzeHand(state, card) {
-    if (card.isJolly) {
-        state.tutorMsg = "Questo è un Jolly! Può sostituire qualsiasi carta in una scala o un tris.";
-    } else if (card.val === '2') {
-        state.tutorMsg = "Questa è una Pinella (il 2). Vale come un jolly ma può essere usata anche come un 2 naturale.";
-    } else {
-        state.tutorMsg = `Hai selezionato ${card.val}. Cerca altre carte dello stesso seme per fare una scala!`;
-    }
+// Funzione core per l'animazione di spostamento
+function animateTravel(fromId, toId, callback) {
+    const fromEl = fromId === 'deck' ? document.getElementById('main-deck') : document.getElementById('discard-pile-ui');
+    const toEl = document.getElementById('player-hand');
+    
+    const rectFrom = fromEl.getBoundingClientRect();
+    const rectTo = toEl.getBoundingClientRect();
+
+    const dummy = document.createElement('div');
+    dummy.className = 'card-b card-flying';
+    dummy.style.left = rectFrom.left + 'px';
+    dummy.style.top = rectFrom.top + 'px';
+    dummy.style.background = '#1e3799'; // Retro carta
+    document.body.appendChild(dummy);
+
+    requestAnimationFrame(() => {
+        dummy.style.left = rectTo.left + (rectTo.width/2) + 'px';
+        dummy.style.top = rectTo.top + 'px';
+        dummy.style.transform = 'rotate(360deg) scale(1.2)';
+    });
+
+    setTimeout(() => {
+        dummy.remove();
+        callback();
+    }, 600);
 }
 
-// --- 5. AZIONI GIOCO ---
+// --- 4. LOGICA GIOCO ---
 function drawFromDeck(state) {
-    const card = state.deck.pop();
-    state.hands.player.push(card);
+    state.hands.player.push(state.deck.pop());
     state.phase = 'play';
-    state.tutorMsg = "Hai pescato! Ora puoi calare combinazioni o scartare per finire il turno.";
+    state.tutorMsg = "Ottimo! Ora seleziona le carte per calare o scarta.";
     updateUI(state);
 }
 
 function handleDiscard(state) {
-    const card = state.hands.player.splice(state.selectedCardIndex, 1)[0];
+    const idx = state.selectedIndices[0];
+    const card = state.hands.player.splice(idx, 1)[0];
     state.discardPile.push(card);
-    state.selectedCardIndex = null;
+    state.selectedIndices = [];
     state.phase = 'draw';
     state.turn = 'bot1';
-    state.tutorMsg = "Turno dell'avversario. Osserva le sue mosse!";
     updateUI(state);
     setTimeout(() => botTurn(state), 1500);
 }
 
-// --- 6. IA AVVERSARIA (Simulata) ---
+// Logica per trovare combinazioni (Tris base per ora)
+function findCombinations(hand) {
+    let counts = {};
+    hand.forEach(c => counts[c.val] = (counts[c.val] || 0) + 1);
+    let comboValues = Object.keys(counts).filter(v => counts[v] >= 3);
+    return hand.filter(c => comboValues.includes(c.val));
+}
+
 function botTurn(state) {
-    // Logica IA Base (Espandibile con Groq)
-    const botHand = state.hands.bot1;
-    botHand.push(state.deck.pop()); // Pesca sempre
-    
-    // Scarta la prima carta per ora
-    state.discardPile.push(botHand.pop());
-    
+    state.hands.bot1.push(state.deck.pop());
+    state.discardPile.push(state.hands.bot1.pop());
     state.turn = 'player';
-    state.tutorMsg = "Tocca a te! Pesca dal mazzo o prendi l'ultimo scarto.";
+    state.phase = 'draw';
     updateUI(state);
 }
 
@@ -205,7 +250,7 @@ function createCardElement(card) {
     el.className = `card-b ${card.suit} ${card.isJolly ? 'jolly' : ''}`;
     const suitIcon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠', joker: '★' }[card.suit];
     el.innerHTML = `<span>${card.val}</span><span style="font-size:18px">${suitIcon}</span>`;
-    if(card.suit === 'hearts' || card.suit === 'diamonds') el.style.color = 'red';
+    if(!card.isJolly && (card.suit === 'hearts' || card.suit === 'diamonds')) el.style.color = '#d63031';
     return el;
 }
 
