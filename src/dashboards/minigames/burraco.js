@@ -15,9 +15,9 @@ function renderSelectionMenu(container) {
         .mode-btn:hover { background:#9d4ede; transform:scale(1.05); }
     </style>
     <div class="menu-overlay">
-        <h1 style="margin-bottom:30px;">Scegli Modalità Burraco</h1>
-        <button class="mode-btn" id="mode-2">1 VS 1 (Tutorial)</button>
-        <button class="mode-btn" id="mode-4">2 VS 2 (A Coppie)</button>
+        <h1 style="margin-bottom:30px;">BURRACO</h1>
+        <button class="mode-btn" id="mode-2">1 VS 1</button>
+        <button class="mode-btn" id="mode-4">2 VS 2</button>
     </div>
     `;
 
