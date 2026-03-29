@@ -22,30 +22,40 @@ export function initBurraco(container) {
     startBurraco(state);
 }
 
+function startBurraco(state) {
+    state.deck = createBurracoDeck();
+    shuffle(state.deck);
+
+    state.playerHand = state.deck.splice(0, 11);
+    state.botHand = state.deck.splice(0, 11);
+    state.pozzetto1 = state.deck.splice(0, 11);
+    state.pozzetto2 = state.deck.splice(0, 11);
+    state.discardPile.push(state.deck.pop());
+
+    // Inizializza l'interfaccia con i dati generati
+    updateUI(state);
+}
+
 function renderLayout(container) {
     container.innerHTML = `
     <style>
         .burraco-bg { width:100%; height:100dvh; background: radial-gradient(circle at center, #0a2a1a 0%, #020a05 100%); color:white; font-family:'Inter',sans-serif; position:relative; overflow:hidden; display: flex; flex-direction: column; }
         
-        /* Area Tavoli: Sovrapposti Verticalmente */
         .tables-container { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 20px; margin-top: 40px; }
         .mats { flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 15px; padding: 10px; position: relative; overflow-x: auto; display: flex; align-items: center; gap: 10px; }
         .label-team { position: absolute; top: 5px; left: 10px; font-size: 9px; opacity: 0.4; letter-spacing: 1.5px; text-transform: uppercase; pointer-events: none; }
 
-        /* Area Centrale: Mazzo e Scarti */
         .center-area { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 10px; }
         .deck-stack { width: 55px; height: 80px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; box-shadow: 4px 4px 0px rgba(0,0,0,0.4); cursor: pointer; }
         .discard-stack { width: 55px; height: 80px; position: relative; }
 
-        /* Carte */
         .card-b { width: 48px; height: 70px; background: white; border-radius: 6px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; position: relative; box-shadow: 0 3px 6px rgba(0,0,0,0.3); transition: 0.2s; cursor: pointer; border: 1px solid #ddd; }
         .card-b.hearts, .card-b.diamonds { color: #d63031; }
         .card-b.clubs, .card-b.spades { color: #2d3436; }
         .card-b.jolly { background: #9d4ede; color: white; border-color: #7b2cbf; }
 
-        /* Mano del giocatore: ALZATA sopra la navbar */
         .player-hand-container { 
-            padding-bottom: 90px; /* Spazio per la navbar/hamburger */
+            padding-bottom: 95px; /* Alzate per visibilità sopra Navbar */
             display: flex; 
             flex-direction: column; 
             align-items: center; 
@@ -70,7 +80,7 @@ function renderLayout(container) {
 
     <div class="burraco-bg">
         <div id="game-info">
-            <div id="turn-display" style="color:#2ecc71; font-weight:900; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">TUO TURNO</div>
+            <div id="turn-display" style="color:#2ecc71; font-weight:900;">TUO TURNO</div>
             <div id="phase-display" style="font-size:11px; opacity:0.8;">Pesca una carta</div>
         </div>
 
@@ -97,23 +107,19 @@ function updateUI(state) {
     const discardUI = document.getElementById('discard-stack-ui');
     const phaseLabel = document.getElementById('phase-display');
 
-    // Rendering Mano
+    if(!handUI || !discardUI) return;
+
     handUI.innerHTML = '';
     state.playerHand.forEach((card, i) => {
         const cEl = createCardElement(card);
-        // Effetto ventaglio sovrapposto
         cEl.style.marginLeft = i === 0 ? '0' : '-15px';
         cEl.style.zIndex = i;
-        
         cEl.onclick = () => {
-            if (state.phase === 'play' || state.phase === 'discard') {
-                handleCardAction(card, i, state);
-            }
+            if (state.phase === 'play' || state.phase === 'discard') handleCardAction(card, i, state);
         };
         handUI.appendChild(cEl);
     });
 
-    // Rendering Scarti
     discardUI.innerHTML = '';
     if (state.discardPile.length > 0) {
         const topDiscard = state.discardPile[state.discardPile.length - 1];
@@ -127,8 +133,6 @@ function updateUI(state) {
 
     document.getElementById('main-deck').onclick = () => { if(state.phase === 'draw') drawFromDeck(state); };
 }
-
-// ... restanti funzioni createCardElement, drawFromDeck, pickDiscard, handleCardAction, botTurn, createBurracoDeck rimangono invariate ...
 
 function createCardElement(card) {
     const el = document.createElement('div');
