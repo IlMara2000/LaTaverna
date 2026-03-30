@@ -16,25 +16,27 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background: #05010a; /* Fallback */
+    background: #05010a; 
     background: var(--bg-dark) no-repeat fixed;
     color: var(--text-primary);
     font-family: 'Poppins', sans-serif;
-    overscroll-behavior-y: none;
+    /* Rimosso overscroll-behavior-y: none per evitare blocchi su Safari */
+    overflow-x: hidden;
 }
 
 #app {
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: auto; /* SBLOCCO SCROLL */
+    -webkit-overflow-scrolling: touch;
 }
 
-/* Container principale per le Dashboard */
 .dashboard-container {
     max-width: 500px;
     margin: 0 auto;
     padding: 20px;
-    padding-bottom: 120px; /* Spazio per Safari nav bar */
+    padding-bottom: 140px; /* Spazio extra per la toolbar di Safari */
 }
 
 /* Card in stile Cristallo Ametista */
@@ -52,11 +54,11 @@ html, body {
 }
 
 .game-card:active {
-    transform: scale(0.98);
-    box-shadow: 0 0 15px var(--amethyst-glow);
+    transform: scale(0.97);
+    box-shadow: 0 0 20px var(--amethyst-glow);
 }
 
-/* Titoli "Cattivi" (Poppins 900) */
+/* Titoli e Testi */
 h1, .main-title {
     font-weight: 900;
     letter-spacing: -1.5px;
@@ -65,6 +67,11 @@ h1, .main-title {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 5px;
+}
+
+.text-amethyst {
+    color: #c77dff;
+    -webkit-text-fill-color: initial; /* Per evitare conflitti col gradiente del titolo */
 }
 
 .subtitle {
@@ -76,16 +83,9 @@ h1, .main-title {
     opacity: 0.8;
 }
 
-/* Button Back speciale */
-.btn-back-glass {
-    background: rgba(123, 44, 191, 0.1);
-    border: 1px solid var(--glass-border);
-    color: var(--text-secondary);
-    padding: 8px 16px;
-    border-radius: 12px;
-    font-size: 11px;
-    font-weight: 900;
-    text-transform: uppercase;
-    cursor: pointer;
-    margin-top: 10px;
-}
+/* Helper per icone e footer card */
+.card-icon-large { position: absolute; top: 20px; right: 20px; font-size: 2rem; opacity: 0.5; }
+.card-icon-small { position: absolute; bottom: 20px; right: 20px; font-size: 1.2rem; opacity: 0.4; }
+.card-title { margin: 0; font-weight: 900; font-size: 1.8rem; color: white; }
+.card-title-sm { margin: 0; font-size: 1.4rem; font-weight: 900; color: white; }
+.card-desc { opacity: 0.6; font-size: 13px; color: white; margin-top: 4px; }
