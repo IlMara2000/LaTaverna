@@ -24,8 +24,7 @@ function renderSidebarContent(container, context) {
 
     // Mostriamo il pulsante musica nei Minigiochi e nei GDR (dnd5e)
     if (context === "minigames" || context === "dnd5e") {
-        const backText = context === "minigames" ? "⬅ TORNA AI MINIGIOCHI" : "⬅ TORNA ALLA LIBRERIA";
-        actionBtnText = backText;
+        actionBtnText = context === "minigames" ? "⬅ TORNA AI MINIGIOCHI" : "⬅ TORNA ALLA LIBRERIA";
 
         buttonsHtml = `
             <button class="btn-primary" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
@@ -78,7 +77,7 @@ function setupEventListeners(container, context, isMainHub) {
         sidebar.style.right = isOpen ? '-100%' : '0px';
     };
 
-    // Listener per il toggle
+    // Listener per il toggle (richiamato dal tasto menu esterno)
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
@@ -92,20 +91,21 @@ function setupEventListeners(container, context, isMainHub) {
             return;
         }
 
+        // Se il build fallisce qui, prova a verificare se il file è src/features/minigames/MinigamesList.js
         try {
             if (context === "minigames") {
-                // Percorso aggiornato per risolvere l'errore Vite
-                const { showMinigames } = await import('../../features/minigames/MinigamesList.js'); 
-                showMinigames(mainContent);
+                const module = await import('../../features/minigames/MinigamesList.js');
+                if (module.showMinigames) module.showMinigames(mainContent);
             } else {
-                const { showLobby } = await import('../../lobby.js');
-                showLobby(mainContent);
+                const module = await import('../../lobby.js');
+                if (module.showLobby) module.showLobby(mainContent);
             }
-        } catch (error) {
-            console.error("Errore di navigazione nella Sidebar:", error);
-            // Fallback estremo: ricarica la lobby se l'import dinamico fallisce
-            const { showLobby } = await import('../../lobby.js');
-            showLobby(mainContent);
+        } catch (err) {
+            console.error("Errore critico sidebar (verificare percorsi):", err);
+            // Fallback: se l'import dinamico fallisce, ricarichiamo la lobby principale per non bloccare l'utente
+            import('../../lobby.js').then(m => m.showLobby(mainContent)).catch(() => {
+                window.location.reload(); 
+            });
         }
     };
 
@@ -128,8 +128,8 @@ function setupEventListeners(container, context, isMainHub) {
             try {
                 const { showProfile } = await import('../features/user/Profile.js');
                 showProfile(mainContent, currentSidebarUser);
-            } catch (error) {
-                console.error("Errore caricamento profilo:", error);
+            } catch (err) {
+                console.error("Impossibile caricare il profilo:", err);
             }
         };
     }
