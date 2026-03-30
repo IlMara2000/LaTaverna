@@ -1,5 +1,4 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { showLobby } from '../../lobby.js';
 
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 
@@ -21,8 +20,8 @@ export function initSoloGame(container) {
         turn: 0, direction: 1, currentColor: '', currentVal: '',
         gameActive: false, isAnimating: false, hasSaidSolo: false,
         pendingPenalty: false,
-        stack: 0, // Accumulo per +2 e +4
-        canChain: false // Se il giocatore può buttare un'altra carta uguale
+        stack: 0,
+        canChain: false 
     };
 
     renderLayout(container);
@@ -32,61 +31,74 @@ export function initSoloGame(container) {
 function renderLayout(container) {
     container.innerHTML = `
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&display=swap');
-        .game-bg { width:100%; height:100dvh; background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); position:relative; overflow:hidden; color:white; font-family: 'Poppins', sans-serif; }
+        .mobile-emulator { width: 100%; height: 100dvh; background: #05010a; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .game-bg { 
+            width: 100%; max-width: 430px; height: 100%; max-height: 932px;
+            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
+            position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif; 
+        }
         .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: 0; width: 100%; z-index: 10; }
-        .bot-status { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 15px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); transition: 0.3s ease; min-width: 85px; }
-        .bot-status.active { border-color: #00d2ff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.3); transform: scale(1.05); background: rgba(0, 210, 255, 0.1); }
-        .card-count { font-weight: 900; color: #00d2ff; font-size: 1.3rem; }
-        .table-center { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
-        .pile-container { display: flex; justify-content: center; gap: 40px; align-items: center; }
-        .card-solo { width: 80px; height: 115px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.6rem; border: 3px solid rgba(255,255,255,0.9); position: relative; box-shadow: 0 8px 15px rgba(0,0,0,0.4); user-select: none; }
+        .bot-status { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); min-width: 70px; font-size: 10px; }
+        .bot-status.active { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.3); background: rgba(0, 210, 255, 0.1); }
+        .card-count { font-weight: 900; color: #00d2ff; font-size: 1.1rem; }
+        
+        .table-center { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
+        .pile-container { display: flex; justify-content: center; gap: 20px; align-items: center; }
+        
+        .card-solo { width: 70px; height: 100px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.4rem; border: 3px solid rgba(255,255,255,0.9); position: relative; box-shadow: 0 8px 15px rgba(0,0,0,0.4); user-select: none; }
         .card-back { background: linear-gradient(135deg, #1a1a1a 0%, #434343 100%); border-color: #555; }
         .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.4s ease-out; }
-        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; }
-        .hand-scroll { display: flex; gap: 8px; padding: 20px; overflow-x: auto; scrollbar-width: none; min-height: 150px; align-items: flex-end; }
-        .card-solo.playable { transition: transform 0.2s ease; cursor: pointer; }
-        .card-solo.playable:hover { transform: translateY(-15px); z-index: 10; }
-        .btn-solo { background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; padding: 12px 35px; border-radius: 50px; font-weight: 900; margin-bottom: 10px; display: none; cursor:pointer; }
+        
+        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: 10px; }
+        .hand-scroll { display: flex; gap: 6px; padding: 15px; overflow-x: auto; scrollbar-width: none; min-height: 120px; width: 100%; box-sizing: border-box; }
+        .card-solo.playable { flex-shrink: 0; transition: transform 0.2s ease; cursor: pointer; }
+        
+        .btn-solo { background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 900; margin-bottom: 5px; display: none; }
         .btn-solo.pulse { display: block; animation: miniPulse 0.6s infinite alternate; }
-        #btn-pass { background: rgba(255,255,255,0.1); border: 1px solid white; color: white; padding: 8px 20px; border-radius: 20px; cursor: pointer; display: none; margin-bottom: 10px; }
-        #stack-indicator { color: #ff416c; font-weight: 900; font-size: 1.2rem; height: 20px; margin-bottom: 10px; text-shadow: 0 0 10px rgba(255,65,108,0.5); }
-        @keyframes miniPulse { from { transform: scale(1); } to { transform: scale(1.08); } }
-        #picker-wild { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 15px; padding: 30px; align-content: center; }
-        .color-tile { height: 120px; border-radius: 20px; cursor: pointer; }
-        #start-overlay { position:fixed; inset:0; background:#090a0f; z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        
+        #picker-wild { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 15px; padding: 30px; align-content: center; }
+        .color-tile { height: 100px; border-radius: 15px; cursor: pointer; }
+        #start-overlay { position:absolute; inset:0; background:#090a0f; z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
     </style>
 
-    <div class="game-bg">
-        <div id="start-overlay">
-            <h1 style="font-size: 4.5rem; font-weight: 900; background: linear-gradient(to right, #00d2ff, #9d4ede); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SOLO</h1>
-            <button id="btn-start" style="margin-top:30px; background:white; border:none; padding:15px 50px; border-radius:50px; color:#090a0f; font-weight:900; cursor:pointer;">GIOCA</button>
-        </div>
-        <div class="opponents-container">
-            <div id="bot-stat-1" class="bot-status"><span>BOT 1</span><div class="card-count" id="cnt-1">7</div></div>
-            <div id="bot-stat-2" class="bot-status"><span>BOT 2</span><div class="card-count" id="cnt-2">7</div></div>
-            <div id="bot-stat-3" class="bot-status"><span>BOT 3</span><div class="card-count" id="cnt-3">7</div></div>
-        </div>
-        <div class="table-center">
-            <div id="stack-indicator"></div>
-            <div id="direction-info" style="font-size:2rem; margin-bottom:15px;">↻</div>
-            <div class="pile-container">
-                <div id="deck-draw" class="card-solo card-back"></div>
-                <div id="discard-pile" class="card-solo" style="background:white; color:black;"></div>
+    <div class="mobile-emulator">
+        <div class="game-bg">
+            <div id="start-overlay">
+                <h1 style="font-size: 3.5rem; font-weight: 900; background: linear-gradient(to right, #00d2ff, #9d4ede); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SOLO</h1>
+                <button id="btn-start" style="margin-top:20px; background:white; border:none; padding:12px 40px; border-radius:50px; color:#090a0f; font-weight:900;">GIOCA</button>
             </div>
-            <div id="color-line" style="width: 100px; height: 4px; margin: 25px auto; border-radius: 10px;"></div>
-        </div>
-        <div class="player-ui">
-            <button id="btn-pass">PASSA TURNO</button>
-            <button id="solo-alert" class="btn-solo">SOLO!</button>
-            <div class="hand-container"><div id="player-hand" class="hand-scroll"></div></div>
-        </div>
-        <div id="picker-wild">
-            ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)};"></div>`).join('')}
+
+            <div class="opponents-container">
+                <div id="bot-stat-1" class="bot-status"><span>BOT 1</span><div class="card-count" id="cnt-1">7</div></div>
+                <div id="bot-stat-2" class="bot-status"><span>BOT 2</span><div class="card-count" id="cnt-2">7</div></div>
+                <div id="bot-stat-3" class="bot-status"><span>BOT 3</span><div class="card-count" id="cnt-3">7</div></div>
+            </div>
+
+            <div class="table-center">
+                <div id="stack-indicator" style="color:#ff416c; font-weight:900; height:20px; margin-bottom:5px;"></div>
+                <div id="direction-info" style="font-size:1.5rem; margin-bottom:10px;">↻</div>
+                <div class="pile-container">
+                    <div id="deck-draw" class="card-solo card-back"></div>
+                    <div id="discard-pile" class="card-solo" style="background:white; color:black;"></div>
+                </div>
+                <div id="color-line" style="width: 60px; height: 4px; margin: 15px auto; border-radius: 10px;"></div>
+            </div>
+
+            <div class="player-ui">
+                <button id="btn-pass" style="background:rgba(255,255,255,0.1); border:1px solid white; color:white; padding:6px 15px; border-radius:20px; display:none; margin-bottom:5px;">PASSA</button>
+                <button id="solo-alert" class="btn-solo">SOLO!</button>
+                <div id="player-hand" class="hand-scroll"></div>
+            </div>
+
+            <div id="picker-wild">
+                ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)};"></div>`).join('')}
+            </div>
         </div>
     </div>
     `;
 }
+
+// --- LOGICA RIMASTA INVARIATA ---
 
 async function animateCard(fromEl, toEl, cardData, isBack = false) {
     return new Promise(resolve => {
@@ -104,48 +116,51 @@ async function animateCard(fromEl, toEl, cardData, isBack = false) {
         flyer.style.top = `${fromRect.top}px`;
         flyer.style.left = `${fromRect.left}px`;
         document.body.appendChild(flyer);
-        flyer.getBoundingClientRect();
-        flyer.style.top = `${toRect.top}px`;
-        flyer.style.left = `${toRect.left}px`;
-        flyer.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+        
+        requestAnimationFrame(() => {
+            flyer.style.top = `${toRect.top}px`;
+            flyer.style.left = `${toRect.left}px`;
+            flyer.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+        });
+
         setTimeout(() => { flyer.remove(); resolve(); }, 400);
     });
 }
 
 function attachInitialListeners(container, state) {
-    document.getElementById('btn-start').onclick = () => {
-        document.getElementById('start-overlay').style.display = 'none';
-        startGame(state);
+    container.querySelector('#btn-start').onclick = () => {
+        container.querySelector('#start-overlay').style.display = 'none';
+        startGame(state, container);
     };
 
-    document.getElementById('deck-draw').onclick = () => {
+    container.querySelector('#deck-draw').onclick = () => {
         if (state.turn === 0 && !state.isAnimating && !state.canChain) {
-            if (state.stack > 0) resolveStack(0, state);
-            else drawCard(0, state, true);
+            if (state.stack > 0) resolveStack(0, state, container);
+            else drawCard(0, state, container, true);
         }
     };
 
-    document.getElementById('btn-pass').onclick = () => {
+    container.querySelector('#btn-pass').onclick = () => {
         state.canChain = false;
-        endTurn(state);
+        endTurn(state, container);
     };
 
-    document.getElementById('solo-alert').onclick = () => {
+    container.querySelector('#solo-alert').onclick = () => {
         state.hasSaidSolo = true;
-        document.getElementById('solo-alert').classList.remove('pulse');
+        container.querySelector('#solo-alert').classList.remove('pulse');
     };
 
-    document.querySelectorAll('.color-tile').forEach(tile => {
+    container.querySelectorAll('.color-tile').forEach(tile => {
         tile.onclick = () => {
             state.currentColor = tile.dataset.color;
-            document.getElementById('picker-wild').style.display = 'none';
-            if (!state.canChain) endTurn(state);
-            else updateUI(state);
+            container.querySelector('#picker-wild').style.display = 'none';
+            if (!state.canChain) endTurn(state, container);
+            else updateUI(state, container);
         };
     });
 }
 
-function startGame(state) {
+function startGame(state, container) {
     state.deck = [];
     COLORS.forEach(c => {
         state.deck.push({color: c, val: '0'});
@@ -173,20 +188,20 @@ function startGame(state) {
     state.currentVal = first.val;
     state.discardPile.push(first);
     state.gameActive = true;
-    updateUI(state);
+    updateUI(state, container);
 }
 
-async function resolveStack(pIdx, state) {
+async function resolveStack(pIdx, state, container) {
     if (state.isAnimating) return;
     const count = state.stack;
     state.stack = 0;
     for(let i=0; i<count; i++) {
-        await drawCard(pIdx, state);
+        await drawCard(pIdx, state, container);
     }
-    endTurn(state);
+    endTurn(state, container);
 }
 
-async function drawCard(pIdx, state, manual = false) {
+async function drawCard(pIdx, state, container, manual = false) {
     if (state.isAnimating) return;
     state.isAnimating = true;
 
@@ -197,36 +212,33 @@ async function drawCard(pIdx, state, manual = false) {
     }
     
     const card = state.deck.pop();
-    const targetEl = pIdx === 0 ? document.getElementById('player-hand') : document.getElementById(`bot-stat-${pIdx}`);
-    await animateCard(document.getElementById('deck-draw'), targetEl, card, pIdx !== 0);
+    const targetEl = pIdx === 0 ? container.querySelector('#player-hand') : container.querySelector(`#bot-stat-${pIdx}`);
+    await animateCard(container.querySelector('#deck-draw'), targetEl, card, pIdx !== 0);
     
     state.players[pIdx].push(card);
     state.isAnimating = false;
     
     if (pIdx === 0 && manual) {
         const canPlay = card.color === 'wild' || card.color === state.currentColor || card.val === state.currentVal;
-        if (!canPlay) setTimeout(() => endTurn(state), 300);
+        if (!canPlay) setTimeout(() => endTurn(state, container), 300);
     }
-    updateUI(state);
+    updateUI(state, container);
 }
 
-async function playCard(pIdx, cardIdx, state) {
+async function playCard(pIdx, cardIdx, state, container) {
     if (state.isAnimating) return;
     const card = state.players[pIdx][cardIdx];
 
-    // Regola accumulo: se c'è uno stack, puoi solo rispondere con la stessa carta (+2 o +4)
     if (state.stack > 0) {
         if (card.val !== state.currentVal) return;
     } else {
-        // Se non è il tuo turno o la carta non è valida (e non sei in chain)
         if (!state.canChain && card.color !== 'wild' && card.color !== state.currentColor && card.val !== state.currentVal) return;
-        // Se sei in chain, deve essere lo stesso valore
         if (state.canChain && card.val !== state.currentVal) return;
     }
 
     state.isAnimating = true;
-    const cardEl = pIdx === 0 ? document.querySelector(`[data-idx="${cardIdx}"]`) : document.getElementById(`bot-stat-${pIdx}`);
-    await animateCard(cardEl, document.getElementById('discard-pile'), card);
+    const cardEl = pIdx === 0 ? container.querySelector(`[data-idx="${cardIdx}"]`) : container.querySelector(`#bot-stat-${pIdx}`);
+    await animateCard(cardEl, container.querySelector('#discard-pile'), card);
 
     if (pIdx === 0 && state.players[0].length === 2 && !state.hasSaidSolo) {
         state.pendingPenalty = true;
@@ -237,7 +249,6 @@ async function playCard(pIdx, cardIdx, state) {
     state.currentVal = card.val;
     if (card.color !== 'wild') state.currentColor = card.color;
 
-    // Gestione Effetti
     if (card.val === 'REV') state.direction *= -1;
     if (card.val === '+2') state.stack += 2;
     if (card.val === '+4') state.stack += 4;
@@ -245,7 +256,7 @@ async function playCard(pIdx, cardIdx, state) {
     const canChainMore = state.players[pIdx].some(c => c.val === card.val);
 
     if (card.color === 'wild' && pIdx === 0) {
-        document.getElementById('picker-wild').style.display = 'grid';
+        container.querySelector('#picker-wild').style.display = 'grid';
     } else if (card.color === 'wild' && pIdx !== 0) {
         const counts = {};
         state.players[pIdx].forEach(c => { if(c.color !== 'wild') counts[c.color] = (counts[c.color] || 0) + 1; });
@@ -254,110 +265,94 @@ async function playCard(pIdx, cardIdx, state) {
 
     state.isAnimating = false;
 
-    if (canChainMore && card.val !== 'SKIP' && card.val !== 'REV' && card.val !== '+2' && card.val !== '+4') {
+    if (canChainMore && !['SKIP', 'REV', '+2', '+4'].includes(card.val)) {
         if (pIdx === 0) {
             state.canChain = true;
-            updateUI(state);
+            updateUI(state, container);
         } else {
-            // Bot concatena subito
             const nextIdx = state.players[pIdx].findIndex(c => c.val === card.val);
-            setTimeout(() => playCard(pIdx, nextIdx, state), 400);
+            setTimeout(() => playCard(pIdx, nextIdx, state, container), 400);
         }
     } else {
         state.canChain = false;
-        if (card.val === 'SKIP' && state.stack === 0) nextTurn(state);
-        endTurn(state);
+        if (card.val === 'SKIP' && state.stack === 0) state.turn = (state.turn + state.direction + 4) % 4;
+        endTurn(state, container);
     }
 }
 
-function nextTurn(state) {
-    state.turn = (state.turn + state.direction + 4) % 4;
-}
-
-function endTurn(state) {
+function endTurn(state, container) {
     if (state.isAnimating) return;
     if (state.pendingPenalty) {
         alert("SOLO dimenticato! +2 carte 🤡");
-        drawCard(0, state); drawCard(0, state);
+        drawCard(0, state, container); drawCard(0, state, container);
         state.pendingPenalty = false;
     }
     state.hasSaidSolo = false;
-    updateUI(state);
-    if (checkWin(state)) return;
+    updateUI(state, container);
     
-    if (!state.canChain) {
-        nextTurn(state);
-        updateUI(state);
-        if (state.turn !== 0) setTimeout(() => botLogic(state), 600);
-    }
-}
-
-function botLogic(state) {
-    if (state.turn === 0 || state.isAnimating) return;
-    const hand = state.players[state.turn];
-    
-    // Se c'è uno stack (+2/+4), il bot cerca di rispondere o pesca
-    if (state.stack > 0) {
-        const counterIdx = hand.findIndex(c => c.val === state.currentVal);
-        if (counterIdx !== -1) playCard(state.turn, counterIdx, state);
-        else resolveStack(state.turn, state);
-        return;
-    }
-
-    const playableIdx = hand.findIndex(c => c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal);
-    if (playableIdx !== -1) playCard(state.turn, playableIdx, state);
-    else drawCard(state.turn, state);
-}
-
-function checkWin(state) {
+    // Check Win
     for(let i=0; i<4; i++) {
         if (state.players[i].length === 0) {
             alert(i === 0 ? "CAMPIONE! 👑" : `BOT ${i} VINCE! 🦾`);
             location.reload();
-            return true;
+            return;
         }
     }
-    return false;
+    
+    if (!state.canChain) {
+        state.turn = (state.turn + state.direction + 4) % 4;
+        updateUI(state, container);
+        if (state.turn !== 0) setTimeout(() => botLogic(state, container), 600);
+    }
 }
 
-function updateUI(state) {
+function botLogic(state, container) {
+    if (state.turn === 0 || state.isAnimating) return;
+    const hand = state.players[state.turn];
+    
+    if (state.stack > 0) {
+        const counterIdx = hand.findIndex(c => c.val === state.currentVal);
+        if (counterIdx !== -1) playCard(state.turn, counterIdx, state, container);
+        else resolveStack(state.turn, state, container);
+        return;
+    }
+
+    const playableIdx = hand.findIndex(c => c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal);
+    if (playableIdx !== -1) playCard(state.turn, playableIdx, state, container);
+    else drawCard(state.turn, state, container);
+}
+
+function updateUI(state, container) {
     const top = state.discardPile[state.discardPile.length-1];
-    const dp = document.getElementById('discard-pile');
+    const dp = container.querySelector('#discard-pile');
     dp.style.backgroundColor = getHex(top.color === 'wild' ? 'wild' : top.color);
     dp.style.color = (top.color === 'yellow' || top.color === 'wild') ? 'black' : 'white';
     dp.innerText = getCardContent(top.val);
     
-    const colorLine = document.getElementById('color-line');
-    colorLine.style.backgroundColor = getHex(state.currentColor);
-    
-    document.getElementById('stack-indicator').innerText = state.stack > 0 ? `+${state.stack} DA PESCARE!` : "";
-    document.getElementById('btn-pass').style.display = state.canChain ? "block" : "none";
-    document.getElementById('direction-info').innerText = state.direction === 1 ? "↻" : "↺";
+    container.querySelector('#color-line').style.backgroundColor = getHex(state.currentColor);
+    container.querySelector('#stack-indicator').innerText = state.stack > 0 ? `+${state.stack} DA PESCARE!` : "";
+    container.querySelector('#btn-pass').style.display = state.canChain ? "block" : "none";
+    container.querySelector('#direction-info').innerText = state.direction === 1 ? "↻" : "↺";
 
-    const pArea = document.getElementById('player-hand');
+    const pArea = container.querySelector('#player-hand');
     pArea.innerHTML = state.players[0].map((c, i) => {
         let isPlayable = false;
         if (state.stack > 0) isPlayable = c.val === state.currentVal;
         else if (state.canChain) isPlayable = c.val === state.currentVal;
         else isPlayable = c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal;
 
-        return `
-        <div class="card-solo playable" 
-             style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'}; opacity:${isPlayable ? 1 : 0.4};" 
-             data-idx="${i}">
-            ${getCardContent(c.val)}
-        </div>
-    `}).join('');
+        return `<div class="card-solo playable" style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'}; opacity:${isPlayable ? 1 : 0.4};" data-idx="${i}">${getCardContent(c.val)}</div>`;
+    }).join('');
     
     pArea.querySelectorAll('.card-solo').forEach(el => {
-        el.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(0, parseInt(el.dataset.idx), state); };
+        el.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(0, parseInt(el.dataset.idx), state, container); };
     });
 
-    document.getElementById('solo-alert').classList.toggle('pulse', state.players[0].length === 2 && state.turn === 0);
+    container.querySelector('#solo-alert').classList.toggle('pulse', state.players[0].length === 2 && state.turn === 0);
 
     for(let i=1; i<=3; i++) {
-        const el = document.getElementById(`bot-stat-${i}`);
+        const el = container.querySelector(`#bot-stat-${i}`);
         el.classList.toggle('active', state.turn === i);
-        document.getElementById(`cnt-${i}`).innerText = state.players[i].length;
+        container.querySelector(`#cnt-${i}`).innerText = state.players[i].length;
     }
 }
