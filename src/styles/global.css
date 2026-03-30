@@ -20,10 +20,10 @@
 }
 
 html, body {
-    min-height: 100vh;
+    /* 100dvh è fondamentale per i browser mobile */
     min-height: 100dvh; 
     width: 100%;
-    /* Sfondo principale fisso: questo è quello che vedrai "dietro" tutto */
+    /* Sfondo fisso che non si sposta con lo scroll */
     background: radial-gradient(circle at top right, var(--deep-purple) 0%, var(--void-black) 100%) no-repeat fixed;
     background-color: var(--void-black);
     color: var(--pure-white);
@@ -32,17 +32,19 @@ html, body {
     
     overflow-x: hidden;
     overflow-y: auto;
+    /* Impedisce il rimbalzo elastico che mostra il bianco/nero sotto */
     overscroll-behavior-y: none; 
 }
 
+/* CONTAINER UI: Deve contenere tutto e gestire il Notch */
 #ui {
     width: 100%;
-    min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    /* CHIRURGICO: Sposta tutto sotto la Dynamic Island/Notch */
     padding-top: env(safe-area-inset-top);
-    /* Assicuriamoci che il container UI non abbia sfondi coprenti */
+    padding-bottom: env(safe-area-inset-bottom);
     background: transparent;
 }
 
@@ -54,18 +56,15 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    height: 100dvh;
+    flex: 1; /* Occupa lo spazio disponibile tra le safe areas */
     gap: 30px;
-    background: transparent; /* Trasparente per vedere il body */
+    background: transparent;
 }
 
 #main-logo {
     width: 150px;
     height: auto;
     filter: drop-shadow(0 0 25px var(--amethyst-glow));
-    cursor: pointer;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 /* =========================================
@@ -76,75 +75,58 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 20px;
     background: transparent;
 }
 
 .dashboard-container {
     width: 100%;
     max-width: 600px;
-    padding: 0 20px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 15px;
-    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    /* Aumentato il margine in basso per non coprire i tasti con la barra iPhone */
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
     background: transparent;
 }
 
 /* =========================================
-   4. UI COMPONENTS (Effetto Vetro per profondità)
+   4. UI COMPONENTS (Effetto Vetro)
    ========================================= */
-.session-card {
-    /* Sfondo semi-trasparente per far vedere il viola dietro */
+.session-card, .game-card, .portal-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-radius: 20px;
     padding: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
     transition: all 0.3s ease;
 }
 
-/* BUTTONS */
-.btn-primary {
-    background: linear-gradient(135deg, var(--amethyst-bright), var(--amethyst));
+/* PULSANTE BACK (Quello che finiva sotto l'orologio) */
+.btn-back-glass {
+    margin-top: 10px; /* Spazio extra dal notch */
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     color: white;
-    border: none;
-    padding: 18px 32px;
-    border-radius: 16px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 11px;
     font-weight: 800;
-    cursor: pointer;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: 0.3s;
-    box-shadow: 0 8px 20px var(--amethyst-glow);
-}
-
-.floating-btn {
-    position: fixed;
-    bottom: calc(20px + env(safe-area-inset-bottom));
-    right: 25px;
-    z-index: 1000;
+    align-self: flex-start;
 }
 
 /* =========================================
    5. UTILS & SCROLLBAR
    ========================================= */
-::-webkit-scrollbar {
-    display: none;
-}
+::-webkit-scrollbar { display: none; }
+body { -ms-overflow-style: none; scrollbar-width: none; }
 
-body {
-    -ms-overflow-style: none;  
-    scrollbar-width: none;  
-}
-
-/* Fix per i minigiochi: rimuovi classi che sovrascrivono lo sfondo */
-.impostore-bg {
-    background: transparent !important; /* Forza la trasparenza per vedere il body */
+/* FIX FINALE: Rimuove ogni sfondo nero dai container dei minigiochi */
+#lobby-wrapper, .impostore-bg {
+    background: transparent !important;
+    min-height: auto !important;
+    padding: 0 !important;
 }
