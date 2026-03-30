@@ -20,23 +20,31 @@
 }
 
 html, body {
-    /* Cambiato da fixed/hidden a min-height/auto per permettere lo scroll */
+    /* Utilizzo di min-h-screen con supporto fallback */
+    min-height: 100vh;
     min-height: 100dvh; 
     width: 100%;
+    /* Il background-color deve matchare perfettamente il gradiente per evitare stacchi visivi in basso */
     background: radial-gradient(circle at top right, var(--deep-purple) 0%, var(--void-black) 100%) no-repeat fixed;
     background-color: var(--void-black);
     color: var(--pure-white);
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden; /* Evita scivolamenti laterali */
-    overflow-y: auto;   /* Permette lo scroll verticale */
+    
+    /* Gestione scroll per evitare il "rimbalzo" bianco su iOS */
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: none; 
 }
 
 #ui {
     width: 100%;
+    min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
+    /* Risolve il problema del Notch in alto */
+    padding-top: env(safe-area-inset-top);
 }
 
 /* =========================================
@@ -47,6 +55,7 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    height: 100vh;
     height: 100dvh;
     gap: 30px;
 }
@@ -60,15 +69,15 @@ html, body {
 }
 
 /* =========================================
-   3. DASHBOARD STRUCTURE (Fixata per lo scroll)
+   3. DASHBOARD STRUCTURE (Ottimizzata Safe Areas)
    ========================================= */
 .dashboard-content {
     width: 100%;
-    /* Rimosso height fixed, ora scorre con la pagina */
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-top: 40px;
+    /* Rimosso padding-top fisso, gestito da #ui tramite safe-area */
+    padding-top: 20px;
 }
 
 .dashboard-container {
@@ -78,8 +87,8 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    /* Aumentato padding sotto per non far finire i tasti sotto la barra iPhone */
-    padding-bottom: 120px; 
+    /* Padding dinamico per la barra inferiore dell'iPhone */
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
 }
 
 /* =========================================
@@ -117,7 +126,8 @@ html, body {
 
 .floating-btn {
     position: fixed;
-    bottom: 30px; /* Alato un po' per sicurezza */
+    /* Posizionamento chirurgico sopra la barra di sistema */
+    bottom: calc(20px + env(safe-area-inset-bottom));
     right: 25px;
     z-index: 1000;
 }
@@ -129,21 +139,12 @@ html, body {
     display: none;
 }
 
-/* Evita che l'over-scroll mostri il bianco su iPhone */
 body {
     -ms-overflow-style: none;  
     scrollbar-width: none;  
-    overscroll-behavior: none;
 }
 
 @keyframes pulse {
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.7; }
-}
-
-/* Mobile Safari safe-area bottom padding */
-@supports (padding: env(safe-area-inset-bottom)) {
-    .dashboard-container {
-        padding-bottom: calc(120px + env(safe-area-inset-bottom));
-    }
 }
