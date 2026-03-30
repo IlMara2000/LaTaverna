@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 4.0)
+   LA TAVERNA - AMETHYST DARK UI (VER. 4.1 - RE-ALIGN)
    ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&family=Montserrat:wght@700;900&display=swap');
@@ -8,14 +8,13 @@
     --bg-dark: radial-gradient(circle at top, #1a0b2e 0%, #05010a 100%);
     --amethyst-glow: rgba(157, 78, 221, 0.4);
     --amethyst-bright: #9d4ede;
-    --amethyst-deep: #3c096c;
     --glass-border: rgba(255, 255, 255, 0.08);
     --text-primary: #ffffff;
     --text-secondary: #b79ced;
     --danger: #ff4444;
 }
 
-/* Reset & Safe Areas */
+/* Reset & Fix Layout */
 html, body {
     height: 100%;
     margin: 0;
@@ -25,70 +24,87 @@ html, body {
     color: var(--text-primary);
     font-family: 'Poppins', sans-serif;
     overflow-x: hidden;
-    -webkit-tap-highlight-color: transparent;
 }
 
 #app {
     min-height: 100dvh;
+    padding: 20px;
     padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: 120px; /* Spazio per il trigger */
 }
 
 /* =========================================
-   LOGO FAVICON (PIÙ DISCRETO)
+   GRIGLIA E CARD (FIX CENTRAMENTO)
    ========================================= */
-.nav-logo-right {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    width: 48px; /* Ridotto leggermente per eleganza */
-    height: 48px;
-    z-index: 999;
-    filter: drop-shadow(0 0 10px var(--amethyst-glow));
-    animation: floatLogo 3.5s ease-in-out infinite;
-    cursor: pointer;
+.dashboard-container {
+    max-width: 600px;
+    margin: 0 auto;
 }
 
-/* =========================================
-   SIDEBAR (OTTIMIZZATA MOBILE)
-   ========================================= */
-.sidebar-glass {
-    position: fixed;
-    right: -110%;
-    top: 0;
-    width: 85%; /* Larghezza dinamica su mobile */
-    max-width: 320px;
-    height: 100dvh;
-    background: rgba(10, 5, 20, 0.96);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    z-index: 10001;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 60px 25px;
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Forza 2 colonne come nel tuo screen buono */
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.game-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 25px 15px;
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--glass-border);
+    align-items: center; /* Centra orizzontalmente emoji e testo */
+    justify-content: center; /* Centra verticalmente */
+    gap: 12px;
+    transition: all 0.3s ease;
+    text-align: center;
 }
 
-.sidebar-glass.active { right: 0; }
+.game-card h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-family: 'Montserrat', sans-serif;
+    text-transform: uppercase;
+}
 
-.btn-back-glass {
-    padding: 16px; /* Più compatto */
-    font-size: 0.9rem;
-    border-radius: 16px;
-    margin-bottom: 12px;
+.game-card .emoji {
+    font-size: 2rem; /* Emoji belle grandi e centrate */
 }
 
 /* =========================================
-   TRIGGER FLOTTANTE (DIMENSIONI SMART)
+   TITOLI
+   ========================================= */
+.main-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 2.2rem; /* Dimensione corretta per non rompere il layout */
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+
+/* =========================================
+   TRIGGER (DIMENSIONI REALI)
    ========================================= */
 .floating-trigger {
     position: fixed;
-    bottom: 30px; /* Più vicino al bordo */
+    bottom: 30px;
     right: 25px;
-    width: 64px; /* Ridotto da 72px: più bilanciato su iPhone */
-    height: 64px;
-    border-radius: 20px; /* Leggermente meno tondo */
+    width: 65px;
+    height: 65px;
+    border-radius: 20px;
     background: var(--amethyst-bright);
     z-index: 10002;
     display: flex;
@@ -96,44 +112,45 @@ html, body {
     justify-content: center;
     align-items: center;
     gap: 5px;
-    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
+    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.5);
 }
 
 .nav-bar {
-    width: 26px; /* Barre più corte per il cerchio più piccolo */
+    width: 26px;
     height: 3px;
+    background: white;
+    border-radius: 4px;
 }
 
 /* =========================================
-   CARDS & GRIGLIA (COMPATTEZZA)
+   SIDEBAR (PULIZIA)
    ========================================= */
-.dashboard-container {
-    padding: 20px 20px 120px 20px;
-}
-
-.main-title {
-    font-size: 2.6rem; /* Ridotto per evitare l'andata a capo brutta */
-    margin-bottom: 25px;
-}
-
-.game-card {
-    border-radius: 24px;
-    padding: 20px; /* Meno padding interno per mostrare più contenuto */
-    min-height: 140px; /* Altezza minima per le card orizzontali */
+.sidebar-glass {
+    position: fixed;
+    right: -110%;
+    top: 0;
+    width: 280px;
+    height: 100dvh;
+    background: rgba(10, 5, 25, 0.98);
+    backdrop-filter: blur(20px);
+    z-index: 10001;
+    transition: 0.5s ease;
+    padding: 40px 20px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: 10px;
 }
 
-/* Griglia per i Mini Giochi (Scopa, etc) */
-.grid-layout {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Due colonne fisse su mobile */
-    gap: 15px;
-}
+.sidebar-glass.active { right: 0; }
 
-@media (max-width: 380px) {
-    .main-title { font-size: 2.2rem; }
-    .floating-trigger { width: 58px; height: 58px; }
+.btn-back-glass {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 15px;
+    border-radius: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    cursor: pointer;
 }
