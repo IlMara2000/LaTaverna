@@ -3,7 +3,6 @@ let currentLogoutFn = null;
 let isMusicOn = localStorage.getItem('taverna_music') !== 'off'; // Default ON
 
 export function initSidebar(container, user, onLogout, context = "home") {
-    // Gestione ibrida utente Discord / Ospite
     const guestData = localStorage.getItem('taverna_guest_user');
     currentSidebarUser = user || (guestData ? JSON.parse(guestData) : null);
     
@@ -15,28 +14,26 @@ function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
-    let buttonsHtml = "";
     let actionBtnText = "⬅ TORNA ALLA LIBRERIA";
     let isMainHub = context === "home";
 
-    // Configurazione pulsanti in base al contesto
-    if (context === "minigames" || context === "dnd5e") {
-        actionBtnText = context === "minigames" ? "⬅ TORNA AI MINIGIOCHI" : "⬅ TORNA ALLA LIBRERIA";
-        buttonsHtml = `
-            <button class="btn-primary" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
-            <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
-        `;
-    } else {
-        // Home / Default
-        buttonsHtml = `
-            <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
-            <button class="btn-primary" id="sideSettings">IMPOSTAZIONI</button>
-        `;
-    }
-
     if (isMainHub) {
         actionBtnText = isGuest ? 'TORNA AL LOGIN' : 'ESCI DALLA TAVERNA';
+    } else if (context === "minigames") {
+        actionBtnText = "⬅ TORNA AI MINIGIOCHI";
     }
+
+    // Abbiamo unificato i pulsanti musicali per quasi tutti i contesti
+    const musicButtonsHtml = `
+        <button class="btn-primary" id="sideMusicBtn">
+            ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
+        </button>
+        <button class="btn-primary" id="sideUploadBtn">
+            🎵 CARICA MUSICA
+        </button>
+        <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
+        <div id="sideCurrentTrack" style="font-size: 9px; opacity: 0.5; margin-top: -10px; text-align: center; display: none; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+    `;
 
     container.innerHTML = `
         <nav id="sidebar-menu" style="
@@ -52,7 +49,8 @@ function renderSidebarContent(container, context) {
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 300px;">
-                ${buttonsHtml}
+                ${musicButtonsHtml}
+                <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
                 <hr style="width: 100%; opacity: 0.1; margin: 10px 0;">
                 <button class="btn-primary" id="sideActionBtn" style="${isMainHub ? 'border: 1px solid #ff4444; color: #ff4444; background:none;' : ''}">
                     ${actionBtnText}
@@ -77,17 +75,15 @@ function setupEventListeners(container, context, isMainHub) {
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
+    // --- GESTIONE NAVIGAZIONE ---
     document.getElementById('sideActionBtn').onclick = async () => {
         toggle();
-        
         if (isMainHub) {
             currentLogoutFn();
             return;
         }
-
         try {
             if (context === "minigames") {
-                // PUNTA AL NUOVO FILE IN SRC (uscendo da components/layout/)
                 const { showMinigamesLobby } = await import('../../minigamelist.js');
                 showMinigamesLobby(mainContent);
             } else {
@@ -95,13 +91,12 @@ function setupEventListeners(container, context, isMainHub) {
                 showLobby(mainContent);
             }
         } catch (err) {
-            console.error("Errore navigazione sidebar:", err);
-            // Fallback sicuro alla lobby
             const { showLobby } = await import('../../lobby.js');
             showLobby(mainContent);
         }
     };
 
+    // --- GESTIONE MUSICA (Tasto Toggle) ---
     const musicBtn = document.getElementById('sideMusicBtn');
     if (musicBtn) {
         musicBtn.onclick = () => {
@@ -112,6 +107,32 @@ function setupEventListeners(container, context, isMainHub) {
         };
     }
 
+    // --- GESTIONE CARICAMENTO (Tasto Upload) ---
+    const uploadBtn = document.getElementById('sideUploadBtn');
+    const fileInput = document.getElementById('sideFileInput');
+    const trackLabel = document.getElementById('sideCurrentTrack');
+
+    if (uploadBtn && fileInput) {
+        uploadBtn.onclick = () => fileInput.click();
+
+        fileInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                
+                // Aggiorna interfaccia locale
+                trackLabel.style.display = 'block';
+                trackLabel.innerText = `In riproduzione: ${file.name}`;
+                
+                // Invia l'evento al tuo AudioManager.js
+                window.dispatchEvent(new CustomEvent('musicUploaded', { 
+                    detail: { url, name: file.name } 
+                }));
+            }
+        };
+    }
+
+    // --- GESTIONE PROFILO ---
     const profileBtn = document.getElementById('sideProfile');
     if (profileBtn) {
         profileBtn.onclick = async () => {
