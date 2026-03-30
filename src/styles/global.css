@@ -1,14 +1,83 @@
 /* =========================================
-   FIX AMETISTA DARK UI - DEFINITIVO
+   FIX AMETISTA DARK UI - INTEGRALE
    ========================================= */
 
-/* 1. Gestione Safe Area (Notch) */
+/* Gestione Root e Safe Areas */
+#ui {
+    padding-top: env(safe-area-inset-top) !important;
+}
+
 .dashboard-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
     padding-top: calc(15px + env(safe-area-inset-top)) !important;
     padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
 }
 
-/* 2. Pulsante Indietro (Look Ametista Glass) */
+/* Stile Card Base (Per tutte le card della lobby) */
+.game-card {
+    background: rgba(255, 255, 255, 0.03) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(157, 78, 221, 0.2) !important;
+    border-radius: 28px !important;
+    padding: 25px !important;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Titoli e Testi */
+.lobby-header h1, .main-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    letter-spacing: -1px;
+    font-size: 2.2rem;
+    color: white;
+    margin: 0;
+}
+
+.text-amethyst { color: #c77dff; }
+
+.status-indicator, .subtitle {
+    color: #b79ced;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 10px;
+    font-weight: 800;
+    margin-top: 5px;
+}
+
+/* Icone Card */
+.card-icon-large {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 2.5rem;
+    opacity: 0.4;
+}
+
+.card-icon-small {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    font-size: 1.5rem;
+    opacity: 0.3;
+}
+
+/* Griglia per Mondi & Utility */
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+/* Pulsante Indietro (Per minigamelist.js) */
 .btn-back-glass {
     background: rgba(255, 255, 255, 0.05) !important;
     backdrop-filter: blur(12px) !important;
@@ -17,53 +86,7 @@
     padding: 10px 16px !important;
     border-radius: 12px !important;
     font-size: 10px !important;
-    font-weight: 800 !important;
-    letter-spacing: 1px !important;
-    margin-bottom: 20px !important;
+    font-weight: 800;
+    margin-bottom: 20px;
     display: inline-block;
-    text-transform: uppercase;
-}
-
-/* 3. Titolo Crystal */
-.lobby-header h1 {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 900;
-    letter-spacing: -1px;
-    font-size: 2.2rem;
-    margin-bottom: 30px;
-}
-
-/* 4. Minigame Card (Effetto Profondità come negli screen a destra) */
-.minigame-item {
-    background: rgba(255, 255, 255, 0.03) !important;
-    backdrop-filter: blur(15px) !important;
-    border: 1px solid rgba(157, 78, 221, 0.2) !important;
-    border-radius: 28px !important;
-    height: 160px !important; /* Più basse e compatte come l'esempio */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 25px !important;
-    transition: 0.3s ease;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-}
-
-.minigame-item:active {
-    transform: scale(0.96);
-    border-color: #7b2cbf !important;
-    box-shadow: 0 0 20px rgba(123, 44, 191, 0.4) !important;
-}
-
-.game-card-icon {
-    position: absolute;
-    top: 20px;
-    right: 25px;
-    font-size: 1.8rem;
-    opacity: 0.5;
-}
-
-.game-card-title {
-    font-weight: 900 !important;
-    font-size: 1.6rem !important;
-    letter-spacing: -0.5px !important;
 }
