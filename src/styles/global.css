@@ -1,14 +1,17 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 2.0)
+   LA TAVERNA - AMETHYST DARK UI (VER. 2.5)
    ========================================= */
 
 :root {
     --bg-dark: radial-gradient(circle at center, #1a0b2e 0%, #05010a 100%);
-    --amethyst-glow: rgba(123, 44, 191, 0.3);
+    --amethyst-glow: rgba(157, 78, 221, 0.4);
+    --amethyst-bright: #9d4ede;
+    --amethyst-deep: #3c096c;
     --glass-border: rgba(157, 78, 221, 0.2);
     --text-primary: #ffffff;
     --text-secondary: #b79ced;
     --accent: linear-gradient(135deg, #7b2cbf, #3c096c);
+    --danger: #ff4444;
 }
 
 /* Reset & Safe Areas iOS */
@@ -20,15 +23,15 @@ html, body {
     background: var(--bg-dark) no-repeat fixed;
     color: var(--text-primary);
     font-family: 'Poppins', sans-serif;
-    /* Rimosso overscroll-behavior-y: none per evitare blocchi su Safari */
     overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #app {
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
-    overflow-y: auto; /* SBLOCCO SCROLL */
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
 
@@ -36,56 +39,166 @@ html, body {
     max-width: 500px;
     margin: 0 auto;
     padding: 20px;
-    padding-bottom: 140px; /* Spazio extra per la toolbar di Safari */
+    padding-bottom: 140px; /* Spazio per il pulsante flottante */
 }
 
-/* Card in stile Cristallo Ametista */
+/* =========================================
+   SIDEBAR (A COMPARSA)
+   ========================================= */
+
+.sidebar-glass {
+    position: fixed;
+    right: -100%; /* Nascosta di default a destra */
+    top: 0;
+    width: 280px;
+    height: 100dvh;
+    background: rgba(10, 5, 20, 0.95);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    z-index: 9999;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--glass-border);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+}
+
+.sidebar-glass.active {
+    right: 0; /* Entra in campo */
+}
+
+.sidebar-header {
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 20px;
+}
+
+.sidebar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid var(--glass-border);
+    margin: 20px 0;
+    opacity: 0.5;
+}
+
+/* =========================================
+   PULSANTE FLOTTANTE (NAVBAR TRIGGER)
+   ========================================= */
+
+.floating-trigger {
+    position: fixed;
+    bottom: 35px;
+    right: 25px;
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    background: var(--amethyst-bright);
+    border: none;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 4px 25px var(--amethyst-glow);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.nav-bar {
+    width: 26px;
+    height: 3px;
+    background: white;
+    border-radius: 2px;
+    transition: 0.3s;
+}
+
+/* =========================================
+   CARDS & BOTTONI
+   ========================================= */
+
 .game-card {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: 24px;
-    padding: 20px;
+    padding: 22px;
     margin-bottom: 16px;
     position: relative;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    overflow: hidden;
 }
 
-.game-card:active {
-    transform: scale(0.97);
-    box-shadow: 0 0 20px var(--amethyst-glow);
+.btn-back-glass {
+    background: rgba(157, 78, 221, 0.15);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 14px 20px;
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.2s;
+    width: 100%;
 }
 
-/* Titoli e Testi */
-h1, .main-title {
+.btn-back-glass:active {
+    background: var(--amethyst-bright);
+    transform: scale(0.95);
+}
+
+.btn-danger {
+    background: rgba(255, 68, 68, 0.2) !important;
+    border-color: rgba(255, 68, 68, 0.4) !important;
+    color: #ff8888 !important;
+}
+
+/* =========================================
+   TIPOGRAFIA
+   ========================================= */
+
+.main-title {
     font-weight: 900;
-    letter-spacing: -1.5px;
-    font-size: 2.5rem;
+    font-size: 2.6rem;
     background: linear-gradient(to bottom, #ffffff, #b79ced);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 5px;
+    margin: 0;
 }
 
-.text-amethyst {
-    color: #c77dff;
-    -webkit-text-fill-color: initial; /* Per evitare conflitti col gradiente del titolo */
-}
+.text-amethyst { color: #c77dff; -webkit-text-fill-color: initial; }
 
 .subtitle {
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 3px;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 800;
     opacity: 0.8;
 }
 
-/* Helper per icone e footer card */
-.card-icon-large { position: absolute; top: 20px; right: 20px; font-size: 2rem; opacity: 0.5; }
+/* Animazioni */
+.fade-in {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility per icone card */
+.card-icon-large { position: absolute; top: 20px; right: 20px; font-size: 2.5rem; opacity: 0.3; }
 .card-icon-small { position: absolute; bottom: 20px; right: 20px; font-size: 1.2rem; opacity: 0.4; }
-.card-title { margin: 0; font-weight: 900; font-size: 1.8rem; color: white; }
-.card-title-sm { margin: 0; font-size: 1.4rem; font-weight: 900; color: white; }
-.card-desc { opacity: 0.6; font-size: 13px; color: white; margin-top: 4px; }
+.card-title { font-weight: 900; font-size: 1.8rem; margin: 0; color: white; }
+.card-desc { opacity: 0.6; font-size: 13px; margin-top: 5px; line-height: 1.4; }
