@@ -1,6 +1,6 @@
 import { showLobby } from '../../lobby.js';
 // Importiamo la funzione per mostrare la lista dei minigiochi
-import { showMinigamesList } from '../../components/minigames/MinigamesList.js';
+import { showMinigamesList } from '../../components/minigames/minigameslist.js';
 
 let currentSidebarUser = null;
 let currentLogoutFn = null;
