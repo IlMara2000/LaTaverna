@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: NUMERI (Local Party Mode)
-// Versione 100% Build-Safe per Vercel
+// Versione Mobile-First per PC/Smartphone
 // ==========================================
 
 let gameData = {
@@ -14,20 +14,22 @@ let gameData = {
 
 export function initNumeri(container) {
     updateSidebarContext("minigames");
-    // Reset round ogni volta che si torna al setup
+    
+    // Blocca lo scroll del body
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
     gameData.round = 1; 
     renderSetup(container);
 }
 
-// --- UTILS UI ---
 function createPlayerInputHTML(value = "", index) {
     return `
-        <div class="player-input-wrapper" style="display: flex; gap: 10px; width: 100%; align-items: center; margin-bottom: 10px;">
+        <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
-                   style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-family: inherit;">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: 1px solid rgba(255, 65, 108, 0.3); color: #ff416c; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 18px;">✕</span>
-            </button>
+                   style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px;">
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold;">✕</button>
         </div>
     `;
 }
@@ -38,41 +40,41 @@ function renderSetup(container) {
 
     container.innerHTML = `
         <style>
-            .num-bg { width: 100%; min-height: 100dvh; background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); color: white; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
-            .setup-card { width: 100%; max-width: 400px; background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); padding: 30px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.05); text-align: center; }
-            .btn-main { background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; transition: 0.3s; width: 100%; text-transform: uppercase; letter-spacing: 1px; }
-            .btn-secondary { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; margin-bottom: 20px; font-size: 12px; align-self: flex-start; }
-            .number-display { font-size: 3rem; font-weight: 900; color: #9d4ede; text-shadow: 0 0 20px rgba(157,78,221,0.5); margin: 20px 0; }
+            .mobile-emulator { width: 100%; height: 100dvh; background: #05010a; display: flex; justify-content: center; align-items: center; }
+            .num-wrapper { 
+                width: 100%; max-width: 430px; height: 100%; max-height: 932px; 
+                background: radial-gradient(circle at top, #1b2735 0%, #090a0f 100%); 
+                color: white; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; padding: 20px; overflow-y: auto;
+            }
+            .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 60px; }
+            .btn-main { background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; }
+            .number-display { font-size: 2.5rem; font-weight: 900; color: #9d4ede; text-shadow: 0 0 15px rgba(157,78,221,0.5); margin: 10px 0; word-break: break-all; }
             
-            /* Drag & Drop Styles */
-            .sortable-list { width:100%; max-width:400px; list-style:none; padding:0; margin:20px 0; text-align: left; }
+            .sortable-list { width:100%; list-style:none; padding:0; margin:20px 0; }
             .sortable-item { 
                 background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-                margin-bottom: 10px; padding: 15px; border-radius: 12px; cursor: grab;
-                display: flex; justify-content: space-between; align-items: center; transition: 0.2s; font-weight: 700;
+                margin-bottom: 8px; padding: 12px 15px; border-radius: 12px; cursor: grab;
+                display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px;
             }
-            .sortable-item:active { cursor: grabbing; background: rgba(157, 78, 221, 0.2); }
-            .sortable-item.dragging { opacity: 0.5; border: 1px dashed #9d4ede; }
+            .sortable-item.dragging { opacity: 0.5; border: 1px dashed #9d4ede; background: rgba(157, 78, 221, 0.2); }
+            .main-title { font-family: 'Montserrat'; font-weight: 900; background: linear-gradient(to right, #9d4ede, #c77dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 2.5rem; margin-top: 10px; }
         </style>
 
-        <div class="num-bg">
-            <h1 style="font-size: 3rem; font-weight: 900; background: linear-gradient(to right, #9d4ede, #c77dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">NUMERI</h1>
-            <p style="opacity: 0.5; margin-bottom: 30px;">Memorizza e Ordina</p>
+        <div class="mobile-emulator">
+            <div class="num-wrapper">
+                <h1 class="main-title">NUMERI</h1>
+                <p style="opacity: 0.5; text-align: center; font-size: 12px; margin-bottom: 25px;">MEMORIZZA E ORDINA</p>
 
-            <div class="setup-card">
-                <div id="player-inputs-container">
-                    ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
+                <div class="setup-card">
+                    <div id="player-inputs-container">
+                        ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
+                    </div>
+                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px;">+ AGGIUNGI GIOCATORE</button>
+                    <button id="start-game" class="btn-main">Inizia Partita</button>
                 </div>
-                <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 12px; border-radius: 12px; cursor: pointer; width: 100%; margin: 15px 0;">+ AGGIUNGI GIOCATORE</button>
-                <button id="start-game" class="btn-main">Inizia Partita</button>
             </div>
         </div>
     `;
-
-    // USCITA DALLA PARTITA (SENZA IMPORT)
-    container.querySelector('#btn-back-lobby').onclick = () => {
-        window.location.hash = "lobby";
-    };
 
     container.querySelector('#add-player').onclick = () => {
         const cont = container.querySelector('#player-inputs-container');
@@ -89,8 +91,8 @@ function renderSetup(container) {
         startNewRound(container);
     };
 
-    container.addEventListener('click', (e) => {
-        if (e.target.closest('.delete-player')) {
+    container.querySelector('#player-inputs-container').onclick = (e) => {
+        if (e.target.classList.contains('delete-player')) {
             const wrappers = container.querySelectorAll('.player-input-wrapper');
             if (wrappers.length > 2) {
                 e.target.closest('.player-input-wrapper').remove();
@@ -98,62 +100,55 @@ function renderSetup(container) {
                 e.target.closest('.player-input-wrapper').querySelector('input').value = "";
             }
         }
-    });
+    };
 }
 
-// --- 2. LOGICA PARTITA E GENERAZIONE NUMERI ---
 function startNewRound(container) {
     const totalNumbersNeeded = gameData.players.length * gameData.round;
-    
-    // Se sforiamo i 100 numeri disponibili, capiamo il round per evitare loop infiniti o crash
     if (totalNumbersNeeded > 100) {
-        alert("Avete raggiunto il limite massimo di 100 numeri totali! La partita finirà qui.");
-        return renderSetup(container); // Torna alla lobby/setup
+        alert("Limite raggiunto!");
+        return renderSetup(container);
     }
 
     const pool = Array.from({length: 100}, (_, i) => i + 1);
     const selected = [];
-    
     for(let i = 0; i < totalNumbersNeeded; i++) {
         const idx = Math.floor(Math.random() * pool.length);
         selected.push(pool.splice(idx, 1)[0]);
     }
 
-    // Assegna i numeri e ordina internamente l'array del singolo giocatore per facilitare la lettura
-    gameData.playerNumbers = gameData.players.map((name, i) => {
-        return {
-            name: name,
-            numbers: selected.slice(i * gameData.round, (i + 1) * gameData.round).sort((a,b) => a - b)
-        };
-    });
+    gameData.playerNumbers = gameData.players.map((name, i) => ({
+        name: name,
+        numbers: selected.slice(i * gameData.round, (i + 1) * gameData.round).sort((a,b) => a - b)
+    }));
 
     gameData.currentIndex = 0;
     renderReveal(container);
 }
 
-// --- 3. FASE REVEAL (PASSA IL TELEFONO) ---
 function renderReveal(container) {
     const playerData = gameData.playerNumbers[gameData.currentIndex];
+    const wrapper = container.querySelector('.num-wrapper');
 
-    container.innerHTML = `
-        <div class="num-bg" style="justify-content: center; text-align: center;">
-            <div style="background: rgba(157, 78, 221, 0.2); border: 1px solid #9d4ede; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-bottom: 20px; font-weight: 800; color: #c77dff;">ROUND ${gameData.round}</div>
-            <p style="text-transform: uppercase; letter-spacing: 3px; opacity: 0.5;">Passa il telefono a</p>
-            <h1 style="font-size: 3.5rem; font-weight: 900; color: #c77dff; margin-bottom: 40px;">${playerData.name}</h1>
+    wrapper.innerHTML = `
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+            <div style="background: rgba(157, 78, 221, 0.2); border: 1px solid #9d4ede; padding: 4px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 20px; font-weight: 800; color: #c77dff;">ROUND ${gameData.round}</div>
+            <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
+            <h1 style="font-size: 2.8rem; font-weight: 900; color: #c77dff; margin-bottom: 30px; font-family:'Montserrat';">${playerData.name}</h1>
             
-            <div id="number-box" style="width: 100%; max-width: 320px; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 60px 20px; cursor: pointer; margin: 0 auto; transition: 0.3s;">
-                <p id="number-text" style="font-weight: 800; opacity: 0.6;">TOCCA PER SCOPRIRE</p>
+            <div id="number-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s;">
+                <p id="number-text" style="font-weight: 800; opacity: 0.6; font-size: 14px;">TOCCA PER SCOPRIRE</p>
             </div>
             
-            <button id="next-player" class="btn-main" style="display: none; margin-top: 40px; max-width: 280px; margin-left: auto; margin-right: auto;">HO MEMORIZZATO</button>
+            <button id="next-player" class="btn-main" style="display: none; margin-top: 30px; background: #9d4ede;">HO MEMORIZZATO</button>
         </div>
     `;
 
     const box = container.querySelector('#number-box');
     box.onclick = () => {
         box.style.borderColor = "#9d4ede";
-        // Uniamo i numeri con un pallino per la visualizzazione
-        container.querySelector('#number-text').innerHTML = `<div class="number-display" style="margin:0;">${playerData.numbers.join(' • ')}</div>`;
+        box.style.background = "rgba(0,0,0,0.3)";
+        container.querySelector('#number-text').innerHTML = `<div class="number-display">${playerData.numbers.join(' • ')}</div>`;
         container.querySelector('#next-player').style.display = "block";
         box.onclick = null;
     };
@@ -168,12 +163,12 @@ function renderReveal(container) {
     };
 }
 
-// --- 4. FASE ORDINAMENTO (DRAG & DROP) ---
 function renderOrdering(container) {
-    container.innerHTML = `
-        <div class="num-bg">
-            <h1 style="font-size: 2.2rem; font-weight: 900; text-align: center; margin-bottom: 10px;">ORDINA I GIOCATORI</h1>
-            <p style="opacity: 0.5; font-size: 13px; text-align: center; max-width: 300px;">Trascina i nomi dal numero più piccolo (sopra) al più grande (sotto).</p>
+    const wrapper = container.querySelector('.num-wrapper');
+    wrapper.innerHTML = `
+        <div style="display:flex; flex-direction:column; height:100%;">
+            <h1 style="font-size: 1.8rem; font-weight: 900; text-align: center; margin-top: 10px;">ORDINA I NOMI</h1>
+            <p style="opacity: 0.5; font-size: 11px; text-align: center; margin-bottom: 10px;">Dal numero più piccolo (sopra) al più grande (sotto).</p>
             
             <ul class="sortable-list" id="sortable-container">
                 ${gameData.players.map(name => `
@@ -184,7 +179,7 @@ function renderOrdering(container) {
                 `).join('')}
             </ul>
             
-            <button id="check-result" class="btn-main" style="max-width:400px; margin-top: 20px;">CONFERMA ORDINE</button>
+            <button id="check-result" class="btn-main" style="margin-top: auto; margin-bottom: 20px;">CONFERMA ORDINE</button>
         </div>
     `;
 
@@ -201,19 +196,25 @@ function initSortable(container) {
         e.target.classList.add('dragging');
     });
 
-    list.addEventListener('dragend', (e) => {
-        e.target.classList.remove('dragging');
-    });
+    list.addEventListener('dragend', (e) => e.target.classList.remove('dragging'));
 
     list.addEventListener('dragover', (e) => {
         e.preventDefault();
         const afterElement = getDragAfterElement(list, e.clientY);
-        if (afterElement == null) {
-            list.appendChild(draggingItem);
-        } else {
-            list.insertBefore(draggingItem, afterElement);
-        }
+        if (afterElement == null) list.appendChild(draggingItem);
+        else list.insertBefore(draggingItem, afterElement);
     });
+
+    // Supporto Touch per Mobile
+    list.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const afterElement = getDragAfterElement(list, touch.clientY);
+        if (draggingItem) {
+            if (afterElement == null) list.appendChild(draggingItem);
+            else list.insertBefore(draggingItem, afterElement);
+        }
+    }, { passive: false });
 }
 
 function getDragAfterElement(containerList, y) {
@@ -221,17 +222,12 @@ function getDragAfterElement(containerList, y) {
     return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
+        if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+        else return closest;
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-// --- 5. FASE RISULTATO ---
 function renderResult(container) {
-    // Calcolo Media crescente per la Vittoria
     const items = [...container.querySelectorAll('.sortable-item')];
     const userOrder = items.map(item => item.dataset.name);
     
@@ -244,26 +240,27 @@ function renderResult(container) {
     const correctNames = playerAverages.map(p => p.name);
     const isCorrect = JSON.stringify(userOrder) === JSON.stringify(correctNames);
 
-    container.innerHTML = `
-        <div class="num-bg" style="justify-content: center; text-align: center;">
-            <h1 style="font-size: 4rem; margin: 0;">${isCorrect ? '🏆' : '💀'}</h1>
-            <h2 style="font-size: 2.5rem; font-weight: 900; color: ${isCorrect ? '#00ffa3' : '#ff416c'}; margin-bottom: 20px;">
-                ${isCorrect ? 'VITTORIA!' : 'AVETE SBAGLIATO!'}
+    const wrapper = container.querySelector('.num-wrapper');
+    wrapper.innerHTML = `
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+            <h1 style="font-size: 3.5rem; margin: 0;">${isCorrect ? '🏆' : '💀'}</h1>
+            <h2 style="font-size: 2rem; font-weight: 900; color: ${isCorrect ? '#00ffa3' : '#ff416c'}; margin-bottom: 20px;">
+                ${isCorrect ? 'VITTORIA!' : 'SBAGLIATO!'}
             </h2>
             
-            <div class="setup-card" style="margin-bottom: 30px; text-align: left; background: rgba(0,0,0,0.4);">
-                <p style="font-size: 12px; opacity: 0.5; margin-bottom: 15px; text-transform: uppercase;">Ordine esatto (in base alla media):</p>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 20px; width:100%; border: 1px solid rgba(255,255,255,0.08); margin-bottom:20px; text-align: left;">
+                <p style="font-size: 10px; opacity: 0.5; margin-bottom: 10px; text-transform: uppercase;">Soluzione:</p>
                 ${playerAverages.map(p => `
-                    <div style="margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
-                        <strong style="color: #c77dff;">${p.name}</strong> 
+                    <div style="margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
+                        <span style="color: #c77dff; font-weight: 800;">${p.name}</span> 
                         <span>${p.nums.join(', ')}</span>
                     </div>
                 `).join('')}
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 300px;">
-                <button id="next-round" class="btn-main" style="background: linear-gradient(45deg, #00ffa3, #00d2ff);">INIZIA ROUND ${gameData.round + 1}</button>
-                <button id="change-players" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 16px; border-radius: 14px; cursor: pointer; font-weight: 800;">Cambia Nomi / Riavvia</button>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <button id="next-round" class="btn-main" style="background: linear-gradient(45deg, #00ffa3, #00d2ff);">PROSSIMO ROUND</button>
+                <button id="change-players" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 12px;">RIAVVIA</button>
             </div>
         </div>
     `;
@@ -272,8 +269,5 @@ function renderResult(container) {
         gameData.round++;
         startNewRound(container);
     };
-    
-    container.querySelector('#change-players').onclick = () => {
-        initNumeri(container); // Riparte da round 1
-    };
+    container.querySelector('#change-players').onclick = () => initNumeri(container);
 }
