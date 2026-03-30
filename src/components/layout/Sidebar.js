@@ -1,4 +1,6 @@
 import { showLobby } from '../../lobby.js';
+// Importiamo la funzione per mostrare la lista dei minigiochi
+import { showMinigamesList } from '../../components/minigames/MinigamesList.js';
 
 let currentSidebarUser = null;
 let currentLogoutFn = null;
@@ -16,7 +18,7 @@ function renderSidebarContent(container, context) {
     const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
     // Testo dinamico per il bottone principale
-    let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI') : "⬅ LIBRERIA";
+    let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI') : "⬅ TORNA AI GIOCHI";
 
     container.innerHTML = `
         <nav id="sidebar-menu" class="sidebar-glass">
@@ -57,7 +59,6 @@ function setupEventListeners(container, context) {
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
     };
 
-    // Rimuoviamo vecchi listener per evitare duplicati al cambio contesto
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
@@ -67,7 +68,11 @@ function setupEventListeners(container, context) {
         toggle(); 
         if (context === "home") {
             if (currentLogoutFn) currentLogoutFn();
+        } else if (context === "minigames") {
+            // Se siamo in un gioco, torniamo alla lista giochi
+            showMinigamesList(mainContent);
         } else {
+            // Fallback per altri contesti (es. profilo o impostazioni)
             showLobby(mainContent);
         }
     };
