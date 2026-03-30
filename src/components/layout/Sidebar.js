@@ -15,7 +15,7 @@ function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
-    let actionBtnText = context === "home" ? (isGuest ? 'TORNA AL LOGIN' : 'ESCI') : "⬅ LIBRERIA";
+    let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI') : "⬅ LIBRERIA";
 
     container.innerHTML = `
         <nav id="sidebar-menu" class="sidebar-glass">
@@ -25,7 +25,7 @@ function renderSidebarContent(container, context) {
             </div>
             <div class="sidebar-actions">
                 <button class="btn-back-glass" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
-                <button class="btn-back-glass" id="sideUploadBtn">🎵 CARICA</button>
+                <button class="btn-back-glass" id="sideUploadBtn">🎵 CARICA MUSICA</button>
                 <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
                 <hr class="sidebar-divider">
                 <button class="btn-back-glass" id="sideActionBtn">${actionBtnText}</button>
@@ -42,7 +42,6 @@ function setupEventListeners(container, context) {
     
     const toggle = () => {
         const isOpen = sidebar.classList.toggle('active');
-        // Notifica alla Navbar di cambiare il pulsante in X
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
     };
 
@@ -59,13 +58,25 @@ function setupEventListeners(container, context) {
         }
     };
 
-    // Logica musica rimasta invariata...
     container.querySelector('#sideMusicBtn').onclick = () => {
         isMusicOn = !isMusicOn;
         localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
         container.querySelector('#sideMusicBtn').innerText = isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF';
         window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
     };
+
+    const upBtn = container.querySelector('#sideUploadBtn');
+    const fInput = container.querySelector('#sideFileInput');
+    if (upBtn && fInput) {
+        upBtn.onclick = () => fInput.click();
+        fInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                window.dispatchEvent(new CustomEvent('musicUploaded', { detail: { url, name: file.name } }));
+            }
+        };
+    }
 }
 
 export function updateSidebarContext(newContext) {
