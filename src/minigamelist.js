@@ -1,13 +1,7 @@
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { showLobby } from './lobby.js';
 
-/**
- * LISTA MINIGIOCHI
- * Tema: Ametista Dark UI
- * File CSS: src/styles/global.css
- */
 export function showMinigamesLobby(container) {
-    // --- FIX SCROLL SAFARI ---
     document.documentElement.style.overflow = 'auto';
     document.body.style.overflow = 'auto';
     window.scrollTo(0, 0);
@@ -26,66 +20,42 @@ export function showMinigamesLobby(container) {
     ];
 
     container.innerHTML = `
-        <div id="lobby-wrapper" class="fade-in" style="-webkit-overflow-scrolling: touch;">
+        <div id="lobby-wrapper" class="fade-in">
             <div class="dashboard-container">
-                
-                <button id="btn-back-main" class="btn-back-glass">
-                    ← TORNA ALLA LIBRERIA
-                </button>
-
+                <button id="btn-back-main" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
                 <header class="lobby-header" style="margin-top: 20px;">
-                    <p class="subtitle">DIVERTIMENTO IN TAVERNA</p>
                     <h1 class="main-title">MINI <span class="text-amethyst">GIOCHI</span></h1>
                 </header>
-
                 <div class="grid-layout" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;">
                     ${games.map(game => `
-                        <div class="game-card minigame-item is-clickable" id="btn-${game.id}" 
-                             style="background: ${game.color}; min-height: 140px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.1);">
-                            <div style="font-size: 2.5rem; margin-bottom: 10px;">${game.icon}</div>
-                            <h2 style="margin: 0; font-size: 0.9rem; font-weight: 900; letter-spacing: 1px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">${game.name}</h2>
+                        <div class="game-card is-clickable" id="btn-${game.id}" 
+                             style="background: ${game.color}; min-height: 130px; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.1);">
+                            <div style="font-size: 2rem; margin-bottom: 8px;">${game.icon}</div>
+                            <h2 style="margin: 0; font-size: 0.85rem; font-weight: 900; color: white; letter-spacing: 1px;">${game.name}</h2>
                         </div>
                     `).join('')}
                 </div>
-                
             </div>
         </div>
     `;
 
-    // --- GESTIONE CLICK ---
-    
-    // Torna alla Lobby principale
-    const btnBack = container.querySelector('#btn-back-main');
-    if (btnBack) {
-        btnBack.onclick = () => showLobby(container);
-    }
+    container.querySelector('#btn-back-main').onclick = () => showLobby(container);
 
-    // Listener dinamici per i giochi
     games.forEach(game => {
         const btn = container.querySelector(`#btn-${game.id}`);
         if (!btn) return;
-        
         btn.onclick = async () => {
             try {
-                // Mapping delle funzioni di init
                 const initFunctions = {
                     solo: 'initSoloGame', impostore: 'initImpostore', briscola: 'initBriscola',
                     scopa: 'initScopa', burraco: 'initBurraco', scacchi: 'initScacchi',
                     solitario: 'initSolitario', numeri: 'initNumeri'
                 };
-
-                // Caricamento dinamico dal percorso corretto
                 const module = await import(`./dashboards/minigames/${game.id}.js`);
-                const fnName = initFunctions[game.id];
-
-                if (module && module[fnName]) {
-                    module[fnName](container);
-                } else {
-                    console.error(`Funzione ${fnName} non trovata nel modulo ${game.id}.js`);
-                }
+                if (module && module[initFunctions[game.id]]) module[initFunctions[game.id]](container);
             } catch (e) { 
-                console.warn(`Errore caricamento gioco ${game.id}:`, e);
-                alert("Questo gioco è ancora in fase di sviluppo magico...");
+                console.error("Errore:", e);
+                alert("Gioco non trovato o in caricamento...");
             }
         };
     });
