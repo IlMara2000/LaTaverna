@@ -23,12 +23,19 @@ function renderSidebarContent(container, context) {
                 <h2 class="text-amethyst">${userName.toUpperCase()}</h2>
                 <span class="subtitle">${context.toUpperCase()}</span>
             </div>
+            
             <div class="sidebar-actions">
-                <button class="btn-back-glass" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
+                <button class="btn-back-glass" id="sideMusicBtn">
+                    ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
+                </button>
                 <button class="btn-back-glass" id="sideUploadBtn">🎵 CARICA MUSICA</button>
                 <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
+                
                 <hr class="sidebar-divider">
-                <button class="btn-back-glass" id="sideActionBtn">${actionBtnText}</button>
+                
+                <button class="btn-back-glass ${context === 'home' ? 'btn-danger' : ''}" id="sideActionBtn">
+                    ${actionBtnText}
+                </button>
             </div>
         </nav>
     `;
@@ -40,24 +47,31 @@ function setupEventListeners(container, context) {
     const sidebar = container.querySelector('#sidebar-menu');
     const mainContent = document.getElementById('app'); 
     
+    // Funzione interna per gestire l'apertura/chiusura
     const toggle = () => {
         const isOpen = sidebar.classList.toggle('active');
+        // Notifichiamo alla Navbar di cambiare il bottone (Hamburger -> X)
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
     };
 
+    // Pulizia e assegnazione evento toggle
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    container.querySelector('#sideActionBtn').onclick = async () => {
-        toggle();
+    // Gestione Bottone Azione (Esci o Torna alla Lobby)
+    const actionBtn = container.querySelector('#sideActionBtn');
+    actionBtn.onclick = async () => {
+        toggle(); // Chiude la sidebar
         if (context === "home") {
-            currentLogoutFn();
+            if (currentLogoutFn) currentLogoutFn();
         } else {
+            // Torna alla lobby se sei in un minigioco
             showLobby(mainContent);
         }
     };
 
+    // Logica Musica
     container.querySelector('#sideMusicBtn').onclick = () => {
         isMusicOn = !isMusicOn;
         localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
