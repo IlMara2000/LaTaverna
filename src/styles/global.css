@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 3.0)
+   LA TAVERNA - AMETHYST DARK UI (VER. 3.1)
    ========================================= */
 
 :root {
@@ -35,12 +35,11 @@ html, body {
     -webkit-overflow-scrolling: touch;
 }
 
-/* Dashboard più spaziosa */
 .dashboard-container {
-    max-width: 650px; /* Aumentato per dare più respiro */
+    max-width: 650px;
     margin: 0 auto;
-    padding: 40px 25px; /* Più spazio ai lati e sopra */
-    padding-bottom: 160px; /* Più spazio per il tasto flottante */
+    padding: 40px 25px;
+    padding-bottom: 160px;
 }
 
 /* =========================================
@@ -49,14 +48,14 @@ html, body {
 
 .sidebar-glass {
     position: fixed;
-    right: -100%;
+    right: -110%; /* Più sicura per nasconderla bene */
     top: 0;
-    width: 300px; /* Leggermente più larga */
+    width: 300px;
     height: 100dvh;
     background: rgba(10, 5, 20, 0.98);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    z-index: 9999;
+    z-index: 10001; /* Sopra la navbar trigger */
     transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 50px 30px;
     display: flex;
@@ -69,17 +68,21 @@ html, body {
     box-shadow: -20px 0 60px rgba(0,0,0,0.8);
 }
 
+.sidebar-header h2 { margin: 0; font-weight: 900; font-size: 1.5rem; }
+.sidebar-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 30px; }
+.sidebar-divider { border: none; border-top: 1px solid var(--glass-border); margin: 25px 0; opacity: 0.3; }
+
 /* =========================================
    PULSANTE FLOTTANTE (NAVBAR TRIGGER)
    ========================================= */
 
 .floating-trigger {
     position: fixed;
-    bottom: 40px; /* Alzato leggermente */
+    bottom: 40px;
     right: 30px;
-    width: 70px; /* Più grande e d'impatto */
+    width: 70px;
     height: 70px;
-    border-radius: 22px; /* Stile "Squircle" più moderno del cerchio */
+    border-radius: 22px; 
     background: var(--amethyst-bright);
     border: none;
     cursor: pointer;
@@ -93,46 +96,41 @@ html, body {
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.floating-trigger:active {
-    transform: scale(0.9);
-}
-
-.nav-bar {
-    width: 28px;
-    height: 3px;
-    background: white;
-    border-radius: 4px;
-    transition: 0.3s;
-}
+.floating-trigger:active { transform: scale(0.9); }
 
 /* =========================================
-   CARDS PREMIUM
+   CARDS & GRIGLIA
    ========================================= */
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+}
 
 .game-card {
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border: 1px solid var(--glass-border);
-    border-radius: 30px; /* Più arrotondato = più app-style */
-    padding: 30px; /* Più spazio interno */
-    margin-bottom: 24px; /* Più spazio tra le card */
+    border-radius: 30px;
+    padding: 30px;
+    margin-bottom: 20px;
     position: relative;
     transition: all 0.3s ease;
     box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
 }
 
-/* Effetto al tocco */
+/* Fix per le card della griglia minigiochi */
+.minigame-item {
+    margin-bottom: 0 !important;
+}
+
 .game-card:active {
     transform: scale(0.96);
     background: rgba(255, 255, 255, 0.08);
-}
-
-/* Portale Minigiochi più grande */
-.portal-card {
-    background: linear-gradient(145deg, rgba(157, 78, 221, 0.2), rgba(60, 9, 108, 0.1));
-    border: 1px solid rgba(157, 78, 221, 0.3);
-    padding: 40px 30px;
 }
 
 /* =========================================
@@ -141,21 +139,21 @@ html, body {
 
 .main-title {
     font-weight: 900;
-    font-size: 3rem; /* Titolo più grande */
+    font-size: 3rem;
     letter-spacing: -2px;
     background: linear-gradient(to bottom, #ffffff 30%, #b79ced);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 10px;
+    margin: 0;
 }
 
 .subtitle {
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 4px; /* Più spaziatura tra lettere */
-    font-size: 12px;
+    letter-spacing: 4px;
+    font-size: 11px;
     font-weight: 800;
-    margin-bottom: 25px;
+    opacity: 0.7;
     display: block;
 }
 
@@ -166,29 +164,21 @@ html, body {
     padding: 18px 25px;
     border-radius: 20px;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     cursor: pointer;
     transition: 0.3s;
-    margin-top: 10px;
+    width: 100%;
+    text-align: center;
 }
 
-/* Utility icone */
-.card-icon-large { 
-    position: absolute; 
-    top: 50%; 
-    right: 30px; 
-    transform: translateY(-50%);
-    font-size: 3.5rem; 
-    opacity: 0.2; 
-}
+.btn-back-glass:active { background: rgba(255, 255, 255, 0.1); }
 
-/* Animazione fluida all'ingresso */
-.fade-in {
-    animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
+.text-amethyst { color: var(--amethyst-bright); -webkit-text-fill-color: initial; }
 
+/* Animazione */
+.fade-in { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
