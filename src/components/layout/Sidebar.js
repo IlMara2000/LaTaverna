@@ -1,4 +1,4 @@
-// Rimuoviamo gli import statici in alto per evitare errori di "Circular Dependency" o "Missing Export" nel build
+// Sidebar.js - Versione Unificata con Music Center
 let currentSidebarUser = null;
 let currentLogoutFn = null;
 let isMusicOn = localStorage.getItem('taverna_music') !== 'off';
@@ -14,7 +14,6 @@ function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
-    // Testo dinamico per il bottone principale
     let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI DALLA TAVERNA') : "⬅ TORNA AI GIOCHI";
 
     container.innerHTML = `
@@ -29,8 +28,8 @@ function renderSidebarContent(container, context) {
                     ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
                 </button>
                 
-                <button class="btn-back-glass" id="sideUploadBtn">
-                    🎵 CAMBIA BRANO
+                <button class="btn-back-glass" id="sideMusicCenterBtn">
+                    🎵 LIBRERIA MUSICALE
                 </button>
                 
                 <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
@@ -55,7 +54,6 @@ function setupEventListeners(container, context) {
     
     const toggle = () => {
         const isOpen = sidebar.classList.toggle('active');
-        // Se usi le classi CSS per l'animazione
         if (!sidebar.classList.contains('active')) {
             sidebar.style.right = '-100%';
         } else {
@@ -68,14 +66,13 @@ function setupEventListeners(container, context) {
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // --- LOGICA NAVIGAZIONE ---
+    // --- NAVIGAZIONE ---
     const actionBtn = container.querySelector('#sideActionBtn');
     actionBtn.onclick = async () => {
         toggle(); 
         if (context === "home") {
             if (currentLogoutFn) currentLogoutFn();
         } else if (context === "minigames" || context.includes('game-')) {
-            // Import dinamico per evitare errori di build se il file non è ancora pronto
             const { showMinigamesList } = await import('../../minigamelist.js');
             showMinigamesList(mainContent);
         } else {
@@ -84,39 +81,45 @@ function setupEventListeners(container, context) {
         }
     };
 
-    // --- LOGICA MUSICA ON/OFF ---
+    // --- TOGGLE AUDIO ON/OFF ---
     container.querySelector('#sideMusicBtn').onclick = function() {
         isMusicOn = !isMusicOn;
         localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
         this.innerHTML = isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF';
-        // AudioManager.js ascolta questo evento
         window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
     };
 
-    // --- LOGICA CAMBIO BRANO (Upload) ---
-    const upBtn = container.querySelector('#sideUploadBtn');
+    // --- APERTURA MUSIC CENTER (Invece del semplice file picker) ---
+    const musicCenterBtn = container.querySelector('#sideMusicCenterBtn');
+    musicCenterBtn.onclick = async () => {
+        toggle(); // Chiude la sidebar
+        try {
+            // Importiamo l'AudioManager e mostriamo la UI nel mainContent
+            const { AudioManager } = await import('../ui/AudioManager.js');
+            AudioManager.showMusicCenter(mainContent);
+        } catch (err) {
+            console.error("Errore nel caricamento del Music Center:", err);
+        }
+    };
+
+    // --- GESTIONE UPLOAD (Opzionale/Evento) ---
     const fInput = container.querySelector('#sideFileInput');
     const trackDisplay = container.querySelector('#currentTrackName');
 
-    if (upBtn && fInput) {
-        upBtn.onclick = () => fInput.click();
-        
-        fInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const url = URL.createObjectURL(file);
-                
-                // Feedback visivo del brano caricato
-                trackDisplay.innerText = `📄 ${file.name.substring(0, 20)}...`;
-                trackDisplay.style.display = 'block';
+    fInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            trackDisplay.innerText = `📄 ${file.name.substring(0, 20)}...`;
+            trackDisplay.style.display = 'block';
+            window.dispatchEvent(new CustomEvent('musicUploaded', { detail: { url, name: file.name } }));
+        }
+    };
 
-                // Invia l'evento ad AudioManager.js
-                window.dispatchEvent(new CustomEvent('musicUploaded', { 
-                    detail: { url, name: file.name } 
-                }));
-            }
-        };
-    }
+    // Ascolta se la musica cambia per aggiornare il nome brano in sidebar
+    window.addEventListener('musicStarted', () => {
+        // Se volessimo mostrare un "Now Playing" dinamico
+    });
 }
 
 export function updateSidebarContext(newContext) {
