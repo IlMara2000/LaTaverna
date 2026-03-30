@@ -15,23 +15,17 @@ function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
-    // Configurazione dinamica dei bottoni centrali
     let buttonsHtml = "";
-    
-    // Testo e azione dinamica del tasto di uscita/ritorno
     let actionBtnText = "⬅ TORNA ALLA LIBRERIA";
     let isMainHub = context === "home";
 
-    // Mostriamo il pulsante musica nei Minigiochi e nei GDR (dnd5e)
     if (context === "minigames" || context === "dnd5e") {
         actionBtnText = context === "minigames" ? "⬅ TORNA AI MINIGIOCHI" : "⬅ TORNA ALLA LIBRERIA";
-
         buttonsHtml = `
             <button class="btn-primary" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
             <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
         `;
     } else {
-        // Home / Default
         buttonsHtml = `
             <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
             <button class="btn-primary" id="sideSettings">IMPOSTAZIONI</button>
@@ -77,12 +71,10 @@ function setupEventListeners(container, context, isMainHub) {
         sidebar.style.right = isOpen ? '-100%' : '0px';
     };
 
-    // Listener per il toggle (richiamato dal tasto menu esterno)
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // Gestione tasto Azione (Esci o Torna)
     document.getElementById('sideActionBtn').onclick = async () => {
         toggle();
         
@@ -91,25 +83,27 @@ function setupEventListeners(container, context, isMainHub) {
             return;
         }
 
-        // Se il build fallisce qui, prova a verificare se il file è src/features/minigames/MinigamesList.js
+        // TENTATIVO DI FIX PER IL BUILD: Usiamo percorsi assoluti rispetto alla root del progetto se possibile
+        // o verifichiamo la posizione dei file.
         try {
             if (context === "minigames") {
+                // Se Vite fallisce qui, prova a rinominare il file in minigamesList.js (tutto minuscolo)
                 const module = await import('../../features/minigames/MinigamesList.js');
-                if (module.showMinigames) module.showMinigames(mainContent);
+                if (module.showMinigames) {
+                    module.showMinigames(mainContent);
+                }
             } else {
-                const module = await import('../../lobby.js');
-                if (module.showLobby) module.showLobby(mainContent);
+                const lobbyModule = await import('../../lobby.js');
+                lobbyModule.showLobby(mainContent);
             }
         } catch (err) {
-            console.error("Errore critico sidebar (verificare percorsi):", err);
-            // Fallback: se l'import dinamico fallisce, ricarichiamo la lobby principale per non bloccare l'utente
-            import('../../lobby.js').then(m => m.showLobby(mainContent)).catch(() => {
-                window.location.reload(); 
-            });
+            console.error("Errore import sidebar:", err);
+            // Fallback: se fallisce l'import del modulo minigiochi, forza il ritorno alla lobby
+            const lobbyModule = await import('../../lobby.js');
+            lobbyModule.showLobby(mainContent);
         }
     };
 
-    // Gestione tasto Musica (ON/OFF)
     const musicBtn = document.getElementById('sideMusicBtn');
     if (musicBtn) {
         musicBtn.onclick = () => {
@@ -120,7 +114,6 @@ function setupEventListeners(container, context, isMainHub) {
         };
     }
 
-    // Gestione Profilo
     const profileBtn = document.getElementById('sideProfile');
     if (profileBtn) {
         profileBtn.onclick = async () => {
@@ -128,9 +121,7 @@ function setupEventListeners(container, context, isMainHub) {
             try {
                 const { showProfile } = await import('../features/user/Profile.js');
                 showProfile(mainContent, currentSidebarUser);
-            } catch (err) {
-                console.error("Impossibile caricare il profilo:", err);
-            }
+            } catch (err) { console.error(err); }
         };
     }
 }
