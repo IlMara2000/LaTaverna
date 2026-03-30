@@ -2,7 +2,6 @@ import './styles/global.css';
 import { supabase } from './services/supabase.js';
 import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';
-import { initSidebar } from './components/layout/Sidebar.js';
 import { showLobby } from './lobby.js';
 import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthInput.js';
 
@@ -19,8 +18,7 @@ async function initApp() {
     const loader = document.getElementById('app-loader');
     const hideLoader = () => { if(loader) loader.classList.add('fade-out'); };
 
-    // LOGICA DI REDIRECT AGGIORNATA
-    // Entra se: Utente Discord Verificato OPPURE se è un Ospite
+    // LOGICA DI REDIRECT
     const isVerifiedDiscord = user && localStorage.getItem('taverna_member_verified') === 'true';
     
     if ((isVerifiedDiscord && !shouldShowPortalButton()) || guestUser) {
@@ -29,35 +27,32 @@ async function initApp() {
         return;
     }
 
-    // Altrimenti mostra la Coppa (Portal)
+    // Altrimenti mostra il Portale d'ingresso
     renderPortal(user);
     hideLoader();
 }
 
 function renderPortal(user) {
-    uiContainer.innerHTML = `
-        <div class="entry-container" id="entry-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; cursor: pointer;">
-            <img src="/assets/logo.png" alt="La Taverna" id="main-logo" style="width: 120px; filter: drop-shadow(0 0 15px #9d4ede);">
-            <p class="tap-instruction" style="margin-top: 20px; opacity: 0.5; letter-spacing: 2px; font-size: 12px; text-transform: uppercase;">Tocca la Coppa per Entrare</p>
+    // Puliamo il contenuto per il portale (Navbar e Sidebar restano invisibili perché vuote)
+    const appContainer = document.getElementById('app');
+    appContainer.innerHTML = `
+        <div class="entry-container fade-in" id="entry-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; cursor: pointer;">
+            <img src="/assets/logo.png" alt="La Taverna" id="main-logo" style="width: 140px; filter: drop-shadow(0 0 20px var(--amethyst-glow)); transition: 0.5s;">
+            <p class="subtitle" style="margin-top: 30px; opacity: 0.6;">Tocca per entrare nel Portale</p>
         </div>
-        <div id="content-area" style="display:none; width:100%; height:100%;"></div>
     `;
 
     const entryScreen = document.getElementById('entry-screen');
-    const contentArea = document.getElementById('content-area');
 
     entryScreen.onclick = () => {
         entryScreen.style.opacity = '0';
         setTimeout(async () => {
-            entryScreen.style.display = 'none';
-            contentArea.style.display = 'block';
-            
-            // Se c'è un utente Discord loggato ma non verificato, checkAccess. 
-            // Altrimenti (ospite o nullo) manda al Login.
+            // Se c'è un utente loggato ma non verificato, checkAccess. 
             if (user) {
-                checkAccess(user, contentArea);
+                checkAccess(user, appContainer);
             } else {
-                initLogin(contentArea);
+                // Altrimenti avvia il Login nel contenitore principale
+                initLogin(appContainer);
             }
         }, 400);
     };
@@ -70,11 +65,11 @@ function checkAccess(user, container) {
         renderDashboard(user);
     } else {
         container.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px;">
-                <h2 style="color: #5865F2; font-weight: 900;">QUASI CI SEI! ⚔️</h2>
-                <p style="opacity: 0.7; font-size: 14px; margin: 20px 0;">Unisciti al Server Discord per sbloccare il portale.</p>
-                <a href="${SERVER_INVITE}" target="_blank" style="background: #5865F2; color: white; padding: 18px 40px; border-radius: 14px; text-decoration: none; font-weight: 800;">UNISCITI AL SERVER</a>
-                <button id="verify-btn" style="margin-top: 30px; background: transparent; border: 1px solid gray; color: white; padding: 10px; border-radius: 8px; cursor:pointer;">SONO GIÀ DENTRO</button>
+            <div class="fade-in" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 30px;">
+                <h2 class="main-title" style="font-size: 2rem;">QUASI CI SEI! ⚔️</h2>
+                <p class="subtitle" style="margin: 20px 0; letter-spacing: 1px;">Unisciti al Server Discord per sbloccare il portale.</p>
+                <a href="${SERVER_INVITE}" target="_blank" class="btn-back-glass" style="background: #5865F2; border: none; padding: 20px 40px; text-decoration: none;">UNISCITI AL SERVER</a>
+                <button id="verify-btn" style="margin-top: 30px; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 12px 25px; border-radius: 12px; cursor:pointer; font-size: 10px; letter-spacing: 2px;">SONO GIÀ DENTRO</button>
             </div>
         `;
         document.getElementById('verify-btn').onclick = () => {
@@ -85,14 +80,11 @@ function checkAccess(user, container) {
 }
 
 function renderDashboard(user) {
-    uiContainer.innerHTML = `
-        <div id="nav-container"></div>
-        <div id="sidebar-container"></div>
-        <main id="main-content" style="width:100%; height:100%;"></main>
-    `;
-
-    initNavbar(document.getElementById('nav-container'), user);
-    initSidebar(document.getElementById('sidebar-container'), user, async () => {
+    const appContainer = document.getElementById('app');
+    
+    // 1. Inizializza la Navbar (che creerà internamente anche la Sidebar)
+    // Passiamo la funzione di Logout come secondo parametro
+    initNavbar(user, async () => {
         const isGuest = user?.isGuest || localStorage.getItem('taverna_guest_user');
         if (isGuest) {
             localStorage.removeItem('taverna_guest_user');
@@ -101,9 +93,11 @@ function renderDashboard(user) {
             localStorage.removeItem('taverna_member_verified');
         }
         window.location.reload();
-    }, "home");
+    });
 
-    showLobby(document.getElementById('main-content'));
+    // 2. Mostra la Lobby principale nel contenitore app
+    showLobby(appContainer);
 }
 
+// Avvio App
 document.addEventListener('DOMContentLoaded', initApp);
