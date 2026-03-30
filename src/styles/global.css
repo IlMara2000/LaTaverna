@@ -23,77 +23,28 @@ html, body {
     background: var(--bg-dark) no-repeat fixed;
     color: var(--text-primary);
     font-family: 'Poppins', sans-serif;
-    overflow: hidden; /* BLOCCO SCROLL GLOBALE */
+    overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
 }
 
 #app {
-    height: 100dvh; /* Altezza dinamica mobile */
-    display: flex;
-    flex-direction: column;
+    min-height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    /* Lo scroll è attivo di base, lo limitiamo solo nella lobby minigiochi */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
-/* Container flessibile */
 .dashboard-container {
-    width: 100%;
-    max-width: 800px;
+    max-width: 650px;
     margin: 0 auto;
-    padding: 20px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    height: 100%; /* Occupa tutto lo spazio */
+    padding: 40px 25px;
+    padding-bottom: 160px;
 }
 
 /* =========================================
-   GRIGLIA MINIGIOCHI (NO SCROLL VERSION)
-   ========================================= */
-
-.grid-layout {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(4, 1fr); /* Forziamo 4 righe per i tuoi 8 giochi */
-    gap: 10px;
-    flex-grow: 1; /* Prende tutto lo spazio rimasto dopo titolo e bottone */
-    padding-bottom: 100px; /* Spazio per il tasto flottante */
-    min-height: 0; /* Permette alla griglia di rimpicciolirsi */
-}
-
-/* Card compatte per stare in una schermata */
-.minigame-item {
-    margin-bottom: 0 !important;
-    padding: 10px !important; /* Ridotto il padding */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-radius: 20px !important;
-    transition: transform 0.2s;
-}
-
-.minigame-item h2 {
-    font-size: 0.7rem !important; /* Testo più piccolo per mobile */
-    margin-top: 5px !important;
-}
-
-/* Su PC invece lasciamo respirare */
-@media (min-width: 768px) {
-    .grid-layout {
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: auto;
-        gap: 20px;
-    }
-    .minigame-item {
-        padding: 30px !important;
-    }
-    .minigame-item h2 {
-        font-size: 1rem !important;
-    }
-    html, body { overflow-y: auto; } /* Riabilita scroll su PC */
-}
-
-/* =========================================
-   UI COMPONENTS (SIDEBAR & TRIGGER)
+   SIDEBAR (A COMPARSA)
    ========================================= */
 
 .sidebar-glass {
@@ -113,54 +64,160 @@ html, body {
     border-left: 1px solid var(--glass-border);
 }
 
-.sidebar-glass.active { right: 0; }
+.sidebar-glass.active {
+    right: 0;
+    box-shadow: -20px 0 60px rgba(0,0,0,0.8);
+}
+
+.sidebar-header h2 { margin: 0; font-weight: 900; font-size: 1.5rem; }
+.sidebar-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 30px; }
+.sidebar-divider { border: none; border-top: 1px solid var(--glass-border); margin: 25px 0; opacity: 0.3; }
+
+/* =========================================
+   PULSANTE FLOTTANTE (NAVBAR TRIGGER)
+   ========================================= */
 
 .floating-trigger {
     position: fixed;
-    bottom: 30px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 18px; 
+    bottom: 40px;
+    right: 30px;
+    width: 70px;
+    height: 70px;
+    border-radius: 22px; 
     background: var(--amethyst-bright);
+    border: none;
+    cursor: pointer;
     z-index: 10000;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     box-shadow: 0 10px 30px var(--amethyst-glow);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-trigger:active { transform: scale(0.9); }
+
+.nav-bar {
+    width: 28px;
+    height: 3px;
+    background: white;
+    border-radius: 4px;
+    transition: 0.3s;
 }
 
 /* =========================================
-   TYPOGRAPHY
+   CARDS & GRIGLIA RESPONSIVE (NO-SCROLL MOBILE)
+   ========================================= */
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+/* Modifiche specifiche per i minigiochi su Mobile */
+@media (max-width: 768px) {
+    /* Se siamo nella lobby minigiochi, blocchiamo lo scroll e forziamo le dimensioni */
+    body:has(.minigame-item) {
+        overflow: hidden;
+    }
+
+    body:has(.minigame-item) .dashboard-container {
+        height: 100dvh;
+        padding-top: 20px;
+        padding-bottom: 120px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    body:has(.minigame-item) .grid-layout {
+        flex: 1;
+        grid-template-rows: repeat(4, 1fr); /* 8 giochi in 4 righe */
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    body:has(.minigame-item) .minigame-item {
+        padding: 15px !important;
+        border-radius: 20px !important;
+    }
+
+    body:has(.minigame-item) .main-title {
+        font-size: 1.8rem;
+    }
+}
+
+.game-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    padding: 30px;
+    margin-bottom: 20px;
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.minigame-item {
+    margin-bottom: 0 !important;
+}
+
+.game-card:active {
+    transform: scale(0.96);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* =========================================
+   TIPOGRAFIA & BOTTONI
    ========================================= */
 
 .main-title {
     font-weight: 900;
-    font-size: 1.8rem; /* Ridotto per far spazio ai giochi */
-    background: linear-gradient(to bottom, #ffffff, #b79ced);
+    font-size: 3rem;
+    letter-spacing: -2px;
+    background: linear-gradient(to bottom, #ffffff 30%, #b79ced);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-align: center;
+    margin: 0;
 }
 
 .subtitle {
-    font-size: 9px;
-    text-align: center;
-    letter-spacing: 3px;
-    margin-bottom: 10px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    opacity: 0.7;
+    display: block;
 }
 
 .btn-back-glass {
-    padding: 12px !important;
-    font-size: 11px !important;
-    border-radius: 15px !important;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 18px 25px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: 0.3s;
+    width: 100%;
+    text-align: center;
 }
 
+.text-amethyst { color: var(--amethyst-bright); -webkit-text-fill-color: initial; }
+
 /* Animazione */
-.fade-in { animation: fadeIn 0.4s ease-out forwards; }
+.fade-in { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
