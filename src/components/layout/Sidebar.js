@@ -1,4 +1,4 @@
-import { showLobby } from '../../lobby.js';
+import { showLobby } from './lobby.js';
 
 let currentSidebarUser = null;
 let currentLogoutFn = null;
