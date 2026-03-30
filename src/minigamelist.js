@@ -16,27 +16,32 @@ export function showMinigamesLobby(container) {
     ];
 
     container.innerHTML = `
-        <div id="lobby-wrapper" style="min-height: 100dvh; box-sizing: border-box; padding: 40px 20px 80px 20px; background: #05020a;" class="fade-in">
-            <div style="max-width: 1200px; margin: 0 auto;">
-                <button id="btn-back-main" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 24px; border-radius: 14px; font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 30px; letter-spacing: 1px;">← TORNA ALLA LIBRERIA</button>
-                <h1 style="font-size: 2.5rem; font-weight: 900; margin-bottom: 40px; color: white;">MINI <span style="color:var(--amethyst-bright);">GIOCHI</span></h1>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div id="lobby-wrapper" class="fade-in">
+            <div class="dashboard-container">
+                
+                <button id="btn-back-main" class="btn-back-glass">
+                    ← TORNA ALLA LIBRERIA
+                </button>
+
+                <header class="lobby-header">
+                    <h1>MINI <span class="text-amethyst">GIOCHI</span></h1>
+                </header>
+
+                <div class="grid-layout minigames-grid">
                     ${games.map(game => `
-                        <div class="game-card" id="btn-${game.id}" style="
-                            background: linear-gradient(to top, rgba(5,2,10,0.9), rgba(5,2,10,0.2)), ${game.color};
-                            height: 220px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
-                            cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end;
-                            padding: 25px; transition: 0.3s ease; position: relative; overflow: hidden;
-                        ">
-                            <div style="position: absolute; top: 20px; right: 20px; font-size: 2rem; opacity: 0.3;">${game.icon}</div>
-                            <h2 style="margin:0; font-size: 1.5rem; font-weight: 900; color: white;">${game.name}</h2>
+                        <div class="game-card minigame-item" id="btn-${game.id}" 
+                             style="background: linear-gradient(to top, rgba(5,2,10,0.9), rgba(5,2,10,0.2)), ${game.color};">
+                            <div class="game-card-icon">${game.icon}</div>
+                            <h2 class="game-card-title">${game.name}</h2>
                         </div>
                     `).join('')}
                 </div>
+                
             </div>
         </div>
     `;
 
+    // --- GESTIONE CLICK ---
     document.getElementById('btn-back-main').onclick = () => showLobby(container);
 
     games.forEach(game => {
@@ -52,7 +57,9 @@ export function showMinigamesLobby(container) {
                 };
                 const fnName = initFunctions[game.id];
                 if (module && module[fnName]) module[fnName](container);
-            } catch (e) { console.warn("Errore gioco:", e); }
+            } catch (e) { 
+                console.warn("Errore caricamento gioco:", e); 
+            }
         };
     });
 }
