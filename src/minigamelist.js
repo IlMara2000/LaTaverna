@@ -1,4 +1,4 @@
-import { updateSidebarContext } from './components/layout/sidebar.js';
+import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { showLobby } from './lobby.js';
 
 export function showMinigamesLobby(container) {
