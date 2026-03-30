@@ -1,8 +1,8 @@
 let currentSidebarUser = null;
 let currentLogoutFn = null;
+let isMusicOn = localStorage.getItem('taverna_music') !== 'off'; // Default ON
 
 export function initSidebar(container, user, onLogout, context = "home") {
-    // Gestione ibrida utente Discord / Ospite
     const guestData = localStorage.getItem('taverna_guest_user');
     currentSidebarUser = user || (guestData ? JSON.parse(guestData) : null);
     
@@ -14,29 +14,35 @@ function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
+    // Configurazione dinamica dei bottoni centrali
     let buttonsHtml = "";
+    
+    // Testo e azione dinamica del tasto di uscita/ritorno
+    let actionBtnText = "⬅ TORNA ALLA LIBRERIA";
+    let isMainHub = context === "home";
 
-    if (isGuest) {
+    if (context === "minigames") {
+        actionBtnText = "⬅ TORNA AI MINIGIOCHI";
         buttonsHtml = `
-            <div style="padding: 15px; background: rgba(157, 78, 221, 0.1); border: 1px solid rgba(157, 78, 221, 0.3); border-radius: 12px; font-size: 11px; color: #d8b4fe; text-align: center;">
-                Ti trovi in modalità Offline.<br>Accedi con Discord per le funzioni online.
-            </div>
+            <button class="btn-primary" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
+            <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
+        `;
+    } else if (context === "dnd5e") {
+        buttonsHtml = `
+            <button class="btn-primary" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
+            <button class="btn-primary" id="sideCharacters">I MIEI EROI</button>
         `;
     } else {
-        const menuConfigs = {
-            home: `
-                <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
-                <button class="btn-primary" id="sideSettings">IMPOSTAZIONI</button>
-            `,
-            dnd5e: `
-                <button class="btn-primary" id="sideCharacters">I MIEI EROI (D&D)</button>
-                <button class="btn-primary" id="sideSpells">INCANTESIMI</button>
-            `
-        };
-        buttonsHtml = menuConfigs[context] || menuConfigs.home;
+        // Home / Default
+        buttonsHtml = `
+            <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
+            <button class="btn-primary" id="sideSettings">IMPOSTAZIONI</button>
+        `;
     }
 
-    const isMainHub = context === "home";
+    if (isMainHub) {
+        actionBtnText = isGuest ? 'TORNA AL LOGIN' : 'ESCI DALLA TAVERNA';
+    }
 
     container.innerHTML = `
         <nav id="sidebar-menu" style="
@@ -47,20 +53,24 @@ function renderSidebarContent(container, context) {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         ">
             <div style="text-align: center; margin-bottom: 40px;">
-                <h2 style="color: var(--amethyst-bright); margin:0;">${userName.toUpperCase()}</h2>
-                <span style="font-size: 10px; opacity: 0.5; letter-spacing: 2px;">${isGuest ? 'MODALITÀ LIMITATA' : 'ACCESSO COMPLETO'}</span>
+                <h2 style="color: #9d4ede; margin:0;">${userName.toUpperCase()}</h2>
+                <span style="font-size: 10px; opacity: 0.5; letter-spacing: 2px;">${context.toUpperCase()}</span>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 300px;">
                 ${buttonsHtml}
                 <hr style="width: 100%; opacity: 0.1; margin: 10px 0;">
                 <button class="btn-primary" id="sideActionBtn" style="${isMainHub ? 'border: 1px solid #ff4444; color: #ff4444; background:none;' : ''}">
-                    ${isMainHub ? (isGuest ? 'TORNA AL LOGIN' : 'ESCI DALLA TAVERNA') : '⬅ TORNA ALLA LIBRERIA'}
+                    ${actionBtnText}
                 </button>
             </div>
         </nav>
     `;
 
+    setupEventListeners(container, context, isMainHub);
+}
+
+function setupEventListeners(container, context, isMainHub) {
     const sidebar = document.getElementById('sidebar-menu');
     const mainContent = document.getElementById('main-content');
     
@@ -69,20 +79,42 @@ function renderSidebarContent(container, context) {
         sidebar.style.right = isOpen ? '-100%' : '0px';
     };
 
+    // Listener per il toggle (richiamato dal tasto menu esterno)
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
+    // Gestione tasto Azione (Esci o Torna)
     document.getElementById('sideActionBtn').onclick = async () => {
+        toggle();
         if (isMainHub) {
             currentLogoutFn();
+        } else if (context === "minigames") {
+            // Se siamo dentro un minigioco, torniamo alla lista minigiochi
+            const { showMinigames } = await import('../../features/minigames/MinigamesList.js'); 
+            showMinigames(mainContent);
         } else {
-            toggle();
+            // Ritorno standard alla lobby
             const { showLobby } = await import('../../lobby.js');
             showLobby(mainContent);
         }
     };
-    
+
+    // Gestione tasto Musica (ON/OFF)
+    const musicBtn = document.getElementById('sideMusicBtn');
+    if (musicBtn) {
+        musicBtn.onclick = () => {
+            isMusicOn = !isMusicOn;
+            localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
+            musicBtn.innerText = isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF';
+            
+            // Dispatch di un evento globale così se hai un player musicale 
+            // in un altro file può sentire il cambiamento
+            window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
+        };
+    }
+
+    // Altri tasti...
     if (document.getElementById('sideProfile')) {
         document.getElementById('sideProfile').onclick = async () => {
             toggle();
