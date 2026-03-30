@@ -79,7 +79,7 @@ function setupEventListeners(container, context, isMainHub) {
             currentLogoutFn();
         } else if (context === "minigames") {
             // Import dal nuovo file creato in src/minigamelist.js
-            const { showMinigamesLobby } = await import('../../minigamelist.js');
+            const { showMinigamesLobby } = await import('./minigamelist.js');
             showMinigamesLobby(mainContent);
         } else {
             const { showLobby } = await import('../../lobby.js');
