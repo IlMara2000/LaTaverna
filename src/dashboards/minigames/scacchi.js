@@ -1,60 +1,96 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { showLobby } from '../../lobby.js';
 
 export function initScacchi(container) {
     updateSidebarContext("minigames");
 
     let state = {
-        board: [], // Matrice 8x8
-        turn: 'w', // 'w' = white, 'b' = black
+        gameMode: 'chess', // 'chess' o 'checkers'
+        difficulty: 2,
+        board: [],
+        turn: 'w',
         selected: null,
         validMoves: [],
-        difficulty: 2, // Default: Medio
-        gameActive: false
+        isAnimating: false
     };
 
-    renderDifficultySelector(container, state);
+    renderSetupMenu(container, state);
 }
 
-function renderDifficultySelector(container, state) {
+function renderSetupMenu(container, state) {
     container.innerHTML = `
     <style>
-        .chess-setup { width:100%; height:100dvh; background:#05020a; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:'Inter',sans-serif; }
-        .diff-card { background:rgba(255,255,255,0.05); padding:40px; border-radius:30px; border:1px solid #9d4ede; text-align:center; box-shadow:0 0 30px rgba(157,78,221,0.2); }
-        .btn-diff { width:100%; padding:15px; margin:10px 0; border-radius:12px; border:none; font-weight:900; cursor:pointer; transition:0.3s; }
-        .easy { background:#2ecc71; color:black; }
-        .med { background:#f1c40f; color:black; }
-        .hard { background:#e74c3c; color:white; }
+        .setup-screen { 
+            width:100%; height:100dvh; 
+            background: radial-gradient(circle at center, #1a1a2e 0%, #07070a 100%); 
+            display:flex; flex-direction:column; align-items:center; justify-content:center; 
+            color:white; font-family:'Poppins',sans-serif; padding: 20px;
+        }
+        .setup-card { 
+            background: rgba(255,255,255,0.03); backdrop-filter: blur(15px);
+            padding: 30px; border-radius: 24px; border: 1px solid rgba(157,78,221,0.3);
+            width: 100%; max-width: 400px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .mode-toggle { display: flex; gap: 10px; margin-bottom: 25px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 12px; }
+        .mode-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: transparent; color: white; font-weight: 600; transition: 0.3s; }
+        .mode-btn.active { background: #9d4ede; box-shadow: 0 4px 15px rgba(157,78,221,0.4); }
+        
+        .diff-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .diff-btn { padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; cursor: pointer; font-size: 0.8rem; }
+        .diff-btn.active { border-color: #9d4ede; background: rgba(157,78,221,0.2); }
+        
+        .start-btn { width: 100%; padding: 16px; border-radius: 12px; border: none; background: #00ffa3; color: #000; font-weight: 900; font-size: 1.1rem; cursor: pointer; transition: 0.3s; }
+        .start-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,255,163,0.3); }
     </style>
-    <div class="chess-setup fade-in">
-        <div class="diff-card">
-            <h1 style="font-size:2.5rem; margin-bottom:10px;">SCACCHI</h1>
-            <p style="opacity:0.6; margin-bottom:30px;">Seleziona la difficoltà dell'IA</p>
-            <button class="btn-diff easy" id="d-1">PRINCIPIANTE (Rapido)</button>
-            <button class="btn-diff med" id="d-2">INTERMEDIO (Bilanciato)</button>
-            <button class="btn-diff hard" id="d-3">MAESTRO (Lento)</button>
+    <div class="setup-screen">
+        <div class="setup-card">
+            <h2 style="margin-bottom: 20px;">SALA GIOCHI</h2>
+            
+            <p style="text-align: left; font-size: 0.8rem; opacity: 0.6; margin-bottom: 8px;">Scegli il gioco:</p>
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="btn-chess">SCACCHI</button>
+                <button class="mode-btn" id="btn-checkers">DAMA</button>
+            </div>
+
+            <p style="text-align: left; font-size: 0.8rem; opacity: 0.6; margin-bottom: 8px;">Difficoltà IA:</p>
+            <div class="diff-grid">
+                <button class="diff-btn" data-v="1">FACILE</button>
+                <button class="diff-btn active" data-v="2">MEDIO</button>
+                <button class="diff-btn" data-v="3">ESPERTO</button>
+            </div>
+
+            <button class="start-btn" id="start-game">INIZIA PARTITA</button>
         </div>
     </div>
     `;
 
-    [1, 2, 3].forEach(d => {
-        document.getElementById(`d-${d}`).onclick = () => {
-            state.difficulty = d;
-            state.gameActive = true;
-            startGame(container, state);
-        };
+    // Eventi Menu
+    const btnsMode = container.querySelectorAll('.mode-btn');
+    btnsMode.forEach(btn => btn.onclick = () => {
+        btnsMode.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.gameMode = btn.id === 'btn-chess' ? 'chess' : 'checkers';
     });
+
+    const btnsDiff = container.querySelectorAll('.diff-btn');
+    btnsDiff.forEach(btn => btn.onclick = () => {
+        btnsDiff.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.difficulty = parseInt(btn.dataset.v);
+    });
+
+    container.querySelector('#start-game').onclick = () => startGame(container, state);
 }
 
 function startGame(container, state) {
-    state.board = createStartingBoard();
+    state.board = state.gameMode === 'chess' ? createChessBoard() : createCheckersBoard();
+    state.turn = 'w';
     renderBoard(container, state);
 }
 
-function createStartingBoard() {
+function createChessBoard() {
     const layout = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'];
     let board = Array(8).fill(null).map(() => Array(8).fill(null));
-
     for (let i = 0; i < 8; i++) {
         board[0][i] = { type: layout[i], color: 'b' };
         board[1][i] = { type: 'P', color: 'b' };
@@ -64,43 +100,71 @@ function createStartingBoard() {
     return board;
 }
 
+function createCheckersBoard() {
+    let board = Array(8).fill(null).map(() => Array(8).fill(null));
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 8; c++) if ((r + c) % 2 !== 0) board[r][c] = { type: 'D', color: 'b' };
+    }
+    for (let r = 5; r < 8; r++) {
+        for (let c = 0; c < 8; c++) if ((r + c) % 2 !== 0) board[r][c] = { type: 'D', color: 'w' };
+    }
+    return board;
+}
+
 function renderBoard(container, state) {
-    const pieces = {
+    const chessPieces = {
         'wP': '♙', 'wR': '♖', 'wN': '♘', 'wB': '♗', 'wQ': '♕', 'wK': '♔',
         'bP': '♟', 'bR': '♜', 'bN': '♞', 'bB': '♝', 'bQ': '♛', 'bK': '♚'
     };
 
     container.innerHTML = `
     <style>
-        .chess-container { width:100%; height:100dvh; background:#1a1a1a; display:flex; align-items:center; justify-content:center; }
-        .chessboard { display:grid; grid-template-columns: repeat(8, 60px); grid-template-rows: repeat(8, 60px); border:5px solid #333; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
-        .square { width:60px; height:60px; display:flex; align-items:center; justify-content:center; font-size:40px; cursor:pointer; position:relative; }
-        .square.white { background:#ebecd0; }
-        .square.black { background:#779556; }
-        .square.selected { background:#f6f669 !important; }
-        .square.valid::after { content:''; width:20px; height:20px; background:rgba(0,0,0,0.1); border-radius:50%; position:absolute; }
-        .piece { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index:2; }
-        .piece:hover { transform: scale(1.1); }
+        .game-screen { width:100%; height:100dvh; background:#0a0a0c; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .board { 
+            display: grid; grid-template-columns: repeat(8, 1fr); 
+            width: 95vw; max-width: 480px; height: 95vw; max-height: 480px;
+            border: 4px solid #1a1a1a; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+        .sq { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size: clamp(25px, 8vw, 40px); cursor:pointer; position:relative; }
+        .sq.light { background: #d1d9e0; }
+        .sq.dark { background: #5c7c99; }
+        .sq.selected { background: #f6f669 !important; }
+        .piece { user-select: none; transition: transform 0.2s; z-index: 5; }
+        
+        /* Dama */
+        .checker { width: 80%; height: 80%; border-radius: 50%; border: 3px solid rgba(0,0,0,0.2); box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+        .checker.w { background: #fff; }
+        .checker.b { background: #222; }
+
+        .info-bar { width: 100%; max-width: 480px; display: flex; justify-content: space-between; padding: 15px; color: white; font-weight: bold; }
     </style>
-    <div class="chess-container fade-in">
-        <div class="chessboard" id="board-ui"></div>
+    <div class="game-screen">
+        <div class="info-bar">
+            <span>${state.gameMode.toUpperCase()}</span>
+            <span id="turn-display" style="color: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}">TURNO: ${state.turn === 'w' ? 'BIANCO' : 'NERO'}</span>
+        </div>
+        <div class="board" id="board-ui"></div>
+        <button onclick="window.location.reload()" style="margin-top:20px; background:none; border:none; color:white; opacity:0.5; cursor:pointer;">↺ RICOMINCIA</button>
     </div>
     `;
 
-    const boardUI = document.getElementById('board-ui');
+    const boardUI = container.querySelector('#board-ui');
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const square = document.createElement('div');
-            square.className = `square ${(r + c) % 2 === 0 ? 'white' : 'black'}`;
+            square.className = `sq ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
             const piece = state.board[r][c];
-            
+
             if (piece) {
-                square.innerHTML = `<span class="piece">${pieces[piece.color + piece.type]}</span>`;
+                if (state.gameMode === 'chess') {
+                    square.innerHTML = `<span class="piece" style="color:${piece.color === 'w' ? '#000' : '#000'}">${chessPieces[piece.color + piece.type]}</span>`;
+                } else {
+                    square.innerHTML = `<div class="checker ${piece.color}"></div>`;
+                }
             }
 
             if (state.selected && state.selected.r === r && state.selected.c === c) square.classList.add('selected');
-            if (state.validMoves.some(m => m.r === r && m.c === m.c)) { /* Logica pallini */ }
-
+            
             square.onclick = () => handleSquareClick(r, c, state, container);
             boardUI.appendChild(square);
         }
@@ -108,20 +172,23 @@ function renderBoard(container, state) {
 }
 
 function handleSquareClick(r, c, state, container) {
-    if (state.turn !== 'w') return; // Blocca input durante turno IA
+    if (state.turn !== 'w' || state.isAnimating) return;
 
     const piece = state.board[r][c];
 
     if (state.selected) {
-        // Tenta movimento
-        movePiece(state.selected.r, state.selected.c, r, c, state);
-        state.selected = null;
-        renderBoard(container, state);
-        
-        // Turno IA
-        if (state.turn === 'b') {
-            setTimeout(() => aiMove(state, container), 600);
+        if (state.selected.r === r && state.selected.c === c) {
+            state.selected = null;
+        } else {
+            // Logica movimento semplificata (da espandere con regole reali)
+            movePiece(state.selected.r, state.selected.c, r, c, state);
+            state.selected = null;
+            
+            if (state.turn === 'b') {
+                setTimeout(() => aiMove(state, container), 600);
+            }
         }
+        renderBoard(container, state);
     } else if (piece && piece.color === 'w') {
         state.selected = { r, c };
         renderBoard(container, state);
@@ -136,21 +203,24 @@ function movePiece(fromR, fromC, toR, toC, state) {
 }
 
 function aiMove(state, container) {
-    // IA Semplice: Cerca la prima mossa legale (espandibile con Minimax)
+    state.isAnimating = true;
     let moved = false;
+    
+    // IA Base: Cerca il primo pezzo nero che può muoversi
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const p = state.board[r][c];
             if (p && p.color === 'b') {
-                const targetR = r + (p.type === 'P' ? 1 : 0); // Muove pedone avanti
-                if (targetR < 8 && !state.board[targetR][c]) {
-                    movePiece(r, c, targetR, c, state);
-                    moved = true;
-                    break;
+                const dr = state.gameMode === 'chess' ? 1 : 1; 
+                if (r + dr < 8 && !state.board[r + dr][c]) {
+                    movePiece(r, c, r + dr, c, state);
+                    moved = true; break;
                 }
             }
         }
         if (moved) break;
     }
+    
+    state.isAnimating = false;
     renderBoard(container, state);
 }

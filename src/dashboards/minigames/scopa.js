@@ -56,7 +56,7 @@ function renderLayout(container, state) {
         .score-main { font-size: 1.1rem; color: #9d4ede; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; margin-bottom: 5px; }
 
         .card-scopa { 
-            width: 90px; height: 130px; 
+            width: 95px; height: 135px; 
             background: rgba(255,255,255,0.07); border-radius: 12px; 
             color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; 
             font-weight: 900; border: 1px solid rgba(255,255,255,0.1); 
@@ -66,7 +66,6 @@ function renderLayout(container, state) {
         .card-scopa:hover { transform: translateY(-10px) scale(1.05); border-color: #9d4ede; z-index: 10; }
         .card-bot { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; opacity: 0.8; cursor: default; }
 
-        /* AREA TAVOLO CORRETTA */
         .table-area { 
             flex-grow: 1; width: 90%; max-width: 800px;
             display: flex; align-items: center; justify-content: center; 
@@ -74,7 +73,7 @@ function renderLayout(container, state) {
             margin: 20px 0; padding: 30px;
             border-radius: 40px; background: rgba(255,255,255,0.02);
             border: 2px dashed rgba(157, 78, 221, 0.1);
-            min-height: 300px;
+            min-height: 320px;
         }
         
         .hand-container { display: flex; gap: 15px; justify-content: center; width: 100%; min-height: 140px; }
@@ -105,9 +104,7 @@ function renderLayout(container, state) {
         </div>
 
         <div id="bot-hand-ui" class="hand-container"></div>
-        
         <div class="table-area" id="table-ui"></div>
-        
         <div id="player-hand-ui" class="hand-container"></div>
         
         <div id="toast-scopa">SCOPA!</div>
@@ -152,18 +149,21 @@ function renderGame(state, container) {
 function renderCard(card, index = 0, isPlayer = false) {
     const suitData = SUITS.find(s => s.id === card.suit);
     const dataIdx = isPlayer ? `data-idx="${index}"` : '';
-    const displayVal = card.value === 1 ? 'A' : (card.value === 8 ? 'F' : (card.value === 9 ? 'C' : (card.value === 10 ? 'R' : card.value)));
+    
+    // Logica icone per le figure
+    let displayVal = card.value;
+    if (card.value === 1) displayVal = 'A';
+    if (card.value === 8) displayVal = '👨‍✈️'; // Fante
+    if (card.value === 9) displayVal = '🐎'; // Cavallo
+    if (card.value === 10) displayVal = '👑'; // Re
     
     return `
         <div ${dataIdx} class="card-scopa">
-            <span style="font-size:11px; color:${suitData.color}; font-weight:900; text-transform:uppercase;">${card.suit}</span>
-            <span style="font-size:2.2rem; margin:8px 0;">${suitData.icon}</span>
-            <span style="font-size:1.6rem; font-weight:bold;">${displayVal}</span>
+            <span style="font-size:1.4rem; filter: drop-shadow(0 0 5px ${suitData.color});">${suitData.icon}</span>
+            <span style="font-size:2.2rem; font-weight:900; margin-top:5px; color:white;">${displayVal}</span>
         </div>
     `;
 }
-
-// ... rest of the logic (findCaptures, handlePlay, etc.) stays the same ...
 
 function findCaptures(card, table) {
     const single = table.find(c => c.value === card.value);
