@@ -27,9 +27,9 @@
             background-color: var(--bg) !important; 
             margin: 0; padding: 0; 
             height: 100%; width: 100%;
-            overflow: hidden;
+            overflow: hidden; /* Blocca lo scroll globale, lo gestiamo nei container */
             color: white;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -39,7 +39,7 @@
         #app-loader {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             height: 100vh; width: 100%; background: var(--bg);
-            position: fixed; top: 0; left: 0; z-index: 10000;
+            position: fixed; top: 0; left: 0; z-index: 10001;
         }
 
         .pulse-logo {
@@ -61,6 +61,12 @@
 <body>
     
     <div id="ui">
+        <div id="navbar-container"></div>
+
+        <div id="sidebar-container"></div>
+
+        <div id="app"></div>
+
         <div id="app-loader">
             <img src="/assets/logo.png" class="pulse-logo" alt="Caricamento...">
             <p style="margin-top: 20px; font-size: 10px; letter-spacing: 3px; opacity: 0.5; text-transform: uppercase;">
@@ -72,6 +78,7 @@
     <script type="module" src="/src/main.js"></script>
 
     <script>
+        // Fix per evitare lo scroll elastico fastidioso su iOS
         document.body.addEventListener('touchmove', function(e) {
             if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
