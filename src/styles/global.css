@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 3.2)
+   LA TAVERNA - AMETHYST DARK UI (VER. 3.5)
    ========================================= */
 
 :root {
@@ -31,9 +31,32 @@ html, body {
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
-    /* Lo scroll è attivo di base, lo limitiamo solo nella lobby minigiochi */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Logo Favicon a Destra con Animazione */
+.nav-logo-right {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    width: 45px;
+    height: 45px;
+    z-index: 999;
+    filter: drop-shadow(0 0 10px var(--amethyst-glow));
+    animation: float 3s ease-in-out infinite;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.nav-logo-right:hover {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 0 20px var(--amethyst-bright));
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
 }
 
 .dashboard-container {
@@ -44,7 +67,7 @@ html, body {
 }
 
 /* =========================================
-   SIDEBAR (A COMPARSA)
+   SIDEBAR & BLUR EFFECTS
    ========================================= */
 
 .sidebar-glass {
@@ -54,10 +77,10 @@ html, body {
     width: 300px;
     height: 100dvh;
     background: rgba(10, 5, 20, 0.98);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
     z-index: 10001;
-    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 50px 30px;
     display: flex;
     flex-direction: column;
@@ -66,15 +89,11 @@ html, body {
 
 .sidebar-glass.active {
     right: 0;
-    box-shadow: -20px 0 60px rgba(0,0,0,0.8);
+    box-shadow: -30px 0 80px rgba(0,0,0,0.9);
 }
 
-.sidebar-header h2 { margin: 0; font-weight: 900; font-size: 1.5rem; }
-.sidebar-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 30px; }
-.sidebar-divider { border: none; border-top: 1px solid var(--glass-border); margin: 25px 0; opacity: 0.3; }
-
 /* =========================================
-   PULSANTE FLOTTANTE (NAVBAR TRIGGER)
+   PULSANTE FLOTTANTE (ANIMATO)
    ========================================= */
 
 .floating-trigger {
@@ -95,60 +114,18 @@ html, body {
     gap: 6px;
     box-shadow: 0 10px 30px var(--amethyst-glow);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: pulseGlow 2s infinite;
 }
 
-.floating-trigger:active { transform: scale(0.9); }
-
-.nav-bar {
-    width: 28px;
-    height: 3px;
-    background: white;
-    border-radius: 4px;
-    transition: 0.3s;
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0.7); }
+    70% { box-shadow: 0 0 0 20px rgba(157, 78, 221, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0); }
 }
 
 /* =========================================
-   CARDS & GRIGLIA RESPONSIVE (NO-SCROLL MOBILE)
+   CARDS CON EFFETTI VETRO DINAMICI
    ========================================= */
-
-.grid-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 20px;
-}
-
-/* Modifiche specifiche per i minigiochi su Mobile */
-@media (max-width: 768px) {
-    /* Se siamo nella lobby minigiochi, blocchiamo lo scroll e forziamo le dimensioni */
-    body:has(.minigame-item) {
-        overflow: hidden;
-    }
-
-    body:has(.minigame-item) .dashboard-container {
-        height: 100dvh;
-        padding-top: 20px;
-        padding-bottom: 120px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    body:has(.minigame-item) .grid-layout {
-        flex: 1;
-        grid-template-rows: repeat(4, 1fr); /* 8 giochi in 4 righe */
-        gap: 10px;
-        margin-top: 10px;
-    }
-
-    body:has(.minigame-item) .minigame-item {
-        padding: 15px !important;
-        border-radius: 20px !important;
-    }
-
-    body:has(.minigame-item) .main-title {
-        font-size: 1.8rem;
-    }
-}
 
 .game-card {
     background: rgba(255, 255, 255, 0.04);
@@ -159,65 +136,88 @@ html, body {
     padding: 30px;
     margin-bottom: 20px;
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4);
     overflow: hidden;
 }
 
-.minigame-item {
-    margin-bottom: 0 !important;
+/* Riflesso di luce che passa sulla card */
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        to right,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    transition: 0.5s;
+    pointer-events: none;
+}
+
+.game-card:hover::before {
+    left: 150%;
 }
 
 .game-card:active {
-    transform: scale(0.96);
-    background: rgba(255, 255, 255, 0.08);
+    transform: scale(0.95) translateY(5px);
+    background: rgba(157, 78, 221, 0.1);
+}
+
+/* Griglia Minigiochi */
+@media (max-width: 768px) {
+    body:has(.minigame-item) { overflow: hidden; }
+    body:has(.minigame-item) .dashboard-container {
+        height: 100dvh;
+        padding: 20px;
+        padding-bottom: 120px;
+        display: flex;
+        flex-direction: column;
+    }
+    body:has(.minigame-item) .grid-layout {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: repeat(4, 1fr);
+        gap: 12px;
+    }
+    body:has(.minigame-item) .main-title { font-size: 2rem; }
 }
 
 /* =========================================
-   TIPOGRAFIA & BOTTONI
+   TESTI E ANIMAZIONI ENTRY
    ========================================= */
 
 .main-title {
     font-weight: 900;
     font-size: 3rem;
     letter-spacing: -2px;
-    background: linear-gradient(to bottom, #ffffff 30%, #b79ced);
+    background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin: 0;
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
 }
 
-.subtitle {
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    font-size: 11px;
-    font-weight: 800;
-    opacity: 0.7;
-    display: block;
+.text-amethyst {
+    color: var(--amethyst-bright);
+    -webkit-text-fill-color: initial;
+    text-shadow: 0 0 15px var(--amethyst-glow);
 }
 
-.btn-back-glass {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: white;
-    padding: 18px 25px;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    cursor: pointer;
-    transition: 0.3s;
-    width: 100%;
-    text-align: center;
+/* Entrata fluida per le card */
+.fade-in { 
+    animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; 
 }
 
-.text-amethyst { color: var(--amethyst-bright); -webkit-text-fill-color: initial; }
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(40px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
-/* Animazione */
-.fade-in { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+.minigame-item {
+    transition-delay: calc(var(--i) * 0.1s); /* Se aggiungi style="--i:1" nel JS */
 }
