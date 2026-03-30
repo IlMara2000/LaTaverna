@@ -19,6 +19,7 @@ function renderSidebarContent(container, context) {
     let actionBtnText = "⬅ TORNA ALLA LIBRERIA";
     let isMainHub = context === "home";
 
+    // Configurazione pulsanti in base al contesto
     if (context === "minigames" || context === "dnd5e") {
         actionBtnText = context === "minigames" ? "⬅ TORNA AI MINIGIOCHI" : "⬅ TORNA ALLA LIBRERIA";
         buttonsHtml = `
@@ -26,6 +27,7 @@ function renderSidebarContent(container, context) {
             <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
         `;
     } else {
+        // Home / Default
         buttonsHtml = `
             <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
             <button class="btn-primary" id="sideSettings">IMPOSTAZIONI</button>
@@ -83,24 +85,20 @@ function setupEventListeners(container, context, isMainHub) {
             return;
         }
 
-        // TENTATIVO DI FIX PER IL BUILD: Usiamo percorsi assoluti rispetto alla root del progetto se possibile
-        // o verifichiamo la posizione dei file.
         try {
             if (context === "minigames") {
-                // Se Vite fallisce qui, prova a rinominare il file in minigamesList.js (tutto minuscolo)
-                const module = await import('../../features/minigames/MinigamesList.js');
-                if (module.showMinigames) {
-                    module.showMinigames(mainContent);
-                }
+                // PUNTA AL NUOVO FILE IN SRC (uscendo da components/layout/)
+                const { showMinigamesLobby } = await import('../../minigamelist.js');
+                showMinigamesLobby(mainContent);
             } else {
-                const lobbyModule = await import('../../lobby.js');
-                lobbyModule.showLobby(mainContent);
+                const { showLobby } = await import('../../lobby.js');
+                showLobby(mainContent);
             }
         } catch (err) {
-            console.error("Errore import sidebar:", err);
-            // Fallback: se fallisce l'import del modulo minigiochi, forza il ritorno alla lobby
-            const lobbyModule = await import('../../lobby.js');
-            lobbyModule.showLobby(mainContent);
+            console.error("Errore navigazione sidebar:", err);
+            // Fallback sicuro alla lobby
+            const { showLobby } = await import('../../lobby.js');
+            showLobby(mainContent);
         }
     };
 
@@ -121,7 +119,7 @@ function setupEventListeners(container, context, isMainHub) {
             try {
                 const { showProfile } = await import('../features/user/Profile.js');
                 showProfile(mainContent, currentSidebarUser);
-            } catch (err) { console.error(err); }
+            } catch (err) { console.error("Errore profilo:", err); }
         };
     }
 }
