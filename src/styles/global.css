@@ -1,6 +1,9 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 3.7)
+   LA TAVERNA - AMETHYST DARK UI (VER. 3.8)
    ========================================= */
+
+/* Import font Gaming & Serious */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Montserrat:wght@700;900&display=swap');
 
 :root {
     --bg-dark: radial-gradient(circle at top, #1a0b2e 0%, #05010a 100%);
@@ -12,6 +15,8 @@
     --text-secondary: #b79ced;
     --accent: linear-gradient(135deg, #9d4ede, #5a189a);
     --danger: #ff4444;
+    --font-main: 'Montserrat', sans-serif;
+    --font-gaming: 'Orbitron', sans-serif;
 }
 
 /* Reset & Safe Areas */
@@ -22,9 +27,10 @@ html, body {
     background: #05010a; 
     background: var(--bg-dark) no-repeat fixed;
     color: var(--text-primary);
-    font-family: 'Poppins', sans-serif;
+    font-family: var(--font-main);
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
 }
 
 #app {
@@ -32,204 +38,159 @@ html, body {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
 }
 
 /* =========================================
-   LOGO FAVICON (ALTO A DESTRA - logo2.png)
+   UI TITLES (LO STILE VIDEOGIOCO)
    ========================================= */
-.nav-logo-right {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 55px;
-    height: 55px;
-    z-index: 999;
-    filter: drop-shadow(0 0 12px var(--amethyst-glow));
-    animation: floatLogo 3.5s ease-in-out infinite;
+
+.main-title {
+    font-family: var(--font-gaming);
+    font-weight: 900;
+    font-size: 3.5rem;
+    letter-spacing: -3px;
+    text-transform: uppercase;
+    background: linear-gradient(to bottom, #fff 40%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 15px rgba(157, 78, 221, 0.5));
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    font-family: var(--font-gaming);
+    color: var(--amethyst-bright);
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    font-size: 10px;
+    font-weight: 900;
+    opacity: 0.8;
+}
+
+/* =========================================
+   PULSANTI HUD (SIDEBAR & LOBBY)
+   ========================================= */
+
+.btn-back-glass {
+    font-family: var(--font-gaming);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 20px;
+    border-radius: 12px; /* Angoli più decisi, meno "tondi" per serietà */
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
     cursor: pointer;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
-.nav-logo-right img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+.btn-back-glass:hover {
+    background: rgba(157, 78, 221, 0.2);
+    border-color: var(--amethyst-bright);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(157, 78, 221, 0.3);
 }
 
-@keyframes floatLogo {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    50% { transform: translateY(-12px) rotate(3deg); }
+.btn-back-glass:active {
+    transform: scale(0.98);
+}
+
+/* Il pulsante "Torna alla Libreria" in alto */
+.top-nav-btn {
+    font-family: var(--font-gaming);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 50px;
+    padding: 12px 30px;
+    border: 1px solid var(--glass-border);
+    color: white;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-decoration: none;
+    transition: 0.3s;
 }
 
 /* =========================================
-   SIDEBAR & DASHBOARD
+   GAME CARDS (SCOPA, BRISCOLA, ETC.)
    ========================================= */
-.dashboard-container {
-    max-width: 650px;
-    margin: 0 auto;
-    padding: 40px 25px;
-    padding-bottom: 160px;
-}
 
-.sidebar-glass {
-    position: fixed;
-    right: -110%;
-    top: 0;
-    width: 300px;
-    height: 100dvh;
-    background: rgba(10, 5, 20, 0.98);
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
-    z-index: 10001; /* Sotto il trigger per permettere la chiusura */
-    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 50px 30px;
+.game-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    position: relative;
+    transition: all 0.4s ease;
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--glass-border);
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    aspect-ratio: 1/1.1; /* Più altezza che larghezza per stile "Card" */
 }
 
-.sidebar-glass.active {
-    right: 0;
-    box-shadow: -30px 0 80px rgba(0,0,0,0.9);
+.game-card h3 {
+    font-family: var(--font-gaming);
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    margin: 0;
+    text-transform: uppercase;
 }
 
 /* =========================================
-   PULSANTE FLOTTANTE DINAMICO (HAMBURGER -> X)
+   LOGO & TRIGGER
    ========================================= */
+
+.nav-logo-right {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    width: 50px;
+    height: 50px;
+    z-index: 999;
+    filter: drop-shadow(0 0 10px var(--amethyst-glow));
+    animation: floatLogo 3.5s ease-in-out infinite;
+}
+
 .floating-trigger {
     position: fixed;
     bottom: 40px;
     right: 30px;
-    width: 72px;
-    height: 72px;
-    border-radius: 24px; 
+    width: 75px;
+    height: 75px;
+    border-radius: 50%; /* Tondo stile controller */
     background: var(--amethyst-bright);
-    border: none;
-    cursor: pointer;
-    z-index: 10002; /* Sempre sopra tutto */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 10px 35px var(--amethyst-glow);
+    z-index: 10002;
+    box-shadow: 0 15px 35px rgba(157, 78, 221, 0.5);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Stato Attivo: Diventa Rosso e cambia ombra */
-.floating-trigger.is-active {
-    background: var(--danger) !important;
-    box-shadow: 0 10px 35px rgba(255, 68, 68, 0.4);
-    animation: none; /* Ferma il pulse quando è una X */
-}
-
-.nav-bar {
-    width: 30px;
-    height: 3px;
-    background: white;
-    border-radius: 4px;
-    transition: all 0.3s ease; /* Fondamentale per l'animazione della X */
-}
-
-/* Trasformazione in X */
-.floating-trigger.is-active #bar1 {
-    transform: translateY(9px) rotate(45deg);
-}
-
-.floating-trigger.is-active #bar2 {
-    opacity: 0;
-    transform: translateX(20px);
-}
-
-.floating-trigger.is-active #bar3 {
-    transform: translateY(-9px) rotate(-45deg);
-}
-
-/* Animazione di attesa (Pulse) solo se non è attivo */
-.floating-trigger:not(.is-active) {
-    animation: pulseGlow 2.5s infinite;
-}
-
-@keyframes pulseGlow {
-    0% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0.6); }
-    70% { box-shadow: 0 0 0 20px rgba(157, 78, 221, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0); }
-}
-
-/* =========================================
-   CARDS & GRIGLIA
-   ========================================= */
-.game-card {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    border-radius: 30px;
-    padding: 30px;
-    margin-bottom: 20px;
-    position: relative;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4);
-    overflow: hidden;
-}
-
-.game-card::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -60%;
-    width: 20%;
-    height: 200%;
-    background: rgba(255, 255, 255, 0.1);
-    transform: rotate(30deg);
-    transition: 0.6s;
-    pointer-events: none;
-}
-
-.game-card:hover::after { left: 120%; }
-
-.game-card:active {
-    transform: scale(0.96) translateY(4px);
-    background: rgba(157, 78, 221, 0.15);
-}
-
-/* Griglia Minigiochi Mobile No-Scroll */
+/* Griglia Mobile */
 @media (max-width: 768px) {
-    body:has(.minigame-item) { overflow: hidden; }
-    body:has(.minigame-item) .dashboard-container {
-        height: 100dvh;
-        padding: 20px;
-        padding-bottom: 130px;
-        display: flex;
-        flex-direction: column;
+    .grid-layout {
+        gap: 20px; /* Più respiro tra i giochi */
+        padding: 10px;
     }
-    body:has(.minigame-item) .grid-layout {
-        flex: 1;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: repeat(4, 1fr);
-        gap: 14px;
+    
+    .main-title {
+        font-size: 2.2rem;
+        text-align: left;
     }
 }
 
-/* =========================================
-   ANIMAZIONI ENTRY
-   ========================================= */
-.main-title {
-    font-weight: 900;
-    font-size: 3rem;
-    letter-spacing: -2px;
-    background: linear-gradient(135deg, #ffffff 20%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
+/* Animazione di ingresso */
 .fade-in { 
     animation: premiumEntrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; 
 }
 
 @keyframes premiumEntrance {
-    from { opacity: 0; transform: translateY(30px) scale(0.94); filter: blur(10px); }
-    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    from { opacity: 0; transform: scale(0.9) translateY(30px); filter: blur(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
 }
