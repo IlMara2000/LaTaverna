@@ -13,7 +13,7 @@ export function initNavbar(user, onLogout) {
     // Il pulsante trigger ora usa le classi CSS per le animazioni
     navbarContainer.innerHTML = `
         <div class="nav-logo-right" id="nav-home-btn">
-            <img src="/assets/logo2.png" alt="Taverna">
+            <img src="/public/assets/logo2.png" alt="Taverna">
         </div>
 
         <button id="navbar-trigger" class="floating-trigger">
