@@ -1,157 +1,69 @@
 /* =========================================
-   SISTEMA VISUALE: AMETISTA DARK UI (SCRIPTER)
+   FIX AMETISTA DARK UI - DEFINITIVO
    ========================================= */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap');
 
-:root {
-    /* Design Tokens: Ametista Deep Dark */
-    --void-black: #05010a;
-    --deep-purple: #1a0b2e;
-    --amethyst-primary: #7b2cbf;
-    --amethyst-gradient: linear-gradient(135deg, #7b2cbf, #3c096c);
-    --amethyst-glow: 0 0 20px rgba(123, 44, 191, 0.3);
-    
-    /* Glassmorphism Tokens */
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: 1px solid rgba(157, 78, 221, 0.2);
-    --glass-blur: blur(12px);
-    
-    /* Typography Tokens */
-    --text-pure: #ffffff;
-    --text-lavender: #b79ced;
-}
-
-* { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-    -webkit-tap-highlight-color: transparent; 
-}
-
-html, body {
-    min-height: 100dvh;
-    width: 100%;
-    /* SFONDO MASTER: Vuoto cosmico violaceo fisso */
-    background: radial-gradient(circle at center, var(--deep-purple) 0%, var(--void-black) 100%) no-repeat fixed;
-    background-color: var(--void-black);
-    color: var(--text-pure);
-    font-family: 'Poppins', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior-y: none;
-}
-
-/* =========================================
-   LAYOUT BILANCIATO (FIX NOTCH & BOTTOM)
-   ========================================= */
-#ui {
-    width: 100%;
-    min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    /* Risolve il problema del contenuto sotto la barra di sistema/notch */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-}
-
+/* 1. Gestione Safe Area (Notch) */
 .dashboard-container {
-    width: 100%;
-    max-width: 650px;
-    margin: 0 auto;
-    padding: 20px;
+    padding-top: calc(15px + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+}
+
+/* 2. Pulsante Indietro (Look Ametista Glass) */
+.btn-back-glass {
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(157, 78, 221, 0.3) !important;
+    color: #b79ced !important;
+    padding: 10px 16px !important;
+    border-radius: 12px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
+    margin-bottom: 20px !important;
+    display: inline-block;
+    text-transform: uppercase;
+}
+
+/* 3. Titolo Crystal */
+.lobby-header h1 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 900;
+    letter-spacing: -1px;
+    font-size: 2.2rem;
+    margin-bottom: 30px;
+}
+
+/* 4. Minigame Card (Effetto Profondità come negli screen a destra) */
+.minigame-item {
+    background: rgba(255, 255, 255, 0.03) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 1px solid rgba(157, 78, 221, 0.2) !important;
+    border-radius: 28px !important;
+    height: 160px !important; /* Più basse e compatte come l'esempio */
     display: flex;
     flex-direction: column;
-    /* Evita che l'ultima card finisca sotto la barra strumenti del browser */
-    padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    justify-content: flex-end;
+    padding: 25px !important;
+    transition: 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
 }
 
-/* =========================================
-   TIPOGRAFIA "CRYSTAL CUT"
-   ========================================= */
-h1, .main-title {
-    font-weight: 900;
-    font-size: 2.5rem;
-    letter-spacing: -1px;
-    color: var(--text-pure);
-    margin: 10px 0;
+.minigame-item:active {
+    transform: scale(0.96);
+    border-color: #7b2cbf !important;
+    box-shadow: 0 0 20px rgba(123, 44, 191, 0.4) !important;
 }
 
-.subtitle, .status-indicator {
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    font-size: 0.75rem;
-    color: var(--text-lavender);
-    font-weight: 600;
-    margin-bottom: 25px;
+.game-card-icon {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    font-size: 1.8rem;
+    opacity: 0.5;
 }
 
-/* =========================================
-   COMPONENTI GLASSMORPHISM
-   ========================================= */
-.game-card, .session-card, .setup-card, .portal-card {
-    background: var(--glass-bg) !important;
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: var(--glass-border) !important;
-    border-radius: 28px; /* Border-radius generoso richiesto */
-    padding: 25px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+.game-card-title {
+    font-weight: 900 !important;
+    font-size: 1.6rem !important;
+    letter-spacing: -0.5px !important;
 }
-
-/* Effetto Hover/Active (Bagliore che si intensifica) */
-.game-card:active {
-    transform: scale(0.97);
-    box-shadow: var(--amethyst-glow);
-    border-color: var(--amethyst-primary) !important;
-}
-
-/* PULSANTI AMETISTA */
-.btn-main, .btn-primary {
-    background: var(--amethyst-gradient);
-    border: none;
-    border-radius: 18px;
-    color: white;
-    font-weight: 800;
-    padding: 16px 32px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    box-shadow: var(--amethyst-glow);
-    transition: 0.3s;
-}
-
-.btn-main:active {
-    transform: translateY(2px);
-    filter: brightness(1.2);
-}
-
-/* PULSANTE BACK (VETRO) */
-.btn-back-glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(8px);
-    border: var(--glass-border);
-    color: var(--text-lavender);
-    padding: 10px 20px;
-    border-radius: 14px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 1px;
-    margin: 10px 0 20px 0;
-    align-self: flex-start;
-    cursor: pointer;
-}
-
-/* =========================================
-   FIX MODULI ESTERNI (TRASPARENZA TOTALE)
-   ========================================= */
-#lobby-wrapper, .impostore-bg, .dashboard-content {
-    background: transparent !important;
-    padding: 0 !important;
-    width: 100%;
-}
-
-::-webkit-scrollbar { display: none; }
