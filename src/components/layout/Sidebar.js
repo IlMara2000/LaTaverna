@@ -3,6 +3,7 @@ let currentLogoutFn = null;
 let isMusicOn = localStorage.getItem('taverna_music') !== 'off'; // Default ON
 
 export function initSidebar(container, user, onLogout, context = "home") {
+    // Gestione ibrida utente Discord / Ospite
     const guestData = localStorage.getItem('taverna_guest_user');
     currentSidebarUser = user || (guestData ? JSON.parse(guestData) : null);
     
@@ -21,16 +22,14 @@ function renderSidebarContent(container, context) {
     let actionBtnText = "⬅ TORNA ALLA LIBRERIA";
     let isMainHub = context === "home";
 
-    if (context === "minigames") {
-        actionBtnText = "⬅ TORNA AI MINIGIOCHI";
+    // Mostriamo il pulsante musica nei Minigiochi e nei GDR (dnd5e)
+    if (context === "minigames" || context === "dnd5e") {
+        const backText = context === "minigames" ? "⬅ TORNA AI MINIGIOCHI" : "⬅ TORNA ALLA LIBRERIA";
+        actionBtnText = backText;
+
         buttonsHtml = `
             <button class="btn-primary" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
             <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
-        `;
-    } else if (context === "dnd5e") {
-        buttonsHtml = `
-            <button class="btn-primary" id="sideMusicBtn">${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}</button>
-            <button class="btn-primary" id="sideCharacters">I MIEI EROI</button>
         `;
     } else {
         // Home / Default
@@ -79,7 +78,7 @@ function setupEventListeners(container, context, isMainHub) {
         sidebar.style.right = isOpen ? '-100%' : '0px';
     };
 
-    // Listener per il toggle (richiamato dal tasto menu esterno)
+    // Listener per il toggle
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
@@ -87,14 +86,24 @@ function setupEventListeners(container, context, isMainHub) {
     // Gestione tasto Azione (Esci o Torna)
     document.getElementById('sideActionBtn').onclick = async () => {
         toggle();
+        
         if (isMainHub) {
             currentLogoutFn();
-        } else if (context === "minigames") {
-            // Se siamo dentro un minigioco, torniamo alla lista minigiochi
-            const { showMinigames } = await import('../../features/minigames/MinigamesList.js'); 
-            showMinigames(mainContent);
-        } else {
-            // Ritorno standard alla lobby
+            return;
+        }
+
+        try {
+            if (context === "minigames") {
+                // Percorso aggiornato per risolvere l'errore Vite
+                const { showMinigames } = await import('../../features/minigames/MinigamesList.js'); 
+                showMinigames(mainContent);
+            } else {
+                const { showLobby } = await import('../../lobby.js');
+                showLobby(mainContent);
+            }
+        } catch (error) {
+            console.error("Errore di navigazione nella Sidebar:", error);
+            // Fallback estremo: ricarica la lobby se l'import dinamico fallisce
             const { showLobby } = await import('../../lobby.js');
             showLobby(mainContent);
         }
@@ -107,19 +116,21 @@ function setupEventListeners(container, context, isMainHub) {
             isMusicOn = !isMusicOn;
             localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
             musicBtn.innerText = isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF';
-            
-            // Dispatch di un evento globale così se hai un player musicale 
-            // in un altro file può sentire il cambiamento
             window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
         };
     }
 
-    // Altri tasti...
-    if (document.getElementById('sideProfile')) {
-        document.getElementById('sideProfile').onclick = async () => {
+    // Gestione Profilo
+    const profileBtn = document.getElementById('sideProfile');
+    if (profileBtn) {
+        profileBtn.onclick = async () => {
             toggle();
-            const { showProfile } = await import('../features/user/Profile.js');
-            showProfile(mainContent, currentSidebarUser);
+            try {
+                const { showProfile } = await import('../features/user/Profile.js');
+                showProfile(mainContent, currentSidebarUser);
+            } catch (error) {
+                console.error("Errore caricamento profilo:", error);
+            }
         };
     }
 }
