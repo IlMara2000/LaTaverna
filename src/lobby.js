@@ -1,4 +1,4 @@
-import { updateSidebarContext } from './components/layout/sidebar.js';
+import { updateSidebarContext } from './components/layout/Sidebar.js';
 
 export function showLobby(container) {
     document.documentElement.style.overflow = 'auto';
