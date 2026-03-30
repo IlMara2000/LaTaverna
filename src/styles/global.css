@@ -20,18 +20,16 @@
 }
 
 html, body {
-    /* Utilizzo di min-h-screen con supporto fallback */
     min-height: 100vh;
     min-height: 100dvh; 
     width: 100%;
-    /* Il background-color deve matchare perfettamente il gradiente per evitare stacchi visivi in basso */
+    /* Sfondo principale fisso: questo è quello che vedrai "dietro" tutto */
     background: radial-gradient(circle at top right, var(--deep-purple) 0%, var(--void-black) 100%) no-repeat fixed;
     background-color: var(--void-black);
     color: var(--pure-white);
     font-family: 'Inter', -apple-system, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     
-    /* Gestione scroll per evitare il "rimbalzo" bianco su iOS */
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: none; 
@@ -43,8 +41,9 @@ html, body {
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
-    /* Risolve il problema del Notch in alto */
     padding-top: env(safe-area-inset-top);
+    /* Assicuriamoci che il container UI non abbia sfondi coprenti */
+    background: transparent;
 }
 
 /* =========================================
@@ -58,6 +57,7 @@ html, body {
     height: 100vh;
     height: 100dvh;
     gap: 30px;
+    background: transparent; /* Trasparente per vedere il body */
 }
 
 #main-logo {
@@ -69,15 +69,15 @@ html, body {
 }
 
 /* =========================================
-   3. DASHBOARD STRUCTURE (Ottimizzata Safe Areas)
+   3. DASHBOARD STRUCTURE
    ========================================= */
 .dashboard-content {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* Rimosso padding-top fisso, gestito da #ui tramite safe-area */
     padding-top: 20px;
+    background: transparent;
 }
 
 .dashboard-container {
@@ -87,14 +87,15 @@ html, body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    /* Padding dinamico per la barra inferiore dell'iPhone */
     padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    background: transparent;
 }
 
 /* =========================================
-   4. UI COMPONENTS
+   4. UI COMPONENTS (Effetto Vetro per profondità)
    ========================================= */
 .session-card {
+    /* Sfondo semi-trasparente per far vedere il viola dietro */
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(15px);
@@ -126,7 +127,6 @@ html, body {
 
 .floating-btn {
     position: fixed;
-    /* Posizionamento chirurgico sopra la barra di sistema */
     bottom: calc(20px + env(safe-area-inset-bottom));
     right: 25px;
     z-index: 1000;
@@ -144,7 +144,7 @@ body {
     scrollbar-width: none;  
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 0.7; }
+/* Fix per i minigiochi: rimuovi classi che sovrascrivono lo sfondo */
+.impostore-bg {
+    background: transparent !important; /* Forza la trasparenza per vedere il body */
 }
