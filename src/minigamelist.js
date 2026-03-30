@@ -1,65 +1,117 @@
 import { updateSidebarContext } from './components/layout/Sidebar.js';
-import { showLobby } from './lobby.js';
 
-export function showMinigamesLobby(container) {
-    updateSidebarContext("minigames");
+/**
+ * DASHBOARD LIBRERIA (LOBBY)
+ * Tema: Ametista Dark UI
+ * File CSS di riferimento: src/styles/global.css
+ */
+export function showLobby(container) {
+    // --- SBLOCCO GLOBALE SCROLL ---
+    // Questi comandi resettano i blocchi che Safari/iOS applicano a volte durante le transizioni
+    document.documentElement.style.overflow = 'auto';
+    document.body.style.overflow = 'auto';
+    document.body.style.position = 'static'; 
+    window.scrollTo(0, 0); 
+    
+    updateSidebarContext("home");
 
-    const games = [
-        { id: 'solo', name: 'SOLO', color: 'linear-gradient(135deg, #ff4444, #ffcc00)', icon: '🃏' },
-        { id: 'impostore', name: 'IMPOSTORE', color: 'linear-gradient(135deg, #ff3366, #330011)', icon: '🕵️‍♂️' },
-        { id: 'briscola', name: 'BRISCOLA', color: 'linear-gradient(135deg, #2a0a4a, #4a1a6a)', icon: '⚔️' },
-        { id: 'scopa', name: 'SCOPA', color: 'linear-gradient(135deg, #825a2c, #05020a)', icon: '🧹' },
-        { id: 'burraco', name: 'BURRACO', color: 'linear-gradient(135deg, #004d40, #00241a)', icon: '🃏' },
-        { id: 'scacchi', name: 'SCACCHI', color: 'linear-gradient(135deg, #333, #000)', icon: '♟️' },
-        { id: 'solitario', name: 'SOLITARIO', color: 'linear-gradient(135deg, #1e3a8a, #1e1b4b)', icon: '🧘' },
-        { id: 'numeri', name: 'NUMERI', color: 'linear-gradient(135deg, #0f766e, #134e4a)', icon: '🔢' }
-    ];
-
+    const isGuest = localStorage.getItem('taverna_guest_user') !== null;
+    const lockClass = isGuest ? "is-locked" : "is-clickable";
+    const statusText = isGuest ? '🔴 MODALITÀ OSPITE' : '🟢 ACCESSO COMPLETO';
+    
+    // Struttura HTML pulita: le classi richiamano direttamente global.css
     container.innerHTML = `
-        <div id="lobby-wrapper" class="fade-in">
+        <div id="lobby-wrapper" class="fade-in" style="-webkit-overflow-scrolling: touch;">
             <div class="dashboard-container">
                 
-                <button id="btn-back-main" class="btn-back-glass">
-                    ← TORNA ALLA LIBRERIA
-                </button>
-
                 <header class="lobby-header">
-                    <h1>MINI <span class="text-amethyst">GIOCHI</span></h1>
+                    <p class="subtitle">${statusText}</p>
+                    <h1 class="main-title">LA <span class="text-amethyst">LIBRERIA</span></h1>
                 </header>
-
-                <div class="grid-layout minigames-grid">
-                    ${games.map(game => `
-                        <div class="game-card minigame-item" id="btn-${game.id}" 
-                             style="background: linear-gradient(to top, rgba(5,2,10,0.9), rgba(5,2,10,0.2)), ${game.color};">
-                            <div class="game-card-icon">${game.icon}</div>
-                            <h2 class="game-card-title">${game.name}</h2>
-                        </div>
-                    `).join('')}
+                
+                <div id="btn-portal-minigames" class="game-card portal-card is-clickable">
+                    <div class="card-content">
+                        <p class="subtitle" style="color: #c77dff;">COLLEZIONE AGGIORNATA</p>
+                        <h2 class="card-title">MINI <span class="text-amethyst">GIOCHI</span></h2>
+                        <p class="card-desc">Carte, Logica e Tradizione della Taverna</p>
+                    </div>
+                    <div class="card-icon-large">🎮</div>
                 </div>
+
+                <section class="lobby-section">
+                    <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 30px 0 15px 5px;">
+                        <h2 class="subtitle">🎲 Mondi & GDR</h2>
+                    </div>
+
+                    <div class="grid-layout" style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                        <div class="game-card ${lockClass}" id="btn-dnd5e">
+                            ${isGuest ? '<div class="badge-guest">SOLO ONLINE</div>' : ''}
+                            <div class="card-footer" style="margin-top: 40px;">
+                                <h2 class="card-title-sm">D&D 5E</h2>
+                                <p class="card-desc">Dashboard Personaggi</p>
+                            </div>
+                            <div class="card-icon-small">🐉</div>
+                        </div>
+
+                        <div class="game-card is-locked" style="opacity: 0.4;">
+                            <div class="card-footer" style="margin-top: 40px;">
+                                <h2 class="card-title-sm">CYBERPUNK</h2>
+                                <p class="card-desc">In arrivo...</p>
+                            </div>
+                            <div class="card-icon-small">⚡</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="lobby-section">
+                    <div class="section-title" style="display: flex; align-items: center; gap: 10px; margin: 30px 0 15px 5px;">
+                        <h2 class="subtitle">🛠️ Utility Taverna</h2>
+                    </div>
+                    <div class="game-card is-clickable" id="btn-dice-roller">
+                        <div class="card-footer" style="margin-top: 20px;">
+                            <h2 class="card-title-sm">LANCIA DADI</h2>
+                            <p class="card-desc">3D Physics Roller</p>
+                        </div>
+                        <div class="card-icon-small">🎲</div>
+                    </div>
+                </section>
                 
             </div>
         </div>
     `;
 
-    // --- GESTIONE CLICK ---
-    document.getElementById('btn-back-main').onclick = () => showLobby(container);
-
-    games.forEach(game => {
-        const btn = document.getElementById(`btn-${game.id}`);
-        if (!btn) return;
-        btn.onclick = async () => {
+    // --- LOGICA DI NAVIGAZIONE ---
+    
+    // Portal Minigames
+    const btnMinigames = container.querySelector('#btn-portal-minigames');
+    if (btnMinigames) {
+        btnMinigames.onclick = async () => {
             try {
-                const module = await import(`./dashboards/minigames/${game.id}.js`);
-                const initFunctions = {
-                    solo: 'initSoloGame', impostore: 'initImpostore', briscola: 'initBriscola',
-                    scopa: 'initScopa', burraco: 'initBurraco', scacchi: 'initScacchi',
-                    solitario: 'initSolitario', numeri: 'initNumeri'
-                };
-                const fnName = initFunctions[game.id];
-                if (module && module[fnName]) module[fnName](container);
-            } catch (e) { 
-                console.warn("Errore caricamento gioco:", e); 
+                const { showMinigamesLobby } = await import('./minigamelist.js');
+                showMinigamesLobby(container);
+            } catch (err) {
+                console.error("Errore caricamento minigamelist:", err);
             }
         };
-    });
+    }
+    
+    // D&D 5E
+    const btnDnd = container.querySelector('#btn-dnd5e');
+    if (btnDnd) {
+        btnDnd.onclick = async () => {
+            if (isGuest) return alert("Questa funzione richiede il login con Discord!");
+            try {
+                const { initDndDashboard } = await import('./dashboards/dnd5e.js');
+                initDndDashboard(container);
+            } catch (err) {
+                console.error("Errore caricamento D&D:", err);
+            }
+        };
+    }
+
+    // Dice Roller
+    const btnDice = container.querySelector('#btn-dice-roller');
+    if (btnDice) {
+        btnDice.onclick = () => alert("Il set di dadi incantati sta arrivando...");
+    }
 }
