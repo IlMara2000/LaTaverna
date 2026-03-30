@@ -11,168 +11,152 @@ const VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 export function initScopa(container) {
     updateSidebarContext("minigames");
 
+    // Blocco Scroll per Mobile
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
     let state = {
         deck: [], playerHand: [], botHand: [], table: [],
         playerCaptured: [], botCaptured: [], playerScopas: 0, botScopas: 0,
         lastCapturePlayer: true, turn: 'player', isAnimating: false
     };
 
-    renderLayout(container, state);
+    renderLayout(container);
     startGame(state, container);
 }
 
+// --- LOGICA DI GIOCO ---
 function startGame(state, container) {
     state.deck = [];
     SUITS.forEach(s => VALUES.forEach(v => state.deck.push({ suit: s.id, value: v })));
+    
+    // Shuffle
     for (let i = state.deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [state.deck[i], state.deck[j]] = [state.deck[j], state.deck[i]];
     }
+
     state.playerHand = state.deck.splice(0, 3);
     state.botHand = state.deck.splice(0, 3);
     state.table = state.deck.splice(0, 4);
     renderGame(state, container);
 }
 
-function renderLayout(container, state) {
+// --- INTERFACCIA MOBILE-FIRST ---
+function renderLayout(container) {
     container.innerHTML = `
     <style>
+        .mobile-emulator { width: 100%; height: 100dvh; background: #05010a; display: flex; justify-content: center; align-items: center; }
         .scopa-wrapper { 
-            width:100%; height:100dvh; 
-            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
-            color:white; font-family:'Poppins',sans-serif; 
-            position:relative; overflow:hidden;
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-            padding: 40px 0;
+            width: 100%; max-width: 430px; height: 100%; max-height: 932px;
+            background: radial-gradient(circle at top, #1b2735 0%, #090a0f 100%); 
+            color: white; font-family: 'Poppins', sans-serif; 
+            display: flex; flex-direction: column; padding: 20px; overflow: hidden; position: relative;
         }
         
-        .score-widget { 
-            position:absolute; top:20px; right:20px; 
-            background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); 
-            border: 1px solid rgba(255,255,255,0.1); padding: 15px; 
-            border-radius: 20px; min-width: 160px; z-index: 100; 
+        .score-bar { 
+            display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); 
+            padding: 10px 15px; border-radius: 15px; font-size: 11px; font-weight: 700; margin-bottom: 10px;
         }
-        .score-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.8rem; font-weight: 700; }
-        .score-main { font-size: 1.1rem; color: #9d4ede; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px; margin-bottom: 5px; }
-
-        .card-scopa { 
-            width: 95px; height: 135px; 
-            background: rgba(255,255,255,0.07); border-radius: 12px; 
-            color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            font-weight: 900; border: 1px solid rgba(255,255,255,0.1); 
-            transition: 0.3s; position: relative; cursor:pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .card-scopa:hover { transform: translateY(-10px) scale(1.05); border-color: #9d4ede; z-index: 10; }
-        .card-bot { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; opacity: 0.8; cursor: default; }
 
         .table-area { 
-            flex-grow: 1; width: 90%; max-width: 800px;
-            display: flex; align-items: center; justify-content: center; 
-            flex-wrap: wrap; gap: 20px; 
-            margin: 20px 0; padding: 30px;
-            border-radius: 40px; background: rgba(255,255,255,0.02);
-            border: 2px dashed rgba(157, 78, 221, 0.1);
-            min-height: 320px;
+            flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-content: center; justify-content: center;
+            background: rgba(0,0,0,0.2); border-radius: 20px; margin: 15px 0; border: 1px dashed rgba(255,255,255,0.1);
         }
-        
-        .hand-container { display: flex; gap: 15px; justify-content: center; width: 100%; min-height: 140px; }
-        
-        .turn-indicator { 
-            position: absolute; left: 20px; top: 20px; 
-            padding: 10px 20px; border-radius: 12px; 
-            font-size: 14px; font-weight: 800; text-transform: uppercase; 
-        }
-        .active-p { background: #00ffa3; color: #000; box-shadow: 0 0 20px rgba(0,255,163,0.3); }
-        .active-b { background: #ff416c; color: #fff; box-shadow: 0 0 20px rgba(255,65,108,0.3); }
 
-        #toast-scopa { 
-            position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); 
-            font-size:6rem; font-weight:900; color:#9d4ede; 
-            text-shadow: 0 0 40px rgba(157,78,221,0.8); display:none; 
-            pointer-events:none; z-index:2000;
+        .card-scopa { 
+            width: 70px; height: 105px; background: rgba(255,255,255,0.08); border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.1); position: relative; transition: 0.2s;
         }
+        .player-card { cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .player-card:active { transform: scale(0.9); }
+        .bot-card { background: linear-gradient(135deg, #2a0a4a, #05020a); border-color: #9d4ede; }
+
+        .hand { display: flex; gap: 10px; justify-content: center; min-height: 110px; }
+
+        #scopa-toast {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 3rem; font-weight: 900; color: #ffbd39; text-shadow: 0 0 20px rgba(255,189,57,0.6);
+            z-index: 100; display: none; pointer-events: none; animation: pop 0.5s ease;
+        }
+        @keyframes pop { 0% { transform: translate(-50%, -50%) scale(0.5); } 100% { transform: translate(-50%, -50%) scale(1.2); } }
     </style>
     
-    <div class="scopa-wrapper">
-        <div id="turn-tag" class="turn-indicator active-p">TUO TURNO</div>
+    <div class="mobile-emulator">
+        <div class="scopa-wrapper">
+            <div class="score-bar">
+                <span>TU: <span id="p-score">0</span> (S: <span id="p-s">0</span>)</span>
+                <span id="turn-display" style="color:#00ffa3">IL TUO TURNO</span>
+                <span>BOT: <span id="b-score">0</span> (S: <span id="b-s">0</span>)</span>
+            </div>
 
-        <div class="score-widget">
-            <div class="score-row score-main"><span>SCOPE</span> <span><span id="p-scopa">0</span> - <span id="b-scopa">0</span></span></div>
-            <div class="score-row" style="color:rgba(255,255,255,0.5)"><span>CARTE</span> <span><span id="p-cap">0</span> - <span id="b-cap">0</span></span></div>
-            <div class="score-row" style="color:#ffbd39"><span>DENARI</span> <span><span id="p-den">0</span> - <span id="b-den">0</span></span></div>
+            <div id="bot-hand" class="hand"></div>
+            <div id="table-ui" class="table-area"></div>
+            <div id="player-hand" class="hand"></div>
+            
+            <div id="scopa-toast">SCOPA!</div>
         </div>
-
-        <div id="bot-hand-ui" class="hand-container"></div>
-        <div class="table-area" id="table-ui"></div>
-        <div id="player-hand-ui" class="hand-container"></div>
-        
-        <div id="toast-scopa">SCOPA!</div>
     </div>
     `;
 }
 
 function renderGame(state, container) {
     const tableUI = container.querySelector('#table-ui');
-    const playerUI = container.querySelector('#player-hand-ui');
-    const botUI = container.querySelector('#bot-hand-ui');
-    const turnTag = container.querySelector('#turn-tag');
+    const playerUI = container.querySelector('#player-hand');
+    const botUI = container.querySelector('#bot-hand');
+    const turnDisplay = container.querySelector('#turn-display');
 
-    if(state.turn === 'player') {
-        turnTag.innerText = "TUO TURNO";
-        turnTag.className = "turn-indicator active-p";
-    } else {
-        turnTag.innerText = "TURNO BOT";
-        turnTag.className = "turn-indicator active-b";
-    }
+    // Update Turn UI
+    turnDisplay.innerText = state.turn === 'player' ? "IL TUO TURNO" : "TURNO BOT";
+    turnDisplay.style.color = state.turn === 'player' ? "#00ffa3" : "#ff416c";
 
-    tableUI.innerHTML = state.table.map(c => renderCard(c)).join('');
-    playerUI.innerHTML = state.playerHand.map((c, i) => renderCard(c, i, true)).join('');
-    botUI.innerHTML = state.botHand.map(() => `<div class="card-scopa card-bot"></div>`).join('');
+    // Render Cards
+    tableUI.innerHTML = state.table.map(c => renderCardHTML(c)).join('');
+    playerUI.innerHTML = state.playerHand.map((c, i) => renderCardHTML(c, i, true)).join('');
+    botUI.innerHTML = state.botHand.map(() => `<div class="card-scopa bot-card"></div>`).join('');
 
-    container.querySelector('#p-scopa').innerText = state.playerScopas;
-    container.querySelector('#b-scopa').innerText = state.botScopas;
-    container.querySelector('#p-cap').innerText = state.playerCaptured.length;
-    container.querySelector('#b-cap').innerText = state.botCaptured.length;
-    container.querySelector('#p-den').innerText = state.playerCaptured.filter(c => c.suit === 'denari').length;
-    container.querySelector('#b-den').innerText = state.botCaptured.filter(c => c.suit === 'denari').length;
+    // Update Stats
+    container.querySelector('#p-score').innerText = state.playerCaptured.length;
+    container.querySelector('#b-score').innerText = state.botCaptured.length;
+    container.querySelector('#p-s').innerText = state.playerScopas;
+    container.querySelector('#b-s').innerText = state.botScopas;
 
-    playerUI.querySelectorAll('.card-scopa').forEach(card => {
+    // Attach Events
+    playerUI.querySelectorAll('.player-card').forEach(card => {
         card.onclick = () => {
             if (state.turn === 'player' && !state.isAnimating) {
-                handlePlay(parseInt(card.dataset.idx), 'player', state, container);
+                handleMove(parseInt(card.dataset.idx), 'player', state, container);
             }
         };
     });
 }
 
-function renderCard(card, index = 0, isPlayer = false) {
-    const suitData = SUITS.find(s => s.id === card.suit);
-    const dataIdx = isPlayer ? `data-idx="${index}"` : '';
-    
-    // Logica icone per le figure
-    let displayVal = card.value;
-    if (card.value === 1) displayVal = 'A';
-    if (card.value === 8) displayVal = '👨‍✈️'; // Fante
-    if (card.value === 9) displayVal = '🐎'; // Cavallo
-    if (card.value === 10) displayVal = '👑'; // Re
-    
+function renderCardHTML(card, index = 0, isPlayer = false) {
+    const suit = SUITS.find(s => s.id === card.suit);
+    const label = card.value === 1 ? 'A' : (card.value === 8 ? 'F' : (card.value === 9 ? 'C' : (card.value === 10 ? 'R' : card.value)));
     return `
-        <div ${dataIdx} class="card-scopa">
-            <span style="font-size:1.4rem; filter: drop-shadow(0 0 5px ${suitData.color});">${suitData.icon}</span>
-            <span style="font-size:2.2rem; font-weight:900; margin-top:5px; color:white;">${displayVal}</span>
+        <div class="card-scopa ${isPlayer ? 'player-card' : ''}" ${isPlayer ? `data-idx="${index}"` : ''}>
+            <span style="font-size:12px; color:${suit.color}">${suit.icon}</span>
+            <span style="font-size:22px; font-weight:900;">${label}</span>
         </div>
     `;
 }
 
-function findCaptures(card, table) {
+// --- LOGICA PRESA ---
+function findBestCapture(card, table) {
+    // 1. Presa singola (obbligatoria se esiste)
     const single = table.find(c => c.value === card.value);
     if (single) return [single];
+
+    // 2. Somma di due carte
     for (let i = 0; i < table.length; i++) {
         for (let j = i + 1; j < table.length; j++) {
             if (table[i].value + table[j].value === card.value) return [table[i], table[j]];
         }
     }
+    // 3. Somma di tre carte
     for (let i = 0; i < table.length; i++) {
         for (let j = i + 1; j < table.length; j++) {
             for (let k = j + 1; k < table.length; k++) {
@@ -183,23 +167,26 @@ function findCaptures(card, table) {
     return null;
 }
 
-function handlePlay(cardIndex, actor, state, container) {
+function handleMove(idx, actor, state, container) {
     state.isAnimating = true;
     const hand = actor === 'player' ? state.playerHand : state.botHand;
-    const capturedPool = actor === 'player' ? state.playerCaptured : state.botCaptured;
-    const playedCard = hand.splice(cardIndex, 1)[0];
-    const toCapture = findCaptures(playedCard, state.table);
+    const pool = actor === 'player' ? state.playerCaptured : state.botCaptured;
+    const card = hand.splice(idx, 1)[0];
     
-    if (toCapture) {
-        capturedPool.push(playedCard, ...toCapture);
-        state.table = state.table.filter(c => !toCapture.includes(c));
+    const captures = findBestCapture(card, state.table);
+    
+    if (captures) {
+        pool.push(card, ...captures);
+        state.table = state.table.filter(c => !captures.includes(c));
         state.lastCapturePlayer = (actor === 'player');
+        
+        // Verifica Scopa
         if (state.table.length === 0 && state.deck.length > 0) {
             if (actor === 'player') state.playerScopas++; else state.botScopas++;
-            showScopaToast(container);
+            triggerScopa(container);
         }
     } else {
-        state.table.push(playedCard);
+        state.table.push(card);
     }
 
     state.turn = actor === 'player' ? 'bot' : 'player';
@@ -207,41 +194,38 @@ function handlePlay(cardIndex, actor, state, container) {
 
     setTimeout(() => {
         state.isAnimating = false;
-        checkNextStep(state, container);
+        if (state.playerHand.length === 0 && state.botHand.length === 0) {
+            if (state.deck.length > 0) {
+                state.playerHand = state.deck.splice(0, 3);
+                state.botHand = state.deck.splice(0, 3);
+                renderGame(state, container);
+            } else {
+                return finishMatch(state, container);
+            }
+        }
+        if (state.turn === 'bot') botLogic(state, container);
     }, 600);
 }
 
-function checkNextStep(state, container) {
-    if (state.playerHand.length === 0 && state.botHand.length === 0) {
-        if (state.deck.length > 0) {
-            state.playerHand = state.deck.splice(0, 3);
-            state.botHand = state.deck.splice(0, 3);
-            renderGame(state, container);
-        } else {
-            endMatch(state, container);
-        }
-    }
-    if (state.turn === 'bot' && !state.isAnimating) {
-        setTimeout(() => {
-            let bestIdx = state.botHand.findIndex(c => findCaptures(c, state.table));
-            if (bestIdx === -1) bestIdx = 0;
-            handlePlay(bestIdx, 'bot', state, container);
-        }, 800);
-    }
+function botLogic(state, container) {
+    setTimeout(() => {
+        let idx = state.botHand.findIndex(c => findBestCapture(c, state.table));
+        if (idx === -1) idx = 0; // Scarta la prima se non ha prese
+        handleMove(idx, 'bot', state, container);
+    }, 800);
 }
 
-function showScopaToast(container) {
-    const t = container.querySelector('#toast-scopa');
-    t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 1500);
+function triggerScopa(container) {
+    const toast = container.querySelector('#scopa-toast');
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 1200);
 }
 
-function endMatch(state, container) {
+function finishMatch(state, container) {
     if (state.table.length > 0) {
-        if (state.lastCapturePlayer) state.playerCaptured.push(...state.table);
-        else state.botCaptured.push(...state.table);
-        state.table = [];
+        const pool = state.lastCapturePlayer ? state.playerCaptured : state.botCaptured;
+        pool.push(...state.table);
     }
-    alert("Fine Partita!");
+    alert(`Partita Finita!\nTu: ${state.playerCaptured.length} carte\nBot: ${state.botCaptured.length} carte`);
     window.location.hash = "lobby";
 }
