@@ -1,9 +1,18 @@
 /* =========================================
-   FIX AMETISTA DARK UI - INTEGRALE
+   FIX AMETISTA DARK UI - INTEGRALE (SAFARI PROOF)
    ========================================= */
 
-/* Gestione Root e Safe Areas */
-#ui {
+/* Blocca il fastidioso effetto "rimbalzo" bianco di iOS */
+html, body {
+    height: 100%;
+    overscroll-behavior-y: none;
+    background-color: #05010a;
+}
+
+/* Gestione Root e Safe Areas dinamiche */
+#ui, #lobby-wrapper {
+    min-height: 100dvh !important; 
+    box-sizing: border-box;
     padding-top: env(safe-area-inset-top) !important;
 }
 
@@ -12,8 +21,15 @@
     max-width: 600px;
     margin: 0 auto;
     padding: 20px;
-    padding-top: calc(15px + env(safe-area-inset-top)) !important;
-    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+    /* FIX ALTO: Spazio per il Notch dell'iPhone */
+    padding-top: calc(20px + env(safe-area-inset-top)) !important;
+    /* FIX BASSO: Spazio gigante per non far coprire l'ultima card dalla barra URL di Safari */
+    padding-bottom: calc(140px + env(safe-area-inset-bottom)) !important;
+}
+
+/* Fix per spingere l'intestazione lontana dai bordi critici */
+.lobby-header {
+    margin-top: 20px !important;
 }
 
 /* Stile Card Base (Per tutte le card della lobby) */
@@ -89,4 +105,9 @@
     font-weight: 800;
     margin-bottom: 20px;
     display: inline-block;
+    
+    /* FIX CHIRURGICO: Mai più sopra l'orologio */
+    margin-top: calc(10px + env(safe-area-inset-top)) !important; 
+    position: relative;
+    z-index: 100;
 }
