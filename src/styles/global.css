@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 3.9)
+   LA TAVERNA - AMETHYST DARK UI (VER. 4.0)
    ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&family=Montserrat:wght@700;900&display=swap');
@@ -28,10 +28,6 @@ html, body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Scrollbar minimale */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-thumb { background: var(--amethyst-deep); border-radius: 10px; }
-
 #app {
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top);
@@ -39,157 +35,105 @@ html, body {
 }
 
 /* =========================================
-   LOGO FAVICON (ALTO A DESTRA)
+   LOGO FAVICON (PIÙ DISCRETO)
    ========================================= */
 .nav-logo-right {
     position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 55px;
-    height: 55px;
+    top: 15px;
+    right: 15px;
+    width: 48px; /* Ridotto leggermente per eleganza */
+    height: 48px;
     z-index: 999;
-    filter: drop-shadow(0 0 12px var(--amethyst-glow));
+    filter: drop-shadow(0 0 10px var(--amethyst-glow));
     animation: floatLogo 3.5s ease-in-out infinite;
     cursor: pointer;
-    transition: transform 0.3s ease;
-}
-
-.nav-logo-right:active { transform: scale(0.9); }
-
-@keyframes floatLogo {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
 }
 
 /* =========================================
-   SIDEBAR & BOTTONI (MIGLIORATI)
+   SIDEBAR (OTTIMIZZATA MOBILE)
    ========================================= */
 .sidebar-glass {
     position: fixed;
     right: -110%;
     top: 0;
-    width: 300px;
+    width: 85%; /* Larghezza dinamica su mobile */
+    max-width: 320px;
     height: 100dvh;
-    background: rgba(10, 5, 20, 0.95);
+    background: rgba(10, 5, 20, 0.96);
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
     z-index: 10001;
-    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: 50px 30px;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 60px 25px;
     display: flex;
     flex-direction: column;
     border-left: 1px solid var(--glass-border);
 }
 
-.sidebar-glass.active {
-    right: 0;
-    box-shadow: -20px 0 60px rgba(0,0,0,0.8);
-}
+.sidebar-glass.active { right: 0; }
 
 .btn-back-glass {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--glass-border);
-    color: white;
-    padding: 18px;
-    border-radius: 20px;
-    font-weight: 700;
-    margin-bottom: 15px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-family: 'Montserrat', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.btn-back-glass:hover, .btn-back-glass:active {
-    background: rgba(157, 78, 221, 0.15);
-    border-color: var(--amethyst-bright);
-    box-shadow: 0 0 20px rgba(157, 78, 221, 0.2);
+    padding: 16px; /* Più compatto */
+    font-size: 0.9rem;
+    border-radius: 16px;
+    margin-bottom: 12px;
 }
 
 /* =========================================
-   TRIGGER & X ANIMATION
+   TRIGGER FLOTTANTE (DIMENSIONI SMART)
    ========================================= */
 .floating-trigger {
     position: fixed;
-    bottom: 40px;
-    right: 30px;
-    width: 72px;
-    height: 72px;
-    border-radius: 24px; 
+    bottom: 30px; /* Più vicino al bordo */
+    right: 25px;
+    width: 64px; /* Ridotto da 72px: più bilanciato su iPhone */
+    height: 64px;
+    border-radius: 20px; /* Leggermente meno tondo */
     background: var(--amethyst-bright);
-    border: none;
-    cursor: pointer;
     z-index: 10002;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 6px;
-    box-shadow: 0 10px 30px rgba(157, 78, 221, 0.4);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.floating-trigger:active { transform: scale(0.9); }
-
-.floating-trigger.is-active {
-    background: var(--danger) !important;
-    box-shadow: 0 10px 30px rgba(255, 68, 68, 0.4);
+    gap: 5px;
+    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
 }
 
 .nav-bar {
-    width: 30px;
+    width: 26px; /* Barre più corte per il cerchio più piccolo */
     height: 3px;
-    background: white;
-    border-radius: 4px;
-    transition: 0.3s ease-in-out;
 }
-
-.floating-trigger.is-active #bar1 { transform: translateY(9px) rotate(45deg); }
-.floating-trigger.is-active #bar2 { opacity: 0; transform: translateX(10px); }
-.floating-trigger.is-active #bar3 { transform: translateY(-9px) rotate(-45deg); }
 
 /* =========================================
-   CARDS & TYPOGRAPHY
+   CARDS & GRIGLIA (COMPATTEZZA)
    ========================================= */
-.game-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    border-radius: 28px;
-    padding: 30px;
-    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.game-card:active { transform: scale(0.97); }
-
-/* Effetto di luce interna alle card */
-.game-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
-    pointer-events: none;
+.dashboard-container {
+    padding: 20px 20px 120px 20px;
 }
 
 .main-title {
-    font-weight: 900;
-    font-size: 3.2rem;
-    font-family: 'Montserrat', sans-serif;
-    letter-spacing: -1px;
-    background: linear-gradient(135deg, #ffffff 20%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px rgba(183, 156, 237, 0.3));
+    font-size: 2.6rem; /* Ridotto per evitare l'andata a capo brutta */
+    margin-bottom: 25px;
 }
 
-.text-amethyst {
-    color: var(--amethyst-bright);
-    text-shadow: 0 0 15px var(--amethyst-glow);
+.game-card {
+    border-radius: 24px;
+    padding: 20px; /* Meno padding interno per mostrare più contenuto */
+    min-height: 140px; /* Altezza minima per le card orizzontali */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* Griglia per i Mini Giochi (Scopa, etc) */
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Due colonne fisse su mobile */
+    gap: 15px;
+}
+
+@media (max-width: 380px) {
+    .main-title { font-size: 2.2rem; }
+    .floating-trigger { width: 58px; height: 58px; }
 }
