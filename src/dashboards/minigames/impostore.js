@@ -8,86 +8,96 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 let gameData = {
     players: [], 
     wordObj: { word: '', alt: '' },
-    roles: [], // Array di oggetti { name, role: 'civil' | 'impostor' | 'undercover' }
-    currentIndex: 0
+    roles: [],
+    currentIndex: 0,
+    config: { impostors: 1, undercover: 0 }
 };
 
-// Database con coppie di parole simili per Undercover
 const WORDS_DATABASE = [
-    { word: "Pizza", alt: "Focaccia" },
-    { word: "Colosseo", alt: "Arena" },
-    { word: "Calcio", alt: "Calcetto" },
-    { word: "Smartphone", alt: "Tablet" },
-    { word: "Venezia", alt: "Amsterdam" },
-    { word: "Leone", alt: "Tigre" },
-    { word: "Cinema", alt: "Teatro" },
-    { word: "Ferrari", alt: "Lamborghini" },
-    { word: "Montagna", alt: "Collina" },
-    { word: "Caffè", alt: "Tè" },
-    { word: "Vino", alt: "Birra" },
-    { word: "Gatto", alt: "Tigre" },
-    { word: "Aeroplano", alt: "Elicottero" },
-    { word: "Spiaggia", alt: "Scogliera" },
-    { word: "Zaino", alt: "Borsa" }
+    { word: "Pizza", alt: "Focaccia" }, { word: "Colosseo", alt: "Arena" },
+    { word: "Calcio", alt: "Calcetto" }, { word: "Smartphone", alt: "Tablet" },
+    { word: "Venezia", alt: "Amsterdam" }, { word: "Leone", alt: "Tigre" },
+    { word: "Cinema", alt: "Teatro" }, { word: "Ferrari", alt: "Lamborghini" },
+    { word: "Montagna", alt: "Collina" }, { word: "Caffè", alt: "Tè" },
+    { word: "Vino", alt: "Birra" }, { word: "Aeroplano", alt: "Elicottero" },
+    { word: "Spiaggia", alt: "Scogliera" }, { word: "Zaino", alt: "Borsa" }
 ];
 
 export function initImpostore(container) {
     updateSidebarContext("minigames");
+    
+    // Blocco Scroll
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
     renderSetup(container);
 }
 
 function createPlayerInputHTML(value = "", index) {
     return `
-        <div class="player-input-wrapper" style="display: flex; gap: 10px; width: 100%; align-items: center; margin-bottom: 10px;">
+        <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
-                   style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none; font-family: inherit;">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: 1px solid rgba(255, 65, 108, 0.3); color: #ff416c; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 18px;">✕</span>
-            </button>
+                   style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px;">
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold;">✕</button>
         </div>
     `;
 }
 
-// --- 1. SETUP ---
+// --- 1. SETUP (OTTIMIZZATO MOBILE) ---
 function renderSetup(container) {
     const initialPlayers = gameData.players.length > 0 ? gameData.players.map(p => p.name) : ["", "", ""];
 
     container.innerHTML = `
         <style>
-            .impostore-bg { width: 100%; min-height: 100dvh; background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); color: white; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
-            .setup-card { width: 100%; max-width: 400px; background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); padding: 25px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.05); }
-            .btn-main { background: linear-gradient(45deg, #ff416c, #ff4b2b); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; transition: 0.3s; width: 100%; text-transform: uppercase; letter-spacing: 1px; }
-            .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 12px 18px; border-radius: 15px; }
-            .config-row span { font-size: 14px; font-weight: 600; opacity: 0.8; }
-            .config-row select { background: transparent; color: white; border: none; font-weight: 800; font-family: inherit; font-size: 16px; outline: none; cursor: pointer; }
+            .mobile-emulator { width: 100%; height: 100dvh; background: #05010a; display: flex; justify-content: center; align-items: center; }
+            .impostore-wrapper { 
+                width: 100%; max-width: 430px; height: 100%; max-height: 932px; 
+                background: radial-gradient(circle at top, #1b2735 0%, #090a0f 100%); 
+                color: white; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; padding: 20px; overflow-y: auto;
+            }
+            .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 80px; }
+            .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); }
+            .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px; }
+            .config-row select { background: transparent; color: #9d4ede; border: none; font-weight: 900; font-size: 16px; outline: none; }
+            .main-title { font-family: 'Montserrat'; font-weight: 900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 2.2rem; margin-top: 20px; margin-bottom: 5px; }
         </style>
 
-        <div class="impostore-bg">
-            <h1 style="font-size: 2.5rem; font-weight: 900; background: linear-gradient(to right, #ff416c, #ff4b2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">IMPOSTORE</h1>
-            <p style="opacity: 0.5; margin-bottom: 25px;">Settings Partita</p>
+        <div class="mobile-emulator">
+            <div class="impostore-wrapper">
+                <h1 class="main-title">IMPOSTORE</h1>
+                <p style="opacity: 0.5; text-align: center; font-size: 12px; margin-bottom: 25px;">LOCAL PARTY MODE</p>
 
-            <div class="setup-card">
-                <div class="config-row">
-                    <span>🕵️ Impostori</span>
-                    <select id="select-impostors">
-                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                    </select>
-                </div>
-                <div class="config-row">
-                    <span>🕶️ Undercover</span>
-                    <select id="select-undercover">
-                        <option value="0">0</option><option value="1">1</option><option value="2">2</option>
-                    </select>
-                </div>
+                <div class="setup-card">
+                    <div class="config-row">
+                        <span>🕵️ Impostori</span>
+                        <select id="select-impostors">
+                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                        </select>
+                    </div>
+                    <div class="config-row">
+                        <span>🕶️ Undercover</span>
+                        <select id="select-undercover">
+                            <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                        </select>
+                    </div>
 
-                <div id="player-inputs-container" style="margin-top: 20px;">
-                    ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
+                    <div id="player-inputs-container" style="margin-top: 15px;">
+                        ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
+                    </div>
+                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px;">+ AGGIUNGI GIOCATORE</button>
+                    <button id="start-game" class="btn-main">Inizia Partita</button>
                 </div>
-                <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 12px; border-radius: 12px; cursor: pointer; width: 100%; margin: 15px 0;">+ AGGIUNGI GIOCATORE</button>
-                <button id="start-game" class="btn-main">Inizia Partita</button>
             </div>
         </div>
     `;
+
+    // Event Delegation per cancellazione
+    container.querySelector('#player-inputs-container').onclick = (e) => {
+        if (e.target.classList.contains('delete-player')) {
+            e.target.closest('.player-input-wrapper').remove();
+        }
+    };
 
     container.querySelector('#add-player').onclick = () => {
         const cont = container.querySelector('#player-inputs-container');
@@ -99,30 +109,23 @@ function renderSetup(container) {
 
     container.querySelector('#start-game').onclick = () => {
         const names = Array.from(container.querySelectorAll('.player-input')).map(i => i.value.trim()).filter(n => n !== "");
-        const numImp = parseInt(container.querySelector('#select-impostors').value);
-        const numUnd = parseInt(container.querySelector('#select-undercover').value);
+        gameData.config.impostors = parseInt(container.querySelector('#select-impostors').value);
+        gameData.config.undercover = parseInt(container.querySelector('#select-undercover').value);
 
-        if (names.length < (numImp + numUnd + 1)) {
-            return alert(`Con questi ruoli servono almeno ${numImp + numUnd + 1} giocatori!`);
+        if (names.length < (gameData.config.impostors + gameData.config.undercover + 1)) {
+            return alert(`Servono più giocatori per questi ruoli!`);
         }
 
-        setupRoles(names, numImp, numUnd);
+        setupRoles(names, gameData.config.impostors, gameData.config.undercover);
         startNewRound(container);
     };
 }
 
 function setupRoles(names, numImp, numUnd) {
     gameData.players = names.map(name => ({ name, role: 'civil' }));
-    
-    // Mescola indici
     let indices = [...Array(names.length).keys()].sort(() => Math.random() - 0.5);
-    
-    // Assegna Impostori
     for(let i=0; i<numImp; i++) gameData.players[indices.pop()].role = 'impostor';
-    // Assegna Undercover
     for(let i=0; i<numUnd; i++) gameData.players[indices.pop()].role = 'undercover';
-    
-    // Scegli parola
     gameData.wordObj = WORDS_DATABASE[Math.floor(Math.random() * WORDS_DATABASE.length)];
 }
 
@@ -134,14 +137,16 @@ function startNewRound(container) {
 function renderReveal(container) {
     const currentPlayer = gameData.players[gameData.currentIndex];
 
-    container.innerHTML = `
-        <div class="impostore-bg" style="justify-content: center; text-align: center;">
-            <p style="text-transform: uppercase; letter-spacing: 3px; opacity: 0.5;">Passa il telefono a</p>
-            <h1 style="font-size: 3rem; font-weight: 900; color: #ff416c; margin-bottom: 40px;">${currentPlayer.name}</h1>
-            <div id="word-box" style="width: 100%; max-width: 320px; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 60px 20px; cursor: pointer; margin: 0 auto;">
-                <p id="word-text" style="font-weight: 800; opacity: 0.6;">TOCCA PER SCOPRIRE IL RUOLO</p>
+    container.querySelector('.impostore-wrapper').innerHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.5s;">
+            <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
+            <h1 style="font-size: 2.8rem; font-weight: 900; color: #9d4ede; margin-bottom: 30px; font-family:'Montserrat';">${currentPlayer.name}</h1>
+            
+            <div id="word-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s;">
+                <p id="word-text" style="font-weight: 800; opacity: 0.7; font-size: 14px;">TOCCA PER SCOPRIRE IL RUOLO</p>
             </div>
-            <button id="next-player" class="btn-main" style="display: none; margin-top: 40px; max-width: 280px; margin-left: auto; margin-right: auto;">HO VISTO</button>
+
+            <button id="next-player" class="btn-main" style="display: none; margin-top: 30px; background: #9d4ede;">HO VISTO</button>
         </div>
     `;
 
@@ -152,15 +157,16 @@ function renderReveal(container) {
 
         if (currentPlayer.role === 'impostor') {
             color = "#ff416c";
-            content = `<span style="color:${color}">SEI L'IMPOSTORE!</span><br><small style="opacity:0.5; font-size:12px;">Non hai nessuna parola.</small>`;
+            content = `<span style="color:${color}; font-size: 24px;">SEI L'IMPOSTORE!</span><br><small style="opacity:0.5;">Fingi di avere la parola!</small>`;
         } else if (currentPlayer.role === 'undercover') {
             color = "#ffbd00";
-            content = `SEI UNDERCOVER<br>PAROLA: <span style="color:${color}">${gameData.wordObj.alt.toUpperCase()}</span>`;
+            content = `SEI UNDERCOVER<br>PAROLA: <span style="color:${color}; font-size: 24px;">${gameData.wordObj.alt.toUpperCase()}</span>`;
         } else {
-            content = `SEI CIVILE<br>PAROLA: <span style="color:${color}">${gameData.wordObj.word.toUpperCase()}</span>`;
+            content = `SEI CIVILE<br>PAROLA: <span style="color:${color}; font-size: 24px;">${gameData.wordObj.word.toUpperCase()}</span>`;
         }
 
         box.style.borderColor = color;
+        box.style.background = "rgba(0,0,0,0.4)";
         container.querySelector('#word-text').innerHTML = content;
         container.querySelector('#next-player').style.display = "block";
         box.onclick = null;
@@ -177,26 +183,27 @@ function renderReveal(container) {
 }
 
 function renderGameField(container) {
-    container.innerHTML = `
-        <div class="impostore-bg">
-            <h1 style="font-size: 2.2rem; font-weight: 900; margin-bottom: 10px;">DISCUSSIONE</h1>
-            <p style="opacity:0.6; margin-bottom:30px;">Trovate chi non ha la parola giusta!</p>
-            <div style="width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px;">
+    container.querySelector('.impostore-wrapper').innerHTML = `
+        <div style="animation: fadeIn 0.5s;">
+            <h1 class="main-title" style="font-size: 1.8rem;">DISCUSSIONE</h1>
+            <p style="opacity:0.6; text-align: center; margin-bottom:20px; font-size: 12px;">Descrivete la parola senza svelarla!</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
                 ${gameData.players.map((p, i) => `
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 700;">${p.name}</span>
-                        <button class="vote-btn" data-index="${i}" style="background: #ff416c; border: none; color: white; padding: 10px 15px; border-radius: 10px; font-weight: 800; cursor: pointer;">SVELA RUOLO</button>
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px 15px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; font-size: 15px;">${p.name}</span>
+                        <button class="vote-btn" data-index="${i}" style="background: #9d4ede; border: none; color: white; padding: 8px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 11px;">RUOLO</button>
                     </div>
                 `).join('')}
             </div>
-            <button id="end-round" class="btn-main" style="margin-top:30px; background: rgba(255,255,255,0.1);">Termina Partita</button>
+
+            <button id="end-round" class="btn-main" style="margin-top:20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">Termina Partita</button>
         </div>
     `;
 
     container.querySelectorAll('.vote-btn').forEach(btn => {
         btn.onclick = () => {
-            const idx = parseInt(btn.getAttribute('data-index'));
-            const p = gameData.players[idx];
+            const p = gameData.players[parseInt(btn.getAttribute('data-index'))];
             alert(`${p.name} era: ${p.role.toUpperCase()}`);
         };
     });
@@ -206,28 +213,27 @@ function renderGameField(container) {
 
 function renderResult(container) {
     const summary = gameData.players.map(p => 
-        `<div style="margin-bottom:8px; font-size:14px;">${p.name}: <b style="color:${p.role === 'civil' ? '#00d2ff' : '#ff416c'}">${p.role.toUpperCase()}</b></div>`
+        `<div style="margin-bottom:6px; font-size:13px;">${p.name}: <b style="color:${p.role === 'civil' ? '#00d2ff' : (p.role === 'impostor' ? '#ff416c' : '#ffbd00')}">${p.role.toUpperCase()}</b></div>`
     ).join('');
 
-    container.innerHTML = `
-        <div class="impostore-bg" style="justify-content: center; text-align: center;">
-            <h2 style="font-size: 2rem; font-weight: 900; margin-bottom: 20px;">PARTITA CONCLUSA</h2>
-            <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 20px; width:100%; max-width:320px; margin-bottom:30px;">
-                <p style="opacity:0.5; font-size:12px; margin-bottom:10px;">RUOLI ASSEGNATI:</p>
+    container.querySelector('.impostore-wrapper').innerHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.5s;">
+            <h2 class="main-title" style="font-size: 1.8rem; margin-bottom: 20px;">RISULTATI</h2>
+            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 20px; width:100%; border: 1px solid rgba(255,255,255,0.08); margin-bottom:20px;">
                 ${summary}
                 <hr style="border:none; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
-                <p style="color:#00d2ff">Civili: ${gameData.wordObj.word}</p>
-                <p style="color:#ffbd00">Undercover: ${gameData.wordObj.alt}</p>
+                <p style="color:#00d2ff; font-size: 14px;">Civili: <b>${gameData.wordObj.word}</b></p>
+                <p style="color:#ffbd00; font-size: 14px;">Undercover: <b>${gameData.wordObj.alt}</b></p>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 300px;">
-                <button id="replay" class="btn-main" style="background: linear-gradient(45deg, #00ffa3, #00d2ff);">Nuovo Round</button>
-                <button id="change" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 16px; border-radius: 14px; cursor: pointer; font-weight: 800;">Modifica Impostazioni</button>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+                <button id="replay" class="btn-main">Nuovo Round</button>
+                <button id="change" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 12px;">IMPOSTAZIONI</button>
             </div>
         </div>
     `;
 
     container.querySelector('#replay').onclick = () => {
-        setupRoles(gameData.players.map(p => p.name), 1, 0); // Default o prendi i vecchi valori
+        setupRoles(gameData.players.map(p => p.name), gameData.config.impostors, gameData.config.undercover);
         startNewRound(container);
     };
     container.querySelector('#change').onclick = () => renderSetup(container);
