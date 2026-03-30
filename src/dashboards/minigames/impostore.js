@@ -49,7 +49,6 @@ function renderSetup(container) {
         </style>
 
         <div class="impostore-bg">
-            <button id="btn-back-lobby" class="btn-secondary">← ESCI</button>
             <h1 style="font-size: 3rem; font-weight: 900; background: linear-gradient(to right, #ff416c, #ff4b2b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">IMPOSTORE</h1>
             <p style="opacity: 0.5; margin-bottom: 30px;">Party Game Locale</p>
 
