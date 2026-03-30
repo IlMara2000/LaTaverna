@@ -1,9 +1,8 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 3.8)
+   LA TAVERNA - AMETHYST DARK UI (VER. 3.7 - RE-FIX)
    ========================================= */
 
-/* Import font Gaming & Serious */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Montserrat:wght@700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&family=Montserrat:wght@700;900&display=swap');
 
 :root {
     --bg-dark: radial-gradient(circle at top, #1a0b2e 0%, #05010a 100%);
@@ -13,10 +12,7 @@
     --glass-border: rgba(255, 255, 255, 0.08);
     --text-primary: #ffffff;
     --text-secondary: #b79ced;
-    --accent: linear-gradient(135deg, #9d4ede, #5a189a);
     --danger: #ff4444;
-    --font-main: 'Montserrat', sans-serif;
-    --font-gaming: 'Orbitron', sans-serif;
 }
 
 /* Reset & Safe Areas */
@@ -27,170 +23,148 @@ html, body {
     background: #05010a; 
     background: var(--bg-dark) no-repeat fixed;
     color: var(--text-primary);
-    font-family: var(--font-main);
+    font-family: 'Poppins', sans-serif; /* Torna il font pulito */
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
-    text-rendering: optimizeLegibility;
 }
 
 #app {
     min-height: 100dvh;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
-    overflow-y: auto;
 }
 
 /* =========================================
-   UI TITLES (LO STILE VIDEOGIOCO)
+   LOGO FAVICON (ALTO A DESTRA - logo2.png)
    ========================================= */
-
-.main-title {
-    font-family: var(--font-gaming);
-    font-weight: 900;
-    font-size: 3.5rem;
-    letter-spacing: -3px;
-    text-transform: uppercase;
-    background: linear-gradient(to bottom, #fff 40%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 15px rgba(157, 78, 221, 0.5));
-    margin-bottom: 5px;
+.nav-logo-right {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 55px;
+    height: 55px;
+    z-index: 999;
+    filter: drop-shadow(0 0 12px var(--amethyst-glow));
+    animation: floatLogo 3.5s ease-in-out infinite;
+    cursor: pointer;
 }
 
-.subtitle {
-    font-family: var(--font-gaming);
-    color: var(--amethyst-bright);
-    text-transform: uppercase;
-    letter-spacing: 5px;
-    font-size: 10px;
-    font-weight: 900;
-    opacity: 0.8;
+.nav-logo-right img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+@keyframes floatLogo {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
 }
 
 /* =========================================
-   PULSANTI HUD (SIDEBAR & LOBBY)
+   SIDEBAR & DASHBOARD (FIXED)
    ========================================= */
+.sidebar-glass {
+    position: fixed;
+    right: -110%;
+    top: 0;
+    width: 300px;
+    height: 100dvh;
+    background: rgba(10, 5, 20, 0.98);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    z-index: 10001;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 50px 30px;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--glass-border);
+}
 
+.sidebar-glass.active {
+    right: 0;
+    box-shadow: -30px 0 80px rgba(0,0,0,0.9);
+}
+
+/* BOTTONI SIDEBAR (STILE AMETISTA) */
 .btn-back-glass {
-    font-family: var(--font-gaming);
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
     color: white;
-    padding: 20px;
-    border-radius: 12px; /* Angoli più decisi, meno "tondi" per serietà */
+    padding: 18px;
+    border-radius: 18px;
     font-weight: 700;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    margin-bottom: 12px;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
+    transition: 0.3s;
+    font-family: 'Montserrat', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .btn-back-glass:hover {
     background: rgba(157, 78, 221, 0.2);
     border-color: var(--amethyst-bright);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(157, 78, 221, 0.3);
-}
-
-.btn-back-glass:active {
-    transform: scale(0.98);
-}
-
-/* Il pulsante "Torna alla Libreria" in alto */
-.top-nav-btn {
-    font-family: var(--font-gaming);
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 50px;
-    padding: 12px 30px;
-    border: 1px solid var(--glass-border);
-    color: white;
-    font-size: 10px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    text-decoration: none;
-    transition: 0.3s;
 }
 
 /* =========================================
-   GAME CARDS (SCOPA, BRISCOLA, ETC.)
+   PULSANTE FLOTTANTE (HAMBURGER -> X ROSSA)
    ========================================= */
-
-.game-card {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    position: relative;
-    transition: all 0.4s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    aspect-ratio: 1/1.1; /* Più altezza che larghezza per stile "Card" */
-}
-
-.game-card h3 {
-    font-family: var(--font-gaming);
-    font-size: 14px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    margin: 0;
-    text-transform: uppercase;
-}
-
-/* =========================================
-   LOGO & TRIGGER
-   ========================================= */
-
-.nav-logo-right {
-    position: fixed;
-    top: 25px;
-    right: 25px;
-    width: 50px;
-    height: 50px;
-    z-index: 999;
-    filter: drop-shadow(0 0 10px var(--amethyst-glow));
-    animation: floatLogo 3.5s ease-in-out infinite;
-}
-
 .floating-trigger {
     position: fixed;
     bottom: 40px;
     right: 30px;
-    width: 75px;
-    height: 75px;
-    border-radius: 50%; /* Tondo stile controller */
+    width: 72px;
+    height: 72px;
+    border-radius: 24px; 
     background: var(--amethyst-bright);
+    border: none;
+    cursor: pointer;
     z-index: 10002;
-    box-shadow: 0 15px 35px rgba(157, 78, 221, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 10px 35px var(--amethyst-glow);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Griglia Mobile */
-@media (max-width: 768px) {
-    .grid-layout {
-        gap: 20px; /* Più respiro tra i giochi */
-        padding: 10px;
-    }
-    
-    .main-title {
-        font-size: 2.2rem;
-        text-align: left;
-    }
+.floating-trigger.is-active {
+    background: var(--danger) !important;
 }
 
-/* Animazione di ingresso */
-.fade-in { 
-    animation: premiumEntrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; 
+.nav-bar {
+    width: 30px;
+    height: 3px;
+    background: white;
+    border-radius: 4px;
+    transition: 0.3s;
 }
 
-@keyframes premiumEntrance {
-    from { opacity: 0; transform: scale(0.9) translateY(30px); filter: blur(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+.floating-trigger.is-active #bar1 { transform: translateY(9px) rotate(45deg); }
+.floating-trigger.is-active #bar2 { opacity: 0; }
+.floating-trigger.is-active #bar3 { transform: translateY(-9px) rotate(-45deg); }
+
+/* =========================================
+   CARDS & GRIGLIA
+   ========================================= */
+.game-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    padding: 30px;
+    transition: all 0.4s ease;
+    text-align: center;
+}
+
+.game-card:active { transform: scale(0.95); }
+
+.main-title {
+    font-weight: 900;
+    font-size: 3rem;
+    font-family: 'Montserrat', sans-serif;
+    background: linear-gradient(135deg, #ffffff 20%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
