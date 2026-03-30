@@ -1,11 +1,12 @@
+import { showLobby } from '../../lobby.js';
+
 let currentSidebarUser = null;
 let currentLogoutFn = null;
-let isMusicOn = localStorage.getItem('taverna_music') !== 'off'; // Default ON
+let isMusicOn = localStorage.getItem('taverna_music') !== 'off';
 
 export function initSidebar(container, user, onLogout, context = "home") {
     const guestData = localStorage.getItem('taverna_guest_user');
     currentSidebarUser = user || (guestData ? JSON.parse(guestData) : null);
-    
     currentLogoutFn = onLogout;
     renderSidebarContent(container, context);
 }
@@ -23,36 +24,30 @@ function renderSidebarContent(container, context) {
         actionBtnText = "⬅ TORNA AI MINIGIOCHI";
     }
 
-    // Abbiamo unificato i pulsanti musicali per quasi tutti i contesti
-    const musicButtonsHtml = `
-        <button class="btn-primary" id="sideMusicBtn">
-            ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
-        </button>
-        <button class="btn-primary" id="sideUploadBtn">
-            🎵 CARICA MUSICA
-        </button>
-        <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
-        <div id="sideCurrentTrack" style="font-size: 9px; opacity: 0.5; margin-top: -10px; text-align: center; display: none; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
-    `;
-
+    // Struttura HTML pulita che usa le classi di global.css
     container.innerHTML = `
-        <nav id="sidebar-menu" style="
-            position: fixed; right: -100%; top: 0; 
-            width: 100%; height: 100%; 
-            background: rgba(5, 2, 10, 0.98); backdrop-filter: blur(20px); 
-            z-index: 9000; transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        ">
-            <div style="text-align: center; margin-bottom: 40px;">
-                <h2 style="color: #9d4ede; margin:0;">${userName.toUpperCase()}</h2>
-                <span style="font-size: 10px; opacity: 0.5; letter-spacing: 2px;">${context.toUpperCase()}</span>
+        <nav id="sidebar-menu" class="sidebar-glass">
+            <div class="sidebar-header">
+                <h2 class="text-amethyst">${userName.toUpperCase()}</h2>
+                <span class="subtitle">${context.toUpperCase()}</span>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 15px; width: 85%; max-width: 300px;">
-                ${musicButtonsHtml}
-                <button class="btn-primary" id="sideProfile">IL MIO PROFILO</button>
-                <hr style="width: 100%; opacity: 0.1; margin: 10px 0;">
-                <button class="btn-primary" id="sideActionBtn" style="${isMainHub ? 'border: 1px solid #ff4444; color: #ff4444; background:none;' : ''}">
+            <div class="sidebar-actions">
+                <button class="btn-back-glass" id="sideMusicBtn">
+                    ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
+                </button>
+                
+                <button class="btn-back-glass" id="sideUploadBtn">
+                    🎵 CARICA MUSICA
+                </button>
+                <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
+                <div id="sideCurrentTrack" class="track-label"></div>
+
+                <button class="btn-back-glass" id="sideProfile">IL MIO PROFILO</button>
+                
+                <hr class="sidebar-divider">
+                
+                <button class="btn-back-glass ${isMainHub ? 'btn-danger' : ''}" id="sideActionBtn">
                     ${actionBtnText}
                 </button>
             </div>
@@ -63,41 +58,42 @@ function renderSidebarContent(container, context) {
 }
 
 function setupEventListeners(container, context, isMainHub) {
-    const sidebar = document.getElementById('sidebar-menu');
-    const mainContent = document.getElementById('main-content');
+    const sidebar = container.querySelector('#sidebar-menu');
+    const mainContent = document.getElementById('app'); // Assicurati che l'id sia 'app' o 'main-content'
     
+    // Funzione Toggle fluida
     const toggle = () => {
-        const isOpen = sidebar.style.right === '0px';
-        sidebar.style.right = isOpen ? '-100%' : '0px';
+        sidebar.classList.toggle('active');
     };
 
+    // Rimuove vecchi listener per evitare duplicati al cambio contesto
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // --- GESTIONE NAVIGAZIONE ---
-    document.getElementById('sideActionBtn').onclick = async () => {
+    // --- NAVIGAZIONE ---
+    const actionBtn = container.querySelector('#sideActionBtn');
+    actionBtn.onclick = async () => {
         toggle();
         if (isMainHub) {
-            currentLogoutFn();
+            if(currentLogoutFn) currentLogoutFn();
             return;
         }
+        
         try {
             if (context === "minigames") {
                 const { showMinigamesLobby } = await import('../../minigamelist.js');
                 showMinigamesLobby(mainContent);
             } else {
-                const { showLobby } = await import('../../lobby.js');
                 showLobby(mainContent);
             }
         } catch (err) {
-            const { showLobby } = await import('../../lobby.js');
             showLobby(mainContent);
         }
     };
 
-    // --- GESTIONE MUSICA (Tasto Toggle) ---
-    const musicBtn = document.getElementById('sideMusicBtn');
+    // --- MUSICA ---
+    const musicBtn = container.querySelector('#sideMusicBtn');
     if (musicBtn) {
         musicBtn.onclick = () => {
             isMusicOn = !isMusicOn;
@@ -107,38 +103,31 @@ function setupEventListeners(container, context, isMainHub) {
         };
     }
 
-    // --- GESTIONE CARICAMENTO (Tasto Upload) ---
-    const uploadBtn = document.getElementById('sideUploadBtn');
-    const fileInput = document.getElementById('sideFileInput');
-    const trackLabel = document.getElementById('sideCurrentTrack');
-
+    // --- UPLOAD ---
+    const uploadBtn = container.querySelector('#sideUploadBtn');
+    const fileInput = container.querySelector('#sideFileInput');
     if (uploadBtn && fileInput) {
         uploadBtn.onclick = () => fileInput.click();
-
         fileInput.onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
                 const url = URL.createObjectURL(file);
-                
-                // Aggiorna interfaccia locale
-                trackLabel.style.display = 'block';
-                trackLabel.innerText = `In riproduzione: ${file.name}`;
-                
-                // Invia l'evento al tuo AudioManager.js
-                window.dispatchEvent(new CustomEvent('musicUploaded', { 
-                    detail: { url, name: file.name } 
-                }));
+                const label = container.querySelector('#sideCurrentTrack');
+                label.innerText = `🎵 ${file.name}`;
+                label.style.display = 'block';
+                window.dispatchEvent(new CustomEvent('musicUploaded', { detail: { url, name: file.name } }));
             }
         };
     }
 
-    // --- GESTIONE PROFILO ---
-    const profileBtn = document.getElementById('sideProfile');
+    // --- PROFILO ---
+    const profileBtn = container.querySelector('#sideProfile');
     if (profileBtn) {
         profileBtn.onclick = async () => {
             toggle();
             try {
-                const { showProfile } = await import('../features/user/Profile.js');
+                // Percorso corretto per il profilo
+                const { showProfile } = await import('../../dashboards/profile.js'); 
                 showProfile(mainContent, currentSidebarUser);
             } catch (err) { console.error("Errore profilo:", err); }
         };
