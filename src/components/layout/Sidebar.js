@@ -1,4 +1,4 @@
-import { showLobby } from './lobby.js';
+import { showLobby } from '../../lobby.js';
 
 let currentSidebarUser = null;
 let currentLogoutFn = null;
@@ -21,10 +21,9 @@ function renderSidebarContent(container, context) {
     if (isMainHub) {
         actionBtnText = isGuest ? 'TORNA AL LOGIN' : 'ESCI DALLA TAVERNA';
     } else if (context === "minigames") {
-        actionBtnText = "⬅ TORNA AI MINIGIOCHI";
+        actionBtnText = "⬅ TORNA AI GIOCHI";
     }
 
-    // Struttura HTML pulita che usa le classi di global.css
     container.innerHTML = `
         <nav id="sidebar-menu" class="sidebar-glass">
             <div class="sidebar-header">
@@ -43,8 +42,6 @@ function renderSidebarContent(container, context) {
                 <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
                 <div id="sideCurrentTrack" class="track-label"></div>
 
-                <button class="btn-back-glass" id="sideProfile">IL MIO PROFILO</button>
-                
                 <hr class="sidebar-divider">
                 
                 <button class="btn-back-glass ${isMainHub ? 'btn-danger' : ''}" id="sideActionBtn">
@@ -59,19 +56,16 @@ function renderSidebarContent(container, context) {
 
 function setupEventListeners(container, context, isMainHub) {
     const sidebar = container.querySelector('#sidebar-menu');
-    const mainContent = document.getElementById('app'); // Assicurati che l'id sia 'app' o 'main-content'
+    const mainContent = document.getElementById('app'); 
     
-    // Funzione Toggle fluida
     const toggle = () => {
         sidebar.classList.toggle('active');
     };
 
-    // Rimuove vecchi listener per evitare duplicati al cambio contesto
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // --- NAVIGAZIONE ---
     const actionBtn = container.querySelector('#sideActionBtn');
     actionBtn.onclick = async () => {
         toggle();
@@ -92,7 +86,6 @@ function setupEventListeners(container, context, isMainHub) {
         }
     };
 
-    // --- MUSICA ---
     const musicBtn = container.querySelector('#sideMusicBtn');
     if (musicBtn) {
         musicBtn.onclick = () => {
@@ -103,7 +96,6 @@ function setupEventListeners(container, context, isMainHub) {
         };
     }
 
-    // --- UPLOAD ---
     const uploadBtn = container.querySelector('#sideUploadBtn');
     const fileInput = container.querySelector('#sideFileInput');
     if (uploadBtn && fileInput) {
@@ -117,19 +109,6 @@ function setupEventListeners(container, context, isMainHub) {
                 label.style.display = 'block';
                 window.dispatchEvent(new CustomEvent('musicUploaded', { detail: { url, name: file.name } }));
             }
-        };
-    }
-
-    // --- PROFILO ---
-    const profileBtn = container.querySelector('#sideProfile');
-    if (profileBtn) {
-        profileBtn.onclick = async () => {
-            toggle();
-            try {
-                // Percorso corretto per il profilo
-                const { showProfile } = await import('../../dashboards/profile.js'); 
-                showProfile(mainContent, currentSidebarUser);
-            } catch (err) { console.error("Errore profilo:", err); }
         };
     }
 }
