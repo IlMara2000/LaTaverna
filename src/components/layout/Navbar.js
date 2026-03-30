@@ -1,4 +1,4 @@
-import { initSidebar } from './Sidebar.js'; 
+import { initSidebar } from './Sidebar.js'; // S maiuscola fondamentale!
 
 export function initNavbar(user, onLogout) {
     const navbarContainer = document.getElementById('navbar-container');
@@ -6,7 +6,6 @@ export function initNavbar(user, onLogout) {
 
     if (!navbarContainer || !sidebarContainer) return;
 
-    // Rendering HTML unificato
     navbarContainer.innerHTML = `
         <div class="navbar-top-minimal" style="position: fixed; top: 20px; left: 20px; z-index: 9998;">
             <img src="/assets/logo.png" alt="Taverna" id="nav-home-btn" 
@@ -20,7 +19,6 @@ export function initNavbar(user, onLogout) {
         </button>
     `;
 
-    // Inizializza la Sidebar
     initSidebar(sidebarContainer, user, onLogout);
 
     const btn = document.getElementById('navbar-trigger');
@@ -28,16 +26,13 @@ export function initNavbar(user, onLogout) {
     const b2 = document.getElementById('bar2');
     const b3 = document.getElementById('bar3');
 
-    // Toggle Sidebar
     btn.onclick = (e) => {
         e.preventDefault();
         window.dispatchEvent(new CustomEvent('toggleSidebar'));
     };
 
-    // Home Button
     document.getElementById('nav-home-btn').onclick = () => window.location.reload();
 
-    // Gestione trasformazione Hamburger -> X
     window.addEventListener('sidebarState', (e) => {
         const isOpen = e.detail.isOpen;
         if (isOpen) {
