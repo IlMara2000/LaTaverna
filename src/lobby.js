@@ -1,15 +1,22 @@
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 
 export function showLobby(container) {
+    // --- FIX CRITICO SCROLL ---
+    // Forza il ripristino dello scroll sui nodi radice che Safari tende a bloccare
+    document.documentElement.style.overflow = 'auto';
+    document.body.style.overflow = 'auto';
+    document.body.style.position = 'static'; 
+    window.scrollTo(0, 0); // Riporta l'utente in alto
+    
     updateSidebarContext("home");
 
     const isGuest = localStorage.getItem('taverna_guest_user') !== null;
     const lockClass = isGuest ? "is-locked" : "is-clickable";
     const statusText = isGuest ? '🔴 MODALITÀ OSPITE' : '🟢 ACCESSO COMPLETO';
     
-    // Rimosso inline styles pesanti, usiamo le classi del CSS Ametista che abbiamo creato
+    // Aggiunto stile inline protettivo per lo scroll su iOS nel wrapper
     container.innerHTML = `
-        <div id="lobby-wrapper" class="fade-in">
+        <div id="lobby-wrapper" class="fade-in" style="overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 100dvh;">
             <div class="dashboard-container">
                 
                 <header class="lobby-header">
@@ -70,9 +77,7 @@ export function showLobby(container) {
         </div>
     `;
 
-    // --- LOGICA DI NAVIGAZIONE (SAFE) ---
-
-    // Usiamo container.querySelector invece di document.getElementById
+    // --- LOGICA DI NAVIGAZIONE ---
     const btnMinigames = container.querySelector('#btn-portal-minigames');
     const btnDnd = container.querySelector('#btn-dnd5e');
     const btnDice = container.querySelector('#btn-dice-roller');
@@ -80,28 +85,21 @@ export function showLobby(container) {
     if (btnMinigames) {
         btnMinigames.onclick = async () => {
             try {
-                // Assicurati che il percorso sia ESATTO (case-sensitive!)
                 const { showMinigamesLobby } = await import('./minigamelist.js');
                 showMinigamesLobby(container);
-            } catch (err) {
-                console.error("Errore caricamento minigames:", err);
-            }
+            } catch (err) { console.error("Errore:", err); }
         };
     }
     
     if (btnDnd) {
         btnDnd.onclick = async () => {
-            if (isGuest) return alert("Questa funzione richiede il login con Discord!");
+            if (isGuest) return alert("Questa funzione richiede il login!");
             try {
                 const { initDndDashboard } = await import('./dashboards/dnd5e.js');
                 initDndDashboard(container);
-            } catch (err) {
-                console.error("Errore caricamento D&D:", err);
-            }
+            } catch (err) { console.error("Errore:", err); }
         };
     }
 
-    if (btnDice) {
-        btnDice.onclick = () => alert("Il set di dadi incantati sta arrivando...");
-    }
+    if (btnDice) btnDice.onclick = () => alert("In arrivo...");
 }
