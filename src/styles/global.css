@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 3.5)
+   LA TAVERNA - AMETHYST DARK UI (VER. 3.6)
    ========================================= */
 
 :root {
@@ -35,40 +35,47 @@ html, body {
     -webkit-overflow-scrolling: touch;
 }
 
-/* Logo Favicon a Destra con Animazione */
+/* =========================================
+   LOGO FAVICON (ALTO A DESTRA - logo2.png)
+   ========================================= */
 .nav-logo-right {
     position: fixed;
-    top: 25px;
-    right: 25px;
-    width: 45px;
-    height: 45px;
+    top: 20px; /* Distanza dall'alto */
+    right: 20px; /* Distanza da destra */
+    width: 55px; /* Dimensione ottimale per logo2 */
+    height: 55px;
     z-index: 999;
-    filter: drop-shadow(0 0 10px var(--amethyst-glow));
-    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 12px var(--amethyst-glow));
+    animation: floatLogo 3.5s ease-in-out infinite;
     cursor: pointer;
-    transition: 0.3s;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.nav-logo-right img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .nav-logo-right:hover {
-    transform: scale(1.1) rotate(5deg);
+    transform: scale(1.15) rotate(8deg);
     filter: drop-shadow(0 0 20px var(--amethyst-bright));
 }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+@keyframes floatLogo {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(3deg); }
 }
 
+/* =========================================
+   SIDEBAR & DASHBOARD
+   ========================================= */
 .dashboard-container {
     max-width: 650px;
     margin: 0 auto;
     padding: 40px 25px;
     padding-bottom: 160px;
 }
-
-/* =========================================
-   SIDEBAR & BLUR EFFECTS
-   ========================================= */
 
 .sidebar-glass {
     position: fixed;
@@ -93,16 +100,15 @@ html, body {
 }
 
 /* =========================================
-   PULSANTE FLOTTANTE (ANIMATO)
+   PULSANTE FLOTTANTE (HAMBURGER)
    ========================================= */
-
 .floating-trigger {
     position: fixed;
     bottom: 40px;
     right: 30px;
-    width: 70px;
-    height: 70px;
-    border-radius: 22px; 
+    width: 72px;
+    height: 72px;
+    border-radius: 24px; 
     background: var(--amethyst-bright);
     border: none;
     cursor: pointer;
@@ -112,21 +118,28 @@ html, body {
     justify-content: center;
     align-items: center;
     gap: 6px;
-    box-shadow: 0 10px 30px var(--amethyst-glow);
+    box-shadow: 0 10px 35px var(--amethyst-glow);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    animation: pulseGlow 2s infinite;
+    animation: pulseGlow 2.5s infinite;
 }
 
 @keyframes pulseGlow {
-    0% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0.7); }
+    0% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0.6); }
     70% { box-shadow: 0 0 0 20px rgba(157, 78, 221, 0); }
     100% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0); }
 }
 
-/* =========================================
-   CARDS CON EFFETTI VETRO DINAMICI
-   ========================================= */
+.nav-bar {
+    width: 30px;
+    height: 3px;
+    background: white;
+    border-radius: 4px;
+    transition: 0.3s;
+}
 
+/* =========================================
+   CARDS & GRIGLIA (EFFETTO SHINE)
+   ========================================= */
 .game-card {
     background: rgba(255, 255, 255, 0.04);
     backdrop-filter: blur(15px);
@@ -141,40 +154,36 @@ html, body {
     overflow: hidden;
 }
 
-/* Riflesso di luce che passa sulla card */
-.game-card::before {
+/* Effetto luce dinamica al passaggio */
+.game-card::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: -100%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(
-        to right,
-        transparent,
-        rgba(255, 255, 255, 0.1),
-        transparent
-    );
-    transition: 0.5s;
+    top: -50%;
+    left: -60%;
+    width: 20%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(30deg);
+    transition: 0.6s;
     pointer-events: none;
 }
 
-.game-card:hover::before {
-    left: 150%;
+.game-card:hover::after {
+    left: 120%;
 }
 
 .game-card:active {
-    transform: scale(0.95) translateY(5px);
-    background: rgba(157, 78, 221, 0.1);
+    transform: scale(0.96) translateY(4px);
+    background: rgba(157, 78, 221, 0.15);
 }
 
-/* Griglia Minigiochi */
+/* Griglia Minigiochi Mobile No-Scroll */
 @media (max-width: 768px) {
     body:has(.minigame-item) { overflow: hidden; }
     body:has(.minigame-item) .dashboard-container {
         height: 100dvh;
         padding: 20px;
-        padding-bottom: 120px;
+        padding-bottom: 130px;
         display: flex;
         flex-direction: column;
     }
@@ -183,41 +192,39 @@ html, body {
         display: grid;
         grid-template-columns: 1fr 1fr;
         grid-template-rows: repeat(4, 1fr);
-        gap: 12px;
+        gap: 14px;
     }
-    body:has(.minigame-item) .main-title { font-size: 2rem; }
+    body:has(.minigame-item) .main-title { font-size: 2.2rem; }
 }
 
 /* =========================================
-   TESTI E ANIMAZIONI ENTRY
+   TIPOGRAFIA & ANIMAZIONI
    ========================================= */
-
 .main-title {
     font-weight: 900;
     font-size: 3rem;
     letter-spacing: -2px;
-    background: linear-gradient(135deg, #fff 0%, var(--text-secondary) 100%);
+    background: linear-gradient(135deg, #ffffff 20%, var(--text-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.3));
+    filter: drop-shadow(0 5px 15px rgba(0,0,0,0.4));
 }
 
 .text-amethyst {
     color: var(--amethyst-bright);
     -webkit-text-fill-color: initial;
-    text-shadow: 0 0 15px var(--amethyst-glow);
+    text-shadow: 0 0 20px var(--amethyst-glow);
 }
 
-/* Entrata fluida per le card */
 .fade-in { 
-    animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; 
+    animation: premiumEntrance 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; 
 }
 
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(40px) scale(0.9); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes premiumEntrance {
+    from { opacity: 0; transform: translateY(30px) scale(0.94); filter: blur(10px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
 }
 
 .minigame-item {
-    transition-delay: calc(var(--i) * 0.1s); /* Se aggiungi style="--i:1" nel JS */
+    transition-delay: calc(var(--i) * 0.08s);
 }
