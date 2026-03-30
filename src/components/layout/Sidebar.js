@@ -15,25 +15,30 @@ function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
 
+    // Testo dinamico per il bottone principale
     let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI') : "⬅ LIBRERIA";
 
     container.innerHTML = `
         <nav id="sidebar-menu" class="sidebar-glass">
-            <div class="sidebar-header">
-                <h2 class="text-amethyst">${userName.toUpperCase()}</h2>
-                <span class="subtitle">${context.toUpperCase()}</span>
+            <div class="sidebar-header" style="margin-bottom: 40px;">
+                <h2 class="text-amethyst" style="font-size: 1.8rem; letter-spacing: -1px;">${userName.toUpperCase()}</h2>
+                <span class="subtitle" style="opacity: 0.6;">MODALITÀ ${context.toUpperCase()}</span>
             </div>
             
-            <div class="sidebar-actions">
+            <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 15px;">
                 <button class="btn-back-glass" id="sideMusicBtn">
                     ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
                 </button>
-                <button class="btn-back-glass" id="sideUploadBtn">🎵 CARICA MUSICA</button>
+                
+                <button class="btn-back-glass" id="sideUploadBtn">
+                    🎵 CARICA MUSICA
+                </button>
+                
                 <input type="file" id="sideFileInput" accept="audio/*" style="display: none;">
                 
-                <hr class="sidebar-divider">
+                <div class="sidebar-divider" style="margin: 20px 0;"></div>
                 
-                <button class="btn-back-glass ${context === 'home' ? 'btn-danger' : ''}" id="sideActionBtn">
+                <button class="btn-back-glass" id="sideActionBtn" style="${context === 'home' && !isGuest ? 'border-color: rgba(255,68,68,0.3); color: #ff6b6b;' : ''}">
                     ${actionBtnText}
                 </button>
             </div>
@@ -47,35 +52,30 @@ function setupEventListeners(container, context) {
     const sidebar = container.querySelector('#sidebar-menu');
     const mainContent = document.getElementById('app'); 
     
-    // Funzione interna per gestire l'apertura/chiusura
     const toggle = () => {
         const isOpen = sidebar.classList.toggle('active');
-        // Notifichiamo alla Navbar di cambiare il bottone (Hamburger -> X)
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
     };
 
-    // Pulizia e assegnazione evento toggle
+    // Rimuoviamo vecchi listener per evitare duplicati al cambio contesto
     window.removeEventListener('toggleSidebar', window._currentToggleFn);
     window._currentToggleFn = toggle;
     window.addEventListener('toggleSidebar', toggle);
 
-    // Gestione Bottone Azione (Esci o Torna alla Lobby)
     const actionBtn = container.querySelector('#sideActionBtn');
     actionBtn.onclick = async () => {
-        toggle(); // Chiude la sidebar
+        toggle(); 
         if (context === "home") {
             if (currentLogoutFn) currentLogoutFn();
         } else {
-            // Torna alla lobby se sei in un minigioco
             showLobby(mainContent);
         }
     };
 
-    // Logica Musica
-    container.querySelector('#sideMusicBtn').onclick = () => {
+    container.querySelector('#sideMusicBtn').onclick = function() {
         isMusicOn = !isMusicOn;
         localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
-        container.querySelector('#sideMusicBtn').innerText = isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF';
+        this.innerHTML = isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF';
         window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
     };
 
