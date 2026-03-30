@@ -51,12 +51,8 @@ export function showMinigamesLobby(container) {
                     solitario: 'initSolitario', numeri: 'initNumeri'
                 };
                 const fnName = initFunctions[game.id];
-                if (module && module[fnName]) {
-                    module[fnName](container);
-                }
-            } catch (e) {
-                console.warn("Errore caricamento minigioco:", e);
-            }
+                if (module && module[fnName]) module[fnName](container);
+            } catch (e) { console.warn("Errore gioco:", e); }
         };
     });
 }
