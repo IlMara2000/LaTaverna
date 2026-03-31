@@ -3,7 +3,8 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 export function initBurraco(container) {
     updateSidebarContext("minigames");
     
-    // Blocca lo scroll del body e fissa la visuale
+    // Blocca lo scroll del body e fissa la visuale per mobile
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
@@ -16,19 +17,22 @@ export function initBurraco(container) {
 function renderSelectionMenu(container) {
     container.innerHTML = `
     <style>
-        .mobile-emulator { width:100%; height:100dvh; background:#05010a; display:flex; justify-content:center; align-items:center; }
-        .burraco-wrapper { 
-            width:100%; max-width:430px; height:100%; max-height:932px; 
-            background:#05020a; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; color:white; position:relative;
+        .burraco-start-wrapper { 
+            width:100%; max-width:430px; height:100vh; margin: 0 auto;
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; color:white;
+            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-        .mode-btn { width:80%; padding:18px; border-radius:18px; border:1px solid #9d4ede; background:rgba(157,78,221,0.1); color:white; font-size:16px; font-weight:900; cursor:pointer; transition:0.3s; text-transform:uppercase; -webkit-tap-highlight-color: transparent; }
+        .mode-btn { 
+            width:80%; padding:18px; border-radius:18px; border:1px solid #9d4ede; 
+            background:rgba(157,78,221,0.1); color:white; font-size:16px; font-weight:900; 
+            cursor:pointer; transition:0.3s; text-transform:uppercase; 
+            -webkit-tap-highlight-color: transparent; outline: none;
+        }
         .mode-btn:active { background:#9d4ede; transform:scale(0.95); }
     </style>
-    <div class="mobile-emulator">
-        <div class="burraco-wrapper">
-            <h1 style="margin-bottom:30px; letter-spacing:5px; font-family:'Montserrat'; font-size:2.5rem;">BURRACO</h1>
-            <button class="mode-btn" id="mode-2">GIOCA 1 VS 1</button>
-        </div>
+    <div class="burraco-start-wrapper">
+        <h1 style="margin-bottom:30px; letter-spacing:5px; font-family:'Montserrat'; font-size:2.5rem; background: linear-gradient(135deg, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">BURRACO</h1>
+        <button class="mode-btn" id="mode-2">GIOCA 1 VS 1</button>
     </div>
     `;
 
@@ -56,27 +60,32 @@ function startGame(container, players) {
 function renderLayout(container, state) {
     container.innerHTML = `
     <style>
-        .mobile-emulator { width:100%; height:100dvh; background:#05010a; display:flex; justify-content:center; align-items:center; }
-        .burraco-wrapper { 
-            width:100%; max-width:430px; height:100%; max-height:932px; 
-            background: radial-gradient(circle at center, #0a2a1a 0%, #020a05 100%); 
+        .burraco-game-wrapper { 
+            width:100%; max-width:430px; height:100vh; margin: 0 auto;
+            background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
             color:white; font-family:'Poppins',sans-serif; position:relative; overflow:hidden; display:flex; flex-direction:column;
+            animation: cardEntrance 0.5s ease-out forwards;
         }
-        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 15px; margin-top: 40px; overflow-y: hidden; }
+        
+        @media (min-width: 431px) {
+            .burraco-game-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+        }
+
+        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: env(safe-area-inset-top, 15px) 15px 15px 15px; overflow: hidden; }
         .mats { height: 130px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; position: relative; display: flex; align-items: flex-start; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         
-        .tutor-box { position: absolute; top: 10px; left: 15px; right: 15px; background: rgba(0,0,0,0.7); border-left: 3px solid #9d4ede; padding: 8px 12px; border-radius: 8px; font-size: 11px; z-index: 10; backdrop-filter: blur(5px); pointer-events: none; }
+        .tutor-box { position: absolute; top: env(safe-area-inset-top, 10px); left: 15px; right: 15px; background: rgba(0,0,0,0.8); border-left: 3px solid #9d4ede; padding: 8px 12px; border-radius: 8px; font-size: 11px; z-index: 10; backdrop-filter: blur(5px); pointer-events: none; }
         
         .card-b { width: 42px; height: 60px; background: white; border-radius: 5px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: transform 0.2s; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
         .card-b.selected { transform: translateY(-15px); border: 2px solid #9d4ede; z-index: 10; box-shadow: 0 0 12px #9d4ede; }
         
         .center-area { display: flex; justify-content: center; align-items: center; gap: 40px; padding: 10px; background: rgba(0,0,0,0.2); }
-        .deck-stack { width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .deck-stack { width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; }
         
-        .player-hand-container { padding: 10px 10px 40px 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); }
+        .player-hand-container { padding: 10px 10px calc(20px + env(safe-area-inset-bottom)) 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(0,0,0,0.4); border-top: 1px solid rgba(255,255,255,0.1); }
         .hand-wrapper { display: flex; justify-content: flex-start; height: 85px; align-items: flex-end; width: 100%; overflow-x: auto; padding-bottom: 10px; gap: 2px; -webkit-overflow-scrolling: touch; }
         
-        .btn-action { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; -webkit-tap-highlight-color: transparent; }
+        .btn-action { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; -webkit-tap-highlight-color: transparent; outline: none; }
         #btn-meld { background: #2ecc71; color: white; }
         #btn-discard { background: #e74c3c; color: white; }
         .btn-action:disabled { opacity: 0.2; filter: grayscale(1); pointer-events: none; }
@@ -87,27 +96,25 @@ function renderLayout(container, state) {
         .hand-wrapper::-webkit-scrollbar, .mats::-webkit-scrollbar { display: none; }
     </style>
 
-    <div class="mobile-emulator">
-        <div class="burraco-wrapper">
-            <div id="tutor-container" class="tutor-box"><span id="tutor-text"></span></div>
-            
-            <div class="tables-container">
-                <div class="mats" id="bot-table"></div>
-                <div class="mats" id="player-table"></div>
-            </div>
+    <div class="burraco-game-wrapper">
+        <div id="tutor-container" class="tutor-box"><span id="tutor-text"></span></div>
+        
+        <div class="tables-container">
+            <div class="mats" id="bot-table"></div>
+            <div class="mats" id="player-table"></div>
+        </div>
 
-            <div class="center-area">
-                <div id="main-deck" class="deck-stack">MAZZO</div>
-                <div id="discard-pile-ui" style="display:flex; min-width:50px; min-height:70px; position:relative;"></div>
-            </div>
+        <div class="center-area">
+            <div id="main-deck" class="deck-stack">MAZZO</div>
+            <div id="discard-pile-ui" style="display:flex; min-width:50px; min-height:70px; position:relative;"></div>
+        </div>
 
-            <div class="player-hand-container">
-                <div style="display:flex; gap:10px; width:100%;">
-                    <button class="btn-action" id="btn-meld">CALA COMBO</button>
-                    <button class="btn-action" id="btn-discard">SCARTA</button>
-                </div>
-                <div id="player-hand" class="hand-wrapper"></div>
+        <div class="player-hand-container">
+            <div style="display:flex; gap:10px; width:100%;">
+                <button class="btn-action" id="btn-meld">CALA COMBO</button>
+                <button class="btn-action" id="btn-discard">SCARTA</button>
             </div>
+            <div id="player-hand" class="hand-wrapper"></div>
         </div>
     </div>
     `;
@@ -150,9 +157,12 @@ function updateUI(state) {
     renderDiscard(state);
 
     const deckEl = document.getElementById('main-deck');
-    if(deckEl) deckEl.onclick = () => { if(isPlayer && state.phase === 'draw') drawFromDeck(state); };
-    if(btnDiscard) btnDiscard.onclick = () => handleDiscard(state);
-    if(btnMeld) btnMeld.onclick = () => handleMeld(state, targetPilaIndex);
+    if(deckEl) deckEl.onclick = (e) => { 
+        e.preventDefault(); 
+        if(isPlayer && state.phase === 'draw') drawFromDeck(state); 
+    };
+    if(btnDiscard) btnDiscard.onclick = (e) => { e.preventDefault(); handleDiscard(state); };
+    if(btnMeld) btnMeld.onclick = (e) => { e.preventDefault(); handleMeld(state, targetPilaIndex); };
 }
 
 function findTargetPila(selectedCards, table) {
@@ -263,7 +273,20 @@ function handleDiscard(state) {
     state.phase = 'draw';
     state.tutorMsg = "Il Bot sta pensando...";
     updateUI(state);
-    setTimeout(() => botAction(state), 1500);
+    
+    setTimeout(() => {
+        // Ripristino logica scroll in caso di fine partita nel mezzo (safety catch)
+        if (state.hands.player.length === 0) {
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.touchAction = '';
+            alert("Complimenti, hai vinto sbarazzandoti di tutte le carte!");
+            window.location.hash = "lobby";
+            return;
+        }
+        botAction(state);
+    }, 1500);
 }
 
 function botAction(state) {
@@ -299,6 +322,17 @@ function botAction(state) {
 
     setTimeout(() => {
         if(state.hands.bot1.length > 0) state.discardPile.push(state.hands.bot1.pop());
+        
+        if (state.hands.bot1.length === 0) {
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.touchAction = '';
+            alert("Il bot ha vinto!");
+            window.location.hash = "lobby";
+            return;
+        }
+
         state.turn = 'player';
         state.phase = 'draw';
         state.tutorMsg = "Tocca il mazzo per pescare.";
