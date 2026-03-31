@@ -27,12 +27,15 @@ export function showMinigamesList(container) {
 
     container.innerHTML = `
         <div id="lobby-wrapper" class="fade-in" style="padding: 20px; color: white; min-height: 100vh; background: #090a0f;">
-            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto;">
-                <button id="btn-back-main" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer; padding: 10px 20px; border-radius: 50px; color: white;">
-                    ← TORNA ALLA LIBRERIA
-                </button>
+            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto; padding-top: env(safe-area-inset-top);">
                 
-                <header style="margin: 30px 0; text-align: center;">
+                <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 20px; padding-right: 60px;">
+                    <button id="btn-back-main" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer; padding: 10px 20px; border-radius: 50px; color: white; outline: none; -webkit-tap-highlight-color: transparent;">
+                        ← TORNA ALLA LIBRERIA
+                    </button>
+                </div>
+                
+                <header style="margin: 10px 0 30px 0; text-align: center;">
                     <p style="font-size: 0.8rem; letter-spacing: 3px; opacity: 0.6; margin-bottom: 5px;">DIVERTIMENTO VELOCE</p>
                     <h1 style="font-size: 2.5rem; font-weight: 900; margin: 0;">MINI <span style="color: #9d4ede;">GIOCHI</span></h1>
                 </header>

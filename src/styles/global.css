@@ -31,6 +31,12 @@
        scroll-behavior: smooth;
    }
    
+   /* FIX GLOBALE: Rimuove i bordi grigi/blu quando tocchi i bottoni (es. il ?) */
+   button, a, .nav-logo-right {
+       outline: none !important;
+       -webkit-tap-highlight-color: transparent !important;
+   }
+   
    /* Sistema Scrolling Mobile */
    #main-content, .fade-in {
        height: 100vh;
@@ -38,11 +44,14 @@
        -webkit-overflow-scrolling: touch;
    }
    
+   /* SAFE AREA iOS (Notch & Home Bar) */
    #app {
        min-height: 100dvh;
        padding: 20px;
        padding-top: calc(20px + env(safe-area-inset-top));
-       padding-bottom: 120px;
+       padding-bottom: calc(120px + env(safe-area-inset-bottom));
+       padding-left: calc(20px + env(safe-area-inset-left));
+       padding-right: calc(20px + env(safe-area-inset-right));
        box-sizing: border-box;
    }
    
@@ -51,8 +60,8 @@
       ========================================= */
    .nav-logo-right {
        position: fixed;
-       top: 20px;
-       right: 20px;
+       top: calc(20px + env(safe-area-inset-top)); /* Safe area top */
+       right: calc(20px + env(safe-area-inset-right));
        width: 50px;
        height: 50px;
        z-index: 999;
@@ -60,6 +69,8 @@
        animation: floatLogo 4s ease-in-out infinite;
        cursor: pointer;
        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+       border: none;
+       background: transparent;
    }
    
    .nav-logo-right:active {
@@ -150,7 +161,7 @@
        opacity: 1;
    }
    
-   /* Staggered Delay (ritardo sequenziale delle card) */
+   /* Staggered Delay */
    .game-card:nth-child(1), .action-card:nth-child(1) { animation-delay: 0.1s; }
    .game-card:nth-child(2), .action-card:nth-child(2) { animation-delay: 0.2s; }
    .game-card:nth-child(3), .action-card:nth-child(3) { animation-delay: 0.3s; }
@@ -273,9 +284,11 @@
        -webkit-backdrop-filter: blur(40px) saturate(180%);
        z-index: 10001;
        transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-       padding: 60px 25px;
+       /* Safe Area padding sulla sidebar */
+       padding: calc(60px + env(safe-area-inset-top)) 25px calc(60px + env(safe-area-inset-bottom)) 25px;
        border-left: 1px solid var(--glass-border);
        box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+       box-sizing: border-box;
    }
    
    .sidebar-glass.active { right: 0; }
@@ -328,8 +341,9 @@
       ========================================= */
    .floating-trigger {
        position: fixed;
-       bottom: 30px;
-       right: 25px;
+       /* Safe Area bottom applicata all'Hamburger Button */
+       bottom: calc(30px + env(safe-area-inset-bottom));
+       right: calc(25px + env(safe-area-inset-right));
        width: 68px;
        height: 68px;
        border-radius: 24px;
