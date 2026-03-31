@@ -23,6 +23,11 @@
             --amethyst-glow: rgba(157, 78, 221, 0.5);
         }
 
+        /* FIX: Reset globale per outline e highlight da tap (iOS/Android) */
+        * {
+            -webkit-tap-highlight-color: transparent !important;
+        }
+
         html, body { 
             background-color: var(--bg) !important; 
             margin: 0; padding: 0; 
