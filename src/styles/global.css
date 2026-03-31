@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 5.1 - D&D EDITION)
+   LA TAVERNA - AMETHYST DARK UI (VER. 5.2 - UNIFIED)
    ========================================= */
 
    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
@@ -17,7 +17,7 @@
        --accent-gradient: linear-gradient(135deg, #9d4ede 0%, #5a189a 100%);
    }
    
-   /* Reset & Fix Layout per Dashboard D&D */
+   /* Reset & Fix Layout */
    html, body {
        height: 100%;
        margin: 0;
@@ -31,7 +31,7 @@
        scroll-behavior: smooth;
    }
    
-   /* Fix Scrolling Mobile richiesto dal sistema D&D */
+   /* Sistema Scrolling Mobile */
    #main-content, .fade-in {
        height: 100vh;
        overflow-y: auto !important;
@@ -47,7 +47,146 @@
    }
    
    /* =========================================
-      D&D HERO COMPONENT (EVOLVED)
+      LOGO FAVICON (ANIMATO & GLOWING)
+      ========================================= */
+   .nav-logo-right {
+       position: fixed;
+       top: 20px;
+       right: 20px;
+       width: 50px;
+       height: 50px;
+       z-index: 999;
+       filter: drop-shadow(0 0 15px var(--amethyst-bright));
+       animation: floatLogo 4s ease-in-out infinite;
+       cursor: pointer;
+       transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+   }
+   
+   .nav-logo-right:active {
+       transform: scale(0.8) rotate(-10deg);
+   }
+   
+   @keyframes floatLogo {
+       0%, 100% { transform: translateY(0) rotate(0deg) scale(1); filter: drop-shadow(0 0 10px var(--amethyst-glow)); }
+       50% { transform: translateY(-10px) rotate(5deg) scale(1.05); filter: drop-shadow(0 0 20px var(--amethyst-bright)); }
+   }
+   
+   /* =========================================
+      TITOLI CON GLOW AVANZATO
+      ========================================= */
+   .main-title {
+       font-family: 'Montserrat', sans-serif;
+       font-weight: 900;
+       font-size: 2.4rem;
+       text-transform: uppercase;
+       letter-spacing: -1px;
+       background: linear-gradient(180deg, #ffffff 0%, var(--text-secondary) 100%);
+       -webkit-background-clip: text;
+       -webkit-text-fill-color: transparent;
+       filter: drop-shadow(0 0 15px rgba(157, 78, 221, 0.4));
+       margin-bottom: 5px;
+   }
+   
+   .text-amethyst {
+       color: var(--amethyst-bright);
+       text-shadow: 0 0 20px var(--amethyst-glow), 0 0 40px rgba(157, 78, 221, 0.2);
+   }
+   
+   /* =========================================
+      SISTEMA CARD (LOBBY & ACTION CARDS)
+      ========================================= */
+   .dashboard-container {
+       max-width: 600px;
+       margin: 0 auto;
+   }
+   
+   .grid-layout {
+       display: grid;
+       grid-template-columns: repeat(2, 1fr);
+       gap: 16px;
+       margin-top: 25px;
+   }
+   
+   .game-card, .action-card {
+       background: var(--glass-surface);
+       backdrop-filter: blur(12px);
+       -webkit-backdrop-filter: blur(12px);
+       border: 1px solid var(--glass-border);
+       border-radius: 28px;
+       padding: 28px 16px;
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       justify-content: center;
+       gap: 14px;
+       transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+       text-align: center;
+       position: relative;
+       overflow: hidden;
+       animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+   }
+   
+   /* Effetto di riflesso al tocco per tutte le card */
+   .game-card::before, .action-card::before {
+       content: '';
+       position: absolute;
+       top: -50%;
+       left: -50%;
+       width: 200%;
+       height: 200%;
+       background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+       opacity: 0;
+       transition: opacity 0.3s;
+       pointer-events: none;
+   }
+   
+   .game-card:active, .action-card:active {
+       transform: scale(0.92) translateY(2px);
+       background: rgba(157, 78, 221, 0.15);
+       border-color: var(--amethyst-light);
+   }
+   
+   .game-card:active::before, .action-card:active::before {
+       opacity: 1;
+   }
+   
+   /* Staggered Delay (ritardo sequenziale delle card) */
+   .game-card:nth-child(1), .action-card:nth-child(1) { animation-delay: 0.1s; }
+   .game-card:nth-child(2), .action-card:nth-child(2) { animation-delay: 0.2s; }
+   .game-card:nth-child(3), .action-card:nth-child(3) { animation-delay: 0.3s; }
+   .game-card:nth-child(4) { animation-delay: 0.4s; }
+   .game-card:nth-child(5) { animation-delay: 0.5s; }
+   .game-card:nth-child(6) { animation-delay: 0.6s; }
+   
+   @keyframes cardEntrance {
+       from { 
+           opacity: 0; 
+           transform: translateY(30px) scale(0.9); 
+           filter: blur(10px);
+       }
+       to { 
+           opacity: 1; 
+           transform: translateY(0) scale(1);
+           filter: blur(0);
+       }
+   }
+   
+   .game-card h3, .action-card h3 {
+       margin: 0;
+       font-size: 1rem;
+       font-family: 'Montserrat', sans-serif;
+       font-weight: 800;
+       text-transform: uppercase;
+       letter-spacing: 1.2px;
+   }
+   
+   .game-card span {
+       font-size: 2.2rem;
+       filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+   }
+   
+   /* =========================================
+      D&D SPECIFIC COMPONENTS
       ========================================= */
    .dnd-hero {
        background: linear-gradient(135deg, rgba(40, 10, 60, 0.8) 0%, rgba(10, 5, 20, 0.9) 100%),
@@ -106,40 +245,6 @@
        box-shadow: 0 0 15px var(--amethyst-glow);
    }
    
-   /* =========================================
-      ACTION CARDS (STAGGERED ANIMATION)
-      ========================================= */
-   .action-card {
-       background: var(--glass-surface);
-       backdrop-filter: blur(12px);
-       -webkit-backdrop-filter: blur(12px);
-       border: 1px solid var(--glass-border);
-       padding: 25px;
-       border-radius: 24px;
-       transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-       cursor: pointer;
-       text-align: left;
-       position: relative;
-       overflow: hidden;
-       animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-   }
-   
-   .action-card:hover {
-       background: rgba(157, 78, 221, 0.1);
-       border-color: var(--amethyst-bright);
-       transform: translateY(-8px);
-       box-shadow: 0 15px 35px rgba(157, 78, 221, 0.2);
-   }
-   
-   .action-card:active {
-       transform: scale(0.95);
-   }
-   
-   /* Staggered Delay per le card D&D */
-   .action-card:nth-child(1) { animation-delay: 0.2s; }
-   .action-card:nth-child(2) { animation-delay: 0.3s; }
-   .action-card:nth-child(3) { animation-delay: 0.4s; }
-   
    .icon-circle {
        width: 52px;
        height: 52px;
@@ -155,52 +260,72 @@
    }
    
    /* =========================================
-      NAVIGAZIONE & BOTTONI (AMETHYST STYLE)
+      SIDEBAR & OVERLAY (ULTRA-BLUR)
       ========================================= */
-   #back-to-lobby {
-       backdrop-filter: blur(10px);
-       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+   .sidebar-glass {
+       position: fixed;
+       right: -110%;
+       top: 0;
+       width: 300px;
+       height: 100dvh;
+       background: rgba(8, 4, 18, 0.9);
+       backdrop-filter: blur(40px) saturate(180%);
+       -webkit-backdrop-filter: blur(40px) saturate(180%);
+       z-index: 10001;
+       transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+       padding: 60px 25px;
+       border-left: 1px solid var(--glass-border);
+       box-shadow: -20px 0 50px rgba(0,0,0,0.5);
    }
    
-   #back-to-lobby:hover {
-       background: rgba(157, 78, 221, 0.2) !important;
-       border-color: var(--amethyst-bright) !important;
-       transform: translateX(-5px);
+   .sidebar-glass.active { right: 0; }
+   
+   .btn-back-glass {
+       width: 100%;
+       background: rgba(255, 255, 255, 0.05);
+       border: 1px solid var(--glass-border);
+       color: white;
+       padding: 20px;
+       border-radius: 22px;
+       font-weight: 800;
+       text-transform: uppercase;
+       font-family: 'Montserrat', sans-serif;
+       font-size: 0.9rem;
+       letter-spacing: 1px;
+       cursor: pointer;
+       transition: all 0.3s ease;
+       margin-bottom: 12px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       gap: 10px;
+   }
+   
+   .btn-back-glass:active {
+       background: var(--amethyst-glow);
+       border-color: var(--amethyst-bright);
+       transform: scale(0.96);
+   }
+   
+   .sidebar-overlay {
+       position: fixed;
+       inset: 0;
+       background: rgba(0,0,0,0.6);
+       opacity: 0;
+       visibility: hidden;
+       z-index: 10000;
+       transition: 0.4s;
+       backdrop-filter: blur(4px);
+   }
+   
+   .sidebar-overlay.active {
+       opacity: 1;
+       visibility: visible;
    }
    
    /* =========================================
-      ANIMAZIONI & CORE UI (UNCHANGED)
+      TRIGGER DINAMICO & NAV BARS
       ========================================= */
-   @keyframes cardEntrance {
-       from { 
-           opacity: 0; 
-           transform: translateY(30px) scale(0.9); 
-           filter: blur(10px);
-       }
-       to { 
-           opacity: 1; 
-           transform: translateY(0) scale(1);
-           filter: blur(0);
-       }
-   }
-   
-   .nav-logo-right {
-       position: fixed;
-       top: 20px;
-       right: 20px;
-       width: 50px;
-       height: 50px;
-       z-index: 999;
-       filter: drop-shadow(0 0 15px var(--amethyst-bright));
-       animation: floatLogo 4s ease-in-out infinite;
-       cursor: pointer;
-   }
-   
-   @keyframes floatLogo {
-       0%, 100% { transform: translateY(0) rotate(0deg); }
-       50% { transform: translateY(-10px) rotate(5deg); }
-   }
-   
    .floating-trigger {
        position: fixed;
        bottom: 30px;
@@ -216,21 +341,36 @@
        align-items: center;
        gap: 5px;
        box-shadow: 0 10px 30px rgba(157, 78, 221, 0.6);
+       transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
        border: 1px solid rgba(255, 255, 255, 0.2);
    }
    
-   .sidebar-glass {
-       position: fixed;
-       right: -110%;
-       top: 0;
-       width: 300px;
-       height: 100dvh;
-       background: rgba(8, 4, 18, 0.95);
-       backdrop-filter: blur(40px) saturate(180%);
-       z-index: 10001;
-       transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-       padding: 60px 25px;
-       border-left: 1px solid var(--glass-border);
+   .floating-trigger.is-active {
+       background: var(--danger) !important;
+       transform: rotate(180deg);
+       box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
    }
    
-   .sidebar-glass.active { right: 0; }
+   .nav-bar {
+       width: 28px;
+       height: 3.5px;
+       background: white;
+       border-radius: 10px;
+       transition: all 0.4s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+   }
+   
+   .floating-trigger.is-active .nav-bar:nth-child(1) { transform: translateY(8.5px) rotate(45deg); }
+   .floating-trigger.is-active .nav-bar:nth-child(2) { opacity: 0; transform: translateX(20px); }
+   .floating-trigger.is-active .nav-bar:nth-child(3) { transform: translateY(-8.5px) rotate(-45deg); }
+   
+   /* Back Button Lobby Style */
+   #back-to-lobby {
+       backdrop-filter: blur(10px);
+       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+   }
+   
+   #back-to-lobby:hover {
+       background: rgba(157, 78, 221, 0.2) !important;
+       border-color: var(--amethyst-bright) !important;
+       transform: translateX(-5px);
+   }
