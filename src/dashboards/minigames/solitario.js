@@ -9,6 +9,7 @@ export function initSolitario(container) {
     updateSidebarContext("minigames");
 
     // Configurazione fissa per Mobile
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
@@ -76,14 +77,20 @@ function startNewSolitario(state, container) {
 function renderLayout(container) {
     container.innerHTML = `
     <style>
-        .mobile-emulator { width: 100%; height: 100dvh; background: #05010a; display: flex; justify-content: center; align-items: center; }
-        .sol-wrapper { 
-            width: 100%; max-width: 430px; height: 100%; max-height: 932px;
-            background: radial-gradient(circle at top, #1b2735 0%, #090a0f 100%); 
-            display: flex; flex-direction: column; padding: 12px; overflow: hidden; position: relative;
+        .solitario-wrapper { 
+            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
+            display: flex; flex-direction: column; padding: calc(15px + env(safe-area-inset-top)) 12px calc(15px + env(safe-area-inset-bottom)) 12px; 
+            overflow: hidden; position: relative;
+            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 431px) {
+            .solitario-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
         }
         
-        .top-row { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .top-row { display: flex; justify-content: space-between; margin-bottom: 20px; flex-shrink: 0; }
         .slot { 
             width: 52px; height: 78px; border-radius: 8px; 
             border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
@@ -95,7 +102,7 @@ function renderLayout(container) {
             box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 1px solid rgba(0,0,0,0.1);
             display: flex; flex-direction: column; padding: 4px;
             font-family: 'Montserrat', sans-serif; cursor: pointer; transition: transform 0.15s;
-            user-select: none; -webkit-tap-highlight-color: transparent;
+            user-select: none; -webkit-tap-highlight-color: transparent; outline: none; box-sizing: border-box;
         }
         .card-s.back { background: linear-gradient(135deg, #2a0a4a 0%, #6b21a8 100%); border: 1px solid #9d4ede; }
         .card-s.face-up { background: #fff; color: #000; }
@@ -106,40 +113,54 @@ function renderLayout(container) {
             border: 2px solid #00ffa3;
         }
 
-        .tableau-area { display: flex; justify-content: space-between; flex: 1; align-items: flex-start; }
+        .tableau-area { display: flex; justify-content: space-between; flex: 1; align-items: flex-start; overflow-y: auto; padding-bottom: 20px; -webkit-overflow-scrolling: touch; }
+        .tableau-area::-webkit-scrollbar { display: none; }
         .col { width: 52px; height: 100%; position: relative; min-height: 100px; }
         
         .card-val-ui { font-size: 14px; font-weight: 900; line-height: 1; margin-bottom: 2px; }
         .card-suit-small { font-size: 10px; line-height: 1; }
         .card-suit-main { position: absolute; bottom: 4px; right: 4px; font-size: 20px; opacity: 0.8; }
 
-        .btn-restart { 
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: white; padding: 8px 16px; border-radius: 20px; font-size: 11px;
-            margin: 10px auto; cursor: pointer;
+        .action-btns { display: flex; gap: 10px; margin-top: auto; padding-top: 10px; flex-shrink: 0; }
+        .btn-action-sol { 
+            flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 12px; border-radius: 12px; font-size: 11px; font-weight: 800;
+            cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; transition: 0.2s;
         }
+        .btn-action-sol:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
     </style>
-    <div class="mobile-emulator">
-        <div class="sol-wrapper">
-            <div class="top-row">
-                <div style="display:flex; gap:8px;">
-                    <div id="deck-pile" class="slot"></div>
-                    <div id="waste-pile" class="slot"></div>
-                </div>
-                <div style="display:flex; gap:4px;">
-                    <div class="slot foundation" data-f="0"></div>
-                    <div class="slot foundation" data-f="1"></div>
-                    <div class="slot foundation" data-f="2"></div>
-                    <div class="slot foundation" data-f="3"></div>
-                </div>
+
+    <div class="solitario-wrapper">
+        <div class="top-row">
+            <div style="display:flex; gap:8px;">
+                <div id="deck-pile" class="slot"></div>
+                <div id="waste-pile" class="slot"></div>
             </div>
-            
-            <div class="tableau-area" id="tableau-ui"></div>
-            
-            <button class="btn-restart" id="btn-restart">RICOMINCIA</button>
+            <div style="display:flex; gap:4px;">
+                <div class="slot foundation" data-f="0"></div>
+                <div class="slot foundation" data-f="1"></div>
+                <div class="slot foundation" data-f="2"></div>
+                <div class="slot foundation" data-f="3"></div>
+            </div>
+        </div>
+        
+        <div class="tableau-area" id="tableau-ui"></div>
+        
+        <div class="action-btns">
+            <button class="btn-action-sol" id="btn-restart">↻ RIAVVIA</button>
+            <button class="btn-action-sol" id="btn-quit">← ESCI DAL GIOCO</button>
         </div>
     </div>
     `;
+
+    container.querySelector('#btn-quit').onclick = () => {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.touchAction = '';
+        window.location.hash = "lobby";
+    };
 }
 
 function renderCardHTML(card, index = 0, isTableau = false, isSelected = false) {
@@ -165,7 +186,7 @@ function renderGame(state, container) {
 
     // Mazzo
     deckPile.innerHTML = state.deck.length > 0 ? `<div class="card-s back"></div>` : `<div style="color:white; opacity:0.3; font-size:24px;">↺</div>`;
-    deckPile.onclick = () => { drawCard(state); renderGame(state, container); };
+    deckPile.onclick = (e) => { e.preventDefault(); drawCard(state); renderGame(state, container); };
 
     // Scarti
     wastePile.innerHTML = '';
@@ -185,8 +206,8 @@ function renderGame(state, container) {
     // Fondazioni (A-K)
     foundations.forEach((slot, i) => {
         const stack = state.foundations[i];
-        slot.innerHTML = stack.length > 0 ? renderCardHTML(stack[stack.length - 1]) : `<span style="opacity:0.1; font-size:20px; color:white;">A</span>`;
-        slot.onclick = () => handleFoundationClick(i, state, container);
+        slot.innerHTML = stack.length > 0 ? renderCardHTML(stack[stack.length - 1]) : `<span style="opacity:0.1; font-size:20px; color:white; font-family:'Montserrat';">A</span>`;
+        slot.onclick = (e) => { e.preventDefault(); handleFoundationClick(i, state, container); };
     });
 
     // Tableau
@@ -194,7 +215,7 @@ function renderGame(state, container) {
     state.tableau.forEach((col, colIdx) => {
         const colEl = document.createElement('div');
         colEl.className = 'col';
-        colEl.onclick = () => handleTableauClick(colIdx, -1, state, container);
+        colEl.onclick = (e) => { e.preventDefault(); handleTableauClick(colIdx, -1, state, container); };
         
         col.forEach((card, cardIdx) => {
             const isSelected = state.selected?.type === 'tableau' && 
@@ -211,7 +232,7 @@ function renderGame(state, container) {
                     handleTableauClick(colIdx, cardIdx, state, container);
                 };
                 // Doppio tap per mandare in fondazione
-                cardEl.ondblclick = () => tryAutoFoundation(colIdx, state, container);
+                cardEl.ondblclick = (e) => { e.preventDefault(); tryAutoFoundation(colIdx, state, container); };
             }
             colEl.appendChild(cardEl);
         });
@@ -294,6 +315,10 @@ function handleFoundationClick(fIdx, state, container) {
             targetStack.push(sourceStack.pop());
             if (moveData.type === 'tableau') revealTop(moveData.colIdx, state);
             state.selected = null;
+            
+            // Check Win condition
+            checkWinCondition(state);
+            
         } else {
             state.selected = null;
         }
@@ -319,7 +344,23 @@ function tryAutoFoundation(colIdx, state, container) {
             revealTop(colIdx, state);
             state.selected = null;
             renderGame(state, container);
+            checkWinCondition(state);
             return;
         }
+    }
+}
+
+function checkWinCondition(state) {
+    const isWin = state.foundations.every(f => f.length === 13);
+    if (isWin) {
+        setTimeout(() => {
+            alert("COMPLIMENTI! HAI VINTO AL SOLITARIO! 🏆");
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.touchAction = '';
+            window.location.hash = "lobby";
+        }, 500);
     }
 }
