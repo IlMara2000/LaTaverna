@@ -26,7 +26,7 @@ export function showMinigamesList(container) {
     ];
 
     container.innerHTML = `
-        <div id="lobby-wrapper" class="fade-in" style="color: white; width: 100%;">
+        <div id="lobby-wrapper" style="color: white; width: 100%; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;">
             <div class="dashboard-container" style="max-width: 800px; margin: 0 auto;">
                 
                 <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 20px; padding-right: 60px;">
