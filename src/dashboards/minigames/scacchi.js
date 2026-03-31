@@ -1,12 +1,18 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
+// ==========================================
+// GIOCO: STRATEGY (Chess & Checkers)
+// Versione Mobile-First ottimizzata
+// ==========================================
+
 export function initScacchi(container) {
     updateSidebarContext("minigames");
 
-    // Blocco Scroll per mobile
+    // Configurazione fissa per Mobile: previene rimbalzi e scroll di sistema
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
+    document.body.style.touchAction = 'none';
 
     let state = {
         gameMode: 'chess', 
@@ -34,12 +40,18 @@ function renderSetupMenu(container, state) {
         .setup-card { 
             background: rgba(255,255,255,0.03); backdrop-filter: blur(15px);
             padding: 25px; border-radius: 24px; border: 1px solid rgba(157,78,221,0.3);
-            width: 100%; text-align: center;
+            width: 100%; text-align: center; animation: fadeIn 0.5s ease;
         }
         .mode-toggle { display: flex; gap: 8px; margin: 20px 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 12px; }
-        .mode-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: transparent; color: white; font-weight: 600; font-size: 13px; }
+        .mode-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: transparent; color: white; font-weight: 600; font-size: 13px; -webkit-tap-highlight-color: transparent; transition: 0.3s; }
         .mode-btn.active { background: #9d4ede; box-shadow: 0 4px 15px rgba(157,78,221,0.4); }
-        .start-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: #00ffa3; color: #000; font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-top: 20px; }
+        
+        .diff-btn { padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; font-size:10px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .diff-btn.active { background:rgba(157,78,221,0.2); border:1px solid #9d4ede; }
+
+        .start-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: #00ffa3; color: #000; font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-top: 20px; -webkit-tap-highlight-color: transparent; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
     <div class="mobile-emulator">
         <div class="setup-screen">
@@ -48,16 +60,16 @@ function renderSetupMenu(container, state) {
                 <p style="opacity:0.5; font-size:11px; margin-bottom:25px;">Scegli la tua sfida</p>
                 
                 <div class="mode-toggle">
-                    <button class="mode-btn active" id="btn-chess">SCACCHI</button>
-                    <button class="mode-btn" id="btn-checkers">DAMA</button>
+                    <button class="mode-btn ${state.gameMode === 'chess' ? 'active' : ''}" id="btn-chess">SCACCHI</button>
+                    <button class="mode-btn ${state.gameMode === 'checkers' ? 'active' : ''}" id="btn-checkers">DAMA</button>
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                     <p style="text-align: left; font-size: 11px; opacity: 0.6;">Difficoltà IA:</p>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                        <button class="diff-btn" style="padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; font-size:10px;">EASY</button>
-                        <button class="diff-btn active" style="padding:10px; border-radius:8px; background:rgba(157,78,221,0.2); border:1px solid #9d4ede; color:white; font-size:10px;">NORMAL</button>
-                        <button class="diff-btn" style="padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; font-size:10px;">HARD</button>
+                        <button class="diff-btn ${state.difficulty === 1 ? 'active' : ''}" data-diff="1">EASY</button>
+                        <button class="diff-btn ${state.difficulty === 2 ? 'active' : ''}" data-diff="2">NORMAL</button>
+                        <button class="diff-btn ${state.difficulty === 3 ? 'active' : ''}" data-diff="3">HARD</button>
                     </div>
                 </div>
 
@@ -67,16 +79,21 @@ function renderSetupMenu(container, state) {
     </div>
     `;
 
+    // Event Listeners Menu
     container.querySelector('#btn-chess').onclick = () => {
-        container.querySelector('#btn-chess').classList.add('active');
-        container.querySelector('#btn-checkers').classList.remove('active');
         state.gameMode = 'chess';
+        renderSetupMenu(container, state);
     };
     container.querySelector('#btn-checkers').onclick = () => {
-        container.querySelector('#btn-checkers').classList.add('active');
-        container.querySelector('#btn-chess').classList.remove('active');
         state.gameMode = 'checkers';
+        renderSetupMenu(container, state);
     };
+    container.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.onclick = () => {
+            state.difficulty = parseInt(btn.dataset.diff);
+            renderSetupMenu(container, state);
+        };
+    });
 
     container.querySelector('#start-game').onclick = () => startGame(container, state);
 }
@@ -85,6 +102,7 @@ function renderSetupMenu(container, state) {
 function startGame(container, state) {
     state.board = state.gameMode === 'chess' ? createChessBoard() : createCheckersBoard();
     state.turn = 'w';
+    state.selected = null;
     renderBoard(container, state);
 }
 
@@ -126,36 +144,40 @@ function renderBoard(container, state) {
         }
         .board { 
             display: grid; grid-template-columns: repeat(8, 1fr); 
-            width: 100vw; max-width: 430px; height: 100vw; max-height: 430px;
-            border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);
+            width: 95vw; max-width: 400px; height: 95vw; max-height: 400px;
+            border: 2px solid rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-        .sq { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 32px; position: relative; }
+        .sq { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 32px; position: relative; -webkit-tap-highlight-color: transparent; }
         .sq.light { background: #d1d9e0; }
         .sq.dark { background: #5c7c99; }
         .sq.selected { background: #f6f669 !important; }
-        .piece { user-select: none; z-index: 5; color: black; transition: transform 0.1s; }
+        .sq.last-move { background: rgba(0, 255, 163, 0.2) !important; }
         
-        .checker { width: 75%; height: 75%; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); }
+        .piece { user-select: none; z-index: 5; color: black; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+        
+        .checker { width: 75%; height: 75%; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); pointer-events: none; }
         .checker.w { background: #fff; box-shadow: 0 4px 0 #ccc; }
         .checker.b { background: #222; box-shadow: 0 4px 0 #000; }
 
-        .game-header { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; color: white; }
-        .turn-indicator { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; }
+        .game-header { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; color: white; position: absolute; top: 10px; }
+        .turn-indicator { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; letter-spacing: 1px; }
+        
+        #btn-reset { margin-top: 30px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 20px; border-radius: 12px; font-size: 11px; cursor: pointer; transition: 0.3s; }
+        #btn-reset:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
     </style>
     <div class="mobile-emulator">
         <div class="game-screen">
             <div class="game-header">
-                <span style="font-weight:900; letter-spacing:1px; font-size:14px;">${state.gameMode === 'chess' ? 'CHESS' : 'CHECKERS'}</span>
+                <span style="font-weight:900; letter-spacing:1px; font-size:14px; font-family:'Montserrat';">${state.gameMode.toUpperCase()}</span>
                 <div class="turn-indicator" style="background: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}; color: #000;">
-                    TURNO: ${state.turn === 'w' ? 'BIANCO' : 'NERO'}
+                    ${state.turn === 'w' ? 'TUO TURNO' : 'IA...'}
                 </div>
             </div>
             
             <div class="board" id="board-ui"></div>
             
-            <div style="flex:1; display:flex; align-items:center; gap:20px;">
-                <button id="btn-reset" style="background:none; border:none; color:white; opacity:0.4; font-size:12px; cursor:pointer;">↺ RICOMINCIA</button>
-            </div>
+            <button id="btn-reset">↺ ESCI</button>
         </div>
     </div>
     `;
@@ -194,12 +216,12 @@ function handleSquareClick(r, c, state, container) {
         if (state.selected.r === r && state.selected.c === c) {
             state.selected = null;
         } else {
-            // Logica movimento base
+            // Muovi pezzo
             movePiece(state.selected.r, state.selected.c, r, c, state);
             state.selected = null;
             
             if (state.turn === 'b') {
-                setTimeout(() => aiMove(state, container), 800);
+                setTimeout(() => aiMove(state, container), 600);
             }
         }
         renderBoard(container, state);
@@ -220,7 +242,7 @@ function aiMove(state, container) {
     state.isAnimating = true;
     let possibleMoves = [];
 
-    // Trova mosse legali semplici per l'IA
+    // Logica IA base (cerca mosse legali rudimentali)
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const p = state.board[r][c];

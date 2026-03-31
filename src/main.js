@@ -38,7 +38,7 @@ function renderPortal(user) {
     appContainer.innerHTML = `
         <div class="entry-container fade-in" id="entry-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; cursor: pointer;">
             <img src="/assets/logo.png" alt="La Taverna" id="main-logo" style="width: 140px; filter: drop-shadow(0 0 20px var(--amethyst-glow)); transition: 0.5s;">
-            <p class="subtitle" style="margin-top: 30px; opacity: 0.6;">Tocca per entrare nel Portale</p>
+            <p class="subtitle" style="margin-top: 30px; opacity: 0.6;">Tocca il Calice per Entrare</p>
         </div>
     `;
 
