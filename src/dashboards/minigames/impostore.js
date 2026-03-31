@@ -26,10 +26,11 @@ const WORDS_DATABASE = [
 export function initImpostore(container) {
     updateSidebarContext("minigames");
     
-    // Blocco Scroll
+    // Configurazione fissa per Mobile: previene rimbalzi e scroll di sistema
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
+    document.body.style.touchAction = 'none';
 
     renderSetup(container);
 }
@@ -39,7 +40,7 @@ function createPlayerInputHTML(value = "", index) {
         <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
                    style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px;">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold;">✕</button>
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent;">✕</button>
         </div>
     `;
 }
@@ -55,12 +56,16 @@ function renderSetup(container) {
                 width: 100%; max-width: 430px; height: 100%; max-height: 932px; 
                 background: radial-gradient(circle at top, #1b2735 0%, #090a0f 100%); 
                 color: white; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; padding: 20px; overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
             .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 80px; }
-            .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); }
+            .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); -webkit-tap-highlight-color: transparent; }
             .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px; }
             .config-row select { background: transparent; color: #9d4ede; border: none; font-weight: 900; font-size: 16px; outline: none; }
             .main-title { font-family: 'Montserrat'; font-weight: 900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 2.2rem; margin-top: 20px; margin-bottom: 5px; }
+            
+            /* Animazione transizione */
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         </style>
 
         <div class="mobile-emulator">
@@ -85,14 +90,14 @@ function renderSetup(container) {
                     <div id="player-inputs-container" style="margin-top: 15px;">
                         ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
                     </div>
-                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px;">+ AGGIUNGI GIOCATORE</button>
+                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px; -webkit-tap-highlight-color: transparent;">+ AGGIUNGI GIOCATORE</button>
                     <button id="start-game" class="btn-main">Inizia Partita</button>
                 </div>
             </div>
         </div>
     `;
 
-    // Event Delegation per cancellazione
+    // Event Delegation per cancellazione (mantiene logica originale)
     container.querySelector('#player-inputs-container').onclick = (e) => {
         if (e.target.classList.contains('delete-player')) {
             e.target.closest('.player-input-wrapper').remove();
@@ -108,7 +113,8 @@ function renderSetup(container) {
     };
 
     container.querySelector('#start-game').onclick = () => {
-        const names = Array.from(container.querySelectorAll('.player-input')).map(i => i.value.trim()).filter(n => n !== "");
+        const inputs = Array.from(container.querySelectorAll('.player-input'));
+        const names = inputs.map(i => i.value.trim()).filter(n => n !== "");
         gameData.config.impostors = parseInt(container.querySelector('#select-impostors').value);
         gameData.config.undercover = parseInt(container.querySelector('#select-undercover').value);
 
@@ -136,13 +142,14 @@ function startNewRound(container) {
 
 function renderReveal(container) {
     const currentPlayer = gameData.players[gameData.currentIndex];
+    const wrapper = container.querySelector('.impostore-wrapper');
 
-    container.querySelector('.impostore-wrapper').innerHTML = `
-        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.5s;">
+    wrapper.innerHTML = `
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.4s ease-out;">
             <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
             <h1 style="font-size: 2.8rem; font-weight: 900; color: #9d4ede; margin-bottom: 30px; font-family:'Montserrat';">${currentPlayer.name}</h1>
             
-            <div id="word-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s;">
+            <div id="word-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s; -webkit-tap-highlight-color: transparent;">
                 <p id="word-text" style="font-weight: 800; opacity: 0.7; font-size: 14px;">TOCCA PER SCOPRIRE IL RUOLO</p>
             </div>
 
@@ -169,7 +176,7 @@ function renderReveal(container) {
         box.style.background = "rgba(0,0,0,0.4)";
         container.querySelector('#word-text').innerHTML = content;
         container.querySelector('#next-player').style.display = "block";
-        box.onclick = null;
+        box.onclick = null; // Impedisce reveal multipli fastidiosi
     };
 
     container.querySelector('#next-player').onclick = () => {
@@ -184,7 +191,7 @@ function renderReveal(container) {
 
 function renderGameField(container) {
     container.querySelector('.impostore-wrapper').innerHTML = `
-        <div style="animation: fadeIn 0.5s;">
+        <div style="animation: fadeIn 0.4s ease-out;">
             <h1 class="main-title" style="font-size: 1.8rem;">DISCUSSIONE</h1>
             <p style="opacity:0.6; text-align: center; margin-bottom:20px; font-size: 12px;">Descrivete la parola senza svelarla!</p>
             
@@ -192,7 +199,7 @@ function renderGameField(container) {
                 ${gameData.players.map((p, i) => `
                     <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px 15px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 700; font-size: 15px;">${p.name}</span>
-                        <button class="vote-btn" data-index="${i}" style="background: #9d4ede; border: none; color: white; padding: 8px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 11px;">RUOLO</button>
+                        <button class="vote-btn" data-index="${i}" style="background: #9d4ede; border: none; color: white; padding: 8px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 11px; -webkit-tap-highlight-color: transparent;">RUOLO</button>
                     </div>
                 `).join('')}
             </div>
@@ -217,7 +224,7 @@ function renderResult(container) {
     ).join('');
 
     container.querySelector('.impostore-wrapper').innerHTML = `
-        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.5s;">
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.4s ease-out;">
             <h2 class="main-title" style="font-size: 1.8rem; margin-bottom: 20px;">RISULTATI</h2>
             <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 20px; width:100%; border: 1px solid rgba(255,255,255,0.08); margin-bottom:20px;">
                 ${summary}
@@ -227,12 +234,13 @@ function renderResult(container) {
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                 <button id="replay" class="btn-main">Nuovo Round</button>
-                <button id="change" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 12px;">IMPOSTAZIONI</button>
+                <button id="change" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 12px; -webkit-tap-highlight-color: transparent;">IMPOSTAZIONI</button>
             </div>
         </div>
     `;
 
     container.querySelector('#replay').onclick = () => {
+        // Rimescola mantenendo gli stessi nomi
         setupRoles(gameData.players.map(p => p.name), gameData.config.impostors, gameData.config.undercover);
         startNewRound(container);
     };

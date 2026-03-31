@@ -3,8 +3,11 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 export function initBriscola(container) {
     updateSidebarContext("minigames");
 
-    // Blocca lo scroll del body per prevenire rimbalzi su mobile
+    // Blocca lo scroll del body e previene il refresh "pull-to-refresh" su mobile
     document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none'; 
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
 
     const SUITS = [
         { id: 'bastoni', icon: '🪵', color: '#00ffa3' },
@@ -37,11 +40,12 @@ export function initBriscola(container) {
             justify-content: center;
             align-items: center;
             background: #05010a;
+            touch-action: none;
         }
 
         .briscola-wrapper { 
             width: 100%; 
-            max-width: 430px; /* Larghezza iPhone Pro Max */
+            max-width: 430px; 
             height: 100%; 
             max-height: 932px;
             background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
@@ -55,7 +59,7 @@ export function initBriscola(container) {
         /* Widget Punteggio ottimizzato */
         .score-widget { 
             position: absolute; 
-            top: 15px; 
+            top: env(safe-area-inset-top, 15px); 
             right: 15px; 
             background: rgba(255,255,255,0.03); 
             backdrop-filter: blur(10px); 
@@ -86,6 +90,7 @@ export function initBriscola(container) {
             cursor: pointer; 
             text-align: center;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .b-card:active { transform: scale(0.9); }
         .b-card.back { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; color: #9d4ede; cursor: default; }
@@ -101,7 +106,18 @@ export function initBriscola(container) {
             100% { transform: scale(1.05); opacity: 0; }
         }
 
-        .btn-start { background: linear-gradient(45deg, #9d4ede, #ff416c); color: white; padding: 15px 40px; border-radius: 15px; font-weight: 900; border: none; cursor: pointer; font-size: 1.2rem; text-transform: uppercase; }
+        .btn-start { 
+            background: linear-gradient(45deg, #9d4ede, #ff416c); 
+            color: white; 
+            padding: 15px 40px; 
+            border-radius: 15px; 
+            font-weight: 900; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 1.2rem; 
+            text-transform: uppercase;
+            -webkit-tap-highlight-color: transparent;
+        }
         
         #player-side, #bot-side { width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
         #mid-table { width: 100%; height: 200px; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
@@ -172,8 +188,12 @@ export function initBriscola(container) {
         container.querySelector('#s0').innerText = state.scores[0];
         container.querySelector('#s1').innerText = state.scores[1];
 
+        // Usiamo onclick ma con tap-highlight rimosso via CSS per fluidità mobile
         pSide.querySelectorAll('.b-card').forEach(card => {
-            card.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); };
+            card.onclick = (e) => { 
+                e.preventDefault();
+                if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); 
+            };
         });
     };
 
@@ -231,6 +251,9 @@ export function initBriscola(container) {
             if (state.players[0].length === 0 && state.deck.length === 0) {
                 const msg = state.scores[0] > 60 ? "🏆 VITTORIA!" : (state.scores[0] === 60 ? "🤝 PAREGGIO!" : "💀 SCONFITTA!");
                 alert(`${msg}\nTu: ${state.scores[0]} - Bot: ${state.scores[1]}`);
+                // Ripristiniamo lo scroll se usciamo dal gioco
+                document.body.style.overflow = '';
+                document.body.style.position = '';
                 return initBriscola(container);
             }
 

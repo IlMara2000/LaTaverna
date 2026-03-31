@@ -15,10 +15,11 @@ let gameData = {
 export function initNumeri(container) {
     updateSidebarContext("minigames");
     
-    // Blocca lo scroll del body
+    // Configurazione fissa per Mobile: previene rimbalzi e scroll di sistema
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
+    document.body.style.touchAction = 'none';
 
     gameData.round = 1; 
     renderSetup(container);
@@ -29,7 +30,7 @@ function createPlayerInputHTML(value = "", index) {
         <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
                    style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px;">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold;">✕</button>
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent;">✕</button>
         </div>
     `;
 }
@@ -45,19 +46,22 @@ function renderSetup(container) {
                 width: 100%; max-width: 430px; height: 100%; max-height: 932px; 
                 background: radial-gradient(circle at top, #1b2735 0%, #090a0f 100%); 
                 color: white; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; padding: 20px; overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
             .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 60px; }
-            .btn-main { background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; }
+            .btn-main { background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; -webkit-tap-highlight-color: transparent; }
             .number-display { font-size: 2.5rem; font-weight: 900; color: #9d4ede; text-shadow: 0 0 15px rgba(157,78,221,0.5); margin: 10px 0; word-break: break-all; }
             
             .sortable-list { width:100%; list-style:none; padding:0; margin:20px 0; }
             .sortable-item { 
                 background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
                 margin-bottom: 8px; padding: 12px 15px; border-radius: 12px; cursor: grab;
-                display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px;
+                display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; touch-action: none;
             }
             .sortable-item.dragging { opacity: 0.5; border: 1px dashed #9d4ede; background: rgba(157, 78, 221, 0.2); }
             .main-title { font-family: 'Montserrat'; font-weight: 900; background: linear-gradient(to right, #9d4ede, #c77dff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 2.5rem; margin-top: 10px; }
+            
+            @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         </style>
 
         <div class="mobile-emulator">
@@ -69,7 +73,7 @@ function renderSetup(container) {
                     <div id="player-inputs-container">
                         ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
                     </div>
-                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px;">+ AGGIUNGI GIOCATORE</button>
+                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px; -webkit-tap-highlight-color: transparent;">+ AGGIUNGI GIOCATORE</button>
                     <button id="start-game" class="btn-main">Inizia Partita</button>
                 </div>
             </div>
@@ -131,12 +135,12 @@ function renderReveal(container) {
     const wrapper = container.querySelector('.num-wrapper');
 
     wrapper.innerHTML = `
-        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; animation: fadeIn 0.4s ease-out;">
             <div style="background: rgba(157, 78, 221, 0.2); border: 1px solid #9d4ede; padding: 4px 12px; border-radius: 20px; font-size: 11px; margin-bottom: 20px; font-weight: 800; color: #c77dff;">ROUND ${gameData.round}</div>
             <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
             <h1 style="font-size: 2.8rem; font-weight: 900; color: #c77dff; margin-bottom: 30px; font-family:'Montserrat';">${playerData.name}</h1>
             
-            <div id="number-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s;">
+            <div id="number-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s; -webkit-tap-highlight-color: transparent;">
                 <p id="number-text" style="font-weight: 800; opacity: 0.6; font-size: 14px;">TOCCA PER SCOPRIRE</p>
             </div>
             
@@ -166,7 +170,7 @@ function renderReveal(container) {
 function renderOrdering(container) {
     const wrapper = container.querySelector('.num-wrapper');
     wrapper.innerHTML = `
-        <div style="display:flex; flex-direction:column; height:100%;">
+        <div style="display:flex; flex-direction:column; height:100%; animation: fadeIn 0.4s ease-out;">
             <h1 style="font-size: 1.8rem; font-weight: 900; text-align: center; margin-top: 10px;">ORDINA I NOMI</h1>
             <p style="opacity: 0.5; font-size: 11px; text-align: center; margin-bottom: 10px;">Dal numero più piccolo (sopra) al più grande (sotto).</p>
             
@@ -206,15 +210,30 @@ function initSortable(container) {
     });
 
     // Supporto Touch per Mobile
+    let touchDraggingItem = null;
+    list.addEventListener('touchstart', (e) => {
+        const item = e.target.closest('.sortable-item');
+        if (item) {
+            touchDraggingItem = item;
+            item.classList.add('dragging');
+        }
+    }, { passive: false });
+
     list.addEventListener('touchmove', (e) => {
+        if (!touchDraggingItem) return;
         e.preventDefault();
         const touch = e.touches[0];
         const afterElement = getDragAfterElement(list, touch.clientY);
-        if (draggingItem) {
-            if (afterElement == null) list.appendChild(draggingItem);
-            else list.insertBefore(draggingItem, afterElement);
-        }
+        if (afterElement == null) list.appendChild(touchDraggingItem);
+        else list.insertBefore(touchDraggingItem, afterElement);
     }, { passive: false });
+
+    list.addEventListener('touchend', (e) => {
+        if (touchDraggingItem) {
+            touchDraggingItem.classList.remove('dragging');
+            touchDraggingItem = null;
+        }
+    });
 }
 
 function getDragAfterElement(containerList, y) {
@@ -242,7 +261,7 @@ function renderResult(container) {
 
     const wrapper = container.querySelector('.num-wrapper');
     wrapper.innerHTML = `
-        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; animation: fadeIn 0.4s ease-out;">
             <h1 style="font-size: 3.5rem; margin: 0;">${isCorrect ? '🏆' : '💀'}</h1>
             <h2 style="font-size: 2rem; font-weight: 900; color: ${isCorrect ? '#00ffa3' : '#ff416c'}; margin-bottom: 20px;">
                 ${isCorrect ? 'VITTORIA!' : 'SBAGLIATO!'}
@@ -260,7 +279,7 @@ function renderResult(container) {
 
             <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                 <button id="next-round" class="btn-main" style="background: linear-gradient(45deg, #00ffa3, #00d2ff);">PROSSIMO ROUND</button>
-                <button id="change-players" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 12px;">RIAVVIA</button>
+                <button id="change-players" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 12px; -webkit-tap-highlight-color: transparent;">RIAVVIA</button>
             </div>
         </div>
     `;

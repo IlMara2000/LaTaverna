@@ -1,19 +1,25 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
+// ==========================================
+// GIOCO: SOLITARIO (Klondike)
+// Versione Mobile-First ottimizzata
+// ==========================================
+
 export function initSolitario(container) {
     updateSidebarContext("minigames");
 
-    // Blocco Scroll per mobile
+    // Configurazione fissa per Mobile
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
+    document.body.style.touchAction = 'none';
 
     let state = {
         deck: [],
         waste: [],
         foundations: [[], [], [], []],
         tableau: [[], [], [], [], [], [], []],
-        selected: null
+        selected: null // { type, colIdx, cardIdx }
     };
 
     renderLayout(container);
@@ -42,13 +48,13 @@ function startNewSolitario(state, container) {
         });
     }));
     
-    // Shuffle
+    // Shuffle (Fisher-Yates)
     for (let i = deck.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [deck[i], deck[j]] = [deck[j], deck[i]];
     }
 
-    // Distribuzione
+    // Distribuzione Tableau
     for (let i = 0; i < 7; i++) {
         state.tableau[i] = [];
         for (let j = 0; j <= i; j++) {
@@ -60,9 +66,12 @@ function startNewSolitario(state, container) {
     state.deck = deck;
     state.waste = [];
     state.foundations = [[], [], [], []];
+    state.selected = null;
     
     renderGame(state, container);
 }
+
+// --- INTERFACCIA ---
 
 function renderLayout(container) {
     container.innerHTML = `
@@ -71,36 +80,49 @@ function renderLayout(container) {
         .sol-wrapper { 
             width: 100%; max-width: 430px; height: 100%; max-height: 932px;
             background: radial-gradient(circle at top, #1b2735 0%, #090a0f 100%); 
-            display: flex; flex-direction: column; padding: 10px; overflow: hidden; position: relative;
+            display: flex; flex-direction: column; padding: 12px; overflow: hidden; position: relative;
         }
-        .top-row { display: flex; justify-content: space-between; margin-bottom: 15px; padding: 5px; }
+        
+        .top-row { display: flex; justify-content: space-between; margin-bottom: 20px; }
         .slot { 
-            width: 48px; height: 72px; border-radius: 6px; 
+            width: 52px; height: 78px; border-radius: 8px; 
             border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);
             position: relative; display: flex; align-items: center; justify-content: center;
         }
         
         .card-s { 
-            width: 48px; height: 72px; border-radius: 6px; position: absolute; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4); border: 0.5px solid rgba(255,255,255,0.15);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-family: sans-serif; cursor: pointer; transition: transform 0.1s;
+            width: 52px; height: 78px; border-radius: 8px; position: absolute; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 1px solid rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; padding: 4px;
+            font-family: 'Montserrat', sans-serif; cursor: pointer; transition: transform 0.15s;
+            user-select: none; -webkit-tap-highlight-color: transparent;
         }
-        .card-s.back { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1px solid #9d4ede; }
+        .card-s.back { background: linear-gradient(135deg, #2a0a4a 0%, #6b21a8 100%); border: 1px solid #9d4ede; }
         .card-s.face-up { background: #fff; color: #000; }
-        .card-s.selected { outline: 3px solid #00ffa3; z-index: 100 !important; }
+        .card-s.selected { 
+            transform: translateY(-8px) scale(1.05); 
+            box-shadow: 0 0 15px #00ffa3; 
+            z-index: 1000 !important; 
+            border: 2px solid #00ffa3;
+        }
 
-        .tableau-area { display: flex; justify-content: space-between; flex: 1; padding: 0 2px; }
-        .col { width: 48px; position: relative; }
+        .tableau-area { display: flex; justify-content: space-between; flex: 1; align-items: flex-start; }
+        .col { width: 52px; height: 100%; position: relative; min-height: 100px; }
         
-        .card-value { position: absolute; top: 2px; left: 3px; font-size: 11px; font-weight: 900; line-height: 1; }
-        .card-suit-small { position: absolute; top: 12px; left: 3px; font-size: 8px; }
-        .card-suit-main { font-size: 24px; }
+        .card-val-ui { font-size: 14px; font-weight: 900; line-height: 1; margin-bottom: 2px; }
+        .card-suit-small { font-size: 10px; line-height: 1; }
+        .card-suit-main { position: absolute; bottom: 4px; right: 4px; font-size: 20px; opacity: 0.8; }
+
+        .btn-restart { 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 8px 16px; border-radius: 20px; font-size: 11px;
+            margin: 10px auto; cursor: pointer;
+        }
     </style>
     <div class="mobile-emulator">
         <div class="sol-wrapper">
             <div class="top-row">
-                <div style="display:flex; gap:6px;">
+                <div style="display:flex; gap:8px;">
                     <div id="deck-pile" class="slot"></div>
                     <div id="waste-pile" class="slot"></div>
                 </div>
@@ -111,21 +133,24 @@ function renderLayout(container) {
                     <div class="slot foundation" data-f="3"></div>
                 </div>
             </div>
+            
             <div class="tableau-area" id="tableau-ui"></div>
+            
+            <button class="btn-restart" id="btn-restart">RICOMINCIA</button>
         </div>
     </div>
     `;
 }
 
-function renderCardHTML(card, index = 0, isTableau = false) {
-    const isSelected = card.selected ? 'selected' : '';
-    const style = isTableau ? `style="top: ${index * 16}px; z-index: ${index};"` : '';
+function renderCardHTML(card, index = 0, isTableau = false, isSelected = false) {
+    const selClass = isSelected ? 'selected' : '';
+    const style = isTableau ? `style="top: ${index * 18}px; z-index: ${index};"` : '';
     
     if (!card.faceUp) return `<div class="card-s back" ${style}></div>`;
 
     return `
-        <div class="card-s face-up ${isSelected}" ${style} data-suit="${card.suit}" data-rank="${card.rank}">
-            <div class="card-value">${card.val}</div>
+        <div class="card-s face-up ${selClass}" ${style}>
+            <div class="card-val-ui" style="color:${card.color}">${card.val}</div>
             <div class="card-suit-small" style="color:${card.color}">${card.icon}</div>
             <div class="card-suit-main" style="color:${card.color}">${card.icon}</div>
         </div>
@@ -139,22 +164,28 @@ function renderGame(state, container) {
     const foundations = container.querySelectorAll('.foundation');
 
     // Mazzo
-    deckPile.innerHTML = state.deck.length > 0 ? `<div class="card-s back"></div>` : `<div style="color:white; opacity:0.3; font-size:20px;">↺</div>`;
+    deckPile.innerHTML = state.deck.length > 0 ? `<div class="card-s back"></div>` : `<div style="color:white; opacity:0.3; font-size:24px;">↺</div>`;
     deckPile.onclick = () => { drawCard(state); renderGame(state, container); };
 
     // Scarti
-    wastePile.innerHTML = state.waste.length > 0 ? renderCardHTML(state.waste[state.waste.length - 1]) : '';
+    wastePile.innerHTML = '';
     if (state.waste.length > 0) {
-        wastePile.querySelector('.card-s').onclick = (e) => {
+        const isSelected = state.selected?.type === 'waste';
+        const cardUI = document.createElement('div');
+        cardUI.innerHTML = renderCardHTML(state.waste[state.waste.length - 1], 0, false, isSelected);
+        const cardEl = cardUI.firstElementChild;
+        cardEl.onclick = (e) => {
             e.stopPropagation();
-            handleCardSelection({type: 'waste'}, state, container);
+            state.selected = isSelected ? null : { type: 'waste' };
+            renderGame(state, container);
         };
+        wastePile.appendChild(cardEl);
     }
 
-    // Foundation
+    // Fondazioni (A-K)
     foundations.forEach((slot, i) => {
         const stack = state.foundations[i];
-        slot.innerHTML = stack.length > 0 ? renderCardHTML(stack[stack.length - 1]) : '';
+        slot.innerHTML = stack.length > 0 ? renderCardHTML(stack[stack.length - 1]) : `<span style="opacity:0.1; font-size:20px; color:white;">A</span>`;
         slot.onclick = () => handleFoundationClick(i, state, container);
     });
 
@@ -163,29 +194,37 @@ function renderGame(state, container) {
     state.tableau.forEach((col, colIdx) => {
         const colEl = document.createElement('div');
         colEl.className = 'col';
-        colEl.onclick = () => handleTableauClick(colIdx, -1, state, container); // Click su colonna vuota
+        colEl.onclick = () => handleTableauClick(colIdx, -1, state, container);
         
         col.forEach((card, cardIdx) => {
-            const cardEl = document.createElement('div');
-            cardEl.innerHTML = renderCardHTML(card, cardIdx, true);
-            const inner = cardEl.firstElementChild;
+            const isSelected = state.selected?.type === 'tableau' && 
+                             state.selected.colIdx === colIdx && 
+                             cardIdx >= state.selected.cardIdx;
+
+            const cardWrapper = document.createElement('div');
+            cardWrapper.innerHTML = renderCardHTML(card, cardIdx, true, isSelected);
+            const cardEl = cardWrapper.firstElementChild;
             
             if (card.faceUp) {
-                inner.onclick = (e) => {
+                cardEl.onclick = (e) => {
                     e.stopPropagation();
                     handleTableauClick(colIdx, cardIdx, state, container);
                 };
-                inner.ondblclick = () => tryAutoFoundation(colIdx, state, container);
+                // Doppio tap per mandare in fondazione
+                cardEl.ondblclick = () => tryAutoFoundation(colIdx, state, container);
             }
-            colEl.appendChild(inner);
+            colEl.appendChild(cardEl);
         });
         tableauUI.appendChild(colEl);
     });
+
+    container.querySelector('#btn-restart').onclick = () => startNewSolitario(state, container);
 }
 
-// --- LOGICA AZIONI ---
+// --- LOGICA ---
 
 function drawCard(state) {
+    state.selected = null;
     if (state.deck.length === 0) {
         state.deck = state.waste.reverse().map(c => ({...c, faceUp: false}));
         state.waste = [];
@@ -198,29 +237,34 @@ function drawCard(state) {
 
 function handleTableauClick(colIdx, cardIdx, state, container) {
     const col = state.tableau[colIdx];
-    
-    // Se abbiamo una selezione, proviamo a muovere
+
     if (state.selected) {
+        // Tenta di muovere
         const moveData = state.selected;
-        const sourceStack = getSourceStack(moveData, state);
-        const cardsToMove = sourceStack.slice(moveData.cardIdx);
+        const sourceStack = moveData.type === 'waste' ? state.waste : state.tableau[moveData.colIdx];
+        const cardsToMove = sourceStack.slice(moveData.type === 'waste' ? sourceStack.length-1 : moveData.cardIdx);
         const movingCard = cardsToMove[0];
         const targetCard = col[col.length - 1];
 
         let canMove = false;
-        if (!targetCard && movingCard.rank === 13) canMove = true; // Re su vuoto
-        if (targetCard && targetCard.isRed !== movingCard.isRed && targetCard.rank === movingCard.rank + 1) canMove = true;
+        if (!targetCard) {
+            if (movingCard.rank === 13) canMove = true; // Re su spazio vuoto
+        } else if (targetCard.faceUp) {
+            // Regola: colore alternato e rango decrescente
+            if (targetCard.isRed !== movingCard.isRed && targetCard.rank === movingCard.rank + 1) {
+                canMove = true;
+            }
+        }
 
         if (canMove) {
-            const slice = sourceStack.splice(moveData.cardIdx);
+            const slice = sourceStack.splice(moveData.type === 'waste' ? sourceStack.length-1 : moveData.cardIdx);
             state.tableau[colIdx].push(...slice);
-            cleanUpAfterMove(moveData.colIdx, state);
+            if (moveData.type === 'tableau') revealTop(moveData.colIdx, state);
             state.selected = null;
         } else {
-            state.selected = null; // Deseleziona se mossa invalida
+            state.selected = null;
         }
     } else if (cardIdx !== -1 && col[cardIdx].faceUp) {
-        // Seleziona
         state.selected = { type: 'tableau', colIdx, cardIdx };
     }
     renderGame(state, container);
@@ -229,37 +273,37 @@ function handleTableauClick(colIdx, cardIdx, state, container) {
 function handleFoundationClick(fIdx, state, container) {
     if (state.selected) {
         const moveData = state.selected;
-        const sourceStack = getSourceStack(moveData, state);
-        if (sourceStack.length - 1 !== moveData.cardIdx) return; // Muovi solo l'ultima
+        const sourceStack = moveData.type === 'waste' ? state.waste : state.tableau[moveData.colIdx];
+        
+        // In fondazione si muove solo una carta alla volta (l'ultima dello stack)
+        if (moveData.type === 'tableau' && moveData.cardIdx !== sourceStack.length - 1) {
+            state.selected = null;
+            renderGame(state, container);
+            return;
+        }
 
-        const movingCard = sourceStack[moveData.cardIdx];
+        const movingCard = sourceStack[sourceStack.length - 1];
         const targetStack = state.foundations[fIdx];
         const top = targetStack[targetStack.length - 1];
 
-        if ((!top && movingCard.rank === 1) || (top && top.suit === movingCard.suit && movingCard.rank === top.rank + 1)) {
+        let canMove = false;
+        if (!top && movingCard.rank === 1) canMove = true; // Asso su vuoto
+        else if (top && top.suit === movingCard.suit && movingCard.rank === top.rank + 1) canMove = true;
+
+        if (canMove) {
             targetStack.push(sourceStack.pop());
-            cleanUpAfterMove(moveData.colIdx, state);
+            if (moveData.type === 'tableau') revealTop(moveData.colIdx, state);
+            state.selected = null;
+        } else {
             state.selected = null;
         }
     }
     renderGame(state, container);
 }
 
-function getSourceStack(moveData, state) {
-    if (moveData.type === 'waste') return state.waste;
-    return state.tableau[moveData.colIdx];
-}
-
-function handleCardSelection(data, state, container) {
-    state.selected = { type: data.type, colIdx: null, cardIdx: state.waste.length - 1 };
-    renderGame(state, container);
-}
-
-function cleanUpAfterMove(sourceColIdx, state) {
-    if (sourceColIdx !== null) {
-        const col = state.tableau[sourceColIdx];
-        if (col && col.length > 0) col[col.length - 1].faceUp = true;
-    }
+function revealTop(colIdx, state) {
+    const col = state.tableau[colIdx];
+    if (col && col.length > 0) col[col.length - 1].faceUp = true;
 }
 
 function tryAutoFoundation(colIdx, state, container) {
@@ -272,7 +316,8 @@ function tryAutoFoundation(colIdx, state, container) {
         const top = target[target.length - 1];
         if ((!top && card.rank === 1) || (top && top.suit === card.suit && card.rank === top.rank + 1)) {
             target.push(col.pop());
-            cleanUpAfterMove(colIdx, state);
+            revealTop(colIdx, state);
+            state.selected = null;
             renderGame(state, container);
             return;
         }

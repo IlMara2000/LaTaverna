@@ -1,5 +1,10 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
+// ==========================================
+// GIOCO: SOLO (Uno-Style)
+// Versione Mobile-First ottimizzata
+// ==========================================
+
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 
 const getHex = (color) => {
@@ -14,6 +19,12 @@ const getCardContent = (val) => {
 
 export function initSoloGame(container) {
     updateSidebarContext("minigames");
+
+    // Configurazione fissa per Mobile
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.touchAction = 'none';
     
     let state = {
         deck: [], discardPile: [], players: [[], [], [], []], 
@@ -37,35 +48,66 @@ function renderLayout(container) {
             background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
             position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif; 
         }
-        .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: 0; width: 100%; z-index: 10; }
-        .bot-status { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); min-width: 70px; font-size: 10px; }
-        .bot-status.active { border-color: #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.3); background: rgba(0, 210, 255, 0.1); }
-        .card-count { font-weight: 900; color: #00d2ff; font-size: 1.1rem; }
+
+        /* Status Avversari */
+        .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: 10px; width: 100%; z-index: 10; }
+        .bot-status { 
+            display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 16px; 
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255,255,255,0.1); min-width: 80px; font-size: 10px; transition: 0.3s;
+        }
+        .bot-status.active { border-color: #00d2ff; box-shadow: 0 0 20px rgba(0, 210, 255, 0.4); background: rgba(0, 210, 255, 0.15); transform: scale(1.05); }
+        .card-count { font-weight: 900; color: #00d2ff; font-size: 1.2rem; margin-top: 2px; }
         
-        .table-center { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
-        .pile-container { display: flex; justify-content: center; gap: 20px; align-items: center; }
+        /* Area Centrale */
+        .table-center { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
+        .pile-container { display: flex; justify-content: center; gap: 25px; align-items: center; perspective: 1000px; }
         
-        .card-solo { width: 70px; height: 100px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.4rem; border: 3px solid rgba(255,255,255,0.9); position: relative; box-shadow: 0 8px 15px rgba(0,0,0,0.4); user-select: none; }
+        .card-solo { 
+            width: 75px; height: 110px; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            font-weight: 900; font-size: 1.6rem; border: 3px solid rgba(255,255,255,0.9); position: relative; 
+            box-shadow: 0 12px 25px rgba(0,0,0,0.5); user-select: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
         .card-back { background: linear-gradient(135deg, #1a1a1a 0%, #434343 100%); border-color: #555; }
-        .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.4s ease-out; }
+        .card-back::after { content: 'S'; color: #00d2ff; font-size: 2rem; }
+
+        .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         
-        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: 10px; }
-        .hand-scroll { display: flex; gap: 6px; padding: 15px; overflow-x: auto; scrollbar-width: none; min-height: 120px; width: 100%; box-sizing: border-box; }
-        .card-solo.playable { flex-shrink: 0; transition: transform 0.2s ease; cursor: pointer; }
+        /* UI Giocatore */
+        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .hand-scroll { 
+            display: flex; gap: 8px; padding: 20px 15px; overflow-x: auto; 
+            scrollbar-width: none; min-height: 140px; width: 100%; box-sizing: border-box;
+            mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        }
+        .card-solo.playable { flex-shrink: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .card-solo.playable:active { transform: translateY(-20px) scale(1.1); }
         
-        .btn-solo { background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 900; margin-bottom: 5px; display: none; }
-        .btn-solo.pulse { display: block; animation: miniPulse 0.6s infinite alternate; }
+        .btn-solo { 
+            background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; 
+            padding: 12px 30px; border-radius: 50px; font-weight: 900; margin-bottom: 10px; 
+            display: none; box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn-solo.pulse { display: block; animation: soloPulse 0.8s infinite alternate; }
         
-        #picker-wild { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 15px; padding: 30px; align-content: center; }
-        .color-tile { height: 100px; border-radius: 15px; cursor: pointer; }
+        @keyframes soloPulse { from { transform: scale(1); filter: brightness(1); } to { transform: scale(1.1); filter: brightness(1.3); } }
+
+        /* Picker Colore */
+        #picker-wild { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.92); backdrop-filter: blur(20px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 20px; padding: 40px; align-content: center; }
+        .color-tile { height: 120px; border-radius: 20px; cursor: pointer; border: 4px solid rgba(255,255,255,0.1); transition: 0.2s; }
+        .color-tile:active { transform: scale(0.9); border-color: white; }
+
         #start-overlay { position:absolute; inset:0; background:#090a0f; z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        #direction-info { font-size: 2rem; color: rgba(255,255,255,0.2); transition: 0.5s; font-weight: 900; }
     </style>
 
     <div class="mobile-emulator">
         <div class="game-bg">
             <div id="start-overlay">
-                <h1 style="font-size: 3.5rem; font-weight: 900; background: linear-gradient(to right, #00d2ff, #9d4ede); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SOLO</h1>
-                <button id="btn-start" style="margin-top:20px; background:white; border:none; padding:12px 40px; border-radius:50px; color:#090a0f; font-weight:900;">GIOCA</button>
+                <h1 style="font-size: 4rem; font-weight: 900; background: linear-gradient(to bottom, #00d2ff, #9d4ede); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -2px;">SOLO</h1>
+                <p style="opacity: 0.5; margin-bottom: 30px;">Pronto alla sfida?</p>
+                <button id="btn-start" style="background:white; border:none; padding:15px 50px; border-radius:50px; color:#090a0f; font-weight:900; font-size: 1.2rem; cursor:pointer;">GIOCA ORA</button>
             </div>
 
             <div class="opponents-container">
@@ -75,17 +117,17 @@ function renderLayout(container) {
             </div>
 
             <div class="table-center">
-                <div id="stack-indicator" style="color:#ff416c; font-weight:900; height:20px; margin-bottom:5px;"></div>
-                <div id="direction-info" style="font-size:1.5rem; margin-bottom:10px;">↻</div>
+                <div id="stack-indicator" style="color:#ff416c; font-weight:900; height:24px; margin-bottom:10px; font-size: 0.9rem; text-shadow: 0 0 10px rgba(255,65,108,0.5);"></div>
+                <div id="direction-info">↻</div>
                 <div class="pile-container">
                     <div id="deck-draw" class="card-solo card-back"></div>
                     <div id="discard-pile" class="card-solo" style="background:white; color:black;"></div>
                 </div>
-                <div id="color-line" style="width: 60px; height: 4px; margin: 15px auto; border-radius: 10px;"></div>
+                <div id="color-line" style="width: 80px; height: 6px; margin: 20px auto; border-radius: 10px; transition: 0.5s;"></div>
             </div>
 
             <div class="player-ui">
-                <button id="btn-pass" style="background:rgba(255,255,255,0.1); border:1px solid white; color:white; padding:6px 15px; border-radius:20px; display:none; margin-bottom:5px;">PASSA</button>
+                <button id="btn-pass" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px 25px; border-radius:20px; display:none; margin-bottom:10px; font-weight:700;">PASSA</button>
                 <button id="solo-alert" class="btn-solo">SOLO!</button>
                 <div id="player-hand" class="hand-scroll"></div>
             </div>
@@ -98,7 +140,7 @@ function renderLayout(container) {
     `;
 }
 
-// --- LOGICA RIMASTA INVARIATA ---
+// --- LOGICA ANIMAZIONI ---
 
 async function animateCard(fromEl, toEl, cardData, isBack = false) {
     return new Promise(resolve => {
@@ -106,11 +148,13 @@ async function animateCard(fromEl, toEl, cardData, isBack = false) {
         const toRect = toEl.getBoundingClientRect();
         const flyer = document.createElement('div');
         flyer.className = `card-solo flying-card ${isBack ? 'card-back' : ''}`;
+        
         if (!isBack) {
             flyer.style.backgroundColor = getHex(cardData.color);
             flyer.innerText = getCardContent(cardData.val);
             flyer.style.color = (cardData.color === 'yellow' || cardData.color === 'wild') ? 'black' : 'white';
         }
+
         flyer.style.width = `${fromRect.width}px`;
         flyer.style.height = `${fromRect.height}px`;
         flyer.style.top = `${fromRect.top}px`;
@@ -120,7 +164,8 @@ async function animateCard(fromEl, toEl, cardData, isBack = false) {
         requestAnimationFrame(() => {
             flyer.style.top = `${toRect.top}px`;
             flyer.style.left = `${toRect.left}px`;
-            flyer.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+            flyer.style.transform = `rotate(${Math.random() * 40 - 20}deg) scale(0.9)`;
+            flyer.style.opacity = "0.7";
         });
 
         setTimeout(() => { flyer.remove(); resolve(); }, 400);
@@ -178,12 +223,15 @@ function startGame(state, container) {
         state.deck.push({color: 'wild', val: '+4'});
     }
     state.deck.sort(() => Math.random() - 0.5);
+    
     for(let p=0; p<4; p++) {
         state.players[p] = [];
         for(let i=0; i<7; i++) state.players[p].push(state.deck.pop());
     }
+
     let first = state.deck.pop();
     while(first.color === 'wild') { state.deck.unshift(first); first = state.deck.pop(); }
+    
     state.currentColor = first.color;
     state.currentVal = first.val;
     state.discardPile.push(first);
@@ -229,6 +277,7 @@ async function playCard(pIdx, cardIdx, state, container) {
     if (state.isAnimating) return;
     const card = state.players[pIdx][cardIdx];
 
+    // Check Legal Move
     if (state.stack > 0) {
         if (card.val !== state.currentVal) return;
     } else {
@@ -249,7 +298,9 @@ async function playCard(pIdx, cardIdx, state, container) {
     state.currentVal = card.val;
     if (card.color !== 'wild') state.currentColor = card.color;
 
-    if (card.val === 'REV') state.direction *= -1;
+    if (card.val === 'REV') {
+        state.direction *= -1;
+    }
     if (card.val === '+2') state.stack += 2;
     if (card.val === '+4') state.stack += 4;
     
@@ -282,18 +333,20 @@ async function playCard(pIdx, cardIdx, state, container) {
 
 function endTurn(state, container) {
     if (state.isAnimating) return;
+    
     if (state.pendingPenalty) {
-        alert("SOLO dimenticato! +2 carte 🤡");
-        drawCard(0, state, container); drawCard(0, state, container);
+        alert("Dimenticato SOLO! +2 carte 🤡");
+        drawCard(0, state, container); 
+        setTimeout(() => drawCard(0, state, container), 200);
         state.pendingPenalty = false;
     }
+
     state.hasSaidSolo = false;
-    updateUI(state, container);
     
     // Check Win
     for(let i=0; i<4; i++) {
         if (state.players[i].length === 0) {
-            alert(i === 0 ? "CAMPIONE! 👑" : `BOT ${i} VINCE! 🦾`);
+            alert(i === 0 ? "VITTORIA! 🏆" : `HA VINTO IL BOT ${i} 🤖`);
             location.reload();
             return;
         }
@@ -302,7 +355,7 @@ function endTurn(state, container) {
     if (!state.canChain) {
         state.turn = (state.turn + state.direction + 4) % 4;
         updateUI(state, container);
-        if (state.turn !== 0) setTimeout(() => botLogic(state, container), 600);
+        if (state.turn !== 0) setTimeout(() => botLogic(state, container), 800);
     }
 }
 
@@ -318,8 +371,13 @@ function botLogic(state, container) {
     }
 
     const playableIdx = hand.findIndex(c => c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal);
-    if (playableIdx !== -1) playCard(state.turn, playableIdx, state, container);
-    else drawCard(state.turn, state, container);
+    if (playableIdx !== -1) {
+        // Il bot dice sempre Solo se ha 2 carte
+        if (hand.length === 2) state.hasSaidSolo = true;
+        playCard(state.turn, playableIdx, state, container);
+    } else {
+        drawCard(state.turn, state, container);
+    }
 }
 
 function updateUI(state, container) {
@@ -328,20 +386,27 @@ function updateUI(state, container) {
     dp.style.backgroundColor = getHex(top.color === 'wild' ? 'wild' : top.color);
     dp.style.color = (top.color === 'yellow' || top.color === 'wild') ? 'black' : 'white';
     dp.innerText = getCardContent(top.val);
+    dp.style.transform = `rotate(${Math.random() * 10 - 5}deg)`;
     
     container.querySelector('#color-line').style.backgroundColor = getHex(state.currentColor);
-    container.querySelector('#stack-indicator').innerText = state.stack > 0 ? `+${state.stack} DA PESCARE!` : "";
+    container.querySelector('#stack-indicator').innerText = state.stack > 0 ? `PESCA +${state.stack}!` : "";
     container.querySelector('#btn-pass').style.display = state.canChain ? "block" : "none";
     container.querySelector('#direction-info').innerText = state.direction === 1 ? "↻" : "↺";
+    container.querySelector('#direction-info').style.transform = state.direction === 1 ? "scaleX(1)" : "scaleX(-1)";
 
     const pArea = container.querySelector('#player-hand');
     pArea.innerHTML = state.players[0].map((c, i) => {
         let isPlayable = false;
-        if (state.stack > 0) isPlayable = c.val === state.currentVal;
-        else if (state.canChain) isPlayable = c.val === state.currentVal;
-        else isPlayable = c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal;
+        if (state.stack > 0) isPlayable = (c.val === state.currentVal);
+        else if (state.canChain) isPlayable = (c.val === state.currentVal);
+        else isPlayable = (c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal);
 
-        return `<div class="card-solo playable" style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'}; opacity:${isPlayable ? 1 : 0.4};" data-idx="${i}">${getCardContent(c.val)}</div>`;
+        return `
+            <div class="card-solo playable" 
+                 style="background:${getHex(c.color)}; color:${(c.color === 'yellow' || c.color === 'wild') ? 'black' : 'white'}; opacity:${isPlayable ? 1 : 0.4}; transform: scale(${isPlayable ? 1 : 0.9});" 
+                 data-idx="${i}">
+                ${getCardContent(c.val)}
+            </div>`;
     }).join('');
     
     pArea.querySelectorAll('.card-solo').forEach(el => {
