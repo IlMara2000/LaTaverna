@@ -18,15 +18,13 @@ export function showLobby(container) {
                 </header>
                 <div id="btn-portal-minigames" class="game-card portal-card is-clickable">
                     <div class="card-content">
-                        <h2 class="card-title">MINI <span class="text-amethyst">GIOCHI</span></h2>
+                        <h2 class="card-title">🎮 MINI <span class="text-amethyst">GIOCHI</span></h2>
                     </div>
-                    <div class="card-icon-large">🎮</div>
                 </div>
                 <section class="lobby-section">
                     <h2 class="subtitle">🎲 GDR</h2>
                     <div class="game-card is-clickable" id="btn-dnd5e">
-                        <h2 class="card-title-sm">D&D 5E</h2>
-                        <div class="card-icon-small">🐉</div>
+                        <h2 class="card-title-sm">🐉 D&D 5E</h2>
                     </div>
                 </section>
             </div>
