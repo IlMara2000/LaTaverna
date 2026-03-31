@@ -11,7 +11,8 @@ const VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 export function initScopa(container) {
     updateSidebarContext("minigames");
 
-    // Blocco Scroll per Mobile
+    // Blocco Scroll per Mobile fisso e pulito
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
@@ -48,17 +49,26 @@ function startGame(state, container) {
 function renderLayout(container) {
     container.innerHTML = `
     <style>
-        .mobile-emulator { width: 100%; height: 100dvh; background: #05010a; display: flex; justify-content: center; align-items: center; }
+        /* Wrapper integrato nel Global CSS senza scatole cinesi */
         .scopa-wrapper { 
-            width: 100%; max-width: 430px; height: 100%; max-height: 932px;
-            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
+            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             color: white; font-family: 'Poppins', sans-serif; 
-            display: flex; flex-direction: column; padding: 15px; overflow: hidden; position: relative;
+            display: flex; flex-direction: column; 
+            padding: calc(15px + env(safe-area-inset-top)) 15px calc(15px + env(safe-area-inset-bottom)) 15px; 
+            overflow: hidden; position: relative;
+            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            box-sizing: border-box;
+        }
+
+        @media (min-width: 431px) {
+            .scopa-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
         }
         
         .score-bar { 
             display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); 
             padding: 12px; border-radius: 18px; font-size: 10px; font-weight: 700; border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 10px; flex-shrink: 0;
         }
         .score-box { display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .score-val { font-size: 16px; color: #ffbd39; }
@@ -66,8 +76,9 @@ function renderLayout(container) {
         .table-area { 
             flex: 1; display: grid; grid-template-columns: repeat(auto-fit, 70px); gap: 10px; 
             align-content: center; justify-content: center;
-            background: rgba(0,0,0,0.3); border-radius: 24px; margin: 20px 0; 
+            background: rgba(0,0,0,0.3); border-radius: 24px; margin: 5px 0; 
             border: 2px dashed rgba(255,255,255,0.05); position: relative;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
         }
 
         .card-scopa { 
@@ -75,8 +86,9 @@ function renderLayout(container) {
             display: flex; flex-direction: column; align-items: center; justify-content: space-between;
             padding: 8px; border: 1px solid rgba(0,0,0,0.1); position: relative; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); color: #1a1a1a;
+            -webkit-tap-highlight-color: transparent; outline: none; user-select: none;
         }
-        .player-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        .player-card { cursor: pointer; }
         .player-card:active { transform: translateY(-15px) scale(1.05); z-index: 10; }
         
         .bot-card { 
@@ -84,7 +96,7 @@ function renderLayout(container) {
             border: 2px solid #9d4ede; box-shadow: 0 0 15px rgba(157,78,221,0.3);
         }
 
-        .hand { display: flex; gap: 12px; justify-content: center; height: 120px; align-items: center; }
+        .hand { display: flex; gap: 12px; justify-content: center; height: 120px; align-items: center; flex-shrink: 0; }
 
         #scopa-toast {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -99,24 +111,38 @@ function renderLayout(container) {
             50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
         }
+
+        .btn-quit {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; margin-top: 5px; width: 100%; flex-shrink: 0; transition: 0.2s;
+        }
+        .btn-quit:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
     </style>
     
-    <div class="mobile-emulator">
-        <div class="scopa-wrapper">
-            <div class="score-bar">
-                <div class="score-box"><span>TU</span><span id="p-score" class="score-val">0</span><span>S: <b id="p-s">0</b></span></div>
-                <div id="turn-display" style="font-size: 12px; align-self: center; letter-spacing: 1px; font-weight: 900;">IL TUO TURNO</div>
-                <div class="score-box"><span>BOT</span><span id="b-score" class="score-val">0</span><span>S: <b id="b-s">0</b></span></div>
-            </div>
-
-            <div id="bot-hand" class="hand"></div>
-            <div id="table-ui" class="table-area"></div>
-            <div id="player-hand" class="hand"></div>
-            
-            <div id="scopa-toast">SCOPA!</div>
+    <div class="scopa-wrapper">
+        <div class="score-bar">
+            <div class="score-box"><span>TU</span><span id="p-score" class="score-val">0</span><span>S: <b id="p-s">0</b></span></div>
+            <div id="turn-display" style="font-size: 12px; align-self: center; letter-spacing: 1px; font-weight: 900;">IL TUO TURNO</div>
+            <div class="score-box"><span>BOT</span><span id="b-score" class="score-val">0</span><span>S: <b id="b-s">0</b></span></div>
         </div>
+
+        <div id="bot-hand" class="hand"></div>
+        <div id="table-ui" class="table-area"></div>
+        <div id="player-hand" class="hand"></div>
+        
+        <button id="btn-quit" class="btn-quit">← ESCI DAL GIOCO</button>
+
+        <div id="scopa-toast">SCOPA!</div>
     </div>
     `;
+
+    container.querySelector('#btn-quit').onclick = () => {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.touchAction = '';
+        window.location.hash = "lobby";
+    };
 }
 
 function renderGame(state, container) {
@@ -142,7 +168,8 @@ function renderGame(state, container) {
 
     // Click eventi solo se è il turno del player e non c'è animazione
     playerUI.querySelectorAll('.player-card').forEach(card => {
-        card.onclick = () => {
+        card.onclick = (e) => {
+            e.preventDefault();
             if (state.turn === 'player' && !state.isAnimating) {
                 handleMove(parseInt(card.dataset.idx), 'player', state, container);
             }
@@ -257,6 +284,13 @@ function finishMatch(state, container) {
     const bTotal = state.botCaptured.length + (state.botScopas * 5);
     
     const msg = pTotal >= bTotal ? "VITTORIA! 🏆" : "HA VINTO IL BOT! 🤖";
+    
+    // Ripristiniamo lo scroll prima del popup
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.touchAction = '';
     
     alert(`${msg}\n\nTu: ${state.playerCaptured.length} carte + ${state.playerScopas} Scope\nBot: ${state.botCaptured.length} carte + ${state.botScopas} Scope`);
     window.location.hash = "lobby";
