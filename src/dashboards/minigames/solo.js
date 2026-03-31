@@ -20,7 +20,8 @@ const getCardContent = (val) => {
 export function initSoloGame(container) {
     updateSidebarContext("minigames");
 
-    // Configurazione fissa per Mobile
+    // Configurazione fissa per Mobile: blocca scroll elastico
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
@@ -42,15 +43,29 @@ export function initSoloGame(container) {
 function renderLayout(container) {
     container.innerHTML = `
     <style>
-        .mobile-emulator { width: 100%; height: 100dvh; background: #05010a; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .game-bg { 
-            width: 100%; max-width: 430px; height: 100%; max-height: 932px;
-            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
+        .solo-wrapper { 
+            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif; 
+            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            box-sizing: border-box;
         }
 
+        @media (min-width: 431px) {
+            .solo-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+        }
+
+        /* Pulsante Esci */
+        .btn-exit-game {
+            position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px;
+            cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; transition: 0.2s;
+        }
+        .btn-exit-game:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+
         /* Status Avversari */
-        .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: 10px; width: 100%; z-index: 10; }
+        .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: calc(50px + env(safe-area-inset-top)); width: 100%; z-index: 10; }
         .bot-status { 
             display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 16px; 
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); 
@@ -60,84 +75,101 @@ function renderLayout(container) {
         .card-count { font-weight: 900; color: #00d2ff; font-size: 1.2rem; margin-top: 2px; }
         
         /* Area Centrale */
-        .table-center { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
+        .table-center { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); text-align: center; width: 100%; }
         .pile-container { display: flex; justify-content: center; gap: 25px; align-items: center; perspective: 1000px; }
         
         .card-solo { 
             width: 75px; height: 110px; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
             font-weight: 900; font-size: 1.6rem; border: 3px solid rgba(255,255,255,0.9); position: relative; 
             box-shadow: 0 12px 25px rgba(0,0,0,0.5); user-select: none; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            -webkit-tap-highlight-color: transparent; outline: none;
         }
-        .card-back { background: linear-gradient(135deg, #1a1a1a 0%, #434343 100%); border-color: #555; }
+        .card-back { background: linear-gradient(135deg, #1a1a1a 0%, #434343 100%); border-color: #555; cursor: pointer; }
         .card-back::after { content: 'S'; color: #00d2ff; font-size: 2rem; }
 
         .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         
         /* UI Giocatore */
-        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: env(safe-area-inset-bottom, 15px); }
         .hand-scroll { 
             display: flex; gap: 8px; padding: 20px 15px; overflow-x: auto; 
             scrollbar-width: none; min-height: 140px; width: 100%; box-sizing: border-box;
             mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+            -webkit-overflow-scrolling: touch;
         }
-        .card-solo.playable { flex-shrink: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        .card-solo.playable:active { transform: translateY(-20px) scale(1.1); }
+        .hand-scroll::-webkit-scrollbar { display: none; }
+
+        .card-solo.playable { flex-shrink: 0; cursor: pointer; }
+        .card-solo.playable:active { transform: translateY(-20px) scale(1.1); z-index: 10; }
         
         .btn-solo { 
             background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; 
             padding: 12px 30px; border-radius: 50px; font-weight: 900; margin-bottom: 10px; 
             display: none; box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
-            text-transform: uppercase; letter-spacing: 1px;
+            text-transform: uppercase; letter-spacing: 1px; outline: none; -webkit-tap-highlight-color: transparent; cursor: pointer;
         }
         .btn-solo.pulse { display: block; animation: soloPulse 0.8s infinite alternate; }
         
         @keyframes soloPulse { from { transform: scale(1); filter: brightness(1); } to { transform: scale(1.1); filter: brightness(1.3); } }
 
         /* Picker Colore */
-        #picker-wild { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.92); backdrop-filter: blur(20px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 20px; padding: 40px; align-content: center; }
-        .color-tile { height: 120px; border-radius: 20px; cursor: pointer; border: 4px solid rgba(255,255,255,0.1); transition: 0.2s; }
+        #picker-wild { display:none; position:absolute; inset:0; background:rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index:10000; grid-template-columns: 1fr 1fr; gap: 20px; padding: 40px; align-content: center; }
+        .color-tile { height: 120px; border-radius: 20px; cursor: pointer; border: 4px solid rgba(255,255,255,0.1); transition: 0.2s; -webkit-tap-highlight-color: transparent; outline: none; }
         .color-tile:active { transform: scale(0.9); border-color: white; }
 
-        #start-overlay { position:absolute; inset:0; background:#090a0f; z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        #start-overlay { position:absolute; inset:0; background:radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
         #direction-info { font-size: 2rem; color: rgba(255,255,255,0.2); transition: 0.5s; font-weight: 900; }
     </style>
 
-    <div class="mobile-emulator">
-        <div class="game-bg">
-            <div id="start-overlay">
-                <h1 style="font-size: 4rem; font-weight: 900; background: linear-gradient(to bottom, #00d2ff, #9d4ede); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -2px;">SOLO</h1>
-                <p style="opacity: 0.5; margin-bottom: 30px;">Pronto alla sfida?</p>
-                <button id="btn-start" style="background:white; border:none; padding:15px 50px; border-radius:50px; color:#090a0f; font-weight:900; font-size: 1.2rem; cursor:pointer;">GIOCA ORA</button>
-            </div>
+    <div class="solo-wrapper">
+        <div id="start-overlay">
+            <h1 style="font-size: 4rem; font-weight: 900; background: linear-gradient(to bottom, #00d2ff, #9d4ede); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -2px; margin:0;">SOLO</h1>
+            <p style="opacity: 0.5; margin-bottom: 30px;">Pronto alla sfida?</p>
+            <button id="btn-start" style="background:white; border:none; padding:15px 50px; border-radius:50px; color:#090a0f; font-weight:900; font-size: 1.2rem; cursor:pointer; -webkit-tap-highlight-color: transparent; outline: none;">GIOCA ORA</button>
+            <button id="btn-quit-start" style="margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; -webkit-tap-highlight-color: transparent; outline: none; font-size: 12px; text-transform: uppercase;">← Torna Indietro</button>
+        </div>
 
-            <div class="opponents-container">
-                <div id="bot-stat-1" class="bot-status"><span>BOT 1</span><div class="card-count" id="cnt-1">7</div></div>
-                <div id="bot-stat-2" class="bot-status"><span>BOT 2</span><div class="card-count" id="cnt-2">7</div></div>
-                <div id="bot-stat-3" class="bot-status"><span>BOT 3</span><div class="card-count" id="cnt-3">7</div></div>
-            </div>
+        <button class="btn-exit-game" id="btn-exit-ingame">← ESCI</button>
 
-            <div class="table-center">
-                <div id="stack-indicator" style="color:#ff416c; font-weight:900; height:24px; margin-bottom:10px; font-size: 0.9rem; text-shadow: 0 0 10px rgba(255,65,108,0.5);"></div>
-                <div id="direction-info">↻</div>
-                <div class="pile-container">
-                    <div id="deck-draw" class="card-solo card-back"></div>
-                    <div id="discard-pile" class="card-solo" style="background:white; color:black;"></div>
-                </div>
-                <div id="color-line" style="width: 80px; height: 6px; margin: 20px auto; border-radius: 10px; transition: 0.5s;"></div>
-            </div>
+        <div class="opponents-container">
+            <div id="bot-stat-1" class="bot-status"><span>BOT 1</span><div class="card-count" id="cnt-1">7</div></div>
+            <div id="bot-stat-2" class="bot-status"><span>BOT 2</span><div class="card-count" id="cnt-2">7</div></div>
+            <div id="bot-stat-3" class="bot-status"><span>BOT 3</span><div class="card-count" id="cnt-3">7</div></div>
+        </div>
 
-            <div class="player-ui">
-                <button id="btn-pass" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px 25px; border-radius:20px; display:none; margin-bottom:10px; font-weight:700;">PASSA</button>
-                <button id="solo-alert" class="btn-solo">SOLO!</button>
-                <div id="player-hand" class="hand-scroll"></div>
+        <div class="table-center">
+            <div id="stack-indicator" style="color:#ff416c; font-weight:900; height:24px; margin-bottom:10px; font-size: 0.9rem; text-shadow: 0 0 10px rgba(255,65,108,0.5);"></div>
+            <div id="direction-info">↻</div>
+            <div class="pile-container">
+                <div id="deck-draw" class="card-solo card-back"></div>
+                <div id="discard-pile" class="card-solo" style="background:white; color:black;"></div>
             </div>
+            <div id="color-line" style="width: 80px; height: 6px; margin: 20px auto; border-radius: 10px; transition: 0.5s;"></div>
+        </div>
 
-            <div id="picker-wild">
-                ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)};"></div>`).join('')}
-            </div>
+        <div class="player-ui">
+            <button id="btn-pass" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; padding:8px 25px; border-radius:20px; display:none; margin-bottom:10px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color: transparent; outline: none;">PASSA</button>
+            <button id="solo-alert" class="btn-solo">SOLO!</button>
+            <div id="player-hand" class="hand-scroll"></div>
+        </div>
+
+        <div id="picker-wild">
+            ${COLORS.map(c => `<div class="color-tile" data-color="${c}" style="background:${getHex(c)};"></div>`).join('')}
         </div>
     </div>
     `;
+
+    // Setup Exit Logics
+    const quitFn = () => {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.touchAction = '';
+        window.location.hash = "lobby";
+    };
+    container.querySelector('#btn-quit-start').onclick = quitFn;
+    container.querySelector('#btn-exit-ingame').onclick = quitFn;
 }
 
 // --- LOGICA ANIMAZIONI ---
@@ -178,25 +210,29 @@ function attachInitialListeners(container, state) {
         startGame(state, container);
     };
 
-    container.querySelector('#deck-draw').onclick = () => {
+    container.querySelector('#deck-draw').onclick = (e) => {
+        e.preventDefault();
         if (state.turn === 0 && !state.isAnimating && !state.canChain) {
             if (state.stack > 0) resolveStack(0, state, container);
             else drawCard(0, state, container, true);
         }
     };
 
-    container.querySelector('#btn-pass').onclick = () => {
+    container.querySelector('#btn-pass').onclick = (e) => {
+        e.preventDefault();
         state.canChain = false;
         endTurn(state, container);
     };
 
-    container.querySelector('#solo-alert').onclick = () => {
+    container.querySelector('#solo-alert').onclick = (e) => {
+        e.preventDefault();
         state.hasSaidSolo = true;
         container.querySelector('#solo-alert').classList.remove('pulse');
     };
 
     container.querySelectorAll('.color-tile').forEach(tile => {
-        tile.onclick = () => {
+        tile.onclick = (e) => {
+            e.preventDefault();
             state.currentColor = tile.dataset.color;
             container.querySelector('#picker-wild').style.display = 'none';
             if (!state.canChain) endTurn(state, container);
@@ -347,7 +383,12 @@ function endTurn(state, container) {
     for(let i=0; i<4; i++) {
         if (state.players[i].length === 0) {
             alert(i === 0 ? "VITTORIA! 🏆" : `HA VINTO IL BOT ${i} 🤖`);
-            location.reload();
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.touchAction = '';
+            window.location.hash = "lobby";
             return;
         }
     }
@@ -410,7 +451,10 @@ function updateUI(state, container) {
     }).join('');
     
     pArea.querySelectorAll('.card-solo').forEach(el => {
-        el.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(0, parseInt(el.dataset.idx), state, container); };
+        el.onclick = (e) => { 
+            e.preventDefault();
+            if(state.turn === 0 && !state.isAnimating) playCard(0, parseInt(el.dataset.idx), state, container); 
+        };
     });
 
     container.querySelector('#solo-alert').classList.toggle('pulse', state.players[0].length === 2 && state.turn === 0);
