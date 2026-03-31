@@ -26,8 +26,8 @@ export function showMinigamesList(container) {
     ];
 
     container.innerHTML = `
-        <div id="lobby-wrapper" class="fade-in" style="padding: 20px; color: white; min-height: 100vh; background: #090a0f;">
-            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto; padding-top: env(safe-area-inset-top);">
+        <div id="lobby-wrapper" class="fade-in" style="color: white; width: 100%;">
+            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto;">
                 
                 <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 20px; padding-right: 60px;">
                     <button id="btn-back-main" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer; padding: 10px 20px; border-radius: 50px; color: white; outline: none; -webkit-tap-highlight-color: transparent;">
