@@ -4,6 +4,7 @@ export function initBriscola(container) {
     updateSidebarContext("minigames");
 
     // Blocca lo scroll del body e previene il refresh "pull-to-refresh" su mobile
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     document.body.style.touchAction = 'none'; 
     document.body.style.position = 'fixed';
@@ -39,8 +40,11 @@ export function initBriscola(container) {
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #05010a;
+            /* Rimosso background solido per fondersi con il global CSS */
+            background: transparent;
             touch-action: none;
+            /* Animazione di ingresso inline per evitare conflitti con classi globali */
+            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
         .briscola-wrapper { 
@@ -48,12 +52,19 @@ export function initBriscola(container) {
             max-width: 430px; 
             height: 100%; 
             max-height: 932px;
-            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
+            /* Leggero gradiente interno che si poggia su quello globale */
+            background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             position: relative; 
             overflow: hidden; 
             color: white; 
             font-family: 'Poppins', sans-serif;
             box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            /* Arrotondiamo gli angoli solo su schermi grandi */
+            border-radius: 0;
+        }
+        
+        @media (min-width: 431px) {
+            .briscola-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
         }
         
         /* Widget Punteggio ottimizzato */
@@ -117,6 +128,7 @@ export function initBriscola(container) {
             font-size: 1.2rem; 
             text-transform: uppercase;
             -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
         
         #player-side, #bot-side { width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
@@ -126,7 +138,7 @@ export function initBriscola(container) {
     <div class="mobile-emulator">
         <div class="briscola-wrapper">
             <div id="briscola-overlay" style="position:absolute; inset:0; background:rgba(9,10,15,0.98); z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:20px; backdrop-filter: blur(15px);">
-                <h1 style="font-size:3rem; font-weight:900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family:'Montserrat';">BRISCOLA</h1>
+                <h1 style="font-size:3rem; font-weight:900; background: linear-gradient(to right, #9d4ede, #ff416c); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family:'Montserrat';">BRISCOLA</h1>
                 <button class="btn-start" id="start-game-btn">GIOCA ORA</button>
             </div>
 
@@ -147,7 +159,7 @@ export function initBriscola(container) {
                 </div>
             </div>
 
-            <div id="player-side" style="position:absolute; bottom:40px;"></div>
+            <div id="player-side" style="position:absolute; bottom:calc(20px + env(safe-area-inset-bottom));"></div>
         </div>
     </div>
     `;
@@ -251,8 +263,10 @@ export function initBriscola(container) {
             if (state.players[0].length === 0 && state.deck.length === 0) {
                 const msg = state.scores[0] > 60 ? "🏆 VITTORIA!" : (state.scores[0] === 60 ? "🤝 PAREGGIO!" : "💀 SCONFITTA!");
                 alert(`${msg}\nTu: ${state.scores[0]} - Bot: ${state.scores[1]}`);
-                // Ripristiniamo lo scroll se usciamo dal gioco
+                // Pulizia logica scroll se il gioco finisce per consentire navigazione altrove
+                document.documentElement.style.overflow = '';
                 document.body.style.overflow = '';
+                document.body.style.touchAction = '';
                 document.body.style.position = '';
                 return initBriscola(container);
             }
