@@ -10,10 +10,13 @@ export function initScacchi(container) {
 
     // Configurazione fissa per Mobile: previene rimbalzi e scroll di sistema
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
     document.body.style.touchAction = 'none';
+    document.body.style.backgroundColor = '#090a0f'; // Sfondo solido 
 
     let state = {
         gameMode: 'chess', 
@@ -27,22 +30,42 @@ export function initScacchi(container) {
     renderSetupMenu(container, state);
 }
 
+// --- Funzione centralizzata per uscire in sicurezza ---
+const quitGame = async (container) => {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.backgroundColor = '';
+    
+    try {
+        const { showMinigamesList } = await import('../../minigamelist.js');
+        showMinigamesList(document.getElementById('app') || container);
+    } catch (e) {
+        window.location.hash = "lobby"; 
+    }
+};
+
 // --- 1. MENU DI CONFIGURAZIONE ---
 function renderSetupMenu(container, state) {
     container.innerHTML = `
     <style>
         /* Wrapper integrato per uniformità visiva */
         .strategy-wrapper { 
-            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(26,26,46,0.8) 0%, rgba(7,7,10,0.9) 100%); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             color: white; font-family: 'Poppins', sans-serif; 
             padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)) 20px;
             animation: cardEntrance 0.5s ease-out forwards;
+            box-sizing: border-box;
         }
 
         @media (min-width: 431px) {
-            .strategy-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+            .strategy-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
 
         .setup-card { 
@@ -87,12 +110,10 @@ function renderSetupMenu(container, state) {
     </div>
     `;
 
-    container.querySelector('#btn-quit-setup').onclick = () => {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.touchAction = '';
-        window.location.hash = "lobby";
+    // FIX: Ora usa quitGame()
+    container.querySelector('#btn-quit-setup').onclick = (e) => {
+        e.preventDefault();
+        quitGame(container);
     };
 
     container.querySelector('#btn-chess').onclick = () => {
@@ -153,13 +174,14 @@ function renderBoard(container, state) {
     container.innerHTML = `
     <style>
         .game-screen { 
-            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: rgba(10,10,12,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
             animation: cardEntrance 0.4s ease-out forwards;
+            box-sizing: border-box;
         }
 
         @media (min-width: 431px) {
-            .game-screen { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+            .game-screen { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
 
         .board { 
@@ -168,7 +190,7 @@ function renderBoard(container, state) {
             border: 2px solid rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
-        .sq { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 32px; position: relative; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+        .sq { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 32px; position: relative; -webkit-tap-highlight-color: transparent; cursor: pointer; outline: none; }
         .sq.light { background: #d1d9e0; }
         .sq.dark { background: #5c7c99; }
         .sq.selected { background: #f6f669 !important; }
@@ -225,7 +247,10 @@ function renderBoard(container, state) {
         }
     }
 
-    container.querySelector('#btn-reset').onclick = () => renderSetupMenu(container, state);
+    container.querySelector('#btn-reset').onclick = (e) => {
+        e.preventDefault();
+        renderSetupMenu(container, state);
+    };
 }
 
 function handleSquareClick(r, c, state, container) {
