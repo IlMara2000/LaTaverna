@@ -8,12 +8,14 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 export function initSolitario(container) {
     updateSidebarContext("minigames");
 
-    // Configurazione fissa per Mobile
+    // FIX: Rimossi position: fixed e width: 100%.
+    // Manteniamo il blocco dell'overscroll per evitare rimbalzi durante il drag
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none';
+    document.body.style.backgroundColor = '#090a0f';
 
     let state = {
         deck: [],
@@ -23,9 +25,28 @@ export function initSolitario(container) {
         selected: null // { type, colIdx, cardIdx }
     };
 
-    renderLayout(container);
+    renderLayout(container, state);
     startNewSolitario(state, container);
 }
+
+// --- Funzione centralizzata per uscire in sicurezza ---
+const quitGame = async (container) => {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.backgroundColor = '';
+    
+    try {
+        const { showMinigamesList } = await import('../../minigamelist.js');
+        showMinigamesList(document.getElementById('app') || container);
+    } catch (e) {
+        window.location.hash = "lobby"; 
+    }
+};
 
 function startNewSolitario(state, container) {
     const suits = [
@@ -74,11 +95,11 @@ function startNewSolitario(state, container) {
 
 // --- INTERFACCIA ---
 
-function renderLayout(container) {
+function renderLayout(container, state) {
     container.innerHTML = `
     <style>
         .solitario-wrapper { 
-            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             display: flex; flex-direction: column; padding: calc(15px + env(safe-area-inset-top)) 12px calc(15px + env(safe-area-inset-bottom)) 12px; 
             overflow: hidden; position: relative;
@@ -87,7 +108,7 @@ function renderLayout(container) {
         }
 
         @media (min-width: 431px) {
-            .solitario-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+            .solitario-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
         
         .top-row { display: flex; justify-content: space-between; margin-bottom: 20px; flex-shrink: 0; }
@@ -148,18 +169,15 @@ function renderLayout(container) {
         
         <div class="action-btns">
             <button class="btn-action-sol" id="btn-restart">↻ RIAVVIA</button>
+            
             <button class="btn-action-sol" id="btn-quit">← ESCI DAL GIOCO</button>
         </div>
     </div>
     `;
 
-    container.querySelector('#btn-quit').onclick = () => {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.touchAction = '';
-        window.location.hash = "lobby";
+    container.querySelector('#btn-quit').onclick = (e) => {
+        e.preventDefault();
+        quitGame(container);
     };
 }
 
@@ -317,7 +335,7 @@ function handleFoundationClick(fIdx, state, container) {
             state.selected = null;
             
             // Check Win condition
-            checkWinCondition(state);
+            checkWinCondition(state, container);
             
         } else {
             state.selected = null;
@@ -344,23 +362,19 @@ function tryAutoFoundation(colIdx, state, container) {
             revealTop(colIdx, state);
             state.selected = null;
             renderGame(state, container);
-            checkWinCondition(state);
+            checkWinCondition(state, container);
             return;
         }
     }
 }
 
-function checkWinCondition(state) {
+// FIX: Aggiunto container ai parametri per poter usare quitGame in caso di vittoria
+function checkWinCondition(state, container) {
     const isWin = state.foundations.every(f => f.length === 13);
     if (isWin) {
         setTimeout(() => {
             alert("COMPLIMENTI! HAI VINTO AL SOLITARIO! 🏆");
-            document.documentElement.style.overflow = '';
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
-            document.body.style.touchAction = '';
-            window.location.hash = "lobby";
+            quitGame(container); // Utilizza il nuovo sistema di uscita
         }, 500);
     }
 }
