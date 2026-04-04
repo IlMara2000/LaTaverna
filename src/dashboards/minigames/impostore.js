@@ -71,13 +71,19 @@ function renderSetup(container) {
 
     container.innerHTML = `
         <style>
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
             .impostore-wrapper { 
                 width: 100%; max-width: 600px; margin: 0 auto;
                 color: white; font-family: 'Poppins', sans-serif; 
                 display: flex; flex-direction: column; 
                 padding: 20px;
                 padding-bottom: calc(120px + env(safe-area-inset-bottom));
-                animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+                /* FIX: Cambiata animazione da cardEntrance a slideUp per evitare lo scatto laterale */
+                animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             }
             .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); padding: 28px 20px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
             .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); outline: none; }
@@ -115,7 +121,6 @@ function renderSetup(container) {
         </div>
     `;
 
-    // Listener per il tasto esci nel menu setup
     container.querySelector('#btn-quit-setup').onclick = (e) => { e.preventDefault(); quitGame(container); };
 
     container.querySelector('#player-inputs-container').onclick = (e) => {
