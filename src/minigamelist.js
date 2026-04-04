@@ -4,9 +4,14 @@ import { showLobby } from './lobby.js';
 
 // ESPOSTA CON IL NOME CORRETTO CHE CERCA LA SIDEBAR
 export function showMinigamesList(container) {
-    // Reset scroll per Safari/iOS
+    // Reset scroll per Safari/iOS e pulizia blocchi dai giochi precedenti
     document.documentElement.style.overflow = 'auto';
+    document.documentElement.style.overscrollBehavior = 'auto';
     document.body.style.overflow = 'auto';
+    document.body.style.overscrollBehavior = 'auto';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.touchAction = '';
     window.scrollTo(0, 0);
 
     // Notifica alla sidebar che siamo nei minigiochi
@@ -27,7 +32,7 @@ export function showMinigamesList(container) {
 
     container.innerHTML = `
         <div id="lobby-wrapper" style="color: white; width: 100%; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;">
-            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto;">
+            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto; padding-bottom: calc(120px + env(safe-area-inset-bottom));">
                 
                 <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 20px; padding-right: 60px;">
                     <button id="btn-back-main" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer; padding: 10px 20px; border-radius: 50px; color: white; outline: none; -webkit-tap-highlight-color: transparent;">
