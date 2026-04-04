@@ -15,22 +15,45 @@ let gameData = {
 export function initNumeri(container) {
     updateSidebarContext("minigames");
     
-    // Configurazione fissa per Mobile: previene rimbalzi e scroll di sistema
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.touchAction = 'none';
+    // FIX: Sblocco totale dello scroll, niente position fixed che rompe il layout.
+    document.documentElement.style.overflow = 'auto';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.body.style.overflow = 'auto';
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.touchAction = '';
+    document.body.style.backgroundColor = '';
+    window.scrollTo(0, 0);
 
     gameData.round = 1; 
     renderSetup(container);
 }
 
+// --- Funzione centralizzata per uscire in sicurezza ---
+const quitGame = async (container) => {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.backgroundColor = '';
+    
+    try {
+        const { showMinigamesList } = await import('../../minigamelist.js');
+        showMinigamesList(document.getElementById('app') || container);
+    } catch (e) {
+        window.location.hash = "lobby"; 
+    }
+};
+
 function createPlayerInputHTML(value = "", index) {
     return `
         <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
-                   style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px;">
+                   style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 16px;">
             <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; outline: none;">✕</button>
         </div>
     `;
@@ -42,24 +65,31 @@ function renderSetup(container) {
 
     container.innerHTML = `
         <style>
-            /* Wrapper integrato nel Global CSS */
+            /* Wrapper INVISIBILE: si appoggia al CSS globale */
             .numeri-wrapper { 
-                width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
-                background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
-                color: white; font-family: 'Poppins', sans-serif; 
-                display: flex; flex-direction: column; 
-                padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)) 20px; 
-                overflow-y: auto; -webkit-overflow-scrolling: touch;
+                width: 100%; 
+                max-width: 600px; 
+                margin: 0 auto;
+                color: white; 
+                font-family: 'Poppins', sans-serif; 
+                display: flex; 
+                flex-direction: column; 
+                justify-content: center;
+                min-height: 75vh;
+                padding-bottom: calc(120px + env(safe-area-inset-bottom)); /* Aria in basso per Hamburger */
                 animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             }
 
-            @media (min-width: 431px) {
-                .numeri-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+            .setup-card { 
+                background: var(--glass-surface, rgba(255,255,255,0.03)); 
+                backdrop-filter: blur(12px); 
+                padding: 28px 20px; 
+                border-radius: 28px; 
+                border: 1px solid var(--glass-border, rgba(255,255,255,0.1)); 
+                margin-bottom: 20px; 
             }
-            .numeri-wrapper::-webkit-scrollbar { display: none; }
-
-            .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
-            .btn-main { background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; -webkit-tap-highlight-color: transparent; outline: none; }
+            .btn-main { background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; -webkit-tap-highlight-color: transparent; outline: none; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); }
+            .btn-main:active { transform: scale(0.95); }
             .number-display { font-size: 2.5rem; font-weight: 900; color: #9d4ede; text-shadow: 0 0 15px rgba(157,78,221,0.5); margin: 10px 0; word-break: break-all; }
             
             .sortable-list { width:100%; list-style:none; padding:0; margin:20px 0; }
@@ -75,30 +105,25 @@ function renderSetup(container) {
         </style>
 
         <div class="numeri-wrapper">
-            <div style="flex-shrink: 0;">
-                <h1 class="main-title">NUMERI</h1>
-                <p style="opacity: 0.5; text-align: center; font-size: 12px; margin-bottom: 25px;">MEMORIZZA E ORDINA</p>
+            <h1 class="main-title">NUMERI</h1>
+            <p style="opacity: 0.5; text-align: center; font-size: 12px; margin-bottom: 25px;">MEMORIZZA E ORDINA</p>
 
-                <div class="setup-card">
-                    <div id="player-inputs-container">
-                        ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
-                    </div>
-                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px; -webkit-tap-highlight-color: transparent; outline: none;">+ AGGIUNGI GIOCATORE</button>
-                    <button id="start-game" class="btn-main" style="margin-top: 10px;">INIZIA PARTITA</button>
+            <div class="setup-card">
+                <div id="player-inputs-container">
+                    ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
                 </div>
-
-                <button id="btn-quit" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 14px; font-weight: 800; width: 100%; font-size: 12px; -webkit-tap-highlight-color: transparent; outline: none;">← ESCI DAL GIOCO</button>
+                <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px; -webkit-tap-highlight-color: transparent; outline: none;">+ AGGIUNGI GIOCATORE</button>
+                <button id="start-game" class="btn-main" style="margin-top: 10px;">INIZIA PARTITA</button>
             </div>
+
+            <button id="btn-quit" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px;">← ESCI DAL GIOCO</button>
         </div>
     `;
 
-    // Esci dal gioco sbloccando lo scroll
-    container.querySelector('#btn-quit').onclick = () => {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.touchAction = '';
-        window.location.hash = "lobby";
+    // FIX: Sostituito window.location.hash
+    container.querySelector('#btn-quit').onclick = (e) => {
+        e.preventDefault();
+        quitGame(container);
     };
 
     container.querySelector('#add-player').onclick = () => {
@@ -148,6 +173,7 @@ function startNewRound(container) {
     }));
 
     gameData.currentIndex = 0;
+    window.scrollTo(0, 0); // Scorre in cima quando ricarica
     renderReveal(container);
 }
 
@@ -161,7 +187,7 @@ function renderReveal(container) {
             <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
             <h1 style="font-size: 2.8rem; font-weight: 900; color: #c77dff; margin-bottom: 30px; font-family:'Montserrat';">${playerData.name}</h1>
             
-            <div id="number-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s; -webkit-tap-highlight-color: transparent; outline: none;">
+            <div id="number-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s; -webkit-tap-highlight-color: transparent; outline: none; user-select: none;">
                 <p id="number-text" style="font-weight: 800; opacity: 0.6; font-size: 14px;">TOCCA PER SCOPRIRE</p>
             </div>
             
@@ -288,7 +314,7 @@ function renderResult(container) {
                 ${isCorrect ? 'VITTORIA!' : 'SBAGLIATO!'}
             </h2>
             
-            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 20px; width:100%; border: 1px solid rgba(255,255,255,0.08); margin-bottom:20px; text-align: left;">
+            <div class="setup-card" style="width:100%; text-align: left;">
                 <p style="font-size: 10px; opacity: 0.5; margin-bottom: 10px; text-transform: uppercase;">Soluzione:</p>
                 ${playerAverages.map(p => `
                     <div style="margin-bottom: 8px; display: flex; justify-content: space-between; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">
@@ -300,7 +326,8 @@ function renderResult(container) {
 
             <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                 <button id="next-round" class="btn-main" style="background: linear-gradient(45deg, #00ffa3, #00d2ff);">PROSSIMO ROUND</button>
-                <button id="change-players" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 12px; -webkit-tap-highlight-color: transparent; outline: none;">RIAVVIA</button>
+                <button id="change-players" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px; margin-bottom: 0;">RIAVVIA NUOVA PARTITA</button>
+                <button id="btn-quit-end" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px; border-color: rgba(255,68,68,0.3); color: #ff6b6b; margin-top: 10px;">← ESCI DAL GIOCO</button>
             </div>
         </div>
     `;
@@ -310,4 +337,5 @@ function renderResult(container) {
         startNewRound(container);
     };
     container.querySelector('#change-players').onclick = () => initNumeri(container);
+    container.querySelector('#btn-quit-end').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
