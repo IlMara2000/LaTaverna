@@ -11,12 +11,13 @@ const VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 export function initScopa(container) {
     updateSidebarContext("minigames");
 
-    // Blocco Scroll per Mobile fisso e pulito
+    // FIX: Rimossi position: fixed e width: 100%. Manteniamo blocco scroll e overscroll per il gioco
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none';
+    document.body.style.backgroundColor = '#090a0f'; // Match sfondo globale
 
     let state = {
         deck: [], playerHand: [], botHand: [], table: [],
@@ -24,9 +25,28 @@ export function initScopa(container) {
         lastCapturePlayer: true, turn: 'player', isAnimating: false
     };
 
-    renderLayout(container);
+    renderLayout(container, state);
     startGame(state, container);
 }
+
+// --- Funzione centralizzata per uscire in sicurezza ---
+const quitGame = async (container) => {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.backgroundColor = '';
+    
+    try {
+        const { showMinigamesList } = await import('../../minigamelist.js');
+        showMinigamesList(document.getElementById('app') || container);
+    } catch (e) {
+        window.location.hash = "lobby"; 
+    }
+};
 
 // --- LOGICA DI GIOCO ---
 function startGame(state, container) {
@@ -46,12 +66,12 @@ function startGame(state, container) {
 }
 
 // --- INTERFACCIA MOBILE-FIRST ---
-function renderLayout(container) {
+function renderLayout(container, state) {
     container.innerHTML = `
     <style>
-        /* Wrapper integrato nel Global CSS senza scatole cinesi */
+        /* Wrapper integrato nel Global CSS */
         .scopa-wrapper { 
-            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             color: white; font-family: 'Poppins', sans-serif; 
             display: flex; flex-direction: column; 
@@ -62,7 +82,7 @@ function renderLayout(container) {
         }
 
         @media (min-width: 431px) {
-            .scopa-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+            .scopa-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
         
         .score-bar { 
@@ -112,10 +132,14 @@ function renderLayout(container) {
             100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
         }
 
-        .btn-quit {
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 11px; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; margin-top: 5px; width: 100%; flex-shrink: 0; transition: 0.2s;
+        /* Pulsante di Uscita unificato */
+        .btn-exit-game {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 11px; 
+            cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; 
+            margin-top: 5px; width: 100%; flex-shrink: 0; transition: 0.2s;
         }
-        .btn-quit:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .btn-exit-game:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
     </style>
     
     <div class="scopa-wrapper">
@@ -129,19 +153,15 @@ function renderLayout(container) {
         <div id="table-ui" class="table-area"></div>
         <div id="player-hand" class="hand"></div>
         
-        <button id="btn-quit" class="btn-quit">← ESCI DAL GIOCO</button>
+        <button id="btn-exit-ingame" class="btn-exit-game">← ESCI DAL GIOCO</button>
 
         <div id="scopa-toast">SCOPA!</div>
     </div>
     `;
 
-    container.querySelector('#btn-quit').onclick = () => {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.touchAction = '';
-        window.location.hash = "lobby";
+    container.querySelector('#btn-exit-ingame').onclick = (e) => {
+        e.preventDefault();
+        quitGame(container);
     };
 }
 
@@ -285,13 +305,8 @@ function finishMatch(state, container) {
     
     const msg = pTotal >= bTotal ? "VITTORIA! 🏆" : "HA VINTO IL BOT! 🤖";
     
-    // Ripristiniamo lo scroll prima del popup
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.touchAction = '';
-    
     alert(`${msg}\n\nTu: ${state.playerCaptured.length} carte + ${state.playerScopas} Scope\nBot: ${state.botCaptured.length} carte + ${state.botScopas} Scope`);
-    window.location.hash = "lobby";
+    
+    // FIX: Sostituisce l'hash e ricarica pulitamente
+    quitGame(container);
 }
