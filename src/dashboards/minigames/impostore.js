@@ -26,12 +26,13 @@ const WORDS_DATABASE = [
 export function initImpostore(container) {
     updateSidebarContext("minigames");
     
-    // Configurazione Mobile: previene rimbalzi e doppi scroll
+    // FIX: Rimossi position: fixed e touch-action: none. 
+    // Erano loro a far "sparire/chiudere" l'app quando si apriva la tastiera su iOS.
+    // Usiamo overscrollBehavior per evitare il fastidioso pull-to-refresh.
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.touchAction = 'none';
+    document.body.style.overscrollBehavior = 'none';
 
     renderSetup(container);
 }
@@ -40,31 +41,31 @@ function createPlayerInputHTML(value = "", index) {
     return `
         <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
-                   style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px;">
+                   style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 16px;">
             <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; outline: none;">✕</button>
         </div>
     `;
 }
 
-// --- 1. SETUP (OTTIMIZZATO MOBILE) ---
+// --- 1. SETUP (OTTIMIZZATO MOBILE E PC) ---
 function renderSetup(container) {
     const initialPlayers = gameData.players.length > 0 ? gameData.players.map(p => p.name) : ["", "", ""];
 
     container.innerHTML = `
         <style>
-            /* Wrapper integrato nel Global CSS */
             .impostore-wrapper { 
-                width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+                width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
                 background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
                 color: white; font-family: 'Poppins', sans-serif; 
                 display: flex; flex-direction: column; 
                 padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)) 20px; 
                 overflow-y: auto; -webkit-overflow-scrolling: touch;
                 animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+                box-sizing: border-box; /* FIX: Previene lo sfasamento in altezza */
             }
 
             @media (min-width: 431px) {
-                .impostore-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+                .impostore-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; }
             }
 
             .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
@@ -75,7 +76,6 @@ function renderSetup(container) {
             
             @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
             
-            /* Nascondi scrollbar */
             .impostore-wrapper::-webkit-scrollbar { display: none; }
         </style>
 
@@ -111,16 +111,18 @@ function renderSetup(container) {
     `;
 
     container.querySelector('#btn-quit').onclick = () => {
+        // Ripristino corretto per la navigazione
         document.documentElement.style.overflow = '';
+        document.documentElement.style.overscrollBehavior = '';
         document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.touchAction = '';
+        document.body.style.overscrollBehavior = '';
         window.location.hash = "lobby";
     };
 
     container.querySelector('#player-inputs-container').onclick = (e) => {
-        if (e.target.classList.contains('delete-player')) {
-            e.target.closest('.player-input-wrapper').remove();
+        const deleteBtn = e.target.closest('.delete-player');
+        if (deleteBtn) {
+            deleteBtn.closest('.player-input-wrapper').remove();
         }
     };
 
