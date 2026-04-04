@@ -3,40 +3,69 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 export function initBurraco(container) {
     updateSidebarContext("minigames");
     
-    // Blocca lo scroll del body e fissa la visuale per mobile
+    // FIX: Rimossi position: fixed e width: 100% distruttivi. 
+    // Blocchiamo solo lo scroll e l'overscroll.
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none';
+    document.body.style.backgroundColor = '#090a0f'; // Sfondo solido per evitare il "doppio sfondo"
 
     renderSelectionMenu(container);
 }
+
+// --- Funzione centralizzata per uscire in sicurezza ---
+const quitGame = async (container) => {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.backgroundColor = '';
+    
+    try {
+        const { showMinigamesList } = await import('../../minigamelist.js');
+        showMinigamesList(document.getElementById('app') || container);
+    } catch (e) {
+        window.location.hash = "lobby"; 
+    }
+};
 
 // --- 1. SELEZIONE MODALITÀ (STILE MOBILE) ---
 function renderSelectionMenu(container) {
     container.innerHTML = `
     <style>
         .burraco-start-wrapper { 
-            width:100%; max-width:430px; height:100vh; margin: 0 auto;
+            width:100%; max-width:430px; height:100dvh; margin: 0 auto;
             display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; color:white;
             animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
         }
+        
+        @media (min-width: 431px) {
+            .burraco-start-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        }
+
         .mode-btn { 
             width:80%; padding:18px; border-radius:18px; border:1px solid #9d4ede; 
             background:rgba(157,78,221,0.1); color:white; font-size:16px; font-weight:900; 
             cursor:pointer; transition:0.3s; text-transform:uppercase; 
-            -webkit-tap-highlight-color: transparent; outline: none;
+            -webkit-tap-highlight-color: transparent; outline: none; box-shadow: 0 4px 15px rgba(157,78,221,0.2);
         }
         .mode-btn:active { background:#9d4ede; transform:scale(0.95); }
     </style>
     <div class="burraco-start-wrapper">
-        <h1 style="margin-bottom:30px; letter-spacing:5px; font-family:'Montserrat'; font-size:2.5rem; background: linear-gradient(135deg, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">BURRACO</h1>
+        <h1 style="margin-bottom:30px; letter-spacing:5px; font-family:'Montserrat'; font-size:2.5rem; background: linear-gradient(135deg, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(157,78,221,0.3);">BURRACO</h1>
         <button class="mode-btn" id="mode-2">GIOCA 1 VS 1</button>
+        <button id="btn-quit-start" style="margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; -webkit-tap-highlight-color: transparent; outline: none; font-size: 12px; text-transform: uppercase;">← Torna Indietro</button>
     </div>
     `;
 
     document.getElementById('mode-2').onclick = () => startGame(container, 2);
+    document.getElementById('btn-quit-start').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
 
 function startGame(container, players) {
@@ -53,7 +82,7 @@ function startGame(container, players) {
     };
 
     renderLayout(container, state);
-    initLogic(state);
+    initLogic(state, container);
 }
 
 // --- 2. LAYOUT OTTIMIZZATO ---
@@ -61,31 +90,44 @@ function renderLayout(container, state) {
     container.innerHTML = `
     <style>
         .burraco-game-wrapper { 
-            width:100%; max-width:430px; height:100vh; margin: 0 auto;
+            width:100%; max-width:430px; height:100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
             color:white; font-family:'Poppins',sans-serif; position:relative; overflow:hidden; display:flex; flex-direction:column;
             animation: cardEntrance 0.5s ease-out forwards;
+            box-sizing: border-box;
         }
         
         @media (min-width: 431px) {
-            .burraco-game-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+            .burraco-game-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
 
-        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: env(safe-area-inset-top, 15px) 15px 15px 15px; overflow: hidden; }
+        /* Tasto Esci In-Game */
+        .btn-exit-game {
+            position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px;
+            cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; transition: 0.2s;
+        }
+        .btn-exit-game:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+
+        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: calc(55px + env(safe-area-inset-top)) 15px 15px 15px; overflow: hidden; }
         .mats { height: 130px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; position: relative; display: flex; align-items: flex-start; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         
-        .tutor-box { position: absolute; top: env(safe-area-inset-top, 10px); left: 15px; right: 15px; background: rgba(0,0,0,0.8); border-left: 3px solid #9d4ede; padding: 8px 12px; border-radius: 8px; font-size: 11px; z-index: 10; backdrop-filter: blur(5px); pointer-events: none; }
+        /* Tutor box spostata al centro per non sovrapporsi col tasto Esci */
+        .tutor-box { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border-left: 3px solid #9d4ede; padding: 8px 12px; border-radius: 8px; font-size: 10px; z-index: 10; backdrop-filter: blur(5px); pointer-events: none; white-space: nowrap; }
         
-        .card-b { width: 42px; height: 60px; background: white; border-radius: 5px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: transform 0.2s; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; }
+        .card-b { width: 42px; height: 60px; background: white; border-radius: 5px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: transform 0.2s; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
         .card-b.selected { transform: translateY(-15px); border: 2px solid #9d4ede; z-index: 10; box-shadow: 0 0 12px #9d4ede; }
         
         .center-area { display: flex; justify-content: center; align-items: center; gap: 40px; padding: 10px; background: rgba(0,0,0,0.2); }
-        .deck-stack { width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; }
-        
+        .deck-stack { width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; user-select: none; }
+        .deck-stack:active { transform: scale(0.95); }
+
         .player-hand-container { padding: 10px 10px calc(20px + env(safe-area-inset-bottom)) 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(0,0,0,0.4); border-top: 1px solid rgba(255,255,255,0.1); }
         .hand-wrapper { display: flex; justify-content: flex-start; height: 85px; align-items: flex-end; width: 100%; overflow-x: auto; padding-bottom: 10px; gap: 2px; -webkit-overflow-scrolling: touch; }
         
-        .btn-action { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; -webkit-tap-highlight-color: transparent; outline: none; }
+        .btn-action { flex: 1; padding: 12px; border-radius: 10px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; -webkit-tap-highlight-color: transparent; outline: none; transition: 0.2s; }
+        .btn-action:active:not(:disabled) { transform: scale(0.95); }
         #btn-meld { background: #2ecc71; color: white; }
         #btn-discard { background: #e74c3c; color: white; }
         .btn-action:disabled { opacity: 0.2; filter: grayscale(1); pointer-events: none; }
@@ -97,6 +139,7 @@ function renderLayout(container, state) {
     </style>
 
     <div class="burraco-game-wrapper">
+        <button class="btn-exit-game" id="btn-exit-ingame">← ESCI</button>
         <div id="tutor-container" class="tutor-box"><span id="tutor-text"></span></div>
         
         <div class="tables-container">
@@ -118,15 +161,19 @@ function renderLayout(container, state) {
         </div>
     </div>
     `;
+
+    document.getElementById('btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
 
 // --- 3. LOGICA DI GIOCO COMPLETA ---
-function initLogic(state) {
+function initLogic(state, container) {
     state.deck = createBurracoDeck();
     shuffle(state.deck);
     state.hands.player = state.deck.splice(0, 11);
     state.hands.bot1 = state.deck.splice(0, 11);
     state.discardPile.push(state.deck.pop());
+    // Salviamo reference per quit
+    state.container = container; 
     updateUI(state);
 }
 
@@ -275,14 +322,10 @@ function handleDiscard(state) {
     updateUI(state);
     
     setTimeout(() => {
-        // Ripristino logica scroll in caso di fine partita nel mezzo (safety catch)
         if (state.hands.player.length === 0) {
-            document.documentElement.style.overflow = '';
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.touchAction = '';
             alert("Complimenti, hai vinto sbarazzandoti di tutte le carte!");
-            window.location.hash = "lobby";
+            // FIX: Ora usiamo quitGame invece di ricaricare tutto
+            quitGame(state.container);
             return;
         }
         botAction(state);
@@ -324,12 +367,8 @@ function botAction(state) {
         if(state.hands.bot1.length > 0) state.discardPile.push(state.hands.bot1.pop());
         
         if (state.hands.bot1.length === 0) {
-            document.documentElement.style.overflow = '';
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.touchAction = '';
             alert("Il bot ha vinto!");
-            window.location.hash = "lobby";
+            quitGame(state.container);
             return;
         }
 
