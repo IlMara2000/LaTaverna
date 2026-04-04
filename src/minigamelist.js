@@ -2,7 +2,7 @@ import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { showLobby } from './lobby.js';
 
 export function showMinigamesList(container) {
-    // FIX: Niente reset dell'overscroll-behavior
+    // Reset dello scroll e pulizia blocchi iOS
     document.documentElement.style.overflow = 'auto';
     document.body.style.overflow = 'auto';
     document.body.style.position = '';
@@ -14,23 +14,23 @@ export function showMinigamesList(container) {
         updateSidebarContext("minigames");
     }
 
-    // FIX: Aggiunta la proprietà 'file' con l'esatta sintassi Maiuscola/Minuscola per Vercel
+    // FIX: ID deve corrispondere esattamente al nome del file .js (tutto minuscolo)
     const games = [
-        { id: 'scopa', file: 'Scopa', name: 'SCOPA', color: 'linear-gradient(135deg, #825a2c, #05020a)', icon: '🧹', initFn: 'initScopa' },
-        { id: 'briscola', file: 'Briscola', name: 'BRISCOLA', color: 'linear-gradient(135deg, #2a0a4a, #4a1a6a)', icon: '⚔️', initFn: 'initBriscola' },
-        { id: 'solo', file: 'Solo', name: 'SOLO', color: 'linear-gradient(135deg, #ff4444, #ffcc00)', icon: '🃏', initFn: 'initSoloGame' },
-        { id: 'impostore', file: 'Impostore', name: 'IMPOSTORE', color: 'linear-gradient(135deg, #ff3366, #330011)', icon: '🕵️‍♂️', initFn: 'initImpostore' },
-        { id: 'burraco', file: 'Burraco', name: 'BURRACO', color: 'linear-gradient(135deg, #004d40, #00241a)', icon: '♣️', initFn: 'initBurraco' },
-        { id: 'scacchi', file: 'Scacchi', name: 'SCACCHI', color: 'linear-gradient(135deg, #333333, #000000)', icon: '♟️', initFn: 'initScacchi' },
-        { id: 'solitario', file: 'Solitario', name: 'SOLITARIO', color: 'linear-gradient(135deg, #1e3a8a, #1e1b4b)', icon: '🧘', initFn: 'initSolitario' },
-        { id: 'numeri', file: 'Numeri', name: 'NUMERI', color: 'linear-gradient(135deg, #0f766e, #134e4a)', icon: '🔢', initFn: 'initNumeri' }
+        { id: 'scopa', name: 'SCOPA', color: 'linear-gradient(135deg, #825a2c, #05020a)', icon: '🧹', initFn: 'initScopa' },
+        { id: 'briscola', name: 'BRISCOLA', color: 'linear-gradient(135deg, #2a0a4a, #4a1a6a)', icon: '⚔️', initFn: 'initBriscola' },
+        { id: 'solo', name: 'SOLO', color: 'linear-gradient(135deg, #ff4444, #ffcc00)', icon: '🃏', initFn: 'initSoloGame' },
+        { id: 'impostore', name: 'IMPOSTORE', color: 'linear-gradient(135deg, #ff3366, #330011)', icon: '🕵️‍♂️', initFn: 'initImpostore' },
+        { id: 'burraco', name: 'BURRACO', color: 'linear-gradient(135deg, #004d40, #00241a)', icon: '♣️', initFn: 'initBurraco' },
+        { id: 'scacchi', name: 'SCACCHI', color: 'linear-gradient(135deg, #333333, #000000)', icon: '♟️', initFn: 'initScacchi' },
+        { id: 'solitario', name: 'SOLITARIO', color: 'linear-gradient(135deg, #1e3a8a, #1e1b4b)', icon: '🧘', initFn: 'initSolitario' },
+        { id: 'numeri', name: 'NUMERI', color: 'linear-gradient(135deg, #0f766e, #134e4a)', icon: '🔢', initFn: 'initNumeri' }
     ];
 
     container.innerHTML = `
         <div id="lobby-wrapper" style="color: white; width: 100%; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;">
-            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto; padding-bottom: calc(120px + env(safe-area-inset-bottom));">
+            <div class="dashboard-container" style="max-width: 800px; margin: 0 auto; padding: 20px; padding-bottom: 140px;">
                 
-                <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 20px; padding-right: 60px;">
+                <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 20px;">
                     <button id="btn-back-main" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); cursor: pointer; padding: 10px 20px; border-radius: 50px; color: white; outline: none; -webkit-tap-highlight-color: transparent;">
                         ← TORNA ALLA LIBRERIA
                     </button>
@@ -59,16 +59,17 @@ export function showMinigamesList(container) {
     games.forEach(game => {
         const btn = document.getElementById(`btn-${game.id}`);
         if (btn) {
-            btn.onclick = async () => {
+            btn.onclick = async (e) => {
+                e.preventDefault();
                 try {
-                    // FIX: Uso game.file per rispettare il Case-Sensitive su Vercel
-                    const module = await import(`./dashboards/minigames/${game.file}.js`);
+                    // SE minigamelist.js è in /src/, il percorso corretto per i file minuscoli è questo:
+                    const module = await import(`./dashboards/minigames/${game.id}.js`);
                     if (module && module[game.initFn]) {
                         module[game.initFn](container);
                     }
-                } catch (e) {
-                    console.error(`Errore nel caricamento del gioco ${game.file}:`, e);
-                    alert("Questo gioco è attualmente in manutenzione!");
+                } catch (err) {
+                    console.error(`Errore nel caricamento del gioco ${game.id}:`, err);
+                    alert(`Errore: impossibile trovare il file dashboards/minigames/${game.id}.js`);
                 }
             };
         }
