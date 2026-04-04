@@ -48,6 +48,19 @@ function renderSidebarContent(container, context) {
     setupEventListeners(container, context);
 }
 
+// FIX: Funzione di pulizia globale. Esegue un reset totale del body prima di navigare via.
+function resetGlobalScroll() {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.touchAction = '';
+    document.body.style.backgroundColor = '';
+    window.scrollTo(0, 0);
+}
+
 function setupEventListeners(container, context) {
     const sidebar = container.querySelector('#sidebar-menu');
     const mainContent = document.getElementById('app') || document.getElementById('main-content'); 
@@ -70,6 +83,10 @@ function setupEventListeners(container, context) {
     const actionBtn = container.querySelector('#sideActionBtn');
     actionBtn.onclick = async () => {
         toggle(); 
+        
+        // Sblocchiamo tutto preventivamente
+        resetGlobalScroll();
+
         if (context === "home") {
             if (currentLogoutFn) currentLogoutFn();
         } else if (context === "minigames" || context.includes('game-')) {
@@ -89,10 +106,14 @@ function setupEventListeners(container, context) {
         window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
     };
 
-    // --- APERTURA MUSIC CENTER (Invece del semplice file picker) ---
+    // --- APERTURA MUSIC CENTER ---
     const musicCenterBtn = container.querySelector('#sideMusicCenterBtn');
     musicCenterBtn.onclick = async () => {
         toggle(); // Chiude la sidebar
+        
+        // Sblocchiamo anche qui per evitare che il Music Center appaia bloccato se aperto da un gioco
+        resetGlobalScroll();
+
         try {
             // Importiamo l'AudioManager e mostriamo la UI nel mainContent
             const { AudioManager } = await import('../ui/AudioManager.js');
@@ -102,7 +123,7 @@ function setupEventListeners(container, context) {
         }
     };
 
-    // --- GESTIONE UPLOAD (Opzionale/Evento) ---
+    // --- GESTIONE UPLOAD ---
     const fInput = container.querySelector('#sideFileInput');
     const trackDisplay = container.querySelector('#currentTrackName');
 
@@ -115,11 +136,6 @@ function setupEventListeners(container, context) {
             window.dispatchEvent(new CustomEvent('musicUploaded', { detail: { url, name: file.name } }));
         }
     };
-
-    // Ascolta se la musica cambia per aggiornare il nome brano in sidebar
-    window.addEventListener('musicStarted', () => {
-        // Se volessimo mostrare un "Now Playing" dinamico
-    });
 }
 
 export function updateSidebarContext(newContext) {
