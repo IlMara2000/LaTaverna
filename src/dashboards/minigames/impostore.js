@@ -26,13 +26,15 @@ const WORDS_DATABASE = [
 export function initImpostore(container) {
     updateSidebarContext("minigames");
     
-    // FIX: Rimossi position: fixed e touch-action: none per bug iOS.
-    // Aggiunto background match per evitare il bug dei "due sfondi" visibili
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.overscrollBehavior = 'none';
-    document.body.style.overflow = 'hidden';
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.backgroundColor = '#090a0f'; // Uniforma lo sfondo base al gioco
+    // FIX: Sblocco totale dello scroll. Questo è un gioco testuale/form,
+    // DEVE scrollare in modo nativo per non creare l'effetto "scatola chiusa".
+    document.documentElement.style.overflow = 'auto';
+    document.body.style.overflow = 'auto';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.touchAction = '';
+    document.body.style.backgroundColor = ''; // Assicura che si veda lo sfondo globale
+    window.scrollTo(0, 0);
 
     renderSetup(container);
 }
@@ -53,70 +55,66 @@ function renderSetup(container) {
 
     container.innerHTML = `
         <style>
+            /* Wrapper INVISIBILE: si appoggia al CSS globale di #app */
             .impostore-wrapper { 
-                width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-                background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
-                color: white; font-family: 'Poppins', sans-serif; 
-                display: flex; flex-direction: column; 
-                /* FIX: padding-bottom aumentato a 120px per superare l'hamburger menu in basso */
-                padding: calc(20px + env(safe-area-inset-top)) 20px calc(120px + env(safe-area-inset-bottom)) 20px; 
-                overflow-y: auto; -webkit-overflow-scrolling: touch;
+                width: 100%; 
+                max-width: 600px; 
+                margin: 0 auto;
+                color: white; 
+                font-family: 'Poppins', sans-serif; 
+                display: flex; 
+                flex-direction: column; 
+                justify-content: center;
+                min-height: 75vh; /* Centra il contenuto senza forzare l'altezza */
+                padding-bottom: calc(120px + env(safe-area-inset-bottom)); /* Aria per hamburger */
                 animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-                box-sizing: border-box;
             }
 
-            @media (min-width: 431px) {
-                .impostore-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; }
+            .setup-card { 
+                background: var(--glass-surface, rgba(255,255,255,0.03)); 
+                backdrop-filter: blur(12px); 
+                padding: 28px 20px; 
+                border-radius: 28px; 
+                border: 1px solid var(--glass-border, rgba(255,255,255,0.1)); 
+                margin-bottom: 20px; 
             }
-
-            .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 20px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px; }
             .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); -webkit-tap-highlight-color: transparent; outline: none; }
             .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px; }
             .config-row select { background: transparent; color: #9d4ede; border: none; font-weight: 900; font-size: 16px; outline: none; }
-            .main-title { font-family: 'Montserrat'; font-weight: 900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-align: center; font-size: 2.2rem; margin-top: 10px; margin-bottom: 5px; }
             
             @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-            
-            .impostore-wrapper::-webkit-scrollbar { display: none; }
         </style>
 
         <div class="impostore-wrapper">
-            <div style="flex-shrink: 0;">
-                <h1 class="main-title">IMPOSTORE</h1>
-                <p style="opacity: 0.5; text-align: center; font-size: 12px; margin-bottom: 25px;">LOCAL PARTY MODE</p>
+            <h1 class="main-title" style="text-align: center; margin-bottom: 5px;">IMPOSTORE</h1>
+            <p style="opacity: 0.5; text-align: center; font-size: 12px; margin-bottom: 25px; letter-spacing: 2px;">LOCAL PARTY MODE</p>
 
-                <div class="setup-card">
-                    <div class="config-row">
-                        <span>🕵️ Impostori</span>
-                        <select id="select-impostors">
-                            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-                        </select>
-                    </div>
-                    <div class="config-row">
-                        <span>🕶️ Undercover</span>
-                        <select id="select-undercover">
-                            <option value="0">0</option><option value="1">1</option><option value="2">2</option>
-                        </select>
-                    </div>
-
-                    <div id="player-inputs-container" style="margin-top: 15px;">
-                        ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
-                    </div>
-                    <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px; -webkit-tap-highlight-color: transparent; outline: none;">+ AGGIUNGI GIOCATORE</button>
-                    <button id="start-game" class="btn-main" style="margin-top: 10px;">INIZIA PARTITA</button>
+            <div class="setup-card">
+                <div class="config-row">
+                    <span>🕵️ Impostori</span>
+                    <select id="select-impostors">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                    </select>
                 </div>
-                
-                <button id="btn-quit" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px; border-radius: 14px; font-weight: 800; width: 100%; font-size: 12px; -webkit-tap-highlight-color: transparent; outline: none;">← ESCI DAL GIOCO</button>
+                <div class="config-row">
+                    <span>🕶️ Undercover</span>
+                    <select id="select-undercover">
+                        <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+                    </select>
+                </div>
+
+                <div id="player-inputs-container" style="margin-top: 15px;">
+                    ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
+                </div>
+                <button id="add-player" style="background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: white; opacity: 0.6; padding: 10px; border-radius: 10px; cursor: pointer; width: 100%; margin: 10px 0; font-size: 11px; -webkit-tap-highlight-color: transparent; outline: none;">+ AGGIUNGI GIOCATORE</button>
+                <button id="start-game" class="btn-main" style="margin-top: 10px;">INIZIA PARTITA</button>
             </div>
+            
+            <button id="btn-quit" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px;">← ESCI DAL GIOCO</button>
         </div>
     `;
 
     container.querySelector('#btn-quit').onclick = () => {
-        document.documentElement.style.overflow = '';
-        document.documentElement.style.overscrollBehavior = '';
-        document.body.style.overflow = '';
-        document.body.style.overscrollBehavior = '';
-        document.body.style.backgroundColor = ''; // Ripristina lo sfondo base
         window.location.hash = "lobby";
     };
 
@@ -160,6 +158,7 @@ function setupRoles(names, numImp, numUnd) {
 
 function startNewRound(container) {
     gameData.currentIndex = 0;
+    window.scrollTo(0, 0); // Torna su quando inizia un nuovo round
     renderReveal(container);
 }
 
@@ -170,7 +169,7 @@ function renderReveal(container) {
     wrapper.innerHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.4s ease-out;">
             <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
-            <h1 style="font-size: 2.8rem; font-weight: 900; color: #9d4ede; margin-bottom: 30px; font-family:'Montserrat';">${currentPlayer.name}</h1>
+            <h1 style="font-size: 2.8rem; font-weight: 900; color: var(--amethyst-bright); margin-bottom: 30px; font-family:'Montserrat'; text-shadow: 0 0 20px var(--amethyst-glow);">${currentPlayer.name}</h1>
             
             <div id="word-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s; -webkit-tap-highlight-color: transparent;">
                 <p id="word-text" style="font-weight: 800; opacity: 0.7; font-size: 14px;">TOCCA PER SCOPRIRE IL RUOLO</p>
@@ -215,14 +214,14 @@ function renderReveal(container) {
 function renderGameField(container) {
     container.querySelector('.impostore-wrapper').innerHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; animation: fadeIn 0.4s ease-out;">
-            <h1 class="main-title" style="font-size: 1.8rem;">DISCUSSIONE</h1>
+            <h1 class="main-title" style="font-size: 2.2rem; text-align: center;">DISCUSSIONE</h1>
             <p style="opacity:0.6; text-align: center; margin-bottom:20px; font-size: 12px;">Descrivete la parola senza svelarla!</p>
             
             <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                 ${gameData.players.map((p, i) => `
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 12px 15px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 15px 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 700; font-size: 15px;">${p.name}</span>
-                        <button class="vote-btn" data-index="${i}" style="background: #9d4ede; border: none; color: white; padding: 8px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 11px; -webkit-tap-highlight-color: transparent; outline: none;">RUOLO</button>
+                        <button class="vote-btn" data-index="${i}" style="background: #9d4ede; border: none; color: white; padding: 8px 12px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 11px; -webkit-tap-highlight-color: transparent; outline: none;">SVELA RUOLO</button>
                     </div>
                 `).join('')}
             </div>
@@ -245,21 +244,21 @@ function renderGameField(container) {
 
 function renderResult(container) {
     const summary = gameData.players.map(p => 
-        `<div style="margin-bottom:6px; font-size:13px;">${p.name}: <b style="color:${p.role === 'civil' ? '#00d2ff' : (p.role === 'impostor' ? '#ff416c' : '#ffbd00')}">${p.role.toUpperCase()}</b></div>`
+        `<div style="margin-bottom:8px; font-size:14px;">${p.name}: <b style="color:${p.role === 'civil' ? '#00d2ff' : (p.role === 'impostor' ? '#ff416c' : '#ffbd00')}">${p.role.toUpperCase()}</b></div>`
     ).join('');
 
     container.querySelector('.impostore-wrapper').innerHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.4s ease-out;">
-            <h2 class="main-title" style="font-size: 1.8rem; margin-bottom: 20px;">RISULTATI</h2>
-            <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 20px; width:100%; border: 1px solid rgba(255,255,255,0.08); margin-bottom:30px;">
+            <h2 class="main-title" style="font-size: 2.2rem; margin-bottom: 20px;">RISULTATI</h2>
+            <div class="setup-card" style="width:100%;">
                 ${summary}
-                <hr style="border:none; border-top:1px solid rgba(255,255,255,0.1); margin:15px 0;">
-                <p style="color:#00d2ff; font-size: 14px;">Civili: <b>${gameData.wordObj.word}</b></p>
-                <p style="color:#ffbd00; font-size: 14px;">Undercover: <b>${gameData.wordObj.alt}</b></p>
+                <hr style="border:none; border-top:1px solid rgba(255,255,255,0.1); margin:20px 0;">
+                <p style="color:#00d2ff; font-size: 14px; margin-bottom: 5px;">Parola Civili: <br><b style="font-size: 18px;">${gameData.wordObj.word}</b></p>
+                <p style="color:#ffbd00; font-size: 14px; margin-top: 10px;">Parola Undercover: <br><b style="font-size: 18px;">${gameData.wordObj.alt}</b></p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                 <button id="replay" class="btn-main">NUOVO ROUND</button>
-                <button id="change" style="background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 14px; border-radius: 14px; font-weight: 800; font-size: 12px; -webkit-tap-highlight-color: transparent; outline: none;">IMPOSTAZIONI</button>
+                <button id="change" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px; margin-bottom: 0;">IMPOSTAZIONI</button>
             </div>
         </div>
     `;
