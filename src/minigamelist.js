@@ -14,15 +14,16 @@ export function showMinigamesList(container) {
         updateSidebarContext("minigames");
     }
 
+    // FIX: Aggiunta la proprietà 'file' con l'esatta sintassi Maiuscola/Minuscola per Vercel
     const games = [
-        { id: 'scopa', name: 'SCOPA', color: 'linear-gradient(135deg, #825a2c, #05020a)', icon: '🧹', initFn: 'initScopa' },
-        { id: 'briscola', name: 'BRISCOLA', color: 'linear-gradient(135deg, #2a0a4a, #4a1a6a)', icon: '⚔️', initFn: 'initBriscola' },
-        { id: 'solo', name: 'SOLO', color: 'linear-gradient(135deg, #ff4444, #ffcc00)', icon: '🃏', initFn: 'initSoloGame' },
-        { id: 'impostore', name: 'IMPOSTORE', color: 'linear-gradient(135deg, #ff3366, #330011)', icon: '🕵️‍♂️', initFn: 'initImpostore' },
-        { id: 'burraco', name: 'BURRACO', color: 'linear-gradient(135deg, #004d40, #00241a)', icon: '♣️', initFn: 'initBurraco' },
-        { id: 'scacchi', name: 'SCACCHI', color: 'linear-gradient(135deg, #333333, #000000)', icon: '♟️', initFn: 'initScacchi' },
-        { id: 'solitario', name: 'SOLITARIO', color: 'linear-gradient(135deg, #1e3a8a, #1e1b4b)', icon: '🧘', initFn: 'initSolitario' },
-        { id: 'numeri', name: 'NUMERI', color: 'linear-gradient(135deg, #0f766e, #134e4a)', icon: '🔢', initFn: 'initNumeri' }
+        { id: 'scopa', file: 'Scopa', name: 'SCOPA', color: 'linear-gradient(135deg, #825a2c, #05020a)', icon: '🧹', initFn: 'initScopa' },
+        { id: 'briscola', file: 'Briscola', name: 'BRISCOLA', color: 'linear-gradient(135deg, #2a0a4a, #4a1a6a)', icon: '⚔️', initFn: 'initBriscola' },
+        { id: 'solo', file: 'Solo', name: 'SOLO', color: 'linear-gradient(135deg, #ff4444, #ffcc00)', icon: '🃏', initFn: 'initSoloGame' },
+        { id: 'impostore', file: 'Impostore', name: 'IMPOSTORE', color: 'linear-gradient(135deg, #ff3366, #330011)', icon: '🕵️‍♂️', initFn: 'initImpostore' },
+        { id: 'burraco', file: 'Burraco', name: 'BURRACO', color: 'linear-gradient(135deg, #004d40, #00241a)', icon: '♣️', initFn: 'initBurraco' },
+        { id: 'scacchi', file: 'Scacchi', name: 'SCACCHI', color: 'linear-gradient(135deg, #333333, #000000)', icon: '♟️', initFn: 'initScacchi' },
+        { id: 'solitario', file: 'Solitario', name: 'SOLITARIO', color: 'linear-gradient(135deg, #1e3a8a, #1e1b4b)', icon: '🧘', initFn: 'initSolitario' },
+        { id: 'numeri', file: 'Numeri', name: 'NUMERI', color: 'linear-gradient(135deg, #0f766e, #134e4a)', icon: '🔢', initFn: 'initNumeri' }
     ];
 
     container.innerHTML = `
@@ -60,12 +61,13 @@ export function showMinigamesList(container) {
         if (btn) {
             btn.onclick = async () => {
                 try {
-                    const module = await import(`./dashboards/minigames/${game.id}.js`);
+                    // FIX: Uso game.file per rispettare il Case-Sensitive su Vercel
+                    const module = await import(`./dashboards/minigames/${game.file}.js`);
                     if (module && module[game.initFn]) {
                         module[game.initFn](container);
                     }
                 } catch (e) {
-                    console.error(`Errore nel caricamento del gioco ${game.id}:`, e);
+                    console.error(`Errore nel caricamento del gioco ${game.file}:`, e);
                     alert("Questo gioco è attualmente in manutenzione!");
                 }
             };
