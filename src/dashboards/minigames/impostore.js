@@ -58,7 +58,8 @@ function renderSetup(container) {
                 background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
                 color: white; font-family: 'Poppins', sans-serif; 
                 display: flex; flex-direction: column; 
-                padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)) 20px; 
+                /* FIX: padding-bottom aumentato a 120px per superare l'hamburger menu in basso */
+                padding: calc(20px + env(safe-area-inset-top)) 20px calc(120px + env(safe-area-inset-bottom)) 20px; 
                 overflow-y: auto; -webkit-overflow-scrolling: touch;
                 animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
                 box-sizing: border-box;
