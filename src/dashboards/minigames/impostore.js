@@ -26,13 +26,13 @@ const WORDS_DATABASE = [
 export function initImpostore(container) {
     updateSidebarContext("minigames");
     
-    // FIX: Rimossi position: fixed e touch-action: none. 
-    // Erano loro a far "sparire/chiudere" l'app quando si apriva la tastiera su iOS.
-    // Usiamo overscrollBehavior per evitare il fastidioso pull-to-refresh.
+    // FIX: Rimossi position: fixed e touch-action: none per bug iOS.
+    // Aggiunto background match per evitare il bug dei "due sfondi" visibili
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
+    document.body.style.backgroundColor = '#090a0f'; // Uniforma lo sfondo base al gioco
 
     renderSetup(container);
 }
@@ -61,7 +61,7 @@ function renderSetup(container) {
                 padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)) 20px; 
                 overflow-y: auto; -webkit-overflow-scrolling: touch;
                 animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-                box-sizing: border-box; /* FIX: Previene lo sfasamento in altezza */
+                box-sizing: border-box;
             }
 
             @media (min-width: 431px) {
@@ -111,11 +111,11 @@ function renderSetup(container) {
     `;
 
     container.querySelector('#btn-quit').onclick = () => {
-        // Ripristino corretto per la navigazione
         document.documentElement.style.overflow = '';
         document.documentElement.style.overscrollBehavior = '';
         document.body.style.overflow = '';
         document.body.style.overscrollBehavior = '';
+        document.body.style.backgroundColor = ''; // Ripristina lo sfondo base
         window.location.hash = "lobby";
     };
 
