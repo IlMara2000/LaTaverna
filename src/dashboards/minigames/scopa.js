@@ -11,7 +11,7 @@ const VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 export function initScopa(container) {
     updateSidebarContext("minigames");
 
-    // FIX: Rimossi position: fixed e width: 100%. Manteniamo blocco scroll e overscroll per il gioco
+    // FIX: Pulizia scroll e configurazione mobile-friendly
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
@@ -41,10 +41,12 @@ const quitGame = async (container) => {
     document.body.style.backgroundColor = '';
     
     try {
+        // FIX: Import dinamico pulito per tornare alla lista minigiochi
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
-        window.location.hash = "lobby"; 
+        console.error("Errore navigazione:", e);
+        window.location.reload(); 
     }
 };
 
@@ -69,7 +71,6 @@ function startGame(state, container) {
 function renderLayout(container, state) {
     container.innerHTML = `
     <style>
-        /* Wrapper integrato nel Global CSS */
         .scopa-wrapper { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
@@ -132,7 +133,6 @@ function renderLayout(container, state) {
             100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
         }
 
-        /* Pulsante di Uscita unificato */
         .btn-exit-game {
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
             color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 11px; 
@@ -171,22 +171,18 @@ function renderGame(state, container) {
     const botUI = container.querySelector('#bot-hand');
     const turnDisplay = container.querySelector('#turn-display');
 
-    // Update Turn UI
     turnDisplay.innerText = state.turn === 'player' ? "TUO TURNO" : "PENSANDO...";
     turnDisplay.style.color = state.turn === 'player' ? "#00ffa3" : "#ff416c";
 
-    // Render Cards
     tableUI.innerHTML = state.table.map(c => renderCardHTML(c)).join('');
     playerUI.innerHTML = state.playerHand.map((c, i) => renderCardHTML(c, i, true)).join('');
     botUI.innerHTML = state.botHand.map(() => `<div class="card-scopa bot-card"></div>`).join('');
 
-    // Update Stats
     container.querySelector('#p-score').innerText = state.playerCaptured.length;
     container.querySelector('#b-score').innerText = state.botCaptured.length;
     container.querySelector('#p-s').innerText = state.playerScopas;
     container.querySelector('#b-s').innerText = state.botScopas;
 
-    // Click eventi solo se è il turno del player e non c'è animazione
     playerUI.querySelectorAll('.player-card').forEach(card => {
         card.onclick = (e) => {
             e.preventDefault();
@@ -209,19 +205,15 @@ function renderCardHTML(card, index = 0, isPlayer = false) {
     `;
 }
 
-// --- LOGICA PRESA ---
 function findBestCapture(card, table) {
-    // 1. Regola Scopa: presa singola obbligatoria se esiste
     const single = table.find(c => c.value === card.value);
     if (single) return [single];
 
-    // 2. Somma di due carte
     for (let i = 0; i < table.length; i++) {
         for (let j = i + 1; j < table.length; j++) {
             if (table[i].value + table[j].value === card.value) return [table[i], table[j]];
         }
     }
-    // 3. Somma di tre carte
     for (let i = 0; i < table.length; i++) {
         for (let j = i + 1; j < table.length; j++) {
             for (let k = j + 1; k < table.length; k++) {
@@ -237,15 +229,12 @@ function handleMove(idx, actor, state, container) {
     const hand = actor === 'player' ? state.playerHand : state.botHand;
     const pool = actor === 'player' ? state.playerCaptured : state.botCaptured;
     const card = hand.splice(idx, 1)[0];
-    
     const captures = findBestCapture(card, state.table);
     
     if (captures) {
         pool.push(card, ...captures);
         state.table = state.table.filter(c => !captures.includes(c));
         state.lastCapturePlayer = (actor === 'player');
-        
-        // Verifica Scopa (tavolo vuoto ma deck ancora pieno o mani ancora piene)
         if (state.table.length === 0 && (state.deck.length > 0 || state.playerHand.length > 0)) {
             if (actor === 'player') state.playerScopas++; else state.botScopas++;
             triggerScopa(container);
@@ -259,7 +248,6 @@ function handleMove(idx, actor, state, container) {
 
     setTimeout(() => {
         state.isAnimating = false;
-        // Controllo fine mano (entrambe le mani vuote)
         if (state.playerHand.length === 0 && state.botHand.length === 0) {
             if (state.deck.length > 0) {
                 state.playerHand = state.deck.splice(0, 3);
@@ -275,7 +263,6 @@ function handleMove(idx, actor, state, container) {
 
 function botLogic(state, container) {
     setTimeout(() => {
-        // Il bot cerca la prima carta che fa una presa, altrimenti scarta la più bassa
         let idx = state.botHand.findIndex(c => findBestCapture(c, state.table));
         if (idx === -1) idx = 0; 
         handleMove(idx, 'bot', state, container);
@@ -293,20 +280,14 @@ function triggerScopa(container) {
 }
 
 function finishMatch(state, container) {
-    // Le ultime carte a terra vanno a chi ha fatto l'ultima presa
     if (state.table.length > 0) {
         const pool = state.lastCapturePlayer ? state.playerCaptured : state.botCaptured;
         pool.push(...state.table);
         state.table = [];
     }
-    
-    const pTotal = state.playerCaptured.length + (state.playerScopas * 5); // Calcolo semplificato
+    const pTotal = state.playerCaptured.length + (state.playerScopas * 5);
     const bTotal = state.botCaptured.length + (state.botScopas * 5);
-    
     const msg = pTotal >= bTotal ? "VITTORIA! 🏆" : "HA VINTO IL BOT! 🤖";
-    
-    alert(`${msg}\n\nTu: ${state.playerCaptured.length} carte + ${state.playerScopas} Scope\nBot: ${state.botCaptured.length} carte + ${state.botScopas} Scope`);
-    
-    // FIX: Sostituisce l'hash e ricarica pulitamente
+    alert(`${msg}\n\nTu: ${state.playerCaptured.length} + ${state.playerScopas} Scope\nBot: ${state.botCaptured.length} + ${state.botScopas} Scope`);
     quitGame(container);
 }
