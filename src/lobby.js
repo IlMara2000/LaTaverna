@@ -1,15 +1,13 @@
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 
 export function showLobby(container) {
-    // FIX: Pulizia TOTALE di qualsiasi blocco lasciato dai minigiochi
+    // FIX: Pulizia, ma SENZA sbloccare l'overscroll-behavior
     document.documentElement.style.overflow = '';
-    document.documentElement.style.overscrollBehavior = '';
     document.body.style.overflow = '';
-    document.body.style.overscrollBehavior = '';
     document.body.style.position = '';
     document.body.style.width = '';
     document.body.style.touchAction = '';
-    document.body.style.backgroundColor = ''; // Ripristina il background trasparente globale
+    document.body.style.backgroundColor = ''; 
     window.scrollTo(0, 0);
     
     updateSidebarContext("home");
@@ -18,7 +16,6 @@ export function showLobby(container) {
     
     container.innerHTML = `
         <div id="lobby-wrapper" style="width: 100%; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;">
-            
             <div class="dashboard-container" style="padding-bottom: calc(120px + env(safe-area-inset-bottom));">
                 
                 <header class="lobby-header" style="margin-bottom: 30px;">
