@@ -111,7 +111,6 @@ function renderSetup(container) {
                 <button id="start-game" class="btn-main" style="margin-top: 10px;">INIZIA PARTITA</button>
             </div>
             
-            <button id="btn-quit" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px;">← ESCI DAL GIOCO</button>
         </div>
     `;
 
