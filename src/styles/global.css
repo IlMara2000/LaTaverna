@@ -33,10 +33,18 @@ html, body {
     overscroll-behavior: none !important;
 }
 
-/* FIX GLOBALE: Rimuove i bordi grigi/blu quando tocchi i bottoni (es. il ?) */
-button, a, .nav-logo-right {
+/* FIX GLOBALE: Rimuove i bordi grigi/blu quando tocchi i bottoni (es. il ?) e selezioni indesiderate */
+button, a, .nav-logo-right, .game-card, .action-card {
     outline: none !important;
     -webkit-tap-highlight-color: transparent !important;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Consenti la selezione solo nei campi di input */
+input, textarea {
+    -webkit-user-select: auto;
+    user-select: auto;
 }
 
 /* Sistema Scrolling Mobile */
