@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 6.0)
+   LA TAVERNA - AMETHYST DARK UI (RESTORED VER. 5.2)
    ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
@@ -22,75 +22,78 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background: #05010a;
+    background: #05010a; 
     background: var(--bg-dark) no-repeat fixed;
     color: var(--text-primary);
     font-family: 'Poppins', sans-serif;
     
-    /* FIX CRITICO: Impedisce qualsiasi movimento laterale */
+    /* FIX: Blocca lo scroll laterale e il rimbalzo verticale di sistema */
     overflow-x: hidden !important;
-    width: 100vw;
+    width: 100%;
     position: relative;
-    
-    /* Blocca pull-to-refresh e rimbalzi elastici su mobile */
-    overscroll-behavior-y: contain;
-    overscroll-behavior-x: none;
-    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* FIX GLOBALE INTERAZIONI */
-button, a, .is-clickable {
+button, a, .game-card, .action-card, .nav-logo-right {
     outline: none !important;
     -webkit-tap-highlight-color: transparent !important;
+    -webkit-user-select: none;
     user-select: none;
+}
+
+/* 2. SAFE AREA & APP CONTAINER */
+#app {
+    min-height: 100dvh;
+    padding: 20px;
+    padding-top: calc(20px + env(safe-area-inset-top));
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 3. LOGO (Tornato alle dimensioni corrette e posizionato bene) */
+.nav-logo-right {
+    position: fixed;
+    top: calc(20px + env(safe-area-inset-top));
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    z-index: 999;
+    filter: drop-shadow(0 0 15px var(--amethyst-bright));
+    animation: floatLogo 4s ease-in-out infinite;
     cursor: pointer;
 }
 
-/* 2. SISTEMA DI ANIMAZIONE (ADDIO SCATTI LATERALI) */
-@keyframes fadeInUp {
+@keyframes floatLogo {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(5deg); }
+}
+
+/* 4. ANIMAZIONE CARD (L'originale che ti piaceva) */
+@keyframes cardEntrance {
     from { 
         opacity: 0; 
-        transform: translateY(30px); 
-        filter: blur(5px);
+        transform: translateY(30px) scale(0.95); 
+        filter: blur(10px);
     }
     to { 
         opacity: 1; 
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
         filter: blur(0);
     }
 }
 
-/* 3. SAFE AREA & CONTAINER PRINCIPALE */
-#app {
-    min-height: 100dvh;
-    width: 100%;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-    /* Spaziatura intelligente per Notch e barre di sistema */
-    padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
-}
-
-/* 4. DASHBOARD & GRID */
-.dashboard-container {
-    width: 100%;
-    max-width: 600px;
-    margin: 0 auto;
-    /* Scroll solo verticale */
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
+/* 5. SISTEMA CARD & GRID */
 .grid-layout {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     margin-top: 25px;
-    width: 100%;
 }
 
-/* 5. LE CARD (Sistemate per non scattare a lato) */
 .game-card, .action-card {
     background: var(--glass-surface);
     backdrop-filter: blur(12px);
@@ -102,109 +105,94 @@ button, a, .is-clickable {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    transition: transform 0.2s ease, background 0.3s ease;
+    gap: 14px;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
     text-align: center;
-    /* Animazione fluida dal basso */
-    animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 .game-card:active, .action-card:active {
-    transform: scale(0.95);
-    background: rgba(157, 78, 221, 0.1);
+    transform: scale(0.92) translateY(2px);
+    background: rgba(157, 78, 221, 0.15);
     border-color: var(--amethyst-light);
 }
 
-/* Delays per l'ingresso a cascata */
-.game-card:nth-child(1) { animation-delay: 0.1s; }
-.game-card:nth-child(2) { animation-delay: 0.15s; }
-.game-card:nth-child(3) { animation-delay: 0.2s; }
-.game-card:nth-child(4) { animation-delay: 0.25s; }
-.game-card:nth-child(5) { animation-delay: 0.3s; }
-.game-card:nth-child(6) { animation-delay: 0.35s; }
+/* 6. TYPOGRAPHY */
+.main-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 2.4rem;
+    text-align: center;
+    background: linear-gradient(180deg, #ffffff 0%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 15px rgba(157, 78, 221, 0.4));
+    margin-bottom: 5px;
+}
 
-/* 6. SIDEBAR (ULTRA-BLUR & SAFE) */
+.text-amethyst {
+    color: var(--amethyst-bright);
+    text-shadow: 0 0 20px var(--amethyst-glow);
+}
+
+/* 7. SIDEBAR (Torna a destra nascosta correttamente) */
 .sidebar-glass {
     position: fixed;
-    right: -110%; /* Nascosta a destra */
+    right: -110%;
     top: 0;
     width: 280px;
     height: 100dvh;
-    background: rgba(8, 4, 18, 0.8);
-    backdrop-filter: blur(30px) saturate(150%);
-    -webkit-backdrop-filter: blur(30px) saturate(150%);
-    z-index: 2000;
-    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(8, 4, 18, 0.95);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    z-index: 10001;
+    transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     padding: calc(60px + env(safe-area-inset-top)) 25px;
     border-left: 1px solid var(--glass-border);
-    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    box-sizing: border-box;
 }
 
-.sidebar-glass.active {
-    transform: translateX(-110%); /* Entra fluida */
-    right: -110%; /* Manteniamo la logica dello stato */
+.sidebar-glass.active { right: 0; }
+
+.btn-back-glass {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    color: white;
+    padding: 18px;
+    border-radius: 20px;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-bottom: 12px;
 }
 
-/* 7. HAMBURGER TRIGGER (PERFETTAMENTE POSIZIONATO) */
+/* 8. HAMBURGER TRIGGER */
 .floating-trigger {
     position: fixed;
     bottom: calc(30px + env(safe-area-inset-bottom));
-    right: calc(25px + env(safe-area-inset-right));
+    right: 25px;
     width: 65px;
     height: 65px;
     border-radius: 22px;
     background: var(--accent-gradient);
-    z-index: 3000;
+    z-index: 10002;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 5px;
-    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.floating-trigger.is-active {
-    background: var(--danger) !important;
-    transform: scale(0.9) rotate(90deg);
+    box-shadow: 0 10px 30px rgba(157, 78, 221, 0.6);
 }
 
 .nav-bar {
-    width: 24px;
+    width: 26px;
     height: 3px;
     background: white;
     border-radius: 10px;
-    transition: 0.3s;
 }
 
-/* 8. TYPOGRAPHY & TITLES */
-.main-title {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 900;
-    font-size: 2.2rem;
-    text-align: center;
-    background: linear-gradient(180deg, #fff 0%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-top: 10px;
-}
-
-/* 9. INPUT FIXES */
-input[type="text"], select {
-    width: 100%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 14px;
-    padding: 12px;
-    color: white;
-    font-size: 16px; /* Evita zoom automatico su iOS */
-    box-sizing: border-box;
-}
-
-/* 10. SCROLLBARS (MINIMAL) */
-::-webkit-scrollbar {
-    width: 0px;
-    background: transparent;
-}
+/* Nascondi Scrollbar brutte */
+::-webkit-scrollbar { width: 0px; background: transparent; }
