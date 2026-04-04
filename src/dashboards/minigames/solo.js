@@ -20,12 +20,13 @@ const getCardContent = (val) => {
 export function initSoloGame(container) {
     updateSidebarContext("minigames");
 
-    // Configurazione fissa per Mobile: blocca scroll elastico
+    // FIX: Blocco overscroll al posto di blocchi brutali
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
+    document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none';
+    document.body.style.backgroundColor = '#090a0f';
     
     let state = {
         deck: [], discardPile: [], players: [[], [], [], []], 
@@ -36,15 +37,34 @@ export function initSoloGame(container) {
         canChain: false 
     };
 
-    renderLayout(container);
+    renderLayout(container, state);
     attachInitialListeners(container, state);
 }
 
-function renderLayout(container) {
+// --- Funzione centralizzata per uscire in sicurezza ---
+const quitGame = async (container) => {
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.backgroundColor = '';
+    
+    try {
+        const { showMinigamesList } = await import('../../minigamelist.js');
+        showMinigamesList(document.getElementById('app') || container);
+    } catch (e) {
+        window.location.hash = "lobby"; 
+    }
+};
+
+function renderLayout(container, state) {
     container.innerHTML = `
     <style>
         .solo-wrapper { 
-            width: 100%; max-width: 430px; height: 100vh; margin: 0 auto;
+            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif; 
             animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
@@ -52,7 +72,7 @@ function renderLayout(container) {
         }
 
         @media (min-width: 431px) {
-            .solo-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; }
+            .solo-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
 
         /* Pulsante Esci */
@@ -90,7 +110,7 @@ function renderLayout(container) {
         .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         
         /* UI Giocatore */
-        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: env(safe-area-inset-bottom, 15px); }
+        .player-ui { position: absolute; bottom: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; align-items: center; padding-bottom: calc(15px + env(safe-area-inset-bottom)); }
         .hand-scroll { 
             display: flex; gap: 8px; padding: 20px 15px; overflow-x: auto; 
             scrollbar-width: none; min-height: 140px; width: 100%; box-sizing: border-box;
@@ -159,17 +179,9 @@ function renderLayout(container) {
     </div>
     `;
 
-    // Setup Exit Logics
-    const quitFn = () => {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.touchAction = '';
-        window.location.hash = "lobby";
-    };
-    container.querySelector('#btn-quit-start').onclick = quitFn;
-    container.querySelector('#btn-exit-ingame').onclick = quitFn;
+    // FIX: Usa quitGame() passando container
+    container.querySelector('#btn-quit-start').onclick = (e) => { e.preventDefault(); quitGame(container); };
+    container.querySelector('#btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
 
 // --- LOGICA ANIMAZIONI ---
@@ -383,12 +395,8 @@ function endTurn(state, container) {
     for(let i=0; i<4; i++) {
         if (state.players[i].length === 0) {
             alert(i === 0 ? "VITTORIA! 🏆" : `HA VINTO IL BOT ${i} 🤖`);
-            document.documentElement.style.overflow = '';
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.width = '';
-            document.body.style.touchAction = '';
-            window.location.hash = "lobby";
+            // FIX: Ora usa quitGame() 
+            quitGame(container);
             return;
         }
     }
