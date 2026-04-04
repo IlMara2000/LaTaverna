@@ -39,6 +39,27 @@ export function initImpostore(container) {
     renderSetup(container);
 }
 
+// --- Funzione centralizzata per uscire in sicurezza ---
+const quitGame = async (container) => {
+    // Pulizia per sicurezza
+    document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.backgroundColor = '';
+    
+    try {
+        // FIX: Ricarica la vista dinamicamente senza alterare l'hash (niente swipe-back glitch)
+        const { showMinigamesList } = await import('../../minigamelist.js');
+        showMinigamesList(document.getElementById('app') || container);
+    } catch (e) {
+        window.location.hash = "lobby"; 
+    }
+};
+
 function createPlayerInputHTML(value = "", index) {
     return `
         <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
@@ -79,6 +100,8 @@ function renderSetup(container) {
                 margin-bottom: 20px; 
             }
             .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); -webkit-tap-highlight-color: transparent; outline: none; }
+            .btn-main:active { transform: scale(0.95); }
+            
             .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px; }
             .config-row select { background: transparent; color: #9d4ede; border: none; font-weight: 900; font-size: 16px; outline: none; }
             
@@ -110,11 +133,13 @@ function renderSetup(container) {
                 <button id="start-game" class="btn-main" style="margin-top: 10px;">INIZIA PARTITA</button>
             </div>
             
+            <button id="btn-quit" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px;">← ESCI DAL GIOCO</button>
         </div>
     `;
 
-    container.querySelector('#btn-quit').onclick = () => {
-        window.location.hash = "lobby";
+    container.querySelector('#btn-quit').onclick = (e) => {
+        e.preventDefault();
+        quitGame(container);
     };
 
     container.querySelector('#player-inputs-container').onclick = (e) => {
@@ -170,7 +195,7 @@ function renderReveal(container) {
             <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
             <h1 style="font-size: 2.8rem; font-weight: 900; color: var(--amethyst-bright); margin-bottom: 30px; font-family:'Montserrat'; text-shadow: 0 0 20px var(--amethyst-glow);">${currentPlayer.name}</h1>
             
-            <div id="word-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s; -webkit-tap-highlight-color: transparent;">
+            <div id="word-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 50px 20px; cursor: pointer; transition: 0.3s; -webkit-tap-highlight-color: transparent; outline: none; user-select: none;">
                 <p id="word-text" style="font-weight: 800; opacity: 0.7; font-size: 14px;">TOCCA PER SCOPRIRE IL RUOLO</p>
             </div>
 
@@ -257,7 +282,10 @@ function renderResult(container) {
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
                 <button id="replay" class="btn-main">NUOVO ROUND</button>
+                
                 <button id="change" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px; margin-bottom: 0;">IMPOSTAZIONI</button>
+                
+                <button id="btn-quit-end" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px; border-color: rgba(255,68,68,0.3); color: #ff6b6b; margin-top: 10px;">← ESCI DAL GIOCO</button>
             </div>
         </div>
     `;
@@ -267,4 +295,5 @@ function renderResult(container) {
         startNewRound(container);
     };
     container.querySelector('#change').onclick = () => renderSetup(container);
+    container.querySelector('#btn-quit-end').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
