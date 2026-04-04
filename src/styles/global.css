@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 5.2 - UNIFIED)
+   LA TAVERNA - AMETHYST DARK UI (VER. 6.0)
    ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
@@ -17,109 +17,69 @@
     --accent-gradient: linear-gradient(135deg, #9d4ede 0%, #5a189a 100%);
 }
 
-/* Reset & Fix Layout */
+/* 1. RESET & LOCK HORIZONTAL SCROLL */
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background: #05010a; 
+    background: #05010a;
     background: var(--bg-dark) no-repeat fixed;
     color: var(--text-primary);
     font-family: 'Poppins', sans-serif;
-    overflow-x: hidden;
-    -webkit-tap-highlight-color: transparent;
-    scroll-behavior: smooth;
-    /* FIX: Uccide il pull-to-refresh su mobile a livello globale */
-    overscroll-behavior: none !important;
-}
-
-/* FIX GLOBALE: Rimuove i bordi grigi/blu quando tocchi i bottoni (es. il ?) e selezioni indesiderate */
-button, a, .nav-logo-right, .game-card, .action-card {
-    outline: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-/* Consenti la selezione solo nei campi di input */
-input, textarea {
-    -webkit-user-select: auto;
-    user-select: auto;
-}
-
-/* Sistema Scrolling Mobile */
-#main-content, .fade-in {
-    height: 100vh;
-    overflow-y: auto !important;
+    
+    /* FIX CRITICO: Impedisce qualsiasi movimento laterale */
+    overflow-x: hidden !important;
+    width: 100vw;
+    position: relative;
+    
+    /* Blocca pull-to-refresh e rimbalzi elastici su mobile */
+    overscroll-behavior-y: contain;
+    overscroll-behavior-x: none;
     -webkit-overflow-scrolling: touch;
 }
 
-/* SAFE AREA iOS (Notch & Home Bar) */
+/* FIX GLOBALE INTERAZIONI */
+button, a, .is-clickable {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    user-select: none;
+    cursor: pointer;
+}
+
+/* 2. SISTEMA DI ANIMAZIONE (ADDIO SCATTI LATERALI) */
+@keyframes fadeInUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(30px); 
+        filter: blur(5px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+/* 3. SAFE AREA & CONTAINER PRINCIPALE */
 #app {
     min-height: 100dvh;
-    padding: 20px;
-    padding-top: calc(20px + env(safe-area-inset-top));
-    padding-bottom: calc(120px + env(safe-area-inset-bottom));
-    padding-left: calc(20px + env(safe-area-inset-left));
-    padding-right: calc(20px + env(safe-area-inset-right));
+    width: 100%;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
     box-sizing: border-box;
+    /* Spaziatura intelligente per Notch e barre di sistema */
+    padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
 }
 
-/* =========================================
-   LOGO FAVICON (ANIMATO & GLOWING)
-   ========================================= */
-.nav-logo-right {
-    position: fixed;
-    top: calc(20px + env(safe-area-inset-top)); /* Safe area top */
-    right: calc(20px + env(safe-area-inset-right));
-    width: 50px;
-    height: 50px;
-    z-index: 999;
-    filter: drop-shadow(0 0 15px var(--amethyst-bright));
-    animation: floatLogo 4s ease-in-out infinite;
-    cursor: pointer;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: none;
-    background: transparent;
-}
-
-.nav-logo-right:active {
-    transform: scale(0.8) rotate(-10deg);
-}
-
-@keyframes floatLogo {
-    0%, 100% { transform: translateY(0) rotate(0deg) scale(1); filter: drop-shadow(0 0 10px var(--amethyst-glow)); }
-    50% { transform: translateY(-10px) rotate(5deg) scale(1.05); filter: drop-shadow(0 0 20px var(--amethyst-bright)); }
-}
-
-/* =========================================
-   TITOLI CON GLOW AVANZATO
-   ========================================= */
-.main-title {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 900;
-    font-size: 2.4rem;
-    text-transform: uppercase;
-    letter-spacing: -1px;
-    background: linear-gradient(180deg, #ffffff 0%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    background-clip: text; /* Fix Linter */
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 15px rgba(157, 78, 221, 0.4));
-    margin-bottom: 5px;
-}
-
-.text-amethyst {
-    color: var(--amethyst-bright);
-    text-shadow: 0 0 20px var(--amethyst-glow), 0 0 40px rgba(157, 78, 221, 0.2);
-}
-
-/* =========================================
-   SISTEMA CARD (LOBBY & ACTION CARDS)
-   ========================================= */
+/* 4. DASHBOARD & GRID */
 .dashboard-container {
+    width: 100%;
     max-width: 600px;
     margin: 0 auto;
+    /* Scroll solo verticale */
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .grid-layout {
@@ -127,8 +87,10 @@ input, textarea {
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
     margin-top: 25px;
+    width: 100%;
 }
 
+/* 5. LE CARD (Sistemate per non scattare a lato) */
 .game-card, .action-card {
     background: var(--glass-surface);
     backdrop-filter: blur(12px);
@@ -140,263 +102,109 @@ input, textarea {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    gap: 12px;
+    transition: transform 0.2s ease, background 0.3s ease;
     text-align: center;
-    position: relative;
-    overflow: hidden;
-    animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-/* Effetto di riflesso al tocco per tutte le card */
-.game-card::before, .action-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
+    /* Animazione fluida dal basso */
+    animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 .game-card:active, .action-card:active {
-    transform: scale(0.92) translateY(2px);
-    background: rgba(157, 78, 221, 0.15);
+    transform: scale(0.95);
+    background: rgba(157, 78, 221, 0.1);
     border-color: var(--amethyst-light);
 }
 
-.game-card:active::before, .action-card:active::before {
-    opacity: 1;
-}
+/* Delays per l'ingresso a cascata */
+.game-card:nth-child(1) { animation-delay: 0.1s; }
+.game-card:nth-child(2) { animation-delay: 0.15s; }
+.game-card:nth-child(3) { animation-delay: 0.2s; }
+.game-card:nth-child(4) { animation-delay: 0.25s; }
+.game-card:nth-child(5) { animation-delay: 0.3s; }
+.game-card:nth-child(6) { animation-delay: 0.35s; }
 
-/* Staggered Delay */
-.game-card:nth-child(1), .action-card:nth-child(1) { animation-delay: 0.1s; }
-.game-card:nth-child(2), .action-card:nth-child(2) { animation-delay: 0.2s; }
-.game-card:nth-child(3), .action-card:nth-child(3) { animation-delay: 0.3s; }
-.game-card:nth-child(4) { animation-delay: 0.4s; }
-.game-card:nth-child(5) { animation-delay: 0.5s; }
-.game-card:nth-child(6) { animation-delay: 0.6s; }
-
-@keyframes cardEntrance {
-    from { 
-        opacity: 0; 
-        transform: translateY(30px) scale(0.9); 
-        filter: blur(10px);
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0) scale(1);
-        filter: blur(0);
-    }
-}
-
-.game-card h3, .action-card h3 {
-    margin: 0;
-    font-size: 1rem;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-}
-
-.game-card span {
-    font-size: 2.2rem;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-}
-
-/* =========================================
-   D&D SPECIFIC COMPONENTS
-   ========================================= */
-.dnd-hero {
-    background: linear-gradient(135deg, rgba(40, 10, 60, 0.8) 0%, rgba(10, 5, 20, 0.9) 100%),
-                url('https://www.transparenttextures.com/patterns/dark-matter.png');
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    border-radius: 30px;
-    padding: 40px;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset 0 0 30px rgba(157, 78, 221, 0.1);
-    margin-bottom: 30px;
-    animation: cardEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.dnd-title {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 3.5rem; 
-    font-weight: 900; 
-    margin: 0; 
-    line-height: 1;
-    text-transform: uppercase;
-    background: linear-gradient(180deg, #fff 0%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    background-clip: text; /* Fix Linter */
-    -webkit-text-fill-color: transparent;
-}
-
-@media (max-width: 768px) {
-    .dnd-title { font-size: 2.2rem; }
-    .dnd-hero { padding: 25px; }
-}
-
-.dnd-hero::before {
-    content: '20';
-    position: absolute;
-    right: -20px;
-    bottom: -30px;
-    font-size: 250px;
-    font-weight: 900;
-    color: rgba(157, 78, 221, 0.04);
-    font-family: 'Montserrat', sans-serif;
-    transform: rotate(-15deg);
-    pointer-events: none;
-}
-
-.dnd-badge {
-    background: var(--amethyst-bright);
-    color: black;
-    padding: 6px 15px;
-    border-radius: 50px;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 2px;
-    display: inline-block;
-    margin-bottom: 15px;
-    box-shadow: 0 0 15px var(--amethyst-glow);
-}
-
-.icon-circle {
-    width: 52px;
-    height: 52px;
-    background: rgba(157, 78, 221, 0.15);
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    color: var(--amethyst-bright);
-    box-shadow: inset 0 0 10px rgba(157, 78, 221, 0.2);
-    border: 1px solid rgba(157, 78, 221, 0.2);
-}
-
-/* =========================================
-   SIDEBAR & OVERLAY (ULTRA-BLUR)
-   ========================================= */
+/* 6. SIDEBAR (ULTRA-BLUR & SAFE) */
 .sidebar-glass {
     position: fixed;
-    right: -110%;
+    right: -110%; /* Nascosta a destra */
     top: 0;
-    width: 300px;
+    width: 280px;
     height: 100dvh;
-    background: rgba(8, 4, 18, 0.9);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    z-index: 10001;
-    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    /* Safe Area padding sulla sidebar */
-    padding: calc(60px + env(safe-area-inset-top)) 25px calc(60px + env(safe-area-inset-bottom)) 25px;
+    background: rgba(8, 4, 18, 0.8);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    z-index: 2000;
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: calc(60px + env(safe-area-inset-top)) 25px;
     border-left: 1px solid var(--glass-border);
-    box-shadow: -20px 0 50px rgba(0,0,0,0.5);
-    box-sizing: border-box;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
 }
 
-.sidebar-glass.active { right: 0; }
-
-.btn-back-glass {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: white;
-    padding: 20px;
-    border-radius: 22px;
-    font-weight: 800;
-    text-transform: uppercase;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
+.sidebar-glass.active {
+    transform: translateX(-110%); /* Entra fluida */
+    right: -110%; /* Manteniamo la logica dello stato */
 }
 
-.btn-back-glass:active {
-    background: var(--amethyst-glow);
-    border-color: var(--amethyst-bright);
-    transform: scale(0.96);
-}
-
-.sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    opacity: 0;
-    visibility: hidden;
-    z-index: 10000;
-    transition: 0.4s;
-    backdrop-filter: blur(4px);
-}
-
-.sidebar-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* =========================================
-   TRIGGER DINAMICO & NAV BARS
-   ========================================= */
+/* 7. HAMBURGER TRIGGER (PERFETTAMENTE POSIZIONATO) */
 .floating-trigger {
     position: fixed;
-    /* Safe Area bottom applicata all'Hamburger Button */
     bottom: calc(30px + env(safe-area-inset-bottom));
     right: calc(25px + env(safe-area-inset-right));
-    width: 68px;
-    height: 68px;
-    border-radius: 24px;
+    width: 65px;
+    height: 65px;
+    border-radius: 22px;
     background: var(--accent-gradient);
-    z-index: 10002;
+    z-index: 3000;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 5px;
-    box-shadow: 0 10px 30px rgba(157, 78, 221, 0.6);
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .floating-trigger.is-active {
     background: var(--danger) !important;
-    transform: rotate(180deg);
-    box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+    transform: scale(0.9) rotate(90deg);
 }
 
 .nav-bar {
-    width: 28px;
-    height: 3.5px;
+    width: 24px;
+    height: 3px;
     background: white;
     border-radius: 10px;
-    transition: all 0.4s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+    transition: 0.3s;
 }
 
-.floating-trigger.is-active .nav-bar:nth-child(1) { transform: translateY(8.5px) rotate(45deg); }
-.floating-trigger.is-active .nav-bar:nth-child(2) { opacity: 0; transform: translateX(20px); }
-.floating-trigger.is-active .nav-bar:nth-child(3) { transform: translateY(-8.5px) rotate(-45deg); }
-
-/* Back Button Lobby Style */
-#back-to-lobby {
-    backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* 8. TYPOGRAPHY & TITLES */
+.main-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 2.2rem;
+    text-align: center;
+    background: linear-gradient(180deg, #fff 0%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-top: 10px;
 }
 
-#back-to-lobby:hover {
-    background: rgba(157, 78, 221, 0.2) !important;
-    border-color: var(--amethyst-bright) !important;
-    transform: translateX(-5px);
+/* 9. INPUT FIXES */
+input[type="text"], select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 12px;
+    color: white;
+    font-size: 16px; /* Evita zoom automatico su iOS */
+    box-sizing: border-box;
+}
+
+/* 10. SCROLLBARS (MINIMAL) */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
 }
