@@ -26,13 +26,13 @@ const WORDS_DATABASE = [
 export function initImpostore(container) {
     updateSidebarContext("minigames");
     
-    // FIX: Sblocco totale dello scroll per evitare blocchi iOS.
+    // Reset dello scroll e blocchi iOS
     document.documentElement.style.overflow = 'auto';
     document.body.style.overflow = 'auto';
     document.body.style.position = '';
     document.body.style.width = '';
     document.body.style.touchAction = '';
-    document.body.style.backgroundColor = '#090a0f'; // Match sfondo globale
+    document.body.style.backgroundColor = '#090a0f'; 
     window.scrollTo(0, 0);
 
     renderSetup(container);
@@ -47,7 +47,6 @@ const quitGame = async (container) => {
     document.body.style.backgroundColor = '';
     
     try {
-        // FIX: Import dinamico corretto per Vercel/Production
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
@@ -61,7 +60,7 @@ function createPlayerInputHTML(value = "", index) {
         <div class="player-input-wrapper" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 8px;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
                    style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 16px;">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold; -webkit-tap-highlight-color: transparent; outline: none;">✕</button>
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.1); border: none; color: #ff416c; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; font-weight: bold; outline: none;">✕</button>
         </div>
     `;
 }
@@ -76,11 +75,12 @@ function renderSetup(container) {
                 width: 100%; max-width: 600px; margin: 0 auto;
                 color: white; font-family: 'Poppins', sans-serif; 
                 display: flex; flex-direction: column; 
+                padding: 20px;
                 padding-bottom: calc(120px + env(safe-area-inset-bottom));
                 animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             }
             .setup-card { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); padding: 28px 20px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-            .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); -webkit-tap-highlight-color: transparent; outline: none; }
+            .btn-main { background: linear-gradient(45deg, #9d4ede, #ff416c); border: none; padding: 16px; border-radius: 14px; color: white; font-weight: 800; cursor: pointer; width: 100%; text-transform: uppercase; font-size: 14px; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3); outline: none; }
             .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 12px; }
             .config-row select { background: transparent; color: #9d4ede; border: none; font-weight: 900; font-size: 16px; outline: none; }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -111,10 +111,12 @@ function renderSetup(container) {
                 <button id="start-game" class="btn-main" style="margin-top: 10px;">INIZIA PARTITA</button>
             </div>
             
+            <button id="btn-quit-setup" class="btn-back-glass" style="width: 100%; padding: 15px; font-size: 12px;">← ESCI DAL GIOCO</button>
         </div>
     `;
 
-    container.querySelector('#btn-quit').onclick = (e) => { e.preventDefault(); quitGame(container); };
+    // Listener per il tasto esci nel menu setup
+    container.querySelector('#btn-quit-setup').onclick = (e) => { e.preventDefault(); quitGame(container); };
 
     container.querySelector('#player-inputs-container').onclick = (e) => {
         const deleteBtn = e.target.closest('.delete-player');
@@ -160,7 +162,7 @@ function renderReveal(container) {
     wrapper.innerHTML = `
         <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 0.4s ease-out; min-height: 60vh;">
             <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 13px;">Passa il telefono a</p>
-            <h1 style="font-size: 2.8rem; font-weight: 900; color: var(--amethyst-bright); margin-bottom: 30px; font-family:'Montserrat';">${currentPlayer.name}</h1>
+            <h1 style="font-size: 2.8rem; font-weight: 900; color: #9d4ede; margin-bottom: 30px; font-family:'Montserrat';">${currentPlayer.name}</h1>
             <div id="word-box" style="width: 100%; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 50px 20px; cursor: pointer; user-select: none;">
                 <p id="word-text" style="font-weight: 800; opacity: 0.7; font-size: 14px;">TOCCA PER SCOPRIRE IL RUOLO</p>
             </div>
