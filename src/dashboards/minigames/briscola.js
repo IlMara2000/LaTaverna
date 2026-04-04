@@ -3,13 +3,12 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 export function initBriscola(container) {
     updateSidebarContext("minigames");
 
-    // FIX: Rimossi position: fixed e width: 100%. Manteniamo solo blocco scroll e overscroll per il gioco
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none'; 
-    document.body.style.backgroundColor = '#090a0f'; // Match sfondo globale
+    document.body.style.backgroundColor = '#090a0f';
 
     const SUITS = [
         { id: 'bastoni', icon: '🪵', color: '#00ffa3' },
@@ -35,195 +34,93 @@ export function initBriscola(container) {
     container.innerHTML = `
     <style>
         .briscola-wrapper { 
-            width: 100%; 
-            max-width: 430px; 
-            height: 100dvh; 
-            margin: 0 auto;
+            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
-            position: relative; 
-            overflow: hidden; 
-            color: white; 
-            font-family: 'Poppins', sans-serif;
-            box-sizing: border-box;
-            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif;
+            box-sizing: border-box; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-        
-        @media (min-width: 431px) {
-            .briscola-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        }
-
-        /* Pulsante Esci In-Game */
-        .btn-exit-game {
-            position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px;
-            cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; transition: 0.2s;
-        }
-        .btn-exit-game:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
-        
-        /* Widget Punteggio ottimizzato */
-        .score-widget { 
-            position: absolute; 
-            top: calc(15px + env(safe-area-inset-top)); 
-            right: 15px; 
-            background: rgba(255,255,255,0.03); 
-            backdrop-filter: blur(10px); 
-            border: 1px solid rgba(255,255,255,0.1); 
-            padding: 10px; 
-            border-radius: 15px; 
-            min-width: 110px; 
-            z-index: 10; 
-        }
+        @media (min-width: 431px) { .briscola-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); } }
+        .btn-exit-game { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; }
+        .score-widget { position: absolute; top: calc(15px + env(safe-area-inset-top)); right: 15px; background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; min-width: 110px; z-index: 10; }
         .score-line { display: flex; justify-content: space-between; align-items: center; font-weight: 900; font-size: 0.7rem; }
-        .score-val { font-size: 1rem; }
-
-        /* Carte scalate per Mobile */
-        .b-card { 
-            width: 75px; 
-            height: 110px; 
-            border-radius: 12px; 
-            background: rgba(255,255,255,0.05); 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            font-weight: 800; 
-            border: 1px solid rgba(255,255,255,0.1); 
-            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            position: relative; 
-            cursor: pointer; 
-            text-align: center;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent; outline: none;
-        }
-        .b-card:active { transform: scale(0.9); z-index: 10; }
-        .b-card.back { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; color: #9d4ede; cursor: default; }
-        
-        .active-glow { position: relative; }
-        .active-glow::after {
-            content: ''; position: absolute; inset: -5px; border-radius: 20px;
-            border: 2px solid #00ffa3; opacity: 0.5; animation: pulseGlow 1.5s infinite; pointer-events: none;
-        }
-
-        @keyframes pulseGlow {
-            0% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(1.05); opacity: 0; }
-        }
-
-        .btn-start { 
-            background: linear-gradient(45deg, #9d4ede, #ff416c); 
-            color: white; 
-            padding: 15px 40px; 
-            border-radius: 15px; 
-            font-weight: 900; 
-            border: none; 
-            cursor: pointer; 
-            font-size: 1.2rem; 
-            text-transform: uppercase;
-            -webkit-tap-highlight-color: transparent;
-            outline: none; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.3);
-        }
-        .btn-start:active { transform: scale(0.95); }
-        
-        #player-side, #bot-side { width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
-        /* Aggiunto spazio per il pulsante Hamburger e padding Safe Area */
-        #player-side { position: absolute; bottom: calc(15px + env(safe-area-inset-bottom)); }
-        
+        .b-card { width: 75px; height: 110px; border-radius: 12px; background: rgba(255,255,255,0.05); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; position: relative; cursor: pointer; text-align: center; user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
+        .b-card.back { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; color: #9d4ede; }
+        .active-glow::after { content: ''; position: absolute; inset: -5px; border-radius: 20px; border: 2px solid #00ffa3; opacity: 0.5; animation: pulseGlow 1.5s infinite; pointer-events: none; }
+        @keyframes pulseGlow { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.05); opacity: 0; } }
+        .btn-start { background: linear-gradient(45deg, #9d4ede, #ff416c); color: white; padding: 15px 40px; border-radius: 15px; font-weight: 900; border: none; cursor: pointer; font-size: 1.2rem; text-transform: uppercase; outline: none; }
+        #player-side { position: absolute; bottom: calc(15px + env(safe-area-inset-bottom)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
+        #bot-side { position: absolute; top: calc(70px + env(safe-area-inset-top)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
         #mid-table { width: 100%; height: 200px; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
     </style>
 
     <div class="briscola-wrapper">
         <div id="briscola-overlay" style="position:absolute; inset:0; background:rgba(9,10,15,0.98); z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:20px; backdrop-filter: blur(15px);">
-            <h1 style="font-size:3rem; font-weight:900; background: linear-gradient(to right, #9d4ede, #ff416c); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-family:'Montserrat'; margin: 0;">BRISCOLA</h1>
+            <h1 style="font-size:3rem; font-weight:900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-family:'Montserrat'; margin: 0;">BRISCOLA</h1>
             <button class="btn-start" id="start-game-btn">GIOCA ORA</button>
-            <button id="btn-quit-start" style="margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; -webkit-tap-highlight-color: transparent; outline: none; font-size: 12px; text-transform: uppercase;">← Torna Indietro</button>
+            <button id="btn-quit-start" style="margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; outline: none; font-size: 12px; text-transform: uppercase;">← Torna Indietro</button>
         </div>
 
         <button class="btn-exit-game" id="btn-exit-ingame" style="display: none;">← ESCI</button>
 
         <div class="score-widget" id="score-ui" style="display: none;">
-            <div class="score-line"><span>TU</span> <span id="s0" class="score-val" style="color:#00ffa3;">0</span></div>
-            <div class="score-line"><span>BOT</span> <span id="s1" class="score-val" style="color:#ff416c;">0</span></div>
+            <div class="score-line"><span>TU</span> <span id="s0" style="color:#00ffa3;">0</span></div>
+            <div class="score-line"><span>BOT</span> <span id="s1" style="color:#ff416c;">0</span></div>
             <div id="deck-count" style="font-size: 9px; opacity:0.5; margin-top:5px; text-align:center;">Carte: 40</div>
         </div>
 
-        <div id="bot-side" style="position:absolute; top:calc(70px + env(safe-area-inset-top)); display: none;"></div>
-
+        <div id="bot-side" style="display: none;"></div>
         <div id="mid-table" style="display: none;">
-            <div id="played-cards" style="display:flex; gap:10px; height: 110px; justify-content:center; align-items:center;"></div>
-            
-            <div style="position:relative; width:120px; height:80px; display:flex; justify-content:center; align-items:center; margin-top: 20px;">
+            <div id="played-cards" style="display:flex; gap:10px; height: 110px;"></div>
+            <div style="position:relative; width:120px; height:80px; margin-top: 20px;">
                 <div id="briscola-slot" style="position:absolute; transform:rotate(90deg); left: 30px;"></div>
                 <div id="deck-visual" class="b-card back" style="position:absolute; transform: scale(0.8); left: -10px; font-size:9px;">MAZZO</div>
             </div>
         </div>
-
         <div id="player-side" style="display: none;"></div>
     </div>
     `;
 
-    // FIX: Funzione per uscire dal gioco senza spaccare l'app o creare history finta
     const quitGame = async () => {
         document.documentElement.style.overflow = '';
-        document.documentElement.style.overscrollBehavior = '';
         document.body.style.overflow = '';
-        document.body.style.overscrollBehavior = '';
         document.body.style.touchAction = '';
-        document.body.style.backgroundColor = '';
-        
+        document.body.style.position = '';
         try {
             const { showMinigamesList } = await import('../../minigamelist.js');
             showMinigamesList(document.getElementById('app') || container);
-        } catch (e) {
-            window.location.hash = "lobby"; // Fallback estremo
-        }
+        } catch (e) { window.location.reload(); }
     };
 
-    container.querySelector('#btn-quit-start').onclick = (e) => { e.preventDefault(); quitGame(); };
-    container.querySelector('#btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(); };
+    container.querySelector('#btn-quit-start').onclick = quitGame;
+    container.querySelector('#btn-exit-ingame').onclick = quitGame;
 
     const getCardUI = (c) => {
         if (!c) return '';
         const suitData = SUITS.find(s => s.id === c.suit);
         return `
-            <span style="font-size:8px; color:${suitData.color}; font-weight:900; margin-bottom:2px;">${c.suit.toUpperCase()}</span>
-            <span style="font-size:1.5rem; margin:2px 0;">${suitData.icon}</span>
+            <span style="font-size:8px; color:${suitData.color}; font-weight:900;">${c.suit.toUpperCase()}</span>
+            <span style="font-size:1.5rem;">${suitData.icon}</span>
             <span style="font-size:14px; font-weight:900;">${c.name}</span>
         `;
     };
 
     const renderView = () => {
         if (!state.gameActive) return;
-
-        const bSlot = container.querySelector('#briscola-slot');
-        bSlot.innerHTML = state.briscola ? `<div class="b-card" style="border-color:#9d4ede; transform: scale(0.8);">${getCardUI(state.briscola)}</div>` : '';
-        
+        container.querySelector('#briscola-slot').innerHTML = state.briscola ? `<div class="b-card" style="transform: scale(0.8);">${getCardUI(state.briscola)}</div>` : '';
         container.querySelector('#deck-visual').style.display = state.deck.length > 0 ? 'flex' : 'none';
         container.querySelector('#deck-count').innerText = `MAZZO: ${state.deck.length}`;
-
         const botSide = container.querySelector('#bot-side');
         botSide.innerHTML = state.players[1].map(() => `<div class="b-card back" style="transform: scale(0.85); margin: 0 -10px;"></div>`).join('');
         botSide.classList.toggle('active-glow', state.turn === 1);
-
         const pSide = container.querySelector('#player-side');
         pSide.innerHTML = state.players[0].map((c, i) => `<div class="b-card" data-idx="${i}">${getCardUI(c)}</div>`).join('');
         pSide.classList.toggle('active-glow', state.turn === 0);
-
-        container.querySelector('#played-cards').innerHTML = state.table.map(t => `
-            <div class="b-card" style="transform: rotate(${t.owner === 0 ? '-5deg' : '5deg'}) scale(1);">
-                ${getCardUI(t.card)}
-            </div>
-        `).join('');
-
+        container.querySelector('#played-cards').innerHTML = state.table.map(t => `<div class="b-card">${getCardUI(t.card)}</div>`).join('');
         container.querySelector('#s0').innerText = state.scores[0];
         container.querySelector('#s1').innerText = state.scores[1];
 
         pSide.querySelectorAll('.b-card').forEach(card => {
-            card.onclick = (e) => { 
-                e.preventDefault();
-                if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); 
-            };
+            card.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); };
         });
     };
 
@@ -231,91 +128,38 @@ export function initBriscola(container) {
         state.isAnimating = true;
         state.table.push({ card: state.players[pIdx].splice(idx, 1)[0], owner: pIdx });
         renderView();
-
-        if (state.table.length === 2) { 
-            setTimeout(resolveRound, 800); 
-        } else {
-            state.turn = 1 - pIdx;
-            state.isAnimating = false;
-            renderView();
-            if (state.turn === 1) setTimeout(botLogic, 1000);
-        }
-    };
-
-    const botLogic = () => {
-        if (state.players[1].length === 0) return;
-        playCard(0, 1);
+        if (state.table.length === 2) setTimeout(resolveRound, 800);
+        else { state.turn = 1 - pIdx; state.isAnimating = false; renderView(); if (state.turn === 1) setTimeout(() => playCard(0, 1), 1000); }
     };
 
     const resolveRound = () => {
         const [t1, t2] = state.table;
-        const briscolaSuit = state.briscola?.suit || state.lastBriscolaSuit;
-        if (state.briscola) state.lastBriscolaSuit = state.briscola.suit;
-
-        let winner;
-        if (t1.card.suit === t2.card.suit) {
-            winner = t1.card.rank > t2.card.rank ? t1.owner : t2.owner;
-        } else if (t2.card.suit === briscolaSuit) {
-            winner = t2.owner;
-        } else if (t1.card.suit === briscolaSuit) {
-            winner = t1.owner;
-        } else {
-            winner = t1.owner;
-        }
-
+        const bSuit = state.briscola?.suit || state.lastBriscolaSuit;
+        let winner = (t1.card.suit === t2.card.suit) ? (t1.card.rank > t2.card.rank ? t1.owner : t2.owner) : (t2.card.suit === bSuit ? t2.owner : (t1.card.suit === bSuit ? t1.owner : t1.owner));
         state.scores[winner] += (t1.card.points + t2.card.points);
         state.table = [];
-        
         setTimeout(() => {
             if (state.deck.length > 0) {
                 state.players[winner].push(state.deck.pop());
-                const opponentIdx = 1 - winner;
-                if (state.deck.length === 0 && state.briscola) {
-                    state.players[opponentIdx].push(state.briscola);
-                    state.briscola = null;
-                } else {
-                    state.players[opponentIdx].push(state.deck.pop());
-                }
+                if (state.deck.length === 0) { state.players[1-winner].push(state.briscola); state.briscola = null; }
+                else state.players[1-winner].push(state.deck.pop());
             }
-
-            if (state.players[0].length === 0 && state.deck.length === 0) {
-                const msg = state.scores[0] > 60 ? "🏆 VITTORIA!" : (state.scores[0] === 60 ? "🤝 PAREGGIO!" : "💀 SCONFITTA!");
-                alert(`${msg}\nTu: ${state.scores[0]} - Bot: ${state.scores[1]}`);
-                quitGame(); // Ritorna alla lista giochi invece di ricaricare se stesso
-                return;
-            }
-
-            state.turn = winner;
-            state.isAnimating = false;
-            renderView();
-            if (state.turn === 1) setTimeout(botLogic, 800);
+            if (state.players[0].length === 0) { alert(state.scores[0] > 60 ? "VITTORIA!" : "SCONFITTA!"); return quitGame(); }
+            state.turn = winner; state.isAnimating = false; renderView(); if (state.turn === 1) setTimeout(() => playCard(0, 1), 800);
         }, 600);
     };
 
-    container.querySelector('#start-game-btn').onclick = (e) => {
-        e.preventDefault();
+    container.querySelector('#start-game-btn').onclick = () => {
         container.querySelector('#briscola-overlay').style.display = 'none';
         container.querySelector('#btn-exit-ingame').style.display = 'block';
         container.querySelector('#score-ui').style.display = 'block';
         container.querySelector('#bot-side').style.display = 'flex';
         container.querySelector('#mid-table').style.display = 'flex';
         container.querySelector('#player-side').style.display = 'flex';
-
-        state.deck = [];
-        SUITS.forEach(s => VALUES.forEach(v => state.deck.push({ suit: s.id, ...v })));
-        
-        for (let i = state.deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [state.deck[i], state.deck[j]] = [state.deck[j], state.deck[i]];
-        }
-
-        for(let i=0; i<3; i++) {
-            state.players[0].push(state.deck.pop());
-            state.players[1].push(state.deck.pop());
-        }
-        state.briscola = state.deck.pop();
-        state.lastBriscolaSuit = state.briscola.suit;
-        state.gameActive = true;
-        renderView();
+        state.deck = []; SUITS.forEach(s => VALUES.forEach(v => state.deck.push({ suit: s.id, ...v })));
+        state.deck.sort(() => Math.random() - 0.5);
+        for(let i=0; i<3; i++) { state.players[0].push(state.deck.pop()); state.players[1].push(state.deck.pop()); }
+        state.briscola = state.deck.pop(); state.lastBriscolaSuit = state.briscola.suit;
+        state.gameActive = true; renderView();
     };
 }
