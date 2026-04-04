@@ -1,20 +1,15 @@
-// Correzione percorsi: se questo file è in /src, deve puntare a ./components/...
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { showLobby } from './lobby.js';
 
-// ESPOSTA CON IL NOME CORRETTO CHE CERCA LA SIDEBAR
 export function showMinigamesList(container) {
-    // Reset scroll per Safari/iOS e pulizia blocchi dai giochi precedenti
+    // FIX: Niente reset dell'overscroll-behavior
     document.documentElement.style.overflow = 'auto';
-    document.documentElement.style.overscrollBehavior = 'auto';
     document.body.style.overflow = 'auto';
-    document.body.style.overscrollBehavior = 'auto';
     document.body.style.position = '';
     document.body.style.width = '';
     document.body.style.touchAction = '';
     window.scrollTo(0, 0);
 
-    // Notifica alla sidebar che siamo nei minigiochi
     if (typeof updateSidebarContext === 'function') {
         updateSidebarContext("minigames");
     }
@@ -58,16 +53,13 @@ export function showMinigamesList(container) {
         </div>
     `;
 
-    // Listener per tornare indietro
     document.getElementById('btn-back-main').onclick = () => showLobby(container);
 
-    // Assegnazione dinamica degli eventi click
     games.forEach(game => {
         const btn = document.getElementById(`btn-${game.id}`);
         if (btn) {
             btn.onclick = async () => {
                 try {
-                    // Import dinamico basato sull'ID del gioco
                     const module = await import(`./dashboards/minigames/${game.id}.js`);
                     if (module && module[game.initFn]) {
                         module[game.initFn](container);
@@ -81,5 +73,4 @@ export function showMinigamesList(container) {
     });
 }
 
-// ALIAS PER COMPATIBILITÀ: Se qualche file lo chiama ancora showMinigamesLobby
 export const showMinigamesLobby = showMinigamesList;
