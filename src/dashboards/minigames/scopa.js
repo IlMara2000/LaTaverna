@@ -1,5 +1,11 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
+/**
+ * GIOCO: SCOPA
+ * Versione Stabile 2.0 - Anti-Crash & Vertical Lock
+ * Tema: Amethyst Dark UI
+ */
+
 const SUITS = [
     { id: 'bastoni', icon: '🪵', color: '#00ffa3' },
     { id: 'coppe', icon: '🏆', color: '#ff416c' },
@@ -9,15 +15,17 @@ const SUITS = [
 const VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; 
 
 export function initScopa(container) {
-    updateSidebarContext("minigames");
+    if (!container) return;
+    try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // FIX: Pulizia scroll e configurazione mobile-friendly
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.overscrollBehavior = 'none';
-    document.body.style.overflow = 'hidden';
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.touchAction = 'none';
-    document.body.style.backgroundColor = '#090a0f'; // Match sfondo globale
+    // FIX: Configurazione Scroll Mobile (Solo verticale)
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+    document.body.style.overflowY = 'auto';
+    document.body.style.position = 'relative';
+    document.body.style.touchAction = 'pan-y'; 
+    document.body.style.backgroundColor = '#090a0f';
+    window.scrollTo(0, 0);
 
     let state = {
         deck: [], playerHand: [], botHand: [], table: [],
@@ -31,21 +39,13 @@ export function initScopa(container) {
 
 // --- Funzione centralizzata per uscire in sicurezza ---
 const quitGame = async (container) => {
-    document.documentElement.style.overflow = '';
-    document.documentElement.style.overscrollBehavior = '';
-    document.body.style.overflow = '';
-    document.body.style.overscrollBehavior = '';
     document.body.style.touchAction = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.backgroundColor = '';
-    
+    document.body.style.overflowX = '';
     try {
-        // FIX: Import dinamico pulito per tornare alla lista minigiochi
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
-        console.error("Errore navigazione:", e);
+        console.error("Navigazione fallita:", e);
         window.location.reload(); 
     }
 };
@@ -67,99 +67,79 @@ function startGame(state, container) {
     renderGame(state, container);
 }
 
-// --- INTERFACCIA MOBILE-FIRST ---
+// --- INTERFACCIA ---
 function renderLayout(container, state) {
     container.innerHTML = `
     <style>
+        @keyframes fadeInUpOnly {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .scopa-wrapper { 
-            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
+            width: 100%; max-width: 430px; min-height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at top, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             color: white; font-family: 'Poppins', sans-serif; 
-            display: flex; flex-direction: column; 
-            padding: calc(15px + env(safe-area-inset-top)) 15px calc(15px + env(safe-area-inset-bottom)) 15px; 
-            overflow: hidden; position: relative;
-            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            box-sizing: border-box;
+            display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
+            animation: fadeInUpOnly 0.6s ease-out forwards;
+            overflow-x: hidden;
         }
 
-        @media (min-width: 431px) {
-            .scopa-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        }
-        
         .score-bar { 
             display: flex; justify-content: space-between; background: rgba(255,255,255,0.05); 
-            padding: 12px; border-radius: 18px; font-size: 10px; font-weight: 700; border: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 10px; flex-shrink: 0;
+            padding: 15px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 15px;
         }
-        .score-box { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .score-val { font-size: 16px; color: #ffbd39; }
-
+        
         .table-area { 
-            flex: 1; display: grid; grid-template-columns: repeat(auto-fit, 70px); gap: 10px; 
-            align-content: center; justify-content: center;
-            background: rgba(0,0,0,0.3); border-radius: 24px; margin: 5px 0; 
-            border: 2px dashed rgba(255,255,255,0.05); position: relative;
-            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            flex: 1; display: grid; grid-template-columns: repeat(auto-fit, 75px); gap: 10px; 
+            align-content: center; justify-content: center; min-height: 200px;
+            background: rgba(0,0,0,0.2); border-radius: 24px; margin: 10px 0; 
+            border: 1px dashed rgba(255,255,255,0.1);
         }
 
         .card-scopa { 
             width: 75px; height: 110px; background: #fff; border-radius: 12px;
             display: flex; flex-direction: column; align-items: center; justify-content: space-between;
-            padding: 8px; border: 1px solid rgba(0,0,0,0.1); position: relative; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); color: #1a1a1a;
-            -webkit-tap-highlight-color: transparent; outline: none; user-select: none;
+            padding: 8px; border: 1px solid rgba(0,0,0,0.1); transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); color: #1a1a1a; box-sizing: border-box;
         }
-        .player-card { cursor: pointer; }
-        .player-card:active { transform: translateY(-15px) scale(1.05); z-index: 10; }
         
-        .bot-card { 
-            background: linear-gradient(135deg, #2a0a4a 0%, #6b21a8 100%); 
-            border: 2px solid #9d4ede; box-shadow: 0 0 15px rgba(157,78,221,0.3);
-        }
+        .player-card:active { transform: translateY(-15px); }
+        .bot-card { background: linear-gradient(135deg, #2a0a4a, #6b21a8); border: 1px solid #9d4ede; }
 
-        .hand { display: flex; gap: 12px; justify-content: center; height: 120px; align-items: center; flex-shrink: 0; }
+        .hand { display: flex; gap: 10px; justify-content: center; padding: 15px 0; }
 
         #scopa-toast {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 4rem; font-weight: 900; color: #ffbd39; text-shadow: 0 0 30px rgba(255,189,57,0.8);
-            z-index: 100; display: none; pointer-events: none;
-            font-family: 'Montserrat', sans-serif; font-style: italic;
-        }
-        
-        .anim-pop { animation: popToast 0.8s ease-out forwards; }
-        @keyframes popToast {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 3.5rem; font-weight: 900; color: #ffbd39; text-shadow: 0 0 20px rgba(255,189,57,0.6);
+            z-index: 100; display: none; pointer-events: none; font-style: italic;
         }
 
-        .btn-exit-game {
+        .btn-exit-scopa {
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
-            color: white; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 11px; 
-            cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; 
-            margin-top: 5px; width: 100%; flex-shrink: 0; transition: 0.2s;
+            color: white; padding: 15px; border-radius: 14px; font-weight: 800; font-size: 12px; 
+            cursor: pointer; margin-top: 10px; width: 100%;
         }
-        .btn-exit-game:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
     </style>
     
     <div class="scopa-wrapper">
         <div class="score-bar">
-            <div class="score-box"><span>TU</span><span id="p-score" class="score-val">0</span><span>S: <b id="p-s">0</b></span></div>
-            <div id="turn-display" style="font-size: 12px; align-self: center; letter-spacing: 1px; font-weight: 900;">IL TUO TURNO</div>
-            <div class="score-box"><span>BOT</span><span id="b-score" class="score-val">0</span><span>S: <b id="b-s">0</b></span></div>
+            <div>TU: <b id="p-score">0</b> (S: <b id="p-s">0</b>)</div>
+            <div id="turn-display" style="color: #9d4ede;">TUO TURNO</div>
+            <div>BOT: <b id="b-score">0</b> (S: <b id="b-s">0</b>)</div>
         </div>
 
         <div id="bot-hand" class="hand"></div>
         <div id="table-ui" class="table-area"></div>
         <div id="player-hand" class="hand"></div>
         
-        <button id="btn-exit-ingame" class="btn-exit-game">← ESCI DAL GIOCO</button>
-
+        <button id="btn-exit-game" class="btn-exit-scopa">← ESCI DAL GIOCO</button>
         <div id="scopa-toast">SCOPA!</div>
     </div>
     `;
 
-    container.querySelector('#btn-exit-ingame').onclick = (e) => {
+    container.querySelector('#btn-exit-game').onclick = (e) => {
         e.preventDefault();
         quitGame(container);
     };
@@ -171,7 +151,7 @@ function renderGame(state, container) {
     const botUI = container.querySelector('#bot-hand');
     const turnDisplay = container.querySelector('#turn-display');
 
-    turnDisplay.innerText = state.turn === 'player' ? "TUO TURNO" : "PENSANDO...";
+    turnDisplay.innerText = state.turn === 'player' ? "TUO TURNO" : "IA...";
     turnDisplay.style.color = state.turn === 'player' ? "#00ffa3" : "#ff416c";
 
     tableUI.innerHTML = state.table.map(c => renderCardHTML(c)).join('');
@@ -196,11 +176,12 @@ function renderGame(state, container) {
 function renderCardHTML(card, index = 0, isPlayer = false) {
     const suit = SUITS.find(s => s.id === card.suit);
     const label = card.value === 1 ? 'A' : (card.value === 8 ? 'F' : (card.value === 9 ? 'C' : (card.value === 10 ? 'R' : card.value)));
+    const clickable = isPlayer ? 'player-card' : '';
     return `
-        <div class="card-scopa ${isPlayer ? 'player-card' : ''}" ${isPlayer ? `data-idx="${index}"` : ''}>
-            <div style="width: 100%; text-align: left; font-weight: 900; font-size: 14px;">${label}</div>
-            <div style="font-size: 28px;">${suit.icon}</div>
-            <div style="width: 100%; text-align: right; font-weight: 900; font-size: 14px; transform: rotate(180deg)">${label}</div>
+        <div class="card-scopa ${clickable}" ${isPlayer ? `data-idx="${index}"` : ''}>
+            <div style="width: 100%; text-align: left; font-weight: 900; font-size: 12px;">${label}</div>
+            <div style="font-size: 24px;">${suit.icon}</div>
+            <div style="width: 100%; text-align: right; font-weight: 900; font-size: 12px; transform: rotate(180deg)">${label}</div>
         </div>
     `;
 }
@@ -212,13 +193,6 @@ function findBestCapture(card, table) {
     for (let i = 0; i < table.length; i++) {
         for (let j = i + 1; j < table.length; j++) {
             if (table[i].value + table[j].value === card.value) return [table[i], table[j]];
-        }
-    }
-    for (let i = 0; i < table.length; i++) {
-        for (let j = i + 1; j < table.length; j++) {
-            for (let k = j + 1; k < table.length; k++) {
-                if (table[i].value + table[j].value + table[k].value === card.value) return [table[i], table[j], table[k]];
-            }
         }
     }
     return null;
@@ -272,11 +246,7 @@ function botLogic(state, container) {
 function triggerScopa(container) {
     const toast = container.querySelector('#scopa-toast');
     toast.style.display = 'block';
-    toast.classList.add('anim-pop');
-    setTimeout(() => {
-        toast.style.display = 'none';
-        toast.classList.remove('anim-pop');
-    }, 1200);
+    setTimeout(() => { toast.style.display = 'none'; }, 1200);
 }
 
 function finishMatch(state, container) {
@@ -287,7 +257,7 @@ function finishMatch(state, container) {
     }
     const pTotal = state.playerCaptured.length + (state.playerScopas * 5);
     const bTotal = state.botCaptured.length + (state.botScopas * 5);
-    const msg = pTotal >= bTotal ? "VITTORIA! 🏆" : "HA VINTO IL BOT! 🤖";
+    const msg = pTotal >= bTotal ? "VITTORIA! 🏆" : "SCONFITTA! 🤖";
     alert(`${msg}\n\nTu: ${state.playerCaptured.length} + ${state.playerScopas} Scope\nBot: ${state.botCaptured.length} + ${state.botScopas} Scope`);
     quitGame(container);
 }

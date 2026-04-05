@@ -1,15 +1,21 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
+/**
+ * GIOCO: BRISCOLA
+ * Versione ottimizzata per Mobile (iOS/Android)
+ * Tema: Amethyst Dark UI
+ */
+
 export function initBriscola(container) {
     updateSidebarContext("minigames");
 
-    // FIX: Pulizia scroll e configurazione mobile-friendly
+    // FIX: Configurazione viewport e blocco scroll per evitare rimbalzi elastici su iOS
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none'; 
-    document.body.style.backgroundColor = '#090a0f'; // Match sfondo globale
+    document.body.style.backgroundColor = '#090a0f';
 
     const SUITS = [
         { id: 'bastoni', icon: '🪵', color: '#00ffa3' },
@@ -34,24 +40,32 @@ export function initBriscola(container) {
 
     container.innerHTML = `
     <style>
+        /* Animazione d'ingresso fluida solo verticale */
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .briscola-wrapper { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif;
-            box-sizing: border-box; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            box-sizing: border-box; 
+            animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
         
         @media (min-width: 431px) {
             .briscola-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
 
+        /* Pulsante Esci */
         .btn-exit-game {
             position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px;
-            cursor: pointer; -webkit-tap-highlight-color: transparent; outline: none; transition: 0.2s;
+            cursor: pointer; outline: none; transition: 0.2s;
         }
-        .btn-exit-game:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .btn-exit-game:active { transform: scale(0.95); background: rgba(157, 78, 221, 0.2); }
         
         .score-widget { 
             position: absolute; top: calc(15px + env(safe-area-inset-top)); right: 15px; 
@@ -64,10 +78,11 @@ export function initBriscola(container) {
             width: 75px; height: 110px; border-radius: 12px; background: rgba(255,255,255,0.05); color: white; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; 
             border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; position: relative; cursor: pointer; text-align: center;
-            user-select: none; -webkit-tap-highlight-color: transparent; outline: none;
+            user-select: none;
         }
         .b-card.back { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; color: #9d4ede; }
         
+        .active-glow { position: relative; }
         .active-glow::after {
             content: ''; position: absolute; inset: -5px; border-radius: 20px;
             border: 2px solid #00ffa3; opacity: 0.5; animation: pulseGlow 1.5s infinite; pointer-events: none;
@@ -77,7 +92,7 @@ export function initBriscola(container) {
         .btn-start { 
             background: linear-gradient(45deg, #9d4ede, #ff416c); color: white; padding: 15px 40px; 
             border-radius: 15px; font-weight: 900; border: none; cursor: pointer; font-size: 1.2rem; 
-            text-transform: uppercase; -webkit-tap-highlight-color: transparent; outline: none;
+            text-transform: uppercase; outline: none; box-shadow: 0 10px 20px rgba(157, 78, 221, 0.3);
         }
         
         #player-side { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
@@ -112,16 +127,21 @@ export function initBriscola(container) {
     </div>
     `;
 
-    // Funzione centralizzata per uscire senza rompere lo scroll
     const quitGame = async () => {
+        // Ripristina lo scroll globale prima di uscire
         document.documentElement.style.overflow = '';
+        document.documentElement.style.overscrollBehavior = '';
         document.body.style.overflow = '';
+        document.body.style.overscrollBehavior = '';
         document.body.style.touchAction = '';
         document.body.style.position = '';
+        
         try {
+            // Import dinamico della lista minigiochi
             const { showMinigamesList } = await import('../../minigamelist.js');
             showMinigamesList(document.getElementById('app') || container);
         } catch (e) {
+            console.error("Errore durante l'uscita:", e);
             window.location.reload(); 
         }
     };
@@ -141,9 +161,12 @@ export function initBriscola(container) {
 
     const renderView = () => {
         if (!state.gameActive) return;
-        container.querySelector('#briscola-slot').innerHTML = state.briscola ? `<div class="b-card" style="transform: scale(0.8);">${getCardUI(state.briscola)}</div>` : '';
+        
+        const bSlot = container.querySelector('#briscola-slot');
+        bSlot.innerHTML = state.briscola ? `<div class="b-card" style="transform: scale(0.8); border-color:#9d4ede;">${getCardUI(state.briscola)}</div>` : '';
+        
         container.querySelector('#deck-visual').style.display = state.deck.length > 0 ? 'flex' : 'none';
-        container.querySelector('#deck-count').innerText = `MAZZO: ${state.deck.length}`;
+        container.querySelector('#deck-count').innerText = `CARTE: ${state.deck.length}`;
         
         const botSide = container.querySelector('#bot-side');
         botSide.innerHTML = state.players[1].map(() => `<div class="b-card back" style="transform: scale(0.85); margin: 0 -10px;"></div>`).join('');
@@ -153,12 +176,15 @@ export function initBriscola(container) {
         pSide.innerHTML = state.players[0].map((c, i) => `<div class="b-card" data-idx="${i}">${getCardUI(c)}</div>`).join('');
         pSide.classList.toggle('active-glow', state.turn === 0);
         
-        container.querySelector('#played-cards').innerHTML = state.table.map(t => `<div class="b-card">${getCardUI(t.card)}</div>`).join('');
+        container.querySelector('#played-cards').innerHTML = state.table.map(t => `<div class="b-card" style="cursor:default;">${getCardUI(t.card)}</div>`).join('');
         container.querySelector('#s0').innerText = state.scores[0];
         container.querySelector('#s1').innerText = state.scores[1];
 
         pSide.querySelectorAll('.b-card').forEach(card => {
-            card.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); };
+            card.onclick = (e) => { 
+                e.preventDefault();
+                if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); 
+            };
         });
     };
 
@@ -166,6 +192,7 @@ export function initBriscola(container) {
         state.isAnimating = true;
         state.table.push({ card: state.players[pIdx].splice(idx, 1)[0], owner: pIdx });
         renderView();
+
         if (state.table.length === 2) {
             setTimeout(resolveRound, 800);
         } else {
@@ -179,32 +206,69 @@ export function initBriscola(container) {
     const resolveRound = () => {
         const [t1, t2] = state.table;
         const bSuit = state.briscola?.suit || state.lastBriscolaSuit;
-        let winner = (t1.card.suit === t2.card.suit) ? (t1.card.rank > t2.card.rank ? t1.owner : t2.owner) : (t2.card.suit === bSuit ? t2.owner : (t1.card.suit === bSuit ? t1.owner : t1.owner));
+        
+        let winner;
+        if (t1.card.suit === t2.card.suit) {
+            winner = t1.card.rank > t2.card.rank ? t1.owner : t2.owner;
+        } else if (t2.card.suit === bSuit) {
+            winner = t2.owner;
+        } else if (t1.card.suit === bSuit) {
+            winner = t1.owner;
+        } else {
+            winner = t1.owner;
+        }
+
         state.scores[winner] += (t1.card.points + t2.card.points);
         state.table = [];
         
         setTimeout(() => {
             if (state.deck.length > 0) {
                 state.players[winner].push(state.deck.pop());
-                if (state.deck.length === 0) { state.players[1-winner].push(state.briscola); state.briscola = null; }
-                else state.players[1-winner].push(state.deck.pop());
+                if (state.deck.length === 0) {
+                    state.players[1-winner].push(state.briscola);
+                    state.briscola = null;
+                } else {
+                    state.players[1-winner].push(state.deck.pop());
+                }
             }
-            if (state.players[0].length === 0) { alert(state.scores[0] > 60 ? "VITTORIA!" : "SCONFITTA!"); return quitGame(); }
-            state.turn = winner; state.isAnimating = false; renderView(); if (state.turn === 1) setTimeout(() => playCard(0, 1), 800);
+
+            if (state.players[0].length === 0 && state.deck.length === 0) {
+                const msg = state.scores[0] > 60 ? "🏆 VITTORIA!" : (state.scores[0] === 60 ? "🤝 PAREGGIO!" : "💀 SCONFITTA!");
+                alert(`${msg}\nTu: ${state.scores[0]} - Bot: ${state.scores[1]}`);
+                return quitGame();
+            }
+
+            state.turn = winner;
+            state.isAnimating = false;
+            renderView();
+            if (state.turn === 1) setTimeout(() => playCard(0, 1), 800);
         }, 600);
     };
 
-    container.querySelector('#start-game-btn').onclick = () => {
+    container.querySelector('#start-game-btn').onclick = (e) => {
+        e.preventDefault();
         container.querySelector('#briscola-overlay').style.display = 'none';
         container.querySelector('#btn-exit-ingame').style.display = 'block';
         container.querySelector('#score-ui').style.display = 'block';
         container.querySelector('#bot-side').style.display = 'flex';
         container.querySelector('#mid-table').style.display = 'flex';
         container.querySelector('#player-side').style.display = 'flex';
-        state.deck = []; SUITS.forEach(s => VALUES.forEach(v => state.deck.push({ suit: s.id, ...v })));
-        state.deck.sort(() => Math.random() - 0.5);
-        for(let i=0; i<3; i++) { state.players[0].push(state.deck.pop()); state.players[1].push(state.deck.pop()); }
-        state.briscola = state.deck.pop(); state.lastBriscolaSuit = state.briscola.suit;
-        state.gameActive = true; renderView();
+
+        state.deck = [];
+        SUITS.forEach(s => VALUES.forEach(v => state.deck.push({ suit: s.id, ...v })));
+        
+        for (let i = state.deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [state.deck[i], state.deck[j]] = [state.deck[j], state.deck[i]];
+        }
+
+        for(let i=0; i<3; i++) {
+            state.players[0].push(state.deck.pop());
+            state.players[1].push(state.deck.pop());
+        }
+        state.briscola = state.deck.pop();
+        state.lastBriscolaSuit = state.briscola.suit;
+        state.gameActive = true;
+        renderView();
     };
 }
