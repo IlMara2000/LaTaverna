@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: STRATEGY (Chess & Checkers)
-// Versione Stabile 2.1 - Anti-Crash & Premium UI
+// Versione Stabile 2.2 - Premium UI Borderless
 // ==========================================
 
 export function initScacchi(container) {
@@ -16,7 +16,7 @@ export function initScacchi(container) {
     document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none'; // Previene lo scrolling quando si toccano i pezzi
     document.body.style.position = 'relative';
-    document.body.style.backgroundColor = '#090a0f'; 
+    document.body.style.backgroundColor = '#05010a'; 
 
     let state = {
         gameMode: 'chess', 
@@ -48,7 +48,7 @@ const quitGame = async (container) => {
     }
 };
 
-// --- 1. MENU DI CONFIGURAZIONE ---
+// --- 1. MENU DI CONFIGURAZIONE (BORDERLESS) ---
 function renderSetupMenu(container, state) {
     container.innerHTML = `
     <style>
@@ -57,35 +57,33 @@ function renderSetupMenu(container, state) {
             background: radial-gradient(circle at center, rgba(26,26,46,0.8) 0%, rgba(7,7,10,0.9) 100%); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             color: white; font-family: 'Poppins', sans-serif; 
-            padding: 20px; box-sizing: border-box;
+            padding: 20px; box-sizing: border-box; overflow: hidden;
         }
         @media (min-width: 431px) {
             .strategy-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
-        .setup-card { 
-            background: rgba(255,255,255,0.03); backdrop-filter: blur(15px);
-            padding: 25px; border-radius: 24px; border: 1px solid rgba(157,78,221,0.3);
-            width: 100%; text-align: center; box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .mode-toggle { display: flex; gap: 8px; margin: 20px 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 12px; }
-        .mode-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: transparent; color: white; font-weight: 600; font-size: 13px; outline: none; transition: 0.3s; }
-        .mode-btn.active { background: #9d4ede; box-shadow: 0 4px 15px rgba(157,78,221,0.4); }
-        .diff-btn { padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; font-size:10px; cursor: pointer; outline: none; transition: 0.2s; }
-        .diff-btn.active { background:rgba(157,78,221,0.2); border:1px solid #9d4ede; }
+        
+        .mode-toggle { display: flex; gap: 8px; margin: 20px 0; background: rgba(0,0,0,0.4); padding: 6px; border-radius: 14px; width: 100%; max-width: 350px; }
+        .mode-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; cursor: pointer; background: transparent; color: rgba(255,255,255,0.5); font-weight: 800; font-size: 13px; outline: none; transition: 0.3s; letter-spacing: 1px; }
+        .mode-btn.active { background: #9d4ede; color: white; box-shadow: 0 4px 15px rgba(157,78,221,0.4); }
+        
+        .diff-btn { padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 800; cursor: pointer; outline: none; transition: 0.2s; letter-spacing: 1px; }
+        .diff-btn.active { background: rgba(157,78,221,0.2); border: 1px solid #9d4ede; color: white; box-shadow: 0 4px 15px rgba(157,78,221,0.2); }
     </style>
 
     <div class="strategy-wrapper fade-in">
-        <div class="setup-card">
-            <h1 class="main-title" style="margin-bottom: 5px;">STRATEGY</h1>
-            <p style="opacity:0.5; font-size:11px; margin-bottom:25px; letter-spacing: 1px;">SFIDA L'INTELLIGENZA ARTIFICIALE</p>
+        
+        <div style="width: 100%; max-width: 350px; display: flex; flex-direction: column; align-items: center;">
+            <h1 class="main-title" style="margin-bottom: 5px; font-size: 3rem;">STRATEGY</h1>
+            <p style="opacity:0.5; font-size:11px; margin-bottom:30px; letter-spacing: 2px;">SFIDA L'INTELLIGENZA ARTIFICIALE</p>
             
             <div class="mode-toggle">
                 <button class="mode-btn ${state.gameMode === 'chess' ? 'active' : ''}" id="btn-chess">SCACCHI</button>
                 <button class="mode-btn ${state.gameMode === 'checkers' ? 'active' : ''}" id="btn-checkers">DAMA</button>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
+            <div style="width: 100%; margin-bottom: 30px;">
+                <p style="text-align: center; font-size: 10px; opacity: 0.4; letter-spacing: 2px; margin-bottom: 10px;">DIFFICOLTÀ BOT</p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                     <button class="diff-btn ${state.difficulty === 1 ? 'active' : ''}" data-diff="1">EASY</button>
                     <button class="diff-btn ${state.difficulty === 2 ? 'active' : ''}" data-diff="2">NORMAL</button>
@@ -93,9 +91,10 @@ function renderSetupMenu(container, state) {
                 </div>
             </div>
             
-            <button class="btn-primary" id="start-game" style="background: #00ffa3; color: black; border: none; margin-bottom: 0; box-shadow: 0 5px 15px rgba(0, 255, 163, 0.3);">GIOCA ORA</button>
+            <button class="btn-primary" id="start-game" style="background: linear-gradient(45deg, #00ffa3, #00d2ff); color: black; border: none; margin-bottom: 15px; width: 100%;">GIOCA ORA</button>
+            <button id="btn-quit-setup" class="btn-back-glass" style="width: 100%; border-left: none;">← TORNA ALLA LIBRERIA</button>
         </div>
-        <button id="btn-quit-setup" class="btn-back-glass" style="margin-top: 20px;">← TORNA ALLA LIBRERIA</button>
+
     </div>
     `;
 
