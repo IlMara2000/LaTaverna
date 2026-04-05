@@ -4,7 +4,7 @@ import { supabase } from '../../../services/supabase.js';
  * Gestisce l'invio dell'utente al portale Discord OAuth
  */
 export function initDiscord() {
-    const btn = document.getElementById('login-discord'); // ID aggiornato per coerenza con Login.js
+    const btn = document.getElementById('login-discord'); // ID aggiornato per coerenza con login.js
     if (!btn) return;
 
     btn.onclick = async () => {

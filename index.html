@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-    <meta name="theme-color" content="#05020a">
+    
+    <meta name="theme-color" content="#05010a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     
     <title>LA TAVERNA 🍷</title>
     
@@ -13,54 +15,91 @@
     <link rel="shortcut icon" href="/assets/favicon.ico">
     <link rel="apple-touch-icon" href="/assets/logo.png">
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link rel="stylesheet" href="/src/styles/global.css">
 
     <style>
         :root { 
-            --bg: #05020a; 
+            --bg-deep: #05010a; 
             --amethyst: #7b2cbf;
             --amethyst-bright: #9d4ede; 
-            --amethyst-glow: rgba(157, 78, 221, 0.5);
+            --amethyst-glow: rgba(157, 78, 221, 0.4);
         }
 
-        /* FIX: Reset globale per outline e highlight da tap (iOS/Android) */
+        /* RESET AGGRESSIVO ANTI-CRASH */
         * {
             -webkit-tap-highlight-color: transparent !important;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
         }
 
         html, body { 
-            background-color: var(--bg) !important; 
+            background-color: var(--bg-deep) !important; 
             margin: 0; padding: 0; 
             height: 100%; width: 100%;
-            overflow: hidden; /* Blocca lo scroll globale, lo gestiamo nei container */
+            /* Blocca ogni movimento involontario */
+            overflow: hidden !important; 
+            position: fixed; /* Impedisce lo scroll dell'intera pagina su iOS */
             color: white;
             font-family: 'Poppins', sans-serif;
             -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
         }
 
-        #ui { width: 100%; height: 100%; position: relative; }
+        /* UI Wrapper per contenere i componenti */
+        #ui { 
+            width: 100%; 
+            height: 100dvh; 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
 
-        /* LOADER PULSANTE */
+        /* LOADER PROFESSIONALE */
         #app-loader {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; width: 100%; background: var(--bg);
-            position: fixed; top: 0; left: 0; z-index: 10001;
+            height: 100dvh; width: 100%; background: var(--bg-deep);
+            position: fixed; top: 0; left: 0; z-index: 99999;
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
         }
 
         .pulse-logo {
-            width: 80px;
-            animation: pulse 1.5s infinite ease-in-out;
-            filter: drop-shadow(0 0 15px var(--amethyst-glow));
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+            animation: amethystPulse 2s infinite ease-in-out;
+            filter: drop-shadow(0 0 20px var(--amethyst-glow));
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.6; }
-            50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 25px var(--amethyst-bright)); }
-            100% { transform: scale(0.95); opacity: 0.6; }
+        @keyframes amethystPulse {
+            0%, 100% { transform: scale(0.92); opacity: 0.6; filter: drop-shadow(0 0 10px var(--amethyst-glow)); }
+            50% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 30px var(--amethyst-bright)); }
         }
 
-        .fade-out { opacity: 0; pointer-events: none; transition: 0.5s; }
+        .loader-text {
+            margin-top: 25px; 
+            font-size: 11px; 
+            letter-spacing: 4px; 
+            opacity: 0.4; 
+            text-transform: uppercase; 
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Nascondi scrollbar per pulizia totale */
         ::-webkit-scrollbar { display: none; }
+
+        /* Fix per i contenuti dell'app */
+        #app {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto !important; /* Consente lo scroll solo qui dentro */
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
 </head>
 <body>
@@ -70,22 +109,29 @@
 
         <div id="sidebar-container"></div>
 
-        <div id="app"></div>
+        <main id="app"></main>
 
         <div id="app-loader">
-            <img src="/assets/logo.png" class="pulse-logo" alt="Caricamento...">
-            <p style="margin-top: 20px; font-size: 10px; letter-spacing: 3px; opacity: 0.5; text-transform: uppercase;">
-                Chiamando l'oste...
-            </p>
+            <img src="/assets/logo.png" class="pulse-logo" alt="La Taverna">
+            <p class="loader-text">Chiamando l'oste...</p>
         </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>
 
     <script>
-        // Fix per evitare lo scroll elastico fastidioso su iOS
-        document.body.addEventListener('touchmove', function(e) {
+        // LOCK TOTALE DELLO SCROLL ORIZZONTALE (JS FALLBACK)
+        window.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // Impedisce il trascinamento della pagina oltre i limiti (Glow bianco iOS)
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.id === 'app' || e.target.closest('#app')) {
+                // Lascia scorrere dentro l'app
+            } else {
+                e.preventDefault();
+            }
         }, { passive: false });
     </script>
 </body>
