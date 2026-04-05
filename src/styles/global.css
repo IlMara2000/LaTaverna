@@ -1,200 +1,251 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (RESTORED & FIXED VER. 5.2)
+   LA TAVERNA - AMETHYST DARK UI (VER. 5.3 PREMIUM)
    ========================================= */
 
-   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
 
-   :root {
-       --bg-dark: radial-gradient(circle at 50% -20%, #2a124d 0%, #05010a 80%);
-       --amethyst-glow: rgba(157, 78, 221, 0.5);
-       --amethyst-bright: #9d4ede;
-       --amethyst-light: #c77dff;
-       --glass-border: rgba(255, 255, 255, 0.1);
-       --glass-surface: rgba(255, 255, 255, 0.03);
-       --text-primary: #ffffff;
-       --text-secondary: #b79ced;
-       --danger: #ff4444;
-       --accent-gradient: linear-gradient(135deg, #9d4ede 0%, #5a189a 100%);
-   }
-   
-   /* 1. RESET & VERTICAL LOCK (ANTI-RIMBALZO) */
-   html, body {
-       height: 100%;
-       margin: 0;
-       padding: 0;
-       background: #05010a; 
-       background: var(--bg-dark) no-repeat fixed;
-       color: var(--text-primary);
-       font-family: 'Poppins', sans-serif;
-       
-       /* FIX: Blocca categoricamente lo scroll laterale */
-       overflow-x: hidden !important;
-       width: 100vw;
-       position: relative;
-       
-       /* Uccide il pull-to-refresh e il rimbalzo elastico di iOS */
-       overscroll-behavior-y: none !important;
-       overscroll-behavior-x: none !important;
-       -webkit-tap-highlight-color: transparent;
-   }
-   
-   /* 2. SAFE AREA & APP CONTAINER */
-   #app {
-       min-height: 100dvh;
-       width: 100%;
-       /* Gestione dinamica degli spazi per Notch e Home Bar */
-       padding: env(safe-area-inset-top, 20px) 20px calc(100px + env(safe-area-inset-bottom)) 20px;
-       box-sizing: border-box;
-       display: flex;
-       flex-direction: column;
-       overflow-x: hidden !important;
-   }
-   
-   /* 3. LOGO (Centrato e stabile) */
-   .nav-logo-right {
-       position: fixed;
-       top: calc(15px + env(safe-area-inset-top));
-       right: 20px;
-       width: 45px;
-       height: 45px;
-       z-index: 1500;
-       filter: drop-shadow(0 0 10px var(--amethyst-bright));
-       animation: floatLogo 4s ease-in-out infinite;
-   }
-   
-   @keyframes floatLogo {
-       0%, 100% { transform: translateY(0); }
-       50% { transform: translateY(-5px); }
-   }
-   
-   /* 4. ANIMAZIONE CARD (ONLY VERTICAL - NO LATERAL SHOTS) */
-   @keyframes cardEntrance {
-       from { 
-           opacity: 0; 
-           transform: translateY(25px) scale(0.98); 
-           filter: blur(5px);
-       }
-       to { 
-           opacity: 1; 
-           transform: translateY(0) scale(1);
-           filter: blur(0);
-       }
-   }
-   
-   /* 5. GRID & CARD SYSTEM */
-   .grid-layout {
-       display: grid;
-       grid-template-columns: repeat(2, 1fr);
-       gap: 14px;
-       margin-top: 20px;
-       width: 100%;
-   }
-   
-   .game-card, .action-card {
-       background: var(--glass-surface);
-       backdrop-filter: blur(15px);
-       -webkit-backdrop-filter: blur(15px);
-       border: 1px solid var(--glass-border);
-       border-radius: 24px;
-       padding: 24px 12px;
-       display: flex;
-       flex-direction: column;
-       align-items: center;
-       justify-content: center;
-       gap: 10px;
-       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-       text-align: center;
-       /* Animazione a cascata */
-       animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-   }
-   
-   .game-card:active, .action-card:active {
-       transform: scale(0.94);
-       background: rgba(157, 78, 221, 0.1);
-       border-color: var(--amethyst-light);
-   }
-   
-   /* Delays per le card */
-   .game-card:nth-child(1) { animation-delay: 0.1s; }
-   .game-card:nth-child(2) { animation-delay: 0.15s; }
-   .game-card:nth-child(3) { animation-delay: 0.2s; }
-   .game-card:nth-child(4) { animation-delay: 0.25s; }
-   
-   /* 6. TYPOGRAPHY */
-   .main-title {
-       font-family: 'Montserrat', sans-serif;
-       font-weight: 900;
-       font-size: 2.2rem;
-       text-align: center;
-       text-transform: uppercase;
-       background: linear-gradient(180deg, #ffffff 0%, var(--text-secondary) 100%);
-       -webkit-background-clip: text;
-       background-clip: text;
-       -webkit-text-fill-color: transparent;
-       filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.3));
-   }
-   
-   .text-amethyst {
-       color: var(--amethyst-bright);
-       text-shadow: 0 0 15px var(--amethyst-glow);
-   }
-   
-   /* 7. SIDEBAR & TRIGGER (Blindata) */
-   .sidebar-glass {
-       position: fixed;
-       right: -110%;
-       top: 0;
-       width: 280px;
-       height: 100dvh;
-       background: rgba(8, 4, 18, 0.98);
-       backdrop-filter: blur(40px);
-       -webkit-backdrop-filter: blur(40px);
-       z-index: 2000;
-       transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-       padding: calc(60px + env(safe-area-inset-top)) 20px;
-       border-left: 1px solid var(--glass-border);
-       box-sizing: border-box;
-   }
-   
-   .sidebar-glass.active { right: 0; }
-   
-   .floating-trigger {
-       position: fixed;
-       bottom: calc(25px + env(safe-area-inset-bottom));
-       right: 20px;
-       width: 62px;
-       height: 62px;
-       border-radius: 20px;
-       background: var(--accent-gradient);
-       z-index: 2100;
-       display: flex;
-       flex-direction: column;
-       justify-content: center;
-       align-items: center;
-       gap: 4px;
-       box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
-       border: 1px solid rgba(255, 255, 255, 0.1);
-   }
-   
-   .nav-bar {
-       width: 24px;
-       height: 3px;
-       background: white;
-       border-radius: 10px;
-   }
-   
-   /* 8. FIX SCROLLBARS */
-   ::-webkit-scrollbar { width: 0px; background: transparent; }
-   
-   /* 9. INPUT & SELECT SERI */
-   input[type="text"], select {
-       width: 100%;
-       background: rgba(255,255,255,0.05);
-       border: 1px solid var(--glass-border);
-       border-radius: 16px;
-       padding: 14px;
-       color: white;
-       font-size: 16px; /* Evita lo zoom automatico su iPhone */
-       font-family: 'Poppins', sans-serif;
-       outline: none;
-   }
+:root {
+    --bg-dark: radial-gradient(circle at 50% -20%, #2a124d 0%, #05010a 80%);
+    --amethyst-glow: rgba(157, 78, 221, 0.5);
+    --amethyst-bright: #9d4ede;
+    --amethyst-light: #c77dff;
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-surface: rgba(255, 255, 255, 0.03);
+    --text-primary: #ffffff;
+    --text-secondary: #b79ced;
+    --danger: #ff4444;
+    --accent-gradient: linear-gradient(135deg, #9d4ede 0%, #5a189a 100%);
+}
+
+/* 1. RESET & FULL-SCREEN LOCK (ANTI-RIMBALZO) */
+html, body {
+    height: 100%;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    background: #05010a; 
+    background: var(--bg-dark) no-repeat fixed;
+    color: var(--text-primary);
+    font-family: 'Poppins', sans-serif;
+    
+    /* FIX CRITICO: Incolla l'app allo schermo */
+    overflow: hidden !important; 
+    position: fixed;
+    top: 0;
+    left: 0;
+    
+    /* Uccide il pull-to-refresh e il rimbalzo elastico di iOS */
+    overscroll-behavior: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* FIX GLOBALE INTERAZIONI */
+button, a, .game-card, .action-card, .nav-logo-right {
+    outline: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* 2. SAFE AREA & APP CONTAINER */
+#app {
+    height: 100dvh; /* Altezza esatta dello schermo mobile */
+    width: 100vw;
+    overflow-y: auto !important; /* Lo scroll avviene SOLO qui dentro */
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    
+    /* Gestione dinamica degli spazi per Notch e Home Bar */
+    padding: env(safe-area-inset-top, 20px) 20px calc(100px + env(safe-area-inset-bottom)) 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 3. LOGO (Centrato e stabile) */
+.nav-logo-right {
+    position: fixed;
+    top: calc(15px + env(safe-area-inset-top));
+    right: 20px;
+    width: 45px;
+    height: 45px;
+    z-index: 1500;
+    filter: drop-shadow(0 0 10px var(--amethyst-bright));
+    animation: floatLogo 4s ease-in-out infinite;
+}
+
+@keyframes floatLogo {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); filter: drop-shadow(0 0 15px var(--amethyst-light)); }
+}
+
+/* 4. ANIMAZIONE CARD (ONLY VERTICAL - NO LATERAL SHOTS) */
+@keyframes cardEntrance {
+    from { 
+        opacity: 0; 
+        transform: translateY(25px) scale(0.98); 
+        filter: blur(5px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* 5. GRID & CARD SYSTEM */
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.game-card, .action-card {
+    background: var(--glass-surface);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 24px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    text-align: center;
+    animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.game-card:active, .action-card:active {
+    transform: scale(0.94);
+    background: rgba(157, 78, 221, 0.1);
+    border-color: var(--amethyst-light);
+}
+
+/* Delays per le card */
+.game-card:nth-child(1) { animation-delay: 0.1s; }
+.game-card:nth-child(2) { animation-delay: 0.15s; }
+.game-card:nth-child(3) { animation-delay: 0.2s; }
+.game-card:nth-child(4) { animation-delay: 0.25s; }
+
+/* 6. TYPOGRAPHY */
+.main-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 2.2rem;
+    text-align: center;
+    text-transform: uppercase;
+    background: linear-gradient(180deg, #ffffff 0%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.3));
+}
+
+.text-amethyst {
+    color: var(--amethyst-bright);
+    text-shadow: 0 0 15px var(--amethyst-glow);
+}
+
+/* 7. SIDEBAR & TRIGGER (Blindata) */
+.sidebar-glass {
+    position: fixed;
+    right: -110%;
+    top: 0;
+    width: 290px;
+    height: 100dvh;
+    background: rgba(5, 2, 10, 0.85); /* Leggermente più scuro per contrasto */
+    backdrop-filter: blur(40px) saturate(150%);
+    -webkit-backdrop-filter: blur(40px) saturate(150%);
+    z-index: 2000;
+    transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: calc(60px + env(safe-area-inset-top)) 20px;
+    border-left: 1px solid var(--glass-border);
+    box-sizing: border-box;
+    box-shadow: -15px 0 40px rgba(0,0,0,0.6);
+}
+
+.sidebar-glass.active { right: 0; }
+
+.floating-trigger {
+    position: fixed;
+    bottom: calc(25px + env(safe-area-inset-bottom));
+    right: 20px;
+    width: 62px;
+    height: 62px;
+    border-radius: 20px;
+    background: var(--accent-gradient);
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-bar {
+    width: 24px;
+    height: 3px;
+    background: white;
+    border-radius: 10px;
+}
+
+/* 8. PULSANTI PREMIUM (SIDEBAR & APP) */
+.btn-back-glass, .btn-glass {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    border-left: 3px solid transparent; /* Predispone lo spazio per l'accento */
+    color: white;
+    padding: 16px 20px;
+    border-radius: 16px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-back-glass:active, .btn-glass:active {
+    transform: scale(0.96);
+    background: rgba(157, 78, 221, 0.15);
+    border-color: var(--amethyst-light);
+    border-left: 3px solid var(--amethyst-bright);
+    box-shadow: 0 0 20px rgba(157, 78, 221, 0.4);
+}
+
+/* 9. FIX SCROLLBARS */
+::-webkit-scrollbar { width: 0px; background: transparent; }
+
+/* 10. INPUT & SELECT SERI */
+input[type="text"], select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 14px;
+    color: white;
+    font-size: 16px; /* Evita lo zoom automatico su iPhone */
+    font-family: 'Poppins', sans-serif;
+    outline: none;
+    transition: 0.3s;
+}
+
+input[type="text"]:focus, select:focus {
+    border-color: var(--amethyst-bright);
+    background: rgba(157, 78, 221, 0.05);
+    box-shadow: 0 0 15px rgba(157, 78, 221, 0.2);
+}
