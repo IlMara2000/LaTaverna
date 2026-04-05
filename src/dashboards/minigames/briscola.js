@@ -90,10 +90,12 @@ export function initBriscola(container) {
     <div class="briscola-wrapper fade-in">
         
         <div id="briscola-overlay" style="position:absolute; inset:0; background:rgba(5, 2, 10, 0.95); backdrop-filter: blur(10px); z-index:11000; display:flex; align-items:center; justify-content:center; flex-direction:column; padding: 20px; box-sizing: border-box;">
+            
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">BRISCOLA</h1>
             
-            <button class="btn-primary" id="start-game-btn" style="max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA ORA</button>
-            <button id="btn-quit-start" class="btn-back-glass" style="max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
+            <button class="btn-primary" id="start-game-btn" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA ORA</button>
+            <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
+            
         </div>
 
         <button class="btn-exit-game" id="btn-exit-ingame" style="display: none;">← ESCI</button>
