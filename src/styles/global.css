@@ -1,5 +1,5 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 5.3 PREMIUM)
+   LA TAVERNA - AMETHYST DARK UI (VER. 5.4 PREMIUM ULTIMATE)
    ========================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
@@ -79,18 +79,19 @@ button, a, .game-card, .action-card, .nav-logo-right {
     50% { transform: translateY(-5px); filter: drop-shadow(0 0 15px var(--amethyst-light)); }
 }
 
-/* 4. ANIMAZIONE CARD (ONLY VERTICAL - NO LATERAL SHOTS) */
+/* 4. ANIMAZIONI GLOBALI (ONLY VERTICAL - NO LATERAL SHOTS) */
 @keyframes cardEntrance {
-    from { 
-        opacity: 0; 
-        transform: translateY(25px) scale(0.98); 
-        filter: blur(5px);
-    }
-    to { 
-        opacity: 1; 
-        transform: translateY(0) scale(1);
-        filter: blur(0);
-    }
+    from { opacity: 0; transform: translateY(25px) scale(0.98); filter: blur(5px); }
+    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeInUp 0.5s ease-out forwards;
 }
 
 /* 5. GRID & CARD SYSTEM */
@@ -117,6 +118,7 @@ button, a, .game-card, .action-card, .nav-logo-right {
     transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     text-align: center;
     animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    cursor: pointer;
 }
 
 .game-card:active, .action-card:active {
@@ -130,6 +132,8 @@ button, a, .game-card, .action-card, .nav-logo-right {
 .game-card:nth-child(2) { animation-delay: 0.15s; }
 .game-card:nth-child(3) { animation-delay: 0.2s; }
 .game-card:nth-child(4) { animation-delay: 0.25s; }
+.game-card:nth-child(5) { animation-delay: 0.3s; }
+.game-card:nth-child(6) { animation-delay: 0.35s; }
 
 /* 6. TYPOGRAPHY */
 .main-title {
@@ -150,14 +154,14 @@ button, a, .game-card, .action-card, .nav-logo-right {
     text-shadow: 0 0 15px var(--amethyst-glow);
 }
 
-/* 7. SIDEBAR & TRIGGER (Blindata) */
+/* 7. SIDEBAR & OVERLAY (Blindata) */
 .sidebar-glass {
     position: fixed;
     right: -110%;
     top: 0;
     width: 290px;
     height: 100dvh;
-    background: rgba(5, 2, 10, 0.85); /* Leggermente più scuro per contrasto */
+    background: rgba(5, 2, 10, 0.85);
     backdrop-filter: blur(40px) saturate(150%);
     -webkit-backdrop-filter: blur(40px) saturate(150%);
     z-index: 2000;
@@ -170,6 +174,7 @@ button, a, .game-card, .action-card, .nav-logo-right {
 
 .sidebar-glass.active { right: 0; }
 
+/* 8. TRIGGER DINAMICO & NAV BARS (HAMBURGER -> X) */
 .floating-trigger {
     position: fixed;
     bottom: calc(25px + env(safe-area-inset-bottom));
@@ -183,24 +188,39 @@ button, a, .game-card, .action-card, .nav-logo-right {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+}
+
+.floating-trigger.is-active {
+    background: var(--danger) !important;
+    transform: rotate(180deg);
+    box-shadow: 0 0 30px rgba(255, 68, 68, 0.6);
+    border-color: rgba(255, 68, 68, 0.4);
 }
 
 .nav-bar {
-    width: 24px;
+    width: 26px;
     height: 3px;
     background: white;
     border-radius: 10px;
+    transition: all 0.4s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+    transform-origin: center;
 }
 
-/* 8. PULSANTI PREMIUM (SIDEBAR & APP) */
-.btn-back-glass, .btn-glass {
+.floating-trigger.is-active .nav-bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.floating-trigger.is-active .nav-bar:nth-child(2) { opacity: 0; transform: scale(0.2); }
+.floating-trigger.is-active .nav-bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+/* 9. PULSANTI PREMIUM (SIDEBAR & APP) */
+.btn-back-glass, .btn-glass, .btn-primary {
     width: 100%;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--glass-border);
-    border-left: 3px solid transparent; /* Predispone lo spazio per l'accento */
+    border-left: 3px solid transparent; 
     color: white;
     padding: 16px 20px;
     border-radius: 16px;
@@ -219,7 +239,7 @@ button, a, .game-card, .action-card, .nav-logo-right {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-.btn-back-glass:active, .btn-glass:active {
+.btn-back-glass:active, .btn-glass:active, .btn-primary:active {
     transform: scale(0.96);
     background: rgba(157, 78, 221, 0.15);
     border-color: var(--amethyst-light);
@@ -227,10 +247,10 @@ button, a, .game-card, .action-card, .nav-logo-right {
     box-shadow: 0 0 20px rgba(157, 78, 221, 0.4);
 }
 
-/* 9. FIX SCROLLBARS */
+/* 10. FIX SCROLLBARS */
 ::-webkit-scrollbar { width: 0px; background: transparent; }
 
-/* 10. INPUT & SELECT SERI */
+/* 11. INPUT & SELECT SERI */
 input[type="text"], select {
     width: 100%;
     background: rgba(255,255,255,0.05);
@@ -238,10 +258,11 @@ input[type="text"], select {
     border-radius: 16px;
     padding: 14px;
     color: white;
-    font-size: 16px; /* Evita lo zoom automatico su iPhone */
+    font-size: 16px; 
     font-family: 'Poppins', sans-serif;
     outline: none;
     transition: 0.3s;
+    box-sizing: border-box;
 }
 
 input[type="text"]:focus, select:focus {
