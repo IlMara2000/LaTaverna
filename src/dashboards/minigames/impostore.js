@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: IMPOSTORE (Local Party Mode)
-// Versione Stabile 2.1 - Anti-Crash & Premium UI
+// Versione Stabile 2.2 - Premium UI Borderless
 // ==========================================
 
 let gameData = {
@@ -28,12 +28,12 @@ export function initImpostore(container) {
     
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
     
-    // FIX: Configurazione Scroll Mobile (Solo verticale)
+    // FIX: Configurazione Scroll Mobile
     document.documentElement.style.overflowX = 'hidden';
     document.body.style.overflowX = 'hidden';
-    document.body.style.overflowY = 'auto';
+    document.body.style.overflowY = 'auto'; // Consente scroll verticale per gli input
     document.body.style.position = 'relative';
-    document.body.style.touchAction = 'pan-y'; // Permette solo lo scroll verticale
+    document.body.style.touchAction = 'pan-y'; 
     document.body.style.overscrollBehavior = 'none';
     document.body.style.backgroundColor = '#05010a'; 
     window.scrollTo(0, 0);
@@ -58,8 +58,9 @@ const quitGame = async (container) => {
 function createPlayerInputHTML(value = "", index) {
     return `
         <div class="player-input-wrapper fade-in" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 12px; animation-duration: 0.3s;">
-            <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255,65,108,0.3); color: #ff416c; width: 48px; height: 48px; border-radius: 16px; cursor: pointer; font-weight: bold; transition: 0.2s;">✕</button>
+            <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
+                   style="flex: 1; padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px; font-family: 'Poppins', sans-serif;">
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255,65,108,0.3); color: #ff416c; width: 48px; height: 48px; border-radius: 14px; cursor: pointer; font-weight: bold; transition: 0.2s;">✕</button>
         </div>
     `;
 }
@@ -74,11 +75,6 @@ function renderSetup(container) {
                 display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
                 overflow-x: hidden; min-height: 80vh; justify-content: center;
             }
-            .setup-card { 
-                background: var(--glass-surface); backdrop-filter: blur(15px); padding: 25px; 
-                border-radius: 24px; border: 1px solid var(--glass-border); margin-bottom: 20px; 
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            }
             .config-row { 
                 display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; 
                 background: rgba(255,255,255,0.02); padding: 12px 15px; border-radius: 16px; 
@@ -87,16 +83,16 @@ function renderSetup(container) {
             .config-row select { 
                 width: 60px; padding: 5px; background: transparent; border: none; 
                 color: var(--amethyst-bright); font-weight: 900; font-size: 1.1rem; text-align: right; 
-                box-shadow: none; 
+                box-shadow: none; outline: none;
             }
             .config-row select:focus { background: transparent; box-shadow: none; border: none; }
         </style>
 
         <div class="impostore-wrapper fade-in">
             <h1 class="main-title" style="margin-bottom: 5px;">IMPOSTORE</h1>
-            <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 25px; letter-spacing: 2px;">LOCAL PARTY MODE</p>
+            <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 30px; letter-spacing: 2px;">LOCAL PARTY MODE</p>
 
-            <div class="setup-card">
+            <div style="width: 100%;">
                 <div class="config-row">
                     <span style="font-weight: 600; font-size: 0.9rem;">🕵️ Impostori</span>
                     <select id="select-impostors"><option value="1">1</option><option value="2">2</option></select>
@@ -112,7 +108,7 @@ function renderSetup(container) {
                 
                 <button id="add-player" style="background: transparent; border: 1px dashed rgba(157, 78, 221, 0.4); color: var(--amethyst-light); padding: 14px; border-radius: 16px; cursor: pointer; width: 100%; margin: 10px 0 25px 0; font-size: 11px; font-weight: 800; letter-spacing: 1px; transition: 0.2s;">+ AGGIUNGI GIOCATORE</button>
                 
-                <button id="start-game" class="btn-primary" style="margin-bottom: 0;">INIZIA PARTITA</button>
+                <button id="start-game" class="btn-primary" style="margin-bottom: 20px;">INIZIA PARTITA</button>
             </div>
             
             <button id="btn-quit-setup" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
@@ -192,6 +188,7 @@ function renderReveal(container) {
         }
         
         this.style.borderColor = color;
+        this.style.background = `${color}10`; // Leggero tint di colore
         this.style.boxShadow = `0 0 20px ${color}40, inset 0 0 20px ${color}20`;
         container.querySelector('#word-text').innerHTML = content;
         
@@ -236,7 +233,7 @@ function renderGameField(container) {
             const p = gameData.players[parseInt(btn.getAttribute('data-index'))];
             alert(`${p.name} era: ${p.role.toUpperCase()}`);
             btn.style.opacity = '0.3';
-            btn.style.pointerEvents = 'none'; // Evita doppi tocchi che causavano bug in passato
+            btn.style.pointerEvents = 'none'; // Evita doppi tocchi
         };
     });
     
@@ -245,7 +242,7 @@ function renderGameField(container) {
 
 function renderResult(container) {
     const summary = gameData.players.map(p => `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
             <span style="font-weight: 700;">${p.name}</span> 
             <b style="color:${p.role === 'civil' ? '#00d2ff' : (p.role === 'impostor' ? '#ff416c' : '#ffbd00')}">${p.role.toUpperCase()}</b>
         </div>
@@ -256,7 +253,7 @@ function renderResult(container) {
         <div class="fade-in" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 80vh;">
             <h2 class="main-title" style="font-size: 2.8rem; margin-bottom: 30px;">RISULTATI</h2>
             
-            <div class="setup-card" style="width:100%; text-align: left; padding: 25px;">
+            <div style="background: var(--glass-surface); border: 1px solid var(--glass-border); border-radius: 20px; width:100%; text-align: left; padding: 25px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
                 ${summary}
                 
                 <div style="height: 1px; background: var(--glass-border); margin: 20px 0;"></div>
@@ -271,7 +268,7 @@ function renderResult(container) {
                 </div>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
                 <button id="replay" class="btn-primary" style="background: linear-gradient(45deg, #00ffa3, #00d2ff); color: black; border: none;">NUOVO ROUND</button>
                 <button id="btn-quit-end" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
             </div>
