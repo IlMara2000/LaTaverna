@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 /**
  * GIOCO: BURRACO
- * Versione Stabile 2.0 - Anti-Crash & Vertical Lock (Amethyst 5.4)
+ * Versione Stabile 2.2 - Premium Amethyst 5.4 UI
  */
 
 export function initBurraco(container) {
@@ -14,8 +14,9 @@ export function initBurraco(container) {
     document.body.style.overflowX = 'hidden';
     document.body.style.overflowY = 'hidden'; // Blocco totale per il tavolo da gioco
     document.body.style.position = 'relative';
-    document.body.style.touchAction = 'none'; // Fondamentale: impedisce che toccando le carte si muova la pagina
-    document.body.style.backgroundColor = '#090a0f'; 
+    document.body.style.touchAction = 'none'; // Impedisce che toccando le carte si muova la pagina
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.backgroundColor = '#05010a'; 
     window.scrollTo(0, 0);
 
     renderSelectionMenu(container);
@@ -28,6 +29,7 @@ const quitGame = async (container) => {
     document.body.style.overflowX = '';
     document.body.style.touchAction = '';
     document.body.style.position = '';
+    document.body.style.overscrollBehavior = '';
     document.body.style.backgroundColor = '';
     
     try {
@@ -39,36 +41,26 @@ const quitGame = async (container) => {
     }
 };
 
-// --- 1. SELEZIONE MODALITÀ (STILE MOBILE) ---
+// --- 1. SELEZIONE MODALITÀ (STILE PREMIUM) ---
 function renderSelectionMenu(container) {
     container.innerHTML = `
     <style>
         .burraco-start-wrapper { 
-            width:100%; max-width:430px; height:100dvh; margin: 0 auto;
-            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; color:white;
-            /* Usa l'animazione globale del nuovo CSS */
-            animation: fadeInUpOnly 0.6s ease-out forwards;
+            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; 
+            color: white; padding: 20px; box-sizing: border-box; overflow-x: hidden;
             background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
-            padding: 20px; box-sizing: border-box; overflow-x: hidden;
         }
-        
         @media (min-width: 431px) {
             .burraco-start-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
-
-        .mode-btn { 
-            width: 100%; max-width: 280px; padding:18px; border-radius:16px; border:1px solid #9d4ede; 
-            background:rgba(157,78,221,0.1); color:white; font-size:16px; font-weight:900; 
-            cursor:pointer; transition:0.3s; text-transform:uppercase; 
-            outline: none; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.2);
-        }
-        .mode-btn:active { background:#9d4ede; transform:scale(0.95); }
     </style>
     
-    <div class="burraco-start-wrapper">
-        <h1 style="margin-bottom:30px; letter-spacing:5px; font-family:'Montserrat'; font-size:2.5rem; background: linear-gradient(135deg, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">BURRACO</h1>
-        <button class="mode-btn" id="mode-2">GIOCA 1 VS 1</button>
-        <button id="btn-quit-start" class="btn-back-glass" style="max-width: 280px; margin-top: 20px; border-left: none;">← TORNA ALLA LIBRERIA</button>
+    <div class="burraco-start-wrapper fade-in">
+        <h1 class="main-title" style="margin-bottom: 40px; font-size: 3rem; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">BURRACO</h1>
+        
+        <button class="btn-primary" id="mode-2" style="max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA 1 VS 1</button>
+        <button id="btn-quit-start" class="btn-back-glass" style="max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
     </div>
     `;
 
@@ -89,7 +81,7 @@ function startGame(container, players) {
     initLogic(state, container);
 }
 
-// --- 2. LAYOUT GIOCO ---
+// --- 2. LAYOUT GIOCO (PREMIUM UI) ---
 function renderLayout(container, state) {
     container.innerHTML = `
     <style>
@@ -97,7 +89,7 @@ function renderLayout(container, state) {
             width:100%; max-width:430px; height:100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
             color:white; font-family:'Poppins',sans-serif; position:relative; overflow:hidden; display:flex; flex-direction:column;
-            animation: fadeInUpOnly 0.5s ease-out forwards; box-sizing: border-box;
+            box-sizing: border-box;
         }
         
         @media (min-width: 431px) {
@@ -106,30 +98,57 @@ function renderLayout(container, state) {
 
         .btn-exit-game { 
             position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100; 
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
-            color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px; 
-            cursor: pointer; outline: none; transition: 0.2s;
+            background: var(--glass-surface); border: 1px solid var(--glass-border); 
+            color: white; padding: 8px 16px; border-radius: 14px; font-weight: 800; font-size: 10px; 
+            cursor: pointer; outline: none; transition: 0.2s; backdrop-filter: blur(10px);
         }
-        .btn-exit-game:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .btn-exit-game:active { transform: scale(0.95); background: rgba(157, 78, 221, 0.2); border-color: var(--amethyst-bright); }
         
-        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: calc(55px + env(safe-area-inset-top)) 15px 15px 15px; overflow: hidden; }
-        .mats { height: 130px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; position: relative; display: flex; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .tutor-box { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border-left: 3px solid #9d4ede; padding: 8px 12px; border-radius: 8px; font-size: 10px; z-index: 10; backdrop-filter: blur(5px); pointer-events: none; white-space: nowrap; }
-        .card-b { width: 42px; height: 60px; background: white; border-radius: 5px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; position: relative; transition: transform 0.2s; cursor: pointer; flex-shrink: 0; user-select: none; }
-        .card-b.selected { transform: translateY(-15px); border: 2px solid #9d4ede; z-index: 10; box-shadow: 0 0 12px rgba(157, 78, 221, 0.6); }
-        .center-area { display: flex; justify-content: center; align-items: center; gap: 40px; padding: 10px; background: rgba(0,0,0,0.2); }
-        .deck-stack { width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; outline: none; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        .player-hand-container { padding: 10px 10px calc(20px + env(safe-area-inset-bottom)) 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(0,0,0,0.4); border-top: 1px solid rgba(255,255,255,0.1); }
-        .hand-wrapper { display: flex; justify-content: flex-start; height: 85px; align-items: flex-end; width: 100%; overflow-x: auto; gap: 2px; -webkit-overflow-scrolling: touch; }
+        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: calc(55px + env(safe-area-inset-top)) 15px 15px 15px; overflow: hidden; }
         
-        .btn-action { flex: 1; padding: 12px; border-radius: 12px; border: none; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; outline: none; transition: 0.2s; }
-        #btn-meld { background: #2ecc71; color: white; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
-        #btn-discard { background: #e74c3c; color: white; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
-        .btn-action:disabled { opacity: 0.3; pointer-events: none; box-shadow: none; }
+        .mats { 
+            height: 130px; background: var(--glass-surface); border: 1px solid var(--glass-border); 
+            border-radius: 16px; padding: 12px; position: relative; display: flex; gap: 10px; 
+            overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+        }
+        
+        .tutor-box { 
+            position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); 
+            background: rgba(5, 2, 10, 0.85); border-left: 3px solid #9d4ede; padding: 8px 16px; 
+            border-radius: 10px; font-size: 11px; z-index: 10; backdrop-filter: blur(10px); 
+            pointer-events: none; white-space: nowrap; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .card-b { 
+            width: 44px; height: 64px; background: white; border-radius: 6px; color: black; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            font-weight: 800; font-size: 11px; position: relative; transition: transform 0.2s, box-shadow 0.2s; 
+            cursor: pointer; flex-shrink: 0; user-select: none; -webkit-tap-highlight-color: transparent; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.1);
+        }
+        .card-b.selected { transform: translateY(-15px); border: 2px solid var(--amethyst-bright); z-index: 10; box-shadow: 0 0 15px rgba(157, 78, 221, 0.6); }
+        
+        .center-area { display: flex; justify-content: center; align-items: center; gap: 40px; padding: 15px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); }
+        
+        .deck-stack { 
+            width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); 
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 8px; display: flex; align-items: center; 
+            justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; outline: none; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
+        }
+        .deck-stack:active { transform: scale(0.95); }
+        
+        .player-hand-container { padding: 15px 15px calc(20px + env(safe-area-inset-bottom)) 15px; display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(0,0,0,0.4); }
+        .hand-wrapper { display: flex; justify-content: flex-start; height: 90px; align-items: flex-end; width: 100%; overflow-x: auto; gap: 3px; -webkit-overflow-scrolling: touch; padding-bottom: 5px; }
+        
+        .btn-action { flex: 1; padding: 14px; border-radius: 14px; border: none; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; outline: none; transition: 0.2s; letter-spacing: 1px; }
+        #btn-meld { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4); }
+        #btn-discard { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: white; box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4); }
+        .btn-action:disabled { opacity: 0.3; pointer-events: none; box-shadow: none; filter: grayscale(100%); }
         .btn-action:active { transform: scale(0.95); }
     </style>
 
-    <div class="burraco-game-wrapper">
+    <div class="burraco-game-wrapper fade-in">
         <button class="btn-exit-game" id="btn-exit-ingame">← ESCI</button>
         <div id="tutor-container" class="tutor-box"><span id="tutor-text"></span></div>
         
@@ -144,7 +163,7 @@ function renderLayout(container, state) {
         </div>
         
         <div class="player-hand-container">
-            <div style="display:flex; gap:10px; width:100%;">
+            <div style="display:flex; gap:15px; width:100%;">
                 <button class="btn-action" id="btn-meld">CALA COMBO</button>
                 <button class="btn-action" id="btn-discard">SCARTA</button>
             </div>
@@ -215,7 +234,7 @@ function renderHand(state) {
     state.hands.player.forEach((card, i) => {
         const el = createCardElement(card);
         if (state.selectedIndices.includes(i)) el.classList.add('selected');
-        el.style.marginRight = "-12px"; 
+        el.style.marginRight = "-15px"; 
         el.onclick = (e) => {
             e.preventDefault();
             if (state.turn !== 'player' || state.phase === 'draw') return;
@@ -232,14 +251,15 @@ function renderTables(state) {
     const drawTable = (id, data, label) => {
         const el = document.getElementById(id);
         if(!el) return;
-        el.innerHTML = `<span style="font-size:8px; opacity:0.4; position:absolute; top:2px; left:5px; font-weight:800; letter-spacing:1px;">${label}</span>`;
+        el.innerHTML = `<span style="font-size:9px; opacity:0.5; position:absolute; top:4px; left:8px; font-weight:800; letter-spacing:1px; font-family:'Montserrat', sans-serif;">${label}</span>`;
         data.forEach(group => {
             const gDiv = document.createElement('div');
             gDiv.style.display = "flex";
             gDiv.style.flexDirection = "column";
+            gDiv.style.marginTop = "15px";
             group.forEach((card, i) => {
                 const c = createCardElement(card);
-                c.style.marginTop = i === 0 ? '0' : '-48px';
+                c.style.marginTop = i === 0 ? '0' : '-50px';
                 c.style.transform = 'scale(0.85)';
                 gDiv.appendChild(c);
             });
@@ -303,7 +323,7 @@ function handleDiscard(state) {
     updateUI(state);
     setTimeout(() => {
         if (state.hands.player.length === 0) {
-            alert("VITTORIA! Hai chiuso la partita.");
+            alert("🏆 VITTORIA! Hai chiuso la partita.");
             quitGame(state.container);
             return;
         }
@@ -340,8 +360,10 @@ function createCardElement(card) {
     const el = document.createElement('div');
     el.className = `card-b`;
     const icon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[card.suit];
-    el.innerHTML = `<span>${card.val}</span><span>${icon}</span>`;
-    if(card.suit === 'hearts' || card.suit === 'diamonds') el.style.color = '#d63031';
+    el.innerHTML = `<span style="font-size:12px;">${card.val}</span><span style="font-size:16px;">${icon}</span>`;
+    
+    // Aggiornato il colore rosso in stile Amethyst
+    if(card.suit === 'hearts' || card.suit === 'diamonds') el.style.color = '#ff416c'; 
     return el;
 }
 
