@@ -2,19 +2,19 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 /**
  * GIOCO: BURRACO
- * Versione Stabile 2.2 - Premium Amethyst 5.4 UI
+ * Versione Stabile 2.3 - Premium Amethyst 5.4 UI (Borderless)
  */
 
 export function initBurraco(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
     
-    // FIX: Configurazione mobile-friendly aggressiva per i giochi di carte (previene ogni trascinamento della pagina)
+    // FIX: Configurazione mobile-friendly aggressiva per i giochi di carte
     document.documentElement.style.overflowX = 'hidden';
     document.body.style.overflowX = 'hidden';
-    document.body.style.overflowY = 'hidden'; // Blocco totale per il tavolo da gioco
+    document.body.style.overflowY = 'hidden'; 
     document.body.style.position = 'relative';
-    document.body.style.touchAction = 'none'; // Impedisce che toccando le carte si muova la pagina
+    document.body.style.touchAction = 'none'; 
     document.body.style.overscrollBehavior = 'none';
     document.body.style.backgroundColor = '#05010a'; 
     window.scrollTo(0, 0);
@@ -24,7 +24,6 @@ export function initBurraco(container) {
 
 // --- Funzione centralizzata per uscire in sicurezza ---
 const quitGame = async (container) => {
-    // Ripristina lo scroll globale
     document.body.style.overflowY = 'auto';
     document.body.style.overflowX = '';
     document.body.style.touchAction = '';
@@ -41,26 +40,18 @@ const quitGame = async (container) => {
     }
 };
 
-// --- 1. SELEZIONE MODALITÀ (STILE PREMIUM) ---
+// --- 1. SELEZIONE MODALITÀ (STILE PREMIUM BORDERLESS) ---
 function renderSelectionMenu(container) {
+    // RIMOSSO: Ogni traccia di .setup-card, border, box-shadow e limitazioni di larghezza.
+    // Ora è un overlay puro e piatto che riempie lo schermo.
     container.innerHTML = `
-    <style>
-        .burraco-start-wrapper { 
-            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; 
-            color: white; padding: 20px; box-sizing: border-box; overflow-x: hidden;
-            background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
-        }
-        @media (min-width: 431px) {
-            .burraco-start-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        }
-    </style>
-    
-    <div class="burraco-start-wrapper fade-in">
-        <h1 class="main-title" style="margin-bottom: 40px; font-size: 3rem; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">BURRACO</h1>
+    <div class="fade-in" style="position:absolute; inset:0; background:rgba(5, 2, 10, 0.95); backdrop-filter: blur(10px); z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px; box-sizing: border-box;">
         
-        <button class="btn-primary" id="mode-2" style="max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA 1 VS 1</button>
-        <button id="btn-quit-start" class="btn-back-glass" style="max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
+        <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">BURRACO</h1>
+        
+        <button class="btn-primary" id="mode-2" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA 1 VS 1</button>
+        <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
+        
     </div>
     `;
 
@@ -81,19 +72,16 @@ function startGame(container, players) {
     initLogic(state, container);
 }
 
-// --- 2. LAYOUT GIOCO (PREMIUM UI) ---
+// --- 2. LAYOUT GIOCO (PREMIUM UI BORDERLESS) ---
 function renderLayout(container, state) {
     container.innerHTML = `
     <style>
+        /* RIMOSSO: La @media query che aggiungeva il border-radius e il bordo a 431px! */
         .burraco-game-wrapper { 
-            width:100%; max-width:430px; height:100dvh; margin: 0 auto;
+            width:100%; max-width: 500px; height:100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
             color:white; font-family:'Poppins',sans-serif; position:relative; overflow:hidden; display:flex; flex-direction:column;
             box-sizing: border-box;
-        }
-        
-        @media (min-width: 431px) {
-            .burraco-game-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
 
         .btn-exit-game { 
@@ -362,7 +350,6 @@ function createCardElement(card) {
     const icon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[card.suit];
     el.innerHTML = `<span style="font-size:12px;">${card.val}</span><span style="font-size:16px;">${icon}</span>`;
     
-    // Aggiornato il colore rosso in stile Amethyst
     if(card.suit === 'hearts' || card.suit === 'diamonds') el.style.color = '#ff416c'; 
     return el;
 }
