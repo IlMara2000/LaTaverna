@@ -2,19 +2,20 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: STRATEGY (Chess & Checkers)
-// Versione Stabile 2.0 - Anti-Crash & Vertical Lock
+// Versione Stabile 2.1 - Anti-Crash & Premium UI
 // ==========================================
 
 export function initScacchi(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // FIX: Configurazione mobile-friendly per prevenire rimbalzi ed errori laterali
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.overscrollBehavior = 'none';
-    document.body.style.overflow = 'hidden';
+    // FIX: Configurazione mobile-friendly aggressiva (Nessuno scroll consentito sulla scacchiera)
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+    document.body.style.overflowY = 'hidden'; 
     document.body.style.overscrollBehavior = 'none';
-    document.body.style.touchAction = 'none'; // Importante per non trascinare la pagina muovendo i pezzi
+    document.body.style.touchAction = 'none'; // Previene lo scrolling quando si toccano i pezzi
+    document.body.style.position = 'relative';
     document.body.style.backgroundColor = '#090a0f'; 
 
     let state = {
@@ -31,13 +32,11 @@ export function initScacchi(container) {
 
 // --- Funzione centralizzata per uscire in sicurezza ---
 const quitGame = async (container) => {
-    document.documentElement.style.overflow = '';
-    document.documentElement.style.overscrollBehavior = '';
-    document.body.style.overflow = '';
+    document.body.style.overflowY = 'auto';
+    document.body.style.overflowX = '';
     document.body.style.overscrollBehavior = '';
     document.body.style.touchAction = '';
     document.body.style.position = '';
-    document.body.style.width = '';
     document.body.style.backgroundColor = '';
     
     try {
@@ -53,17 +52,12 @@ const quitGame = async (container) => {
 function renderSetupMenu(container, state) {
     container.innerHTML = `
     <style>
-        @keyframes fadeInUpOnly {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
         .strategy-wrapper { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(26,26,46,0.8) 0%, rgba(7,7,10,0.9) 100%); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             color: white; font-family: 'Poppins', sans-serif; 
             padding: 20px; box-sizing: border-box;
-            animation: fadeInUpOnly 0.6s ease-out forwards;
         }
         @media (min-width: 431px) {
             .strategy-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
@@ -72,34 +66,36 @@ function renderSetupMenu(container, state) {
             background: rgba(255,255,255,0.03); backdrop-filter: blur(15px);
             padding: 25px; border-radius: 24px; border: 1px solid rgba(157,78,221,0.3);
             width: 100%; text-align: center; box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .mode-toggle { display: flex; gap: 8px; margin: 20px 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 12px; }
         .mode-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: transparent; color: white; font-weight: 600; font-size: 13px; outline: none; transition: 0.3s; }
         .mode-btn.active { background: #9d4ede; box-shadow: 0 4px 15px rgba(157,78,221,0.4); }
-        .diff-btn { padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; font-size:10px; cursor: pointer; outline: none; }
+        .diff-btn { padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; font-size:10px; cursor: pointer; outline: none; transition: 0.2s; }
         .diff-btn.active { background:rgba(157,78,221,0.2); border:1px solid #9d4ede; }
-        .start-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: #00ffa3; color: #000; font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-top: 20px; outline: none; }
-        .btn-exit-scacchi { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 15px; border-radius: 14px; cursor: pointer; width: 100%; font-size: 12px; font-weight: 700; margin-top: 15px; }
     </style>
 
-    <div class="strategy-wrapper">
+    <div class="strategy-wrapper fade-in">
         <div class="setup-card">
-            <h1 style="font-family:'Montserrat'; font-weight:900; letter-spacing:2px; margin-bottom:5px;">STRATEGY</h1>
-            <p style="opacity:0.5; font-size:11px; margin-bottom:25px;">Sfida l'Intelligenza Artificiale</p>
+            <h1 class="main-title" style="margin-bottom: 5px;">STRATEGY</h1>
+            <p style="opacity:0.5; font-size:11px; margin-bottom:25px; letter-spacing: 1px;">SFIDA L'INTELLIGENZA ARTIFICIALE</p>
+            
             <div class="mode-toggle">
                 <button class="mode-btn ${state.gameMode === 'chess' ? 'active' : ''}" id="btn-chess">SCACCHI</button>
                 <button class="mode-btn ${state.gameMode === 'checkers' ? 'active' : ''}" id="btn-checkers">DAMA</button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                     <button class="diff-btn ${state.difficulty === 1 ? 'active' : ''}" data-diff="1">EASY</button>
                     <button class="diff-btn ${state.difficulty === 2 ? 'active' : ''}" data-diff="2">NORMAL</button>
                     <button class="diff-btn ${state.difficulty === 3 ? 'active' : ''}" data-diff="3">HARD</button>
                 </div>
             </div>
-            <button class="start-btn" id="start-game">GIOCA ORA</button>
+            
+            <button class="btn-primary" id="start-game" style="background: #00ffa3; color: black; border: none; margin-bottom: 0; box-shadow: 0 5px 15px rgba(0, 255, 163, 0.3);">GIOCA ORA</button>
         </div>
-        <button id="btn-quit-setup" class="btn-exit-scacchi">← TORNA ALLA LIBRERIA</button>
+        <button id="btn-quit-setup" class="btn-back-glass" style="margin-top: 20px;">← TORNA ALLA LIBRERIA</button>
     </div>
     `;
 
@@ -175,19 +171,26 @@ function renderBoard(container, state) {
         .checker { width: 75%; height: 75%; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); }
         .checker.w { background: #fff; box-shadow: 0 3px 0 #ccc; }
         .checker.b { background: #222; box-shadow: 0 3px 0 #000; }
+        
         .game-header { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; position: absolute; top: env(safe-area-inset-top, 10px); box-sizing: border-box; }
-        #btn-reset { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 25px; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; outline: none; }
+        .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 800; color: #000; transition: 0.3s; }
+        
+        #btn-reset-container { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); width: 100%; padding: 0 20px; box-sizing: border-box; }
     </style>
 
-    <div class="game-screen">
+    <div class="game-screen fade-in">
         <div class="game-header">
-            <span style="font-weight:900; font-size:16px; letter-spacing: 1px;">${state.gameMode.toUpperCase()}</span>
-            <div style="padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 800; background: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}; color: #000; box-shadow: 0 0 15px ${state.turn === 'w' ? 'rgba(0,255,163,0.3)' : 'rgba(255,65,108,0.3)'};">
+            <span style="font-weight:900; font-size:16px; letter-spacing: 1px; font-family:'Montserrat', sans-serif;">${state.gameMode.toUpperCase()}</span>
+            <div class="status-badge" style="background: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}; box-shadow: 0 0 15px ${state.turn === 'w' ? 'rgba(0,255,163,0.3)' : 'rgba(255,65,108,0.3)'};">
                 ${state.turn === 'w' ? 'TUO TURNO' : 'IA...'}
             </div>
         </div>
+        
         <div class="board" id="board-ui"></div>
-        <button id="btn-reset">← TORNA AL MENU</button>
+        
+        <div id="btn-reset-container">
+            <button id="btn-reset" class="btn-back-glass" style="margin-bottom: 0;">← TORNA AL MENU</button>
+        </div>
     </div>
     `;
 
@@ -234,7 +237,6 @@ function aiMove(state, container) {
     for (let r=0; r<8; r++) {
         for (let c=0; c<8; c++) {
             if (state.board[r][c]?.color === 'b') {
-                // Logica IA base: muove avanti di una riga
                 if (r + 1 < 8) moves.push({fr: r, fc: c, tr: r+1, tc: c});
             }
         }
