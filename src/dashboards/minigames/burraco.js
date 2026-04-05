@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 /**
  * GIOCO: BURRACO
- * Versione Stabile 2.1 - Anti-Crash & Premium UI
+ * Versione Stabile 2.2 - Premium Amethyst 5.4 UI
  */
 
 export function initBurraco(container) {
@@ -14,9 +14,9 @@ export function initBurraco(container) {
     document.body.style.overflowX = 'hidden';
     document.body.style.overflowY = 'hidden'; // Blocco totale per il tavolo da gioco
     document.body.style.position = 'relative';
-    document.body.style.touchAction = 'none'; // Fondamentale: impedisce che toccando le carte si muova la pagina
+    document.body.style.touchAction = 'none'; // Impedisce che toccando le carte si muova la pagina
     document.body.style.overscrollBehavior = 'none';
-    document.body.style.backgroundColor = '#05010a'; // Match del background globale
+    document.body.style.backgroundColor = '#05010a'; 
     window.scrollTo(0, 0);
 
     renderSelectionMenu(container);
@@ -126,7 +126,7 @@ function renderLayout(container, state) {
             cursor: pointer; flex-shrink: 0; user-select: none; -webkit-tap-highlight-color: transparent; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.1);
         }
-        .card-b.selected { transform: translateY(-15px); border: 2px solid #9d4ede; z-index: 10; box-shadow: 0 0 15px rgba(157, 78, 221, 0.6); }
+        .card-b.selected { transform: translateY(-15px); border: 2px solid var(--amethyst-bright); z-index: 10; box-shadow: 0 0 15px rgba(157, 78, 221, 0.6); }
         
         .center-area { display: flex; justify-content: center; align-items: center; gap: 40px; padding: 15px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); }
         
@@ -234,7 +234,7 @@ function renderHand(state) {
     state.hands.player.forEach((card, i) => {
         const el = createCardElement(card);
         if (state.selectedIndices.includes(i)) el.classList.add('selected');
-        el.style.marginRight = "-15px"; // Sovrapposizione leggermente maggiore
+        el.style.marginRight = "-15px"; 
         el.onclick = (e) => {
             e.preventDefault();
             if (state.turn !== 'player' || state.phase === 'draw') return;
@@ -361,7 +361,9 @@ function createCardElement(card) {
     el.className = `card-b`;
     const icon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[card.suit];
     el.innerHTML = `<span style="font-size:12px;">${card.val}</span><span style="font-size:16px;">${icon}</span>`;
-    if(card.suit === 'hearts' || card.suit === 'diamonds') el.style.color = '#ff416c'; // Aggiornato colore rosso stile Amethyst
+    
+    // Aggiornato il colore rosso in stile Amethyst
+    if(card.suit === 'hearts' || card.suit === 'diamonds') el.style.color = '#ff416c'; 
     return el;
 }
 
