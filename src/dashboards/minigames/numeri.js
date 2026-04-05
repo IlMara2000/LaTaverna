@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: NUMERI (Local Party Mode)
-// Versione Stabile 2.1 - Anti-Crash & Premium UI
+// Versione Stabile 2.2 - Premium UI Borderless
 // ==========================================
 
 let gameData = {
@@ -17,12 +17,13 @@ export function initNumeri(container) {
     
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
     
-    // Reset configurazione Scroll Mobile (Solo verticale)
+    // Reset configurazione Scroll Mobile (Solo verticale per far scorrere i nomi)
     document.documentElement.style.overflowX = 'hidden';
     document.body.style.overflowX = 'hidden';
     document.body.style.overflowY = 'auto';
     document.body.style.position = 'relative';
     document.body.style.touchAction = 'pan-y'; 
+    document.body.style.backgroundColor = '#05010a'; 
     window.scrollTo(0, 0);
 
     gameData.round = 1; 
@@ -32,6 +33,7 @@ export function initNumeri(container) {
 const quitGame = async (container) => {
     document.body.style.touchAction = '';
     document.body.style.overflowX = '';
+    document.body.style.backgroundColor = '';
     try {
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
@@ -45,7 +47,7 @@ function createPlayerInputHTML(value = "", index) {
         <div class="player-input-wrapper fade-in" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 12px; animation-duration: 0.3s;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
                    style="flex: 1; padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px; font-family: 'Poppins', sans-serif;">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255,65,108,0.3); color: #ff416c; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: 0.2s;">✕</button>
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255,65,108,0.3); color: #ff416c; width: 48px; height: 48px; border-radius: 14px; cursor: pointer; font-weight: bold; transition: 0.2s;">✕</button>
         </div>
     `;
 }
@@ -59,11 +61,6 @@ function renderSetup(container) {
                 width: 100%; max-width: 500px; margin: 0 auto; color: white; font-family: 'Poppins', sans-serif;
                 display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
                 overflow-x: hidden; min-height: 80vh; justify-content: center;
-            }
-            .setup-card { 
-                background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); padding: 25px; 
-                border-radius: 24px; border: 1px solid rgba(157, 78, 221, 0.2); margin-bottom: 20px; 
-                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             }
             .number-display { font-size: 3rem; font-weight: 900; color: #c77dff; text-shadow: 0 0 20px rgba(157,78,221,0.6); margin: 15px 0; word-break: break-all; line-height: 1.2; font-family: 'Montserrat', sans-serif; }
             
@@ -82,15 +79,18 @@ function renderSetup(container) {
 
         <div class="numeri-wrapper fade-in">
             <h1 class="main-title" style="margin-bottom: 5px;">NUMERI</h1>
-            <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 25px; letter-spacing: 2px;">MEMORIZZA E ORDINA</p>
+            <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 30px; letter-spacing: 2px;">MEMORIZZA E ORDINA</p>
 
-            <div class="setup-card">
+            <div style="width: 100%;">
                 <div id="player-inputs-container">
                     ${initialPlayers.map((name, i) => createPlayerInputHTML(name, i)).join('')}
                 </div>
-                <button id="add-player" style="background: transparent; border: 1px dashed rgba(157, 78, 221, 0.4); color: var(--amethyst-light); padding: 12px; border-radius: 12px; cursor: pointer; width: 100%; margin: 10px 0 20px 0; font-size: 11px; font-weight: 800; letter-spacing: 1px;">+ AGGIUNGI GIOCATORE</button>
-                <button id="start-game" class="btn-primary" style="background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; margin-bottom: 0;">INIZIA PARTITA</button>
+                
+                <button id="add-player" style="background: transparent; border: 1px dashed rgba(157, 78, 221, 0.4); color: var(--amethyst-light); padding: 14px; border-radius: 16px; cursor: pointer; width: 100%; margin: 10px 0 25px 0; font-size: 11px; font-weight: 800; letter-spacing: 1px; transition: 0.2s;">+ AGGIUNGI GIOCATORE</button>
+                
+                <button id="start-game" class="btn-primary" style="background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; margin-bottom: 20px;">INIZIA PARTITA</button>
             </div>
+            
             <button id="btn-quit" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
         </div>
     `;
@@ -146,7 +146,7 @@ function renderReveal(container) {
             <div style="background: rgba(157, 78, 221, 0.2); border: 1px solid #9d4ede; padding: 6px 16px; border-radius: 20px; font-size: 11px; margin-bottom: 25px; font-weight: 800; color: #c77dff; letter-spacing: 2px;">ROUND ${gameData.round}</div>
             
             <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 12px; margin-bottom: 5px;">Passa il telefono a</p>
-            <h1 class="main-title" style="font-size: 3rem; margin-bottom: 40px; color: white;">${playerData.name}</h1>
+            <h1 class="main-title" style="font-size: 3rem; margin-bottom: 40px; color: white; background: none; -webkit-text-fill-color: white;">${playerData.name}</h1>
             
             <div id="number-box" style="width: 100%; max-width: 350px; background: rgba(255,255,255,0.03); border: 2px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 60px 20px; cursor: pointer; user-select: none; transition: 0.3s; box-shadow: inset 0 0 20px rgba(0,0,0,0.5);">
                 <p id="number-text" style="font-weight: 800; opacity: 0.4; font-size: 14px; letter-spacing: 2px;">TOCCA PER SCOPRIRE</p>
@@ -263,7 +263,7 @@ function renderResult(container) {
                 ${isCorrect ? 'VITTORIA!' : 'SBAGLIATO!'}
             </h2>
             
-            <div class="setup-card" style="width:100%; text-align: left; padding: 20px;">
+            <div style="width:100%; text-align: left; padding: 10px;">
                 <p style="font-size: 10px; opacity: 0.5; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px;">Ordine Corretto:</p>
                 ${playerAverages.map(p => `
                     <div style="margin-bottom: 12px; display: flex; justify-content: space-between; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
@@ -273,7 +273,7 @@ function renderResult(container) {
                 `).join('')}
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 30px;">
                 <button id="next-round" class="btn-primary" style="background: linear-gradient(45deg, #00ffa3, #00d2ff); border: none; color: black;">PROSSIMO ROUND</button>
                 <button id="change-players" class="btn-back-glass">RIAVVIA PARTITA</button>
                 <button id="btn-quit-end" class="btn-back-glass" style="border-color: rgba(255,68,68,0.3); color: #ff4444;">← ESCI DAL GIOCO</button>
