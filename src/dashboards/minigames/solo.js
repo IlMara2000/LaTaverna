@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: SOLO (Uno-Style)
-// Versione Stabile 2.1 - Anti-Crash & Premium UI
+// Versione Stabile 2.2 - Premium UI Borderless
 // ==========================================
 
 const COLORS = ['red', 'blue', 'green', 'yellow'];
@@ -28,7 +28,7 @@ export function initSoloGame(container) {
     document.body.style.overscrollBehavior = 'none';
     document.body.style.position = 'relative';
     document.body.style.touchAction = 'none'; // Previene trascinamento sfondo
-    document.body.style.backgroundColor = '#090a0f';
+    document.body.style.backgroundColor = '#05010a';
     window.scrollTo(0, 0);
     
     let state = {
@@ -50,6 +50,7 @@ const quitGame = async (container) => {
     document.body.style.overflowX = '';
     document.body.style.overflowY = 'auto';
     document.body.style.overscrollBehavior = '';
+    document.body.style.backgroundColor = '';
     
     try {
         const { showMinigamesList } = await import('../../minigamelist.js');
@@ -67,9 +68,6 @@ function renderLayout(container, state) {
             background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif; 
             box-sizing: border-box;
-        }
-        @media (min-width: 431px) {
-            .solo-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
         
         .btn-exit-game {
@@ -102,9 +100,9 @@ function renderLayout(container, state) {
     <div class="solo-wrapper fade-in">
         
         <div id="start-overlay" style="position:absolute; inset:0; background:rgba(5, 2, 10, 0.95); backdrop-filter: blur(10px); z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px; box-sizing: border-box;">
-            <h1 class="main-title" style="font-size: 4rem; background: linear-gradient(to bottom, #00d2ff, #9d4ede); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">SOLO</h1>
-            <button id="btn-start" class="btn-primary" style="max-width: 280px; margin-bottom: 15px; font-size: 1.1rem;">GIOCA ORA</button>
-            <button id="btn-quit-start" class="btn-back-glass" style="max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
+            <h1 class="main-title" style="font-size: 4.5rem; background: linear-gradient(to bottom, #00d2ff, #9d4ede); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">SOLO</h1>
+            <button id="btn-start" class="btn-primary" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none;">GIOCA ORA</button>
+            <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
         </div>
 
         <button class="btn-exit-game" id="btn-exit-ingame">← ESCI</button>
