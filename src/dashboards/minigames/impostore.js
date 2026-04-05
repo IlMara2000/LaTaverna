@@ -1,377 +1,286 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
-/**
- * GIOCO: BURRACO
- * Versione Stabile 2.2 - Premium Amethyst 5.4 UI
- */
+// ==========================================
+// GIOCO: IMPOSTORE (Local Party Mode)
+// Versione Stabile 2.1 - Anti-Crash & Premium UI
+// ==========================================
 
-export function initBurraco(container) {
+let gameData = {
+    players: [], 
+    wordObj: { word: '', alt: '' },
+    roles: [],
+    currentIndex: 0,
+    config: { impostors: 1, undercover: 0 }
+};
+
+const WORDS_DATABASE = [
+    { word: "Pizza", alt: "Focaccia" }, { word: "Colosseo", alt: "Arena" },
+    { word: "Calcio", alt: "Calcetto" }, { word: "Smartphone", alt: "Tablet" },
+    { word: "Venezia", alt: "Amsterdam" }, { word: "Leone", alt: "Tigre" },
+    { word: "Cinema", alt: "Teatro" }, { word: "Ferrari", alt: "Lamborghini" },
+    { word: "Montagna", alt: "Collina" }, { word: "Caffè", alt: "Tè" },
+    { word: "Vino", alt: "Birra" }, { word: "Aeroplano", alt: "Elicottero" },
+    { word: "Spiaggia", alt: "Scogliera" }, { word: "Zaino", alt: "Borsa" }
+];
+
+export function initImpostore(container) {
     if (!container) return;
+    
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
     
-    // FIX: Configurazione mobile-friendly aggressiva per i giochi di carte (previene ogni trascinamento della pagina)
+    // FIX: Configurazione Scroll Mobile (Solo verticale)
     document.documentElement.style.overflowX = 'hidden';
     document.body.style.overflowX = 'hidden';
-    document.body.style.overflowY = 'hidden'; // Blocco totale per il tavolo da gioco
+    document.body.style.overflowY = 'auto';
     document.body.style.position = 'relative';
-    document.body.style.touchAction = 'none'; // Impedisce che toccando le carte si muova la pagina
+    document.body.style.touchAction = 'pan-y'; // Permette solo lo scroll verticale
     document.body.style.overscrollBehavior = 'none';
     document.body.style.backgroundColor = '#05010a'; 
     window.scrollTo(0, 0);
 
-    renderSelectionMenu(container);
+    renderSetup(container);
 }
 
-// --- Funzione centralizzata per uscire in sicurezza ---
 const quitGame = async (container) => {
-    // Ripristina lo scroll globale
-    document.body.style.overflowY = 'auto';
-    document.body.style.overflowX = '';
     document.body.style.touchAction = '';
-    document.body.style.position = '';
+    document.body.style.overflowX = '';
+    document.body.style.overflowY = 'auto';
     document.body.style.overscrollBehavior = '';
     document.body.style.backgroundColor = '';
-    
     try {
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
-        console.error("Errore navigazione:", e);
         window.location.reload(); 
     }
 };
 
-// --- 1. SELEZIONE MODALITÀ (STILE PREMIUM) ---
-function renderSelectionMenu(container) {
-    container.innerHTML = `
-    <style>
-        .burraco-start-wrapper { 
-            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; 
-            color: white; padding: 20px; box-sizing: border-box; overflow-x: hidden;
-            background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
-        }
-        @media (min-width: 431px) {
-            .burraco-start-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        }
-    </style>
-    
-    <div class="burraco-start-wrapper fade-in">
-        <h1 class="main-title" style="margin-bottom: 40px; font-size: 3rem; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">BURRACO</h1>
-        
-        <button class="btn-primary" id="mode-2" style="max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA 1 VS 1</button>
-        <button id="btn-quit-start" class="btn-back-glass" style="max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
-    </div>
+function createPlayerInputHTML(value = "", index) {
+    return `
+        <div class="player-input-wrapper fade-in" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 12px; animation-duration: 0.3s;">
+            <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}">
+            <button class="delete-player" style="background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255,65,108,0.3); color: #ff416c; width: 48px; height: 48px; border-radius: 16px; cursor: pointer; font-weight: bold; transition: 0.2s;">✕</button>
+        </div>
     `;
-
-    document.getElementById('mode-2').onclick = (e) => { e.preventDefault(); startGame(container, 2); };
-    document.getElementById('btn-quit-start').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
 
-function startGame(container, players) {
-    let state = {
-        mode: players, deck: [],
-        hands: { player: [], bot1: [] },
-        tables: { team1: [], team2: [] },
-        discardPile: [], turn: 'player', phase: 'draw',
-        selectedIndices: [], tutorMsg: "Tocca il mazzo per pescare o prendi gli scarti."
-    };
+function renderSetup(container) {
+    const playersNames = gameData.players.length > 0 ? gameData.players.map(p => p.name) : ["", "", ""];
 
-    renderLayout(container, state);
-    initLogic(state, container);
-}
-
-// --- 2. LAYOUT GIOCO (PREMIUM UI) ---
-function renderLayout(container, state) {
     container.innerHTML = `
-    <style>
-        .burraco-game-wrapper { 
-            width:100%; max-width:430px; height:100dvh; margin: 0 auto;
-            background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
-            color:white; font-family:'Poppins',sans-serif; position:relative; overflow:hidden; display:flex; flex-direction:column;
-            box-sizing: border-box;
-        }
-        
-        @media (min-width: 431px) {
-            .burraco-game-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        }
+        <style>
+            .impostore-wrapper { 
+                width: 100%; max-width: 500px; margin: 0 auto; color: white; font-family: 'Poppins', sans-serif;
+                display: flex; flex-direction: column; padding: 20px; box-sizing: border-box;
+                overflow-x: hidden; min-height: 80vh; justify-content: center;
+            }
+            .setup-card { 
+                background: var(--glass-surface); backdrop-filter: blur(15px); padding: 25px; 
+                border-radius: 24px; border: 1px solid var(--glass-border); margin-bottom: 20px; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            }
+            .config-row { 
+                display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; 
+                background: rgba(255,255,255,0.02); padding: 12px 15px; border-radius: 16px; 
+                border: 1px solid rgba(255,255,255,0.05); 
+            }
+            .config-row select { 
+                width: 60px; padding: 5px; background: transparent; border: none; 
+                color: var(--amethyst-bright); font-weight: 900; font-size: 1.1rem; text-align: right; 
+                box-shadow: none; 
+            }
+            .config-row select:focus { background: transparent; box-shadow: none; border: none; }
+        </style>
 
-        .btn-exit-game { 
-            position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100; 
-            background: var(--glass-surface); border: 1px solid var(--glass-border); 
-            color: white; padding: 8px 16px; border-radius: 14px; font-weight: 800; font-size: 10px; 
-            cursor: pointer; outline: none; transition: 0.2s; backdrop-filter: blur(10px);
-        }
-        .btn-exit-game:active { transform: scale(0.95); background: rgba(157, 78, 221, 0.2); border-color: var(--amethyst-bright); }
-        
-        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: calc(55px + env(safe-area-inset-top)) 15px 15px 15px; overflow: hidden; }
-        
-        .mats { 
-            height: 130px; background: var(--glass-surface); border: 1px solid var(--glass-border); 
-            border-radius: 16px; padding: 12px; position: relative; display: flex; gap: 10px; 
-            overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
-        }
-        
-        .tutor-box { 
-            position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); 
-            background: rgba(5, 2, 10, 0.85); border-left: 3px solid #9d4ede; padding: 8px 16px; 
-            border-radius: 10px; font-size: 11px; z-index: 10; backdrop-filter: blur(10px); 
-            pointer-events: none; white-space: nowrap; font-weight: 700; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        
-        .card-b { 
-            width: 44px; height: 64px; background: white; border-radius: 6px; color: black; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            font-weight: 800; font-size: 11px; position: relative; transition: transform 0.2s, box-shadow 0.2s; 
-            cursor: pointer; flex-shrink: 0; user-select: none; -webkit-tap-highlight-color: transparent; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid rgba(0,0,0,0.1);
-        }
-        .card-b.selected { transform: translateY(-15px); border: 2px solid var(--amethyst-bright); z-index: 10; box-shadow: 0 0 15px rgba(157, 78, 221, 0.6); }
-        
-        .center-area { display: flex; justify-content: center; align-items: center; gap: 40px; padding: 15px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); }
-        
-        .deck-stack { 
-            width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); 
-            border: 2px solid rgba(255,255,255,0.5); border-radius: 8px; display: flex; align-items: center; 
-            justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; outline: none; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s;
-        }
-        .deck-stack:active { transform: scale(0.95); }
-        
-        .player-hand-container { padding: 15px 15px calc(20px + env(safe-area-inset-bottom)) 15px; display: flex; flex-direction: column; align-items: center; gap: 12px; background: rgba(0,0,0,0.4); }
-        .hand-wrapper { display: flex; justify-content: flex-start; height: 90px; align-items: flex-end; width: 100%; overflow-x: auto; gap: 3px; -webkit-overflow-scrolling: touch; padding-bottom: 5px; }
-        
-        .btn-action { flex: 1; padding: 14px; border-radius: 14px; border: none; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 11px; cursor: pointer; text-transform: uppercase; outline: none; transition: 0.2s; letter-spacing: 1px; }
-        #btn-meld { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4); }
-        #btn-discard { background: linear-gradient(135deg, #ff416c, #ff4b2b); color: white; box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4); }
-        .btn-action:disabled { opacity: 0.3; pointer-events: none; box-shadow: none; filter: grayscale(100%); }
-        .btn-action:active { transform: scale(0.95); }
-    </style>
+        <div class="impostore-wrapper fade-in">
+            <h1 class="main-title" style="margin-bottom: 5px;">IMPOSTORE</h1>
+            <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 25px; letter-spacing: 2px;">LOCAL PARTY MODE</p>
 
-    <div class="burraco-game-wrapper fade-in">
-        <button class="btn-exit-game" id="btn-exit-ingame">← ESCI</button>
-        <div id="tutor-container" class="tutor-box"><span id="tutor-text"></span></div>
-        
-        <div class="tables-container">
-            <div class="mats" id="bot-table"></div>
-            <div class="mats" id="player-table"></div>
-        </div>
-        
-        <div class="center-area">
-            <div id="main-deck" class="deck-stack">MAZZO</div>
-            <div id="discard-pile-ui" style="display:flex; min-width:50px; min-height:70px; position:relative;"></div>
-        </div>
-        
-        <div class="player-hand-container">
-            <div style="display:flex; gap:15px; width:100%;">
-                <button class="btn-action" id="btn-meld">CALA COMBO</button>
-                <button class="btn-action" id="btn-discard">SCARTA</button>
+            <div class="setup-card">
+                <div class="config-row">
+                    <span style="font-weight: 600; font-size: 0.9rem;">🕵️ Impostori</span>
+                    <select id="select-impostors"><option value="1">1</option><option value="2">2</option></select>
+                </div>
+                <div class="config-row">
+                    <span style="font-weight: 600; font-size: 0.9rem;">🕶️ Undercover</span>
+                    <select id="select-undercover"><option value="0">0</option><option value="1">1</option></select>
+                </div>
+                
+                <div id="player-inputs-container" style="margin-top: 25px;">
+                    ${playersNames.map((name, i) => createPlayerInputHTML(name, i)).join('')}
+                </div>
+                
+                <button id="add-player" style="background: transparent; border: 1px dashed rgba(157, 78, 221, 0.4); color: var(--amethyst-light); padding: 14px; border-radius: 16px; cursor: pointer; width: 100%; margin: 10px 0 25px 0; font-size: 11px; font-weight: 800; letter-spacing: 1px; transition: 0.2s;">+ AGGIUNGI GIOCATORE</button>
+                
+                <button id="start-game" class="btn-primary" style="margin-bottom: 0;">INIZIA PARTITA</button>
             </div>
-            <div id="player-hand" class="hand-wrapper"></div>
+            
+            <button id="btn-quit-setup" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
         </div>
-    </div>
     `;
 
-    document.getElementById('btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(container); };
-}
+    container.querySelector('#btn-quit-setup').onclick = () => quitGame(container);
 
-// --- 3. LOGICA DI GIOCO ---
-function initLogic(state, container) {
-    state.deck = createBurracoDeck();
-    shuffle(state.deck);
-    state.hands.player = state.deck.splice(0, 11);
-    state.hands.bot1 = state.deck.splice(0, 11);
-    state.discardPile.push(state.deck.pop());
-    state.container = container; 
-    updateUI(state);
-}
-
-function updateUI(state) {
-    const isPlayer = state.turn === 'player';
-    const selectedCards = state.selectedIndices.map(i => state.hands.player[i]);
-    const targetPilaIndex = findTargetPila(selectedCards, state.tables.team1);
-    const isNewCombo = validateCombo(selectedCards);
-    const canMeld = (isNewCombo || (selectedCards.length > 0 && targetPilaIndex !== -1));
-
-    if (isPlayer && state.phase === 'play') {
-        if (isNewCombo) state.tutorMsg = "Combo valida! Cala sul tavolo.";
-        else if (targetPilaIndex !== -1) state.tutorMsg = "Puoi attaccare queste carte.";
-        else state.tutorMsg = "Seleziona almeno 3 carte.";
-    }
-
-    const tutorEl = document.getElementById('tutor-text');
-    if(tutorEl) tutorEl.innerText = state.tutorMsg;
-
-    const btnDiscard = document.getElementById('btn-discard');
-    const btnMeld = document.getElementById('btn-meld');
-    
-    if(btnDiscard) btnDiscard.disabled = !isPlayer || state.selectedIndices.length !== 1 || state.phase !== 'play';
-    if(btnMeld) btnMeld.disabled = !isPlayer || !canMeld || state.phase !== 'play';
-    
-    renderHand(state);
-    renderTables(state);
-    renderDiscard(state);
-
-    const deckEl = document.getElementById('main-deck');
-    if(deckEl) deckEl.onclick = (e) => { e.preventDefault(); if(isPlayer && state.phase === 'draw') drawFromDeck(state); };
-    if(btnDiscard) btnDiscard.onclick = (e) => { e.preventDefault(); handleDiscard(state); };
-    if(btnMeld) btnMeld.onclick = (e) => { e.preventDefault(); handleMeld(state, targetPilaIndex); };
-}
-
-function findTargetPila(selectedCards, table) {
-    if (selectedCards.length === 0) return -1;
-    for (let i = 0; i < table.length; i++) {
-        let potentialGroup = [...table[i], ...selectedCards];
-        if (validateCombo(potentialGroup)) return i;
-    }
-    return -1;
-}
-
-function renderHand(state) {
-    const container = document.getElementById('player-hand');
-    if(!container) return;
-    container.innerHTML = '';
-    state.hands.player.forEach((card, i) => {
-        const el = createCardElement(card);
-        if (state.selectedIndices.includes(i)) el.classList.add('selected');
-        el.style.marginRight = "-15px"; 
-        el.onclick = (e) => {
-            e.preventDefault();
-            if (state.turn !== 'player' || state.phase === 'draw') return;
-            const pos = state.selectedIndices.indexOf(i);
-            if (pos > -1) state.selectedIndices.splice(pos, 1);
-            else state.selectedIndices.push(i);
-            updateUI(state);
-        };
-        container.appendChild(el);
-    });
-}
-
-function renderTables(state) {
-    const drawTable = (id, data, label) => {
-        const el = document.getElementById(id);
-        if(!el) return;
-        el.innerHTML = `<span style="font-size:9px; opacity:0.5; position:absolute; top:4px; left:8px; font-weight:800; letter-spacing:1px; font-family:'Montserrat', sans-serif;">${label}</span>`;
-        data.forEach(group => {
-            const gDiv = document.createElement('div');
-            gDiv.style.display = "flex";
-            gDiv.style.flexDirection = "column";
-            gDiv.style.marginTop = "15px";
-            group.forEach((card, i) => {
-                const c = createCardElement(card);
-                c.style.marginTop = i === 0 ? '0' : '-50px';
-                c.style.transform = 'scale(0.85)';
-                gDiv.appendChild(c);
-            });
-            el.appendChild(gDiv);
-        });
+    container.querySelector('#player-inputs-container').onclick = (e) => {
+        if (e.target.closest('.delete-player')) e.target.closest('.player-input-wrapper').remove();
     };
-    drawTable('player-table', state.tables.team1, "IL TUO TAVOLO");
-    drawTable('bot-table', state.tables.team2, "TAVOLO AVVERSARIO");
+
+    container.querySelector('#add-player').onclick = () => {
+        const cont = container.querySelector('#player-inputs-container');
+        const div = document.createElement('div');
+        div.innerHTML = createPlayerInputHTML("", cont.children.length);
+        cont.appendChild(div.firstElementChild);
+    };
+
+    container.querySelector('#start-game').onclick = () => {
+        const names = Array.from(container.querySelectorAll('.player-input')).map(i => i.value.trim()).filter(n => n !== "");
+        const numImp = parseInt(container.querySelector('#select-impostors').value);
+        const numUnd = parseInt(container.querySelector('#select-undercover').value);
+
+        if (names.length < (numImp + numUnd + 1)) return alert(`Servono almeno ${numImp + numUnd + 1} giocatori!`);
+
+        gameData.config.impostors = numImp;
+        gameData.config.undercover = numUnd;
+        setupRoles(names, numImp, numUnd);
+        startNewRound(container);
+    };
 }
 
-function renderDiscard(state) {
-    const el = document.getElementById('discard-pile-ui');
-    if(!el) return;
-    el.innerHTML = '';
-    state.discardPile.slice(-3).forEach((card, i) => {
-        const c = createCardElement(card);
-        c.style.position = "absolute";
-        c.style.left = `${i * 12}px`;
-        c.onclick = (e) => { e.preventDefault(); if(state.turn === 'player' && state.phase === 'draw') pickDiscard(state); };
-        el.appendChild(c);
-    });
+function setupRoles(names, numImp, numUnd) {
+    gameData.players = names.map(name => ({ name, role: 'civil' }));
+    let indices = [...Array(names.length).keys()].sort(() => Math.random() - 0.5);
+    for(let i=0; i<numImp; i++) gameData.players[indices.pop()].role = 'impostor';
+    for(let i=0; i<numUnd; i++) gameData.players[indices.pop()].role = 'undercover';
+    gameData.wordObj = WORDS_DATABASE[Math.floor(Math.random() * WORDS_DATABASE.length)];
 }
 
-function drawFromDeck(state) {
-    if(state.deck.length > 0) {
-        state.hands.player.push(state.deck.pop());
-        state.phase = 'play';
-        updateUI(state);
-    }
+function startNewRound(container) {
+    gameData.currentIndex = 0;
+    renderReveal(container);
 }
 
-function pickDiscard(state) {
-    if(state.discardPile.length > 0) {
-        state.hands.player.push(...state.discardPile);
-        state.discardPile = [];
-        state.phase = 'play';
-        updateUI(state);
-    }
-}
+function renderReveal(container) {
+    const currentPlayer = gameData.players[gameData.currentIndex];
+    const wrapper = container.querySelector('.impostore-wrapper');
+    if (!wrapper) return;
 
-function handleMeld(state, targetPilaIndex) {
-    const cards = state.selectedIndices.sort((a,b)=>b-a).map(i => state.hands.player.splice(i,1)[0]);
-    if (targetPilaIndex !== -1) {
-        state.tables.team1[targetPilaIndex].push(...cards);
-        state.tables.team1[targetPilaIndex].sort((a, b) => getCardValue(a) - getCardValue(b));
-    } else {
-        cards.sort((a, b) => getCardValue(a) - getCardValue(b));
-        state.tables.team1.push(cards);
-    }
-    state.selectedIndices = [];
-    updateUI(state);
-}
+    wrapper.innerHTML = `
+        <div class="fade-in" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 70vh;">
+            <p style="text-transform: uppercase; letter-spacing: 2px; opacity: 0.5; font-size: 12px; margin-bottom: 5px;">Passa il telefono a</p>
+            <h1 class="main-title" style="font-size: 3rem; margin-bottom: 40px; color: white; background: none; -webkit-text-fill-color: white; filter: none;">${currentPlayer.name}</h1>
+            
+            <div id="word-box" style="width: 100%; max-width: 350px; background: var(--glass-surface); border: 2px solid var(--glass-border); border-radius: 24px; padding: 60px 20px; cursor: pointer; transition: 0.3s; box-shadow: inset 0 0 20px rgba(0,0,0,0.3);">
+                <p id="word-text" style="font-weight: 800; opacity: 0.4; font-size: 14px; letter-spacing: 2px;">TOCCA PER SCOPRIRE IL RUOLO</p>
+            </div>
+            
+            <button id="next-player" class="btn-primary" style="display: none; margin-top: 30px; max-width: 350px;">HO VISTO</button>
+        </div>
+    `;
 
-function handleDiscard(state) {
-    const card = state.hands.player.splice(state.selectedIndices[0], 1)[0];
-    state.discardPile.push(card);
-    state.selectedIndices = [];
-    state.turn = 'bot';
-    state.phase = 'draw';
-    state.tutorMsg = "Il Bot sta pensando...";
-    updateUI(state);
-    setTimeout(() => {
-        if (state.hands.player.length === 0) {
-            alert("🏆 VITTORIA! Hai chiuso la partita.");
-            quitGame(state.container);
-            return;
+    container.querySelector('#word-box').onclick = function() {
+        let content = ""; let color = "#00d2ff";
+        if (currentPlayer.role === 'impostor') { 
+            color = "#ff416c"; 
+            content = `<span style="color:${color}; font-size: 24px; font-weight: 900;">SEI L'IMPOSTORE!</span>`; 
         }
-        botAction(state);
-    }, 1200);
+        else if (currentPlayer.role === 'undercover') { 
+            color = "#ffbd00"; 
+            content = `<span style="opacity:0.6; font-size:12px; letter-spacing:1px;">SEI UNDERCOVER</span><br><span style="color:${color}; font-size: 24px; font-weight: 900;">${gameData.wordObj.alt.toUpperCase()}</span>`; 
+        }
+        else { 
+            content = `<span style="opacity:0.6; font-size:12px; letter-spacing:1px;">SEI CIVILE</span><br><span style="color:${color}; font-size: 24px; font-weight: 900;">${gameData.wordObj.word.toUpperCase()}</span>`; 
+        }
+        
+        this.style.borderColor = color;
+        this.style.boxShadow = `0 0 20px ${color}40, inset 0 0 20px ${color}20`;
+        container.querySelector('#word-text').innerHTML = content;
+        
+        const nextBtn = container.querySelector('#next-player');
+        nextBtn.style.display = "flex";
+        
+        this.onclick = null;
+    };
+
+    container.querySelector('#next-player').onclick = () => {
+        if (gameData.currentIndex < gameData.players.length - 1) {
+            gameData.currentIndex++;
+            renderReveal(container);
+        } else {
+            renderGameField(container);
+        }
+    };
 }
 
-function botAction(state) {
-    if (state.turn !== 'bot') return;
-    if(state.deck.length > 0) state.hands.bot1.push(state.deck.pop());
-    setTimeout(() => {
-        if(state.hands.bot1.length > 0) state.discardPile.push(state.hands.bot1.pop());
-        state.turn = 'player';
-        state.phase = 'draw';
-        state.tutorMsg = "Tocca il mazzo per pescare.";
-        updateUI(state);
-    }, 800);
-}
+function renderGameField(container) {
+    const wrapper = container.querySelector('.impostore-wrapper');
+    wrapper.innerHTML = `
+        <div class="fade-in" style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 70vh;">
+            <h1 class="main-title" style="font-size: 2.2rem; margin-bottom: 5px;">DISCUSSIONE</h1>
+            <p style="opacity: 0.5; text-align: center; margin-bottom: 30px; font-size: 13px;">Parlate e votate chi eliminare!</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                ${gameData.players.map((p, i) => `
+                    <div style="background: var(--glass-surface); padding: 15px 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--glass-border); box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+                        <span style="font-weight: 700; font-size: 1.1rem;">${p.name}</span>
+                        <button class="vote-btn" data-index="${i}" style="background: var(--amethyst-bright); border: none; color: white; padding: 10px 18px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--amethyst-glow);">RUOLO</button>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <button id="end-round" class="btn-primary" style="margin-top: 40px; background: var(--danger); border-color: var(--danger); border-left: 3px solid transparent; box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);">TERMINA PARTITA</button>
+        </div>
+    `;
 
-function validateCombo(cards) {
-    if (cards.length < 3) return false;
-    const normalCards = cards.filter(c => !c.isJolly);
-    if (normalCards.length === 0) return false;
-    const firstVal = normalCards[0].val;
-    return normalCards.every(c => c.val === firstVal);
-}
-
-function getCardValue(card) {
-    const mapping = { 'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13 };
-    return mapping[card.val] || 0;
-}
-
-function createCardElement(card) {
-    const el = document.createElement('div');
-    el.className = `card-b`;
-    const icon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[card.suit];
-    el.innerHTML = `<span style="font-size:12px;">${card.val}</span><span style="font-size:16px;">${icon}</span>`;
+    container.querySelectorAll('.vote-btn').forEach(btn => {
+        btn.onclick = () => {
+            const p = gameData.players[parseInt(btn.getAttribute('data-index'))];
+            alert(`${p.name} era: ${p.role.toUpperCase()}`);
+            btn.style.opacity = '0.3';
+            btn.style.pointerEvents = 'none'; // Evita doppi tocchi che causavano bug in passato
+        };
+    });
     
-    // Aggiornato il colore rosso in stile Amethyst
-    if(card.suit === 'hearts' || card.suit === 'diamonds') el.style.color = '#ff416c'; 
-    return el;
+    container.querySelector('#end-round').onclick = () => renderResult(container);
 }
 
-function createBurracoDeck() {
-    const suits = ['hearts', 'diamonds', 'clubs', 'spades'], values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-    let deck = [];
-    suits.forEach(s => values.forEach(v => deck.push({suit:s, val:v, isJolly:false})));
-    return deck;
+function renderResult(container) {
+    const summary = gameData.players.map(p => `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+            <span style="font-weight: 700;">${p.name}</span> 
+            <b style="color:${p.role === 'civil' ? '#00d2ff' : (p.role === 'impostor' ? '#ff416c' : '#ffbd00')}">${p.role.toUpperCase()}</b>
+        </div>
+    `).join('');
+    
+    const wrapper = container.querySelector('.impostore-wrapper');
+    wrapper.innerHTML = `
+        <div class="fade-in" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 80vh;">
+            <h2 class="main-title" style="font-size: 2.8rem; margin-bottom: 30px;">RISULTATI</h2>
+            
+            <div class="setup-card" style="width:100%; text-align: left; padding: 25px;">
+                ${summary}
+                
+                <div style="height: 1px; background: var(--glass-border); margin: 20px 0;"></div>
+                
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="opacity: 0.6; font-size: 13px;">Parola Civili:</span>
+                    <b style="color: #00d2ff;">${gameData.wordObj.word}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="opacity: 0.6; font-size: 13px;">Parola Undercover:</span>
+                    <b style="color: #ffbd00;">${gameData.wordObj.alt}</b>
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 20px;">
+                <button id="replay" class="btn-primary" style="background: linear-gradient(45deg, #00ffa3, #00d2ff); color: black; border: none;">NUOVO ROUND</button>
+                <button id="btn-quit-end" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
+            </div>
+        </div>
+    `;
+    
+    container.querySelector('#replay').onclick = () => { 
+        setupRoles(gameData.players.map(p => p.name), gameData.config.impostors, gameData.config.undercover); 
+        startNewRound(container); 
+    };
+    container.querySelector('#btn-quit-end').onclick = () => quitGame(container);
 }
-
-function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }
