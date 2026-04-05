@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: IMPOSTORE (Local Party Mode)
-// Versione Stabile 2.2 - Premium UI Borderless
+// Versione Stabile 2.3 - Premium UI + Guess Mechanic
 // ==========================================
 
 let gameData = {
@@ -66,7 +66,8 @@ function createPlayerInputHTML(value = "", index) {
 }
 
 function renderSetup(container) {
-    const playersNames = gameData.players.length > 0 ? gameData.players.map(p => p.name) : ["", "", ""];
+    // FIX: Partiamo con solo 2 input vuoti per non ingombrare la schermata
+    const playersNames = gameData.players.length > 0 ? gameData.players.map(p => p.name) : ["", ""];
 
     container.innerHTML = `
         <style>
@@ -188,7 +189,7 @@ function renderReveal(container) {
         }
         
         this.style.borderColor = color;
-        this.style.background = `${color}10`; // Leggero tint di colore
+        this.style.background = `${color}10`; 
         this.style.boxShadow = `0 0 20px ${color}40, inset 0 0 20px ${color}20`;
         container.querySelector('#word-text').innerHTML = content;
         
@@ -219,9 +220,16 @@ function renderGameField(container) {
                 ${gameData.players.map((p, i) => `
                     <div style="background: var(--glass-surface); padding: 15px 20px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--glass-border); box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                         <span style="font-weight: 700; font-size: 1.1rem;">${p.name}</span>
-                        <button class="vote-btn" data-index="${i}" style="background: var(--amethyst-bright); border: none; color: white; padding: 10px 18px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--amethyst-glow);">RUOLO</button>
+                        <button class="vote-btn" data-index="${i}" style="background: var(--amethyst-bright); border: none; color: white; padding: 10px 18px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px var(--amethyst-glow);">SVELA</button>
                     </div>
                 `).join('')}
+            </div>
+            
+            <div id="impostor-guess-panel" style="display: none; flex-direction: column; gap: 10px; margin-top: 20px; background: rgba(255, 65, 108, 0.1); border: 1px solid rgba(255, 65, 108, 0.3); padding: 20px; border-radius: 16px; animation: fadeInUp 0.4s ease-out;">
+                <p style="text-align: center; font-weight: 800; font-size: 13px; color: #ff416c; margin: 0;">L'IMPOSTORE HA UN'ULTIMA CHANCE!</p>
+                <p style="text-align: center; font-size: 11px; opacity: 0.7; margin: 0 0 10px 0;">Se indovina la parola segreta dei civili, ruba la vittoria.</p>
+                <input type="text" id="impostor-guess-input" placeholder="Scrivi la parola qui..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 14px; font-family: 'Poppins', sans-serif;">
+                <button id="submit-guess" class="btn-primary" style="background: #ff416c; box-shadow: 0 4px 15px rgba(255,65,108,0.4); border: none; margin-bottom: 0;">TENTA IL FURTO</button>
             </div>
             
             <button id="end-round" class="btn-primary" style="margin-top: 40px; background: var(--danger); border-color: var(--danger); border-left: 3px solid transparent; box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);">TERMINA PARTITA</button>
@@ -231,16 +239,37 @@ function renderGameField(container) {
     container.querySelectorAll('.vote-btn').forEach(btn => {
         btn.onclick = () => {
             const p = gameData.players[parseInt(btn.getAttribute('data-index'))];
-            alert(`${p.name} era: ${p.role.toUpperCase()}`);
-            btn.style.opacity = '0.3';
-            btn.style.pointerEvents = 'none'; // Evita doppi tocchi
+            
+            // Sostituiamo il tasto con il ruolo svelato
+            btn.outerHTML = `<span style="font-weight: 900; color: ${p.role === 'impostor' ? '#ff416c' : (p.role === 'civil' ? '#00d2ff' : '#ffbd00')}">${p.role.toUpperCase()}</span>`;
+            
+            // FIX: Meccanica tentativo impostore
+            if (p.role === 'impostor') {
+                container.querySelector('#impostor-guess-panel').style.display = 'flex';
+                // Disabilitiamo il pulsante di fine normale, ora bisogna passare dal tentativo
+                container.querySelector('#end-round').style.display = 'none';
+            }
         };
     });
+
+    const submitGuessBtn = container.querySelector('#submit-guess');
+    if (submitGuessBtn) {
+        submitGuessBtn.onclick = () => {
+            const guess = container.querySelector('#impostor-guess-input').value.trim().toLowerCase();
+            const actualWord = gameData.wordObj.word.toLowerCase();
+            
+            if (guess === actualWord) {
+                renderResult(container, true); // Impostore vince
+            } else {
+                renderResult(container, false); // Civili vincono
+            }
+        };
+    }
     
-    container.querySelector('#end-round').onclick = () => renderResult(container);
+    container.querySelector('#end-round').onclick = () => renderResult(container, null);
 }
 
-function renderResult(container) {
+function renderResult(container, impostorStoleWin = null) {
     const summary = gameData.players.map(p => `
         <div style="display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
             <span style="font-weight: 700;">${p.name}</span> 
@@ -248,10 +277,32 @@ function renderResult(container) {
         </div>
     `).join('');
     
+    let resultHeader = `<h2 class="main-title" style="font-size: 2.8rem; margin-bottom: 30px;">RISULTATI</h2>`;
+    
+    // Mostriamo un banner speciale se c'è stato il tentativo
+    if (impostorStoleWin === true) {
+        resultHeader = `
+            <div style="margin-bottom: 25px; animation: pulse 1s infinite alternate;">
+                <h1 style="font-size: 4rem; margin: 0; filter: drop-shadow(0 0 20px rgba(255,65,108,0.5));">💀</h1>
+            </div>
+            <h2 class="main-title" style="font-size: 2.2rem; margin-bottom: 5px; background: none; -webkit-text-fill-color: #ff416c;">FURTO RIUSCITO!</h2>
+            <p style="opacity: 0.7; font-size: 12px; margin-bottom: 30px;">L'impostore ha indovinato la parola e rubato la vittoria.</p>
+        `;
+    } else if (impostorStoleWin === false) {
+         resultHeader = `
+            <div style="margin-bottom: 25px;">
+                <h1 style="font-size: 4rem; margin: 0; filter: drop-shadow(0 0 20px rgba(0,255,163,0.5));">🛡️</h1>
+            </div>
+            <h2 class="main-title" style="font-size: 2.2rem; margin-bottom: 5px; background: none; -webkit-text-fill-color: #00ffa3;">CIVILI SALVI!</h2>
+            <p style="opacity: 0.7; font-size: 12px; margin-bottom: 30px;">L'impostore ha sbagliato parola.</p>
+        `;
+    }
+
     const wrapper = container.querySelector('.impostore-wrapper');
     wrapper.innerHTML = `
         <div class="fade-in" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 80vh;">
-            <h2 class="main-title" style="font-size: 2.8rem; margin-bottom: 30px;">RISULTATI</h2>
+            
+            ${resultHeader}
             
             <div style="background: var(--glass-surface); border: 1px solid var(--glass-border); border-radius: 20px; width:100%; text-align: left; padding: 25px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
                 ${summary}
