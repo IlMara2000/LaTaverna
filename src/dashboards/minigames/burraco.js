@@ -1,9 +1,15 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
+/**
+ * GIOCO: BURRACO
+ * Versione ottimizzata per Mobile (iOS/Android)
+ * Tema: Amethyst Dark UI
+ */
+
 export function initBurraco(container) {
     updateSidebarContext("minigames");
     
-    // FIX: Configurazione pulita per evitare il bug del congelamento
+    // FIX: Pulizia scroll e configurazione mobile-friendly per prevenire rimbalzi laterali
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
@@ -16,6 +22,7 @@ export function initBurraco(container) {
 
 // --- Funzione centralizzata per uscire in sicurezza ---
 const quitGame = async (container) => {
+    // Ripristina lo scroll globale
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     document.body.style.overflow = '';
@@ -26,7 +33,7 @@ const quitGame = async (container) => {
     document.body.style.backgroundColor = '';
     
     try {
-        // Percorso relativo corretto per tornare alla lista
+        // Percorso relativo per tornare alla lista minigiochi
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
@@ -39,27 +46,41 @@ const quitGame = async (container) => {
 function renderSelectionMenu(container) {
     container.innerHTML = `
     <style>
+        /* Animazione d'ingresso fluida solo verticale */
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .burraco-start-wrapper { 
             width:100%; max-width:430px; height:100dvh; margin: 0 auto;
             display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; color:white;
-            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            /* FIX: Usiamo slideUpFade per evitare lo scatto laterale */
+            animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
         }
+        
         @media (min-width: 431px) {
             .burraco-start-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
+
         .mode-btn { 
             width:80%; padding:18px; border-radius:18px; border:1px solid #9d4ede; 
             background:rgba(157,78,221,0.1); color:white; font-size:16px; font-weight:900; 
             cursor:pointer; transition:0.3s; text-transform:uppercase; 
-            -webkit-tap-highlight-color: transparent; outline: none; box-shadow: 0 4px 15px rgba(157,78,221,0.2);
+            -webkit-tap-highlight-color: transparent; outline: none; box-shadow: 0 4px 15px rgba(157, 78, 221, 0.2);
         }
         .mode-btn:active { background:#9d4ede; transform:scale(0.95); }
+        
+        .btn-quit-start { 
+            margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); 
+            font-weight:700; cursor:pointer; outline: none; font-size: 12px; text-transform: uppercase; 
+        }
     </style>
     <div class="burraco-start-wrapper">
         <h1 style="margin-bottom:30px; letter-spacing:5px; font-family:'Montserrat'; font-size:2.5rem; background: linear-gradient(135deg, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">BURRACO</h1>
         <button class="mode-btn" id="mode-2">GIOCA 1 VS 1</button>
-        <button id="btn-quit-start" style="margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; outline: none; font-size: 12px; text-transform: uppercase;">← Torna Indietro</button>
+        <button id="btn-quit-start" class="btn-quit-start">← Torna Indietro</button>
     </div>
     `;
 
@@ -69,21 +90,18 @@ function renderSelectionMenu(container) {
 
 function startGame(container, players) {
     let state = {
-        mode: players,
-        deck: [],
+        mode: players, deck: [],
         hands: { player: [], bot1: [] },
         tables: { team1: [], team2: [] },
-        discardPile: [],
-        turn: 'player',
-        phase: 'draw',
-        selectedIndices: [],
-        tutorMsg: "Tocca il mazzo per pescare o prendi gli scarti."
+        discardPile: [], turn: 'player', phase: 'draw',
+        selectedIndices: [], tutorMsg: "Tocca il mazzo per pescare o prendi gli scarti."
     };
 
     renderLayout(container, state);
     initLogic(state, container);
 }
 
+// --- 2. LAYOUT GIOCO ---
 function renderLayout(container, state) {
     container.innerHTML = `
     <style>
@@ -91,16 +109,18 @@ function renderLayout(container, state) {
             width:100%; max-width:430px; height:100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(10,42,26,0.8) 0%, rgba(2,10,5,0.9) 100%); 
             color:white; font-family:'Poppins',sans-serif; position:relative; overflow:hidden; display:flex; flex-direction:column;
-            animation: cardEntrance 0.5s ease-out forwards; box-sizing: border-box;
+            animation: slideUpFade 0.5s ease-out forwards; box-sizing: border-box;
         }
+        
         @media (min-width: 431px) {
             .burraco-game-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90vh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
+
         .btn-exit-game { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px; cursor: pointer; outline: none; }
         .tables-container { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: calc(55px + env(safe-area-inset-top)) 15px 15px 15px; overflow: hidden; }
         .mats { height: 130px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; position: relative; display: flex; gap: 10px; overflow-x: auto; }
-        .tutor-box { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border-left: 3px solid #9d4ede; padding: 8px 12px; border-radius: 8px; font-size: 10px; z-index: 10; backdrop-filter: blur(5px); pointer-events: none; }
-        .card-b { width: 42px; height: 60px; background: white; border-radius: 5px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; position: relative; transition: transform 0.2s; cursor: pointer; flex-shrink: 0; user-select: none; }
+        .tutor-box { position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); border-left: 3px solid #9d4ede; padding: 8px 12px; border-radius: 8px; font-size: 10px; z-index: 10; backdrop-filter: blur(5px); pointer-events: none; white-space: nowrap; }
+        .card-b { width: 42px; height: 60px; background: white; border-radius: 5px; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 10px; position: relative; transition: transform 0.2s; cursor: pointer; flex-shrink: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
         .card-b.selected { transform: translateY(-15px); border: 2px solid #9d4ede; z-index: 10; box-shadow: 0 0 12px #9d4ede; }
         .center-area { display: flex; justify-content: center; align-items: center; gap: 40px; padding: 10px; background: rgba(0,0,0,0.2); }
         .deck-stack { width: 50px; height: 70px; background: linear-gradient(135deg, #1e3799, #0c2461); border: 2px solid white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 900; cursor: pointer; outline: none; }
@@ -136,6 +156,7 @@ function renderLayout(container, state) {
     document.getElementById('btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
 
+// --- 3. LOGICA DI GIOCO ---
 function initLogic(state, container) {
     state.deck = createBurracoDeck();
     shuffle(state.deck);
@@ -331,5 +352,4 @@ function createBurracoDeck() {
     return deck;
 }
 
-function findCombinations(hand) { return []; }
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } }

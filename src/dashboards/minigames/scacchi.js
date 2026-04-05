@@ -2,19 +2,20 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: STRATEGY (Chess & Checkers)
-// Versione Mobile-First ottimizzata
+// Versione Stabile 2.0 - Anti-Crash & Vertical Lock
 // ==========================================
 
 export function initScacchi(container) {
-    updateSidebarContext("minigames");
+    if (!container) return;
+    try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // FIX: Configurazione mobile-friendly per prevenire rimbalzi
+    // FIX: Configurazione mobile-friendly per prevenire rimbalzi ed errori laterali
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
-    document.body.style.touchAction = 'none';
-    document.body.style.backgroundColor = '#090a0f'; // Match sfondo globale
+    document.body.style.touchAction = 'none'; // Importante per non trascinare la pagina muovendo i pezzi
+    document.body.style.backgroundColor = '#090a0f'; 
 
     let state = {
         gameMode: 'chess', 
@@ -40,7 +41,6 @@ const quitGame = async (container) => {
     document.body.style.backgroundColor = '';
     
     try {
-        // FIX: Import dinamico pulito per tornare alla lista minigiochi
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
@@ -53,13 +53,17 @@ const quitGame = async (container) => {
 function renderSetupMenu(container, state) {
     container.innerHTML = `
     <style>
+        @keyframes fadeInUpOnly {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         .strategy-wrapper { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(26,26,46,0.8) 0%, rgba(7,7,10,0.9) 100%); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             color: white; font-family: 'Poppins', sans-serif; 
-            padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)) 20px;
-            animation: cardEntrance 0.5s ease-out forwards; box-sizing: border-box;
+            padding: 20px; box-sizing: border-box;
+            animation: fadeInUpOnly 0.6s ease-out forwards;
         }
         @media (min-width: 431px) {
             .strategy-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
@@ -67,7 +71,7 @@ function renderSetupMenu(container, state) {
         .setup-card { 
             background: rgba(255,255,255,0.03); backdrop-filter: blur(15px);
             padding: 25px; border-radius: 24px; border: 1px solid rgba(157,78,221,0.3);
-            width: 100%; text-align: center;
+            width: 100%; text-align: center; box-sizing: border-box;
         }
         .mode-toggle { display: flex; gap: 8px; margin: 20px 0; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 12px; }
         .mode-btn { flex: 1; padding: 12px; border-radius: 8px; border: none; cursor: pointer; background: transparent; color: white; font-weight: 600; font-size: 13px; outline: none; transition: 0.3s; }
@@ -75,12 +79,13 @@ function renderSetupMenu(container, state) {
         .diff-btn { padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; font-size:10px; cursor: pointer; outline: none; }
         .diff-btn.active { background:rgba(157,78,221,0.2); border:1px solid #9d4ede; }
         .start-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: #00ffa3; color: #000; font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-top: 20px; outline: none; }
+        .btn-exit-scacchi { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 15px; border-radius: 14px; cursor: pointer; width: 100%; font-size: 12px; font-weight: 700; margin-top: 15px; }
     </style>
 
     <div class="strategy-wrapper">
         <div class="setup-card">
             <h1 style="font-family:'Montserrat'; font-weight:900; letter-spacing:2px; margin-bottom:5px;">STRATEGY</h1>
-            <p style="opacity:0.5; font-size:11px; margin-bottom:25px;">Chess & Checkers</p>
+            <p style="opacity:0.5; font-size:11px; margin-bottom:25px;">Sfida l'Intelligenza Artificiale</p>
             <div class="mode-toggle">
                 <button class="mode-btn ${state.gameMode === 'chess' ? 'active' : ''}" id="btn-chess">SCACCHI</button>
                 <button class="mode-btn ${state.gameMode === 'checkers' ? 'active' : ''}" id="btn-checkers">DAMA</button>
@@ -94,16 +99,18 @@ function renderSetupMenu(container, state) {
             </div>
             <button class="start-btn" id="start-game">GIOCA ORA</button>
         </div>
-        <button id="btn-quit-setup" class="btn-back-glass" style="margin-top: 20px; width: 100%; padding: 15px; font-size: 12px;">← ESCI DAL GIOCO</button>
+        <button id="btn-quit-setup" class="btn-exit-scacchi">← TORNA ALLA LIBRERIA</button>
     </div>
     `;
 
     container.querySelector('#btn-quit-setup').onclick = (e) => { e.preventDefault(); quitGame(container); };
     container.querySelector('#btn-chess').onclick = () => { state.gameMode = 'chess'; renderSetupMenu(container, state); };
     container.querySelector('#btn-checkers').onclick = () => { state.gameMode = 'checkers'; renderSetupMenu(container, state); };
+    
     container.querySelectorAll('.diff-btn').forEach(btn => {
         btn.onclick = () => { state.difficulty = parseInt(btn.dataset.diff); renderSetupMenu(container, state); };
     });
+
     container.querySelector('#start-game').onclick = () => startGame(container, state);
 }
 
@@ -149,32 +156,33 @@ function renderBoard(container, state) {
         .game-screen { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: rgba(10,10,12,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
-            animation: cardEntrance 0.4s ease-out forwards; box-sizing: border-box;
+            box-sizing: border-box; overflow: hidden;
         }
         @media (min-width: 431px) {
             .game-screen { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         }
         .board { 
             display: grid; grid-template-columns: repeat(8, 1fr); 
-            width: 90vw; max-width: 380px; height: 90vw; max-height: 380px;
-            border: 2px solid rgba(255,255,255,0.05); border-radius: 8px; overflow: hidden;
+            width: 92vw; max-width: 390px; height: 92vw; max-height: 390px;
+            border: 4px solid rgba(157, 78, 221, 0.3); border-radius: 8px; overflow: hidden;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
-        .sq { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 28px; position: relative; cursor: pointer; }
+        .sq { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 30px; position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
         .sq.light { background: #d1d9e0; }
         .sq.dark { background: #5c7c99; }
-        .sq.selected { background: #f6f669 !important; }
-        .piece { user-select: none; color: black; pointer-events: none; }
-        .checker { width: 70%; height: 70%; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); }
-        .checker.w { background: #fff; }
-        .checker.b { background: #222; }
-        .game-header { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; position: absolute; top: env(safe-area-inset-top, 10px); }
-        #btn-reset { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 20px; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; outline: none; }
+        .sq.selected { background: rgba(157, 78, 221, 0.5) !important; box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
+        .piece { user-select: none; color: black; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+        .checker { width: 75%; height: 75%; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); }
+        .checker.w { background: #fff; box-shadow: 0 3px 0 #ccc; }
+        .checker.b { background: #222; box-shadow: 0 3px 0 #000; }
+        .game-header { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; position: absolute; top: env(safe-area-inset-top, 10px); box-sizing: border-box; }
+        #btn-reset { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 10px 25px; border-radius: 12px; font-size: 11px; font-weight: 800; cursor: pointer; outline: none; }
     </style>
 
     <div class="game-screen">
         <div class="game-header">
-            <span style="font-weight:900; font-size:14px;">${state.gameMode.toUpperCase()}</span>
-            <div style="padding: 6px 12px; border-radius: 20px; font-size: 10px; font-weight: 800; background: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}; color: #000;">
+            <span style="font-weight:900; font-size:16px; letter-spacing: 1px;">${state.gameMode.toUpperCase()}</span>
+            <div style="padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 800; background: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}; color: #000; box-shadow: 0 0 15px ${state.turn === 'w' ? 'rgba(0,255,163,0.3)' : 'rgba(255,65,108,0.3)'};">
                 ${state.turn === 'w' ? 'TUO TURNO' : 'IA...'}
             </div>
         </div>
@@ -226,13 +234,15 @@ function aiMove(state, container) {
     for (let r=0; r<8; r++) {
         for (let c=0; c<8; c++) {
             if (state.board[r][c]?.color === 'b') {
-                moves.push({fr: r, fc: c, tr: r+1, tc: c});
+                // Logica IA base: muove avanti di una riga
+                if (r + 1 < 8) moves.push({fr: r, fc: c, tr: r+1, tc: c});
             }
         }
     }
     if (moves.length > 0) {
         const m = moves[Math.floor(Math.random() * moves.length)];
-        if (m.tr < 8) { state.board[m.tr][m.tc] = state.board[m.fr][m.fc]; state.board[m.fr][m.fc] = null; }
+        state.board[m.tr][m.tc] = state.board[m.fr][m.fc];
+        state.board[m.fr][m.fc] = null;
     }
     state.turn = 'w';
     state.isAnimating = false;

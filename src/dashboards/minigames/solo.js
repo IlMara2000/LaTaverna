@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: SOLO (Uno-Style)
-// Versione Mobile-First ottimizzata
+// Versione Stabile 2.0 - Anti-Crash & Vertical Lock
 // ==========================================
 
 const COLORS = ['red', 'blue', 'green', 'yellow'];
@@ -18,15 +18,17 @@ const getCardContent = (val) => {
 };
 
 export function initSoloGame(container) {
-    updateSidebarContext("minigames");
+    if (!container) return;
+    try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // FIX: Pulizia scroll e configurazione mobile-friendly
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.overscrollBehavior = 'none';
-    document.body.style.overflow = 'hidden';
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.touchAction = 'none';
+    // FIX: Configurazione Scroll Mobile (Solo verticale)
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+    document.body.style.overflowY = 'auto';
+    document.body.style.position = 'relative';
+    document.body.style.touchAction = 'pan-y'; 
     document.body.style.backgroundColor = '#090a0f';
+    window.scrollTo(0, 0);
     
     let state = {
         deck: [], discardPile: [], players: [[], [], [], []], 
@@ -43,21 +45,12 @@ export function initSoloGame(container) {
 
 // --- Funzione centralizzata per uscire in sicurezza ---
 const quitGame = async (container) => {
-    document.documentElement.style.overflow = '';
-    document.documentElement.style.overscrollBehavior = '';
-    document.body.style.overflow = '';
-    document.body.style.overscrollBehavior = '';
     document.body.style.touchAction = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.backgroundColor = '';
-    
+    document.body.style.overflowX = '';
     try {
-        // FIX: Import dinamico corretto per tornare alla lista senza ricaricare l'app
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
-        console.error("Errore navigazione:", e);
         window.location.reload(); 
     }
 };
@@ -65,11 +58,16 @@ const quitGame = async (container) => {
 function renderLayout(container, state) {
     container.innerHTML = `
     <style>
+        @keyframes fadeInUpOnly {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .solo-wrapper { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
             background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif; 
-            animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation: fadeInUpOnly 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             box-sizing: border-box;
         }
         @media (min-width: 431px) {
@@ -79,7 +77,7 @@ function renderLayout(container, state) {
             position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
             color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px;
-            cursor: pointer; outline: none; transition: 0.2s;
+            cursor: pointer; outline: none;
         }
         .opponents-container { display: flex; justify-content: space-around; padding: 15px; position: absolute; top: calc(50px + env(safe-area-inset-top)); width: 100%; z-index: 10; }
         .bot-status { display: flex; flex-direction: column; align-items: center; padding: 10px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); min-width: 80px; font-size: 10px; }
@@ -96,7 +94,7 @@ function renderLayout(container, state) {
     <div class="solo-wrapper">
         <div id="start-overlay" style="position:absolute; inset:0; background:#090a0f; z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center;">
             <h1 style="font-size: 4rem; font-weight: 900; background: linear-gradient(to bottom, #00d2ff, #9d4ede); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">SOLO</h1>
-            <button id="btn-start" style="background:white; border:none; padding:15px 50px; border-radius:50px; color:#000; font-weight:900; cursor:pointer;">GIOCA ORA</button>
+            <button id="btn-start" style="background:white; border:none; padding:15px 50px; border-radius:50px; color:#000; font-weight:900; font-size: 1.2rem; cursor:pointer;">GIOCA ORA</button>
             <button id="btn-quit-start" style="margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer;">← TORNA INDIETRO</button>
         </div>
 
