@@ -4,12 +4,13 @@ export function initBriscola(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // BLOCCO SCROLL GLOBALE 100%
+    // BLOCCO SCROLL GLOBALE 100% (Amethyst 5.4 Standard)
     document.documentElement.style.overflowX = 'hidden';
     document.body.style.overflowX = 'hidden';
-    document.body.style.overflowY = 'auto';
+    document.body.style.overflowY = 'hidden'; // Blocco totale pagina
     document.body.style.position = 'relative';
-    document.body.style.touchAction = 'pan-y';
+    document.body.style.touchAction = 'none'; // Nessun trascinamento
+    document.body.style.overscrollBehavior = 'none';
     document.body.style.backgroundColor = '#05010a'; // Match del bg-dark
     window.scrollTo(0, 0);
 
@@ -38,38 +39,47 @@ export function initBriscola(container) {
     <style>
         .briscola-wrapper { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-            position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif;
-            box-sizing: border-box; 
+            position: relative; overflow: hidden; color: var(--text-primary); 
+            font-family: 'Poppins', sans-serif; box-sizing: border-box; 
+            background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%);
         }
         
         .btn-exit-game {
             position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            color: white; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 10px;
-            cursor: pointer; outline: none; transition: 0.2s;
+            background: var(--glass-surface); border: 1px solid var(--glass-border);
+            color: white; padding: 8px 16px; border-radius: 14px; font-weight: 800; font-size: 10px;
+            cursor: pointer; outline: none; transition: 0.2s; backdrop-filter: blur(10px);
         }
-        .btn-exit-game:active { transform: scale(0.95); background: rgba(157, 78, 221, 0.2); }
+        .btn-exit-game:active { transform: scale(0.95); background: rgba(157, 78, 221, 0.2); border-color: var(--amethyst-bright); }
         
         .score-widget { 
             position: absolute; top: calc(15px + env(safe-area-inset-top)); right: 15px; 
-            background: rgba(255,255,255,0.03); backdrop-filter: blur(10px); 
-            border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; min-width: 110px; z-index: 10; 
+            background: var(--glass-surface); backdrop-filter: blur(10px); 
+            border: 1px solid var(--glass-border); padding: 10px 15px; border-radius: 16px; 
+            min-width: 110px; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
-        .score-line { display: flex; justify-content: space-between; align-items: center; font-weight: 900; font-size: 0.7rem; }
+        .score-line { display: flex; justify-content: space-between; align-items: center; font-weight: 900; font-size: 0.75rem; margin-bottom: 4px; }
         
         .b-card { 
-            width: 75px; height: 110px; border-radius: 12px; background: rgba(255,255,255,0.05); color: white; 
+            width: 75px; height: 110px; border-radius: 14px; 
+            background: var(--glass-surface); color: white; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; 
-            border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; position: relative; cursor: pointer; text-align: center;
-            user-select: none;
+            border: 1px solid var(--glass-border); transition: transform 0.2s, box-shadow 0.2s; position: relative; 
+            cursor: pointer; text-align: center; user-select: none; -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
-        .b-card.back { background: linear-gradient(135deg, #2a0a4a, #05020a); border: 1.5px solid #9d4ede; color: #9d4ede; }
+        
+        .player-card:active { transform: translateY(-15px) scale(1.05); z-index: 10; box-shadow: 0 10px 20px rgba(157, 78, 221, 0.4); border-color: var(--amethyst-bright); }
+        
+        .b-card.back { background: var(--accent-gradient); border: 1px solid var(--amethyst-bright); color: transparent; }
         
         .active-glow { position: relative; }
         .active-glow::after {
             content: ''; position: absolute; inset: -5px; border-radius: 20px;
             border: 2px solid #00ffa3; opacity: 0.5; animation: pulseGlow 1.5s infinite; pointer-events: none;
         }
+        #bot-side.active-glow::after { border-color: var(--danger); }
+        
         @keyframes pulseGlow { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.05); opacity: 0; } }
 
         #player-side { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
@@ -77,30 +87,33 @@ export function initBriscola(container) {
         #mid-table { width: 100%; height: 200px; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
     </style>
 
-    <div class="briscola-wrapper">
-        <div id="briscola-overlay" class="fade-in" style="position:absolute; inset:0; background:transparent; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:20px; padding: 20px;">
-            <h1 style="font-size: 2.8rem; font-weight: 900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-family:'Montserrat', sans-serif; margin: 0 0 10px 0; letter-spacing: 2px;">BRISCOLA</h1>
+    <div class="briscola-wrapper fade-in">
+        
+        <div id="briscola-overlay" style="position:absolute; inset:0; background:rgba(5, 2, 10, 0.95); backdrop-filter: blur(10px); z-index:11000; display:flex; align-items:center; justify-content:center; flex-direction:column; padding: 20px; box-sizing: border-box;">
+            <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">BRISCOLA</h1>
             
-            <button class="btn-main" id="start-game-btn">GIOCA ORA</button>
-            <button id="btn-quit-start" style="margin-top: 15px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; outline: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; -webkit-tap-highlight-color:transparent;">← TORNA INDIETRO</button>
+            <button class="btn-primary" id="start-game-btn" style="max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA ORA</button>
+            <button id="btn-quit-start" class="btn-back-glass" style="max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
         </div>
 
         <button class="btn-exit-game" id="btn-exit-ingame" style="display: none;">← ESCI</button>
 
         <div class="score-widget" id="score-ui" style="display: none;">
             <div class="score-line"><span>TU</span> <span id="s0" style="color:#00ffa3;">0</span></div>
-            <div class="score-line"><span>BOT</span> <span id="s1" style="color:#ff416c;">0</span></div>
-            <div id="deck-count" style="font-size: 9px; opacity:0.5; margin-top:5px; text-align:center;">Carte: 40</div>
+            <div class="score-line"><span>BOT</span> <span id="s1" style="color:var(--danger);">0</span></div>
+            <div id="deck-count" style="font-size: 9px; opacity:0.5; margin-top:8px; text-align:center; font-family: 'Montserrat', sans-serif; letter-spacing: 1px;">CARTE: 40</div>
         </div>
 
         <div id="bot-side" style="display: none;"></div>
+        
         <div id="mid-table" style="display: none;">
             <div id="played-cards" style="display:flex; gap:10px; height: 110px;"></div>
             <div style="position:relative; width:120px; height:80px; margin-top: 20px;">
                 <div id="briscola-slot" style="position:absolute; transform:rotate(90deg); left: 30px;"></div>
-                <div id="deck-visual" class="b-card back" style="position:absolute; transform: scale(0.8); left: -10px; font-size:9px;">MAZZO</div>
+                <div id="deck-visual" class="b-card back" style="position:absolute; transform: scale(0.8); left: -10px; font-size:9px;"></div>
             </div>
         </div>
+        
         <div id="player-side" style="display: none;"></div>
     </div>
     `;
@@ -108,6 +121,8 @@ export function initBriscola(container) {
     const quitGame = async () => {
         document.body.style.touchAction = '';
         document.body.style.overflowX = '';
+        document.body.style.overflowY = 'auto'; // Ripristina scroll verticale
+        document.body.style.overscrollBehavior = '';
         document.body.style.backgroundColor = '';
         try {
             const { showMinigamesList } = await import('../../minigamelist.js');
@@ -124,9 +139,9 @@ export function initBriscola(container) {
         if (!c) return '';
         const suitData = SUITS.find(s => s.id === c.suit);
         return `
-            <span style="font-size:8px; color:${suitData.color}; font-weight:900;">${c.suit.toUpperCase()}</span>
-            <span style="font-size:1.5rem;">${suitData.icon}</span>
-            <span style="font-size:14px; font-weight:900;">${c.name}</span>
+            <span style="font-size:9px; color:${suitData.color}; font-weight:900; letter-spacing: 1px;">${c.suit.toUpperCase()}</span>
+            <span style="font-size:1.8rem; margin: 5px 0; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">${suitData.icon}</span>
+            <span style="font-size:15px; font-weight:900; color: white;">${c.name}</span>
         `;
     };
 
@@ -134,7 +149,7 @@ export function initBriscola(container) {
         if (!state.gameActive) return;
         
         const bSlot = container.querySelector('#briscola-slot');
-        bSlot.innerHTML = state.briscola ? `<div class="b-card" style="transform: scale(0.8); border-color:#9d4ede;">${getCardUI(state.briscola)}</div>` : '';
+        bSlot.innerHTML = state.briscola ? `<div class="b-card" style="transform: scale(0.8); border: 2px solid var(--amethyst-bright); box-shadow: 0 0 15px var(--amethyst-glow);">${getCardUI(state.briscola)}</div>` : '';
         
         container.querySelector('#deck-visual').style.display = state.deck.length > 0 ? 'flex' : 'none';
         container.querySelector('#deck-count').innerText = `CARTE: ${state.deck.length}`;
@@ -144,14 +159,14 @@ export function initBriscola(container) {
         botSide.classList.toggle('active-glow', state.turn === 1);
         
         const pSide = container.querySelector('#player-side');
-        pSide.innerHTML = state.players[0].map((c, i) => `<div class="b-card" data-idx="${i}">${getCardUI(c)}</div>`).join('');
+        pSide.innerHTML = state.players[0].map((c, i) => `<div class="b-card player-card" data-idx="${i}">${getCardUI(c)}</div>`).join('');
         pSide.classList.toggle('active-glow', state.turn === 0);
         
         container.querySelector('#played-cards').innerHTML = state.table.map(t => `<div class="b-card" style="cursor:default;">${getCardUI(t.card)}</div>`).join('');
         container.querySelector('#s0').innerText = state.scores[0];
         container.querySelector('#s1').innerText = state.scores[1];
 
-        pSide.querySelectorAll('.b-card').forEach(card => {
+        pSide.querySelectorAll('.b-card.player-card').forEach(card => {
             card.onclick = (e) => { 
                 e.preventDefault();
                 if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); 
@@ -204,7 +219,9 @@ export function initBriscola(container) {
             }
 
             if (state.players[0].length === 0 && state.deck.length === 0) {
-                const msg = state.scores[0] > 60 ? "🏆 VITTORIA!" : (state.scores[0] === 60 ? "🤝 PAREGGIO!" : "💀 SCONFITTA!");
+                const isWin = state.scores[0] > 60;
+                const isDraw = state.scores[0] === 60;
+                const msg = isWin ? "🏆 VITTORIA!" : (isDraw ? "🤝 PAREGGIO!" : "💀 SCONFITTA!");
                 alert(`${msg}\nTu: ${state.scores[0]} - Bot: ${state.scores[1]}`);
                 return quitGame();
             }
