@@ -1,21 +1,17 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
-/**
- * GIOCO: BRISCOLA
- * Versione ottimizzata per Mobile (iOS/Android)
- * Tema: Amethyst Dark UI
- */
-
 export function initBriscola(container) {
-    updateSidebarContext("minigames");
+    if (!container) return;
+    try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // FIX: Configurazione viewport e blocco scroll per evitare rimbalzi elastici su iOS
-    document.documentElement.style.overflow = 'hidden';
-    document.documentElement.style.overscrollBehavior = 'none';
-    document.body.style.overflow = 'hidden';
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.touchAction = 'none'; 
-    document.body.style.backgroundColor = '#090a0f';
+    // BLOCCO SCROLL GLOBALE 100%
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.overflowX = 'hidden';
+    document.body.style.overflowY = 'auto';
+    document.body.style.position = 'relative';
+    document.body.style.touchAction = 'pan-y';
+    document.body.style.backgroundColor = '#05010a'; // Match del bg-dark
+    window.scrollTo(0, 0);
 
     const SUITS = [
         { id: 'bastoni', icon: '🪵', color: '#00ffa3' },
@@ -40,25 +36,12 @@ export function initBriscola(container) {
 
     container.innerHTML = `
     <style>
-        /* Animazione d'ingresso fluida solo verticale */
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         .briscola-wrapper { 
             width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-            background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%); 
             position: relative; overflow: hidden; color: white; font-family: 'Poppins', sans-serif;
             box-sizing: border-box; 
-            animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
         
-        @media (min-width: 431px) {
-            .briscola-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        }
-
-        /* Pulsante Esci */
         .btn-exit-game {
             position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -89,22 +72,17 @@ export function initBriscola(container) {
         }
         @keyframes pulseGlow { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.05); opacity: 0; } }
 
-        .btn-start { 
-            background: linear-gradient(45deg, #9d4ede, #ff416c); color: white; padding: 15px 40px; 
-            border-radius: 15px; font-weight: 900; border: none; cursor: pointer; font-size: 1.2rem; 
-            text-transform: uppercase; outline: none; box-shadow: 0 10px 20px rgba(157, 78, 221, 0.3);
-        }
-        
         #player-side { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
         #bot-side { position: absolute; top: calc(75px + env(safe-area-inset-top)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
         #mid-table { width: 100%; height: 200px; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
     </style>
 
     <div class="briscola-wrapper">
-        <div id="briscola-overlay" style="position:absolute; inset:0; background:rgba(9,10,15,0.98); z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:20px; backdrop-filter: blur(15px);">
-            <h1 style="font-size:3rem; font-weight:900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-family:'Montserrat'; margin: 0;">BRISCOLA</h1>
-            <button class="btn-start" id="start-game-btn">GIOCA ORA</button>
-            <button id="btn-quit-start" style="margin-top: 20px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; outline: none; font-size: 12px; text-transform: uppercase;">← Torna Indietro</button>
+        <div id="briscola-overlay" class="fade-in" style="position:absolute; inset:0; background:transparent; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:20px; padding: 20px;">
+            <h1 style="font-size: 2.8rem; font-weight: 900; background: linear-gradient(to right, #9d4ede, #ff416c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-family:'Montserrat', sans-serif; margin: 0 0 10px 0; letter-spacing: 2px;">BRISCOLA</h1>
+            
+            <button class="btn-main" id="start-game-btn">GIOCA ORA</button>
+            <button id="btn-quit-start" style="margin-top: 15px; background:transparent; border:none; color:rgba(255,255,255,0.5); font-weight:700; cursor:pointer; outline: none; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; -webkit-tap-highlight-color:transparent;">← TORNA INDIETRO</button>
         </div>
 
         <button class="btn-exit-game" id="btn-exit-ingame" style="display: none;">← ESCI</button>
@@ -128,20 +106,13 @@ export function initBriscola(container) {
     `;
 
     const quitGame = async () => {
-        // Ripristina lo scroll globale prima di uscire
-        document.documentElement.style.overflow = '';
-        document.documentElement.style.overscrollBehavior = '';
-        document.body.style.overflow = '';
-        document.body.style.overscrollBehavior = '';
         document.body.style.touchAction = '';
-        document.body.style.position = '';
-        
+        document.body.style.overflowX = '';
+        document.body.style.backgroundColor = '';
         try {
-            // Import dinamico della lista minigiochi
             const { showMinigamesList } = await import('../../minigamelist.js');
             showMinigamesList(document.getElementById('app') || container);
         } catch (e) {
-            console.error("Errore durante l'uscita:", e);
             window.location.reload(); 
         }
     };
