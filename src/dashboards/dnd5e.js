@@ -2,20 +2,34 @@ import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { showLobby } from '../lobby.js';
 
 export function initDndDashboard(container) {
-    updateSidebarContext("dnd5e");
+    if (!container) return;
+    try { updateSidebarContext("dnd5e"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // FIX: Allineamento con il sistema di scroll globale
+    // Configurazione Scroll per la Dashboard (Qui serve lo scroll verticale libero)
+    document.documentElement.style.overflowX = 'hidden';
     document.body.style.overflowX = 'hidden';
-    document.body.style.overflowY = 'auto';
-    document.body.style.touchAction = 'pan-y'; // Permette lo scroll verticale nativo
+    document.body.style.overflowY = 'auto'; 
+    document.body.style.touchAction = 'pan-y'; 
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.backgroundColor = '#05010a'; // Background Amethyst Dark
     window.scrollTo(0, 0);
 
     container.innerHTML = `
         <style>
+            .dnd-wrapper {
+                padding: 20px; 
+                max-width: 1100px; 
+                margin: 0 auto; 
+                box-sizing: border-box;
+                font-family: 'Poppins', sans-serif;
+                color: white;
+                min-height: 100vh;
+            }
+
             .dnd-hero {
                 background: linear-gradient(135deg, rgba(40, 10, 60, 0.8) 0%, rgba(10, 5, 20, 0.9) 100%),
                             url('https://www.transparenttextures.com/patterns/dark-matter.png');
-                border: 1px solid rgba(157, 78, 221, 0.3);
+                border: 1px solid var(--glass-border);
                 border-radius: 30px;
                 padding: 40px;
                 position: relative;
@@ -34,12 +48,8 @@ export function initDndDashboard(container) {
             }
 
             @media (max-width: 768px) {
-                .dnd-title {
-                    font-size: 2.2rem; /* Ridotto per non rompere il layout mobile */
-                }
-                .dnd-hero {
-                    padding: 25px;
-                }
+                .dnd-title { font-size: 2.2rem; }
+                .dnd-hero { padding: 25px; }
             }
 
             /* Dado gigante sfumato sullo sfondo */
@@ -50,8 +60,8 @@ export function initDndDashboard(container) {
                 bottom: -30px;
                 font-size: 250px;
                 font-weight: 900;
-                color: rgba(157, 78, 221, 0.03);
-                font-family: 'Montserrat', sans-serif; /* Usiamo il font corretto per il numero */
+                color: rgba(157, 78, 221, 0.04);
+                font-family: 'Montserrat', sans-serif; 
                 transform: rotate(-15deg);
                 pointer-events: none;
             }
@@ -70,8 +80,8 @@ export function initDndDashboard(container) {
             }
 
             .action-card {
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: var(--glass-surface);
+                border: 1px solid var(--glass-border);
                 padding: 25px;
                 border-radius: 20px;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -79,6 +89,10 @@ export function initDndDashboard(container) {
                 text-align: left;
                 -webkit-tap-highlight-color: transparent;
                 outline: none;
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                box-sizing: border-box;
             }
 
             .action-card:active {
@@ -110,10 +124,10 @@ export function initDndDashboard(container) {
             }
         </style>
 
-        <div style="padding: 20px; max-width: 1100px; margin: 0 auto; box-sizing: border-box;" class="fade-in">
+        <div class="dnd-wrapper fade-in">
             
-            <button id="back-to-lobby" class="btn-back-glass" style="width: auto; padding: 12px 20px; margin-bottom: 30px; display: inline-flex;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <button id="back-to-lobby" class="btn-back-glass" style="width: auto; padding: 12px 20px; margin-bottom: 30px; display: inline-flex; border-left: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
                 TORNA ALLA LIBRERIA
@@ -125,34 +139,34 @@ export function initDndDashboard(container) {
                     DUNGEONS <br> & <span style="color:var(--amethyst-bright); text-shadow: 0 0 20px var(--amethyst-glow);">DRAGONS</span>
                 </h1>
                 <p style="opacity: 0.6; margin-top: 20px; max-width: 500px; font-size: 14px; line-height: 1.6;">
-                    Benvenuto, Avventuriero. Gestisci le tue campagne, consulta il grimorio degli incantesimi e forgia il destino dei tuoi eroi.
+                    Benvenuto, Avventuriero. Consulta i tomi sacri, forgia il destino dei tuoi eroi e partecipa alle campagne attive.
                 </p>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
                 
-                <div class="action-card" style="animation: fadeInUp 0.6s 0.1s backwards;">
+                <div class="action-card" id="btn-manuali" style="animation: fadeInUp 0.6s 0.1s backwards;">
+                    <div class="icon-circle">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                    </div>
+                    <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 800;">Biblioteca dei Manuali</h3>
+                    <p style="margin: 0; font-size: 12px; opacity: 0.5;">Sfoglia i 3 Manuali di Gioco D&D 5e originali (Giocatore, Mostri, Master).</p>
+                </div>
+
+                <div class="action-card" id="btn-personaggi" style="animation: fadeInUp 0.6s 0.2s backwards;">
                     <div class="icon-circle">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     </div>
                     <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 800;">Gestione Personaggi</h3>
-                    <p style="margin: 0; font-size: 12px; opacity: 0.5;">Crea, livella e modifica le tue schede eroe.</p>
+                    <p style="margin: 0; font-size: 12px; opacity: 0.5;">Crea e collega personaggi da zero seguendo le regole ufficiali del Manuale del Giocatore.</p>
                 </div>
 
-                <div class="action-card" style="animation: fadeInUp 0.6s 0.2s backwards;">
-                    <div class="icon-circle">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    </div>
-                    <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 800;">Grimorio Incantesimi</h3>
-                    <p style="margin: 0; font-size: 12px; opacity: 0.5;">Cerca tra centinaia di magie e filtri per livello.</p>
-                </div>
-
-                <div class="action-card" style="animation: fadeInUp 0.6s 0.3s backwards;">
+                <div class="action-card" id="btn-sessioni" style="animation: fadeInUp 0.6s 0.3s backwards;">
                     <div class="icon-circle">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     </div>
                     <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 800;">Sessioni Attive</h3>
-                    <p style="margin: 0; font-size: 12px; opacity: 0.5;">Unisciti al tuo party e lancia i dadi in tempo reale.</p>
+                    <p style="margin: 0; font-size: 12px; opacity: 0.5;">Consulta la lista delle campagne in corso e lancia i dadi con il tuo party.</p>
                 </div>
 
             </div>
@@ -163,7 +177,43 @@ export function initDndDashboard(container) {
         </div>
     `;
 
-    document.getElementById('back-to-lobby').onclick = () => {
+    // --- EVENT LISTENERS DEI BOTTONI ---
+
+    document.getElementById('back-to-lobby').onclick = (e) => {
+        e.preventDefault();
         showLobby(container);
+    };
+
+    document.getElementById('btn-manuali').onclick = async (e) => {
+        e.preventDefault();
+        try {
+            const { initManuali } = await import('./manuali.js');
+            initManuali(container);
+        } catch(error) {
+            console.error("Modulo Biblioteca non ancora creato:", error);
+            alert("In sviluppo: La Biblioteca dei Manuali sarà disponibile a breve!");
+        }
+    };
+
+    document.getElementById('btn-personaggi').onclick = async (e) => {
+        e.preventDefault();
+        try {
+            const { initPersonaggi } = await import('./personaggi.js');
+            initPersonaggi(container);
+        } catch(error) {
+            console.error("Modulo Gestione Personaggi non ancora creato:", error);
+            alert("In sviluppo: La creazione Personaggi sarà disponibile a breve!");
+        }
+    };
+
+    document.getElementById('btn-sessioni').onclick = async (e) => {
+        e.preventDefault();
+        try {
+            const { initSessioni } = await import('./sessioni.js');
+            initSessioni(container);
+        } catch(error) {
+            console.error("Modulo Sessioni Attive non ancora creato:", error);
+            alert("In sviluppo: La lista Sessioni Attive sarà disponibile a breve!");
+        }
     };
 }
