@@ -91,8 +91,9 @@ function renderSetupMenu(container, state) {
                 </div>
             </div>
             
-            <button class="btn-primary" id="start-game" style="background: linear-gradient(45deg, #00ffa3, #00d2ff); color: black; border: none; margin-bottom: 15px; width: 100%;">GIOCA ORA</button>
-            <button id="btn-quit-setup" class="btn-back-glass" style="width: 100%; border-left: none;">← TORNA ALLA LIBRERIA</button>
+            <button class="btn-primary" id="start-game-btn" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA ORA</button>
+            <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">MULTIPLAYER</button>
+            
         </div>
 
     </div>
