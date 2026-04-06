@@ -60,7 +60,7 @@ function createPlayerInputHTML(value = "", index) {
         <div class="player-input-wrapper fade-in" style="display: flex; gap: 8px; width: 100%; align-items: center; margin-bottom: 12px; animation-duration: 0.3s;">
             <input type="text" class="player-input" placeholder="Giocatore ${index + 1}" value="${value}" 
                    style="flex: 1; padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: white; outline: none; font-size: 14px; font-family: 'Poppins', sans-serif;">
-            <button class="delete-player" style="background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255,65,108,0.3); color: #ff416c; width: 48px; height: 48px; border-radius: 14px; cursor: pointer; font-weight: bold; transition: 0.2s;">✕</button>
+            <button type="button" class="delete-player" style="background: rgba(255, 65, 108, 0.15); border: 1px solid rgba(255,65,108,0.3); color: #ff416c; width: 48px; height: 48px; border-radius: 14px; cursor: pointer; font-weight: bold; transition: 0.2s;">✕</button>
         </div>
     `;
 }
@@ -106,28 +106,39 @@ function renderSetup(container) {
                     ${playersNames.map((name, i) => createPlayerInputHTML(name, i)).join('')}
                 </div>
                 
-                <button id="add-player" style="background: transparent; border: 1px dashed rgba(157, 78, 221, 0.4); color: var(--amethyst-light); padding: 14px; border-radius: 16px; cursor: pointer; width: 100%; margin: 10px 0 25px 0; font-size: 11px; font-weight: 800; letter-spacing: 1px; transition: 0.2s;">+ AGGIUNGI GIOCATORE</button>
+                <button type="button" id="add-player" style="background: transparent; border: 1px dashed rgba(157, 78, 221, 0.4); color: var(--amethyst-light); padding: 14px; border-radius: 16px; cursor: pointer; width: 100%; margin: 10px 0 25px 0; font-size: 11px; font-weight: 800; letter-spacing: 1px; transition: 0.2s;">+ AGGIUNGI GIOCATORE</button>
                 
-                <button id="start-game" class="btn-primary" style="margin-bottom: 20px;">INIZIA PARTITA</button>
+                <button type="button" id="start-game" class="btn-primary" style="margin-bottom: 20px;">INIZIA PARTITA</button>
             </div>
             
+            <button type="button" id="btn-quit-setup" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
         </div>
     `;
 
-    container.querySelector('#btn-quit-setup').onclick = () => quitGame(container);
+    container.querySelector('#btn-quit-setup').onclick = (e) => {
+        e.preventDefault();
+        quitGame(container);
+    };
 
     container.querySelector('#player-inputs-container').onclick = (e) => {
-        if (e.target.closest('.delete-player')) e.target.closest('.player-input-wrapper').remove();
+        const deleteBtn = e.target.closest('.delete-player');
+        if (deleteBtn) {
+            e.preventDefault();
+            deleteBtn.closest('.player-input-wrapper').remove();
+        }
     };
 
-    container.querySelector('#add-player').onclick = () => {
+    // FIX: Sostituito il metodo di iniezione con insertAdjacentHTML, 100% stabile
+    container.querySelector('#add-player').onclick = (e) => {
+        e.preventDefault();
         const cont = container.querySelector('#player-inputs-container');
-        const div = document.createElement('div');
-        div.innerHTML = createPlayerInputHTML("", cont.children.length);
-        cont.appendChild(div.firstElementChild);
+        if (cont) {
+            cont.insertAdjacentHTML('beforeend', createPlayerInputHTML("", cont.children.length));
+        }
     };
 
-    container.querySelector('#start-game').onclick = () => {
+    container.querySelector('#start-game').onclick = (e) => {
+        e.preventDefault();
         const names = Array.from(container.querySelectorAll('.player-input')).map(i => i.value.trim()).filter(n => n !== "");
         const numImp = parseInt(container.querySelector('#select-impostors').value);
         const numUnd = parseInt(container.querySelector('#select-undercover').value);
