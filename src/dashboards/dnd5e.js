@@ -186,19 +186,19 @@ export function initDndDashboard(container) {
         showLobby(container);
     };
 
-    // GESTIONE PERSONAGGI (Punta alla tua cartella features/characters)
+    // GESTIONE PERSONAGGI (Punta esattamente a CharList.js per far felice Vercel)
     document.getElementById('btn-personaggi').onclick = async (e) => {
         e.preventDefault();
         try {
-            const { initCharacters } = await import('../components/features/characters/index.js');
+            const { initCharacters } = await import('../components/features/characters/CharList.js');
             initCharacters(container);
         } catch(error) {
             console.error("Errore caricamento characters:", error);
-            alert("In sviluppo: Il modulo Gestione Personaggi sarà disponibile a breve!");
+            alert("Il file src/components/features/characters/CharList.js non è stato trovato!");
         }
     };
 
-    // SESSIONI ATTIVE (Punta alla tua cartella features/tabletop)
+    // SESSIONI ATTIVE (Punta a tabletop/index.js)
     document.getElementById('btn-sessioni').onclick = async (e) => {
         e.preventDefault();
         try {
@@ -206,11 +206,11 @@ export function initDndDashboard(container) {
             initTabletop(container);
         } catch(error) {
             console.error("Errore caricamento tabletop:", error);
-            alert("In sviluppo: La lista Sessioni Attive sarà disponibile a breve!");
+            alert("Il file src/components/features/tabletop/index.js non è stato trovato!");
         }
     };
 
-    // BIBLIOTECA DEI MANUALI (Punta a una futura cartella features/manuals)
+    // BIBLIOTECA DEI MANUALI (Punta a manuals/index.js)
     document.getElementById('btn-manuali').onclick = async (e) => {
         e.preventDefault();
         try {
@@ -218,7 +218,7 @@ export function initDndDashboard(container) {
             initManuali(container);
         } catch(error) {
             console.error("Errore caricamento manuali:", error);
-            alert("In sviluppo: La Biblioteca dei Manuali sarà disponibile a breve! (Crea la cartella features/manuals/index.js)");
+            alert("Il file src/components/features/manuals/index.js non è stato trovato!");
         }
     };
 }
