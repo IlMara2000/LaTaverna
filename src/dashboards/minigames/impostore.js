@@ -114,7 +114,6 @@ function renderSetup(container) {
                 <button type="button" id="start-game" class="btn-primary" style="margin-bottom: 20px;">INIZIA PARTITA</button>
             </div>
             
-            <button type="button" id="btn-quit-setup" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
         </div>
     `;
 
@@ -391,7 +390,6 @@ function renderResult(container, impostorStoleWin = null) {
             
             <div style="display: flex; flex-direction: column; gap: 12px; width: 100%;">
                 <button id="replay" class="btn-primary" style="background: linear-gradient(45deg, #00ffa3, #00d2ff); color: black; border: none;">NUOVO ROUND</button>
-                <button id="btn-quit-end" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
             </div>
         </div>
     `;
