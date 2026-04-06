@@ -1,7 +1,7 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
-// GIOCO: STRATEGY (Chess & Checkers)
+// GIOCO: CHESS & CHECKS
 // Versione Stabile 2.2 - Premium UI Borderless
 // ==========================================
 
@@ -74,7 +74,7 @@ function renderSetupMenu(container, state) {
     <div class="strategy-wrapper fade-in">
         
         <div style="width: 100%; max-width: 350px; display: flex; flex-direction: column; align-items: center;">
-            <h1 class="main-title" style="margin-bottom: 5px; font-size: 3rem;">STRATEGY</h1>
+            <h1 class="main-title" style="margin-bottom: 5px; font-size: 3rem;">CHESS & CHECKS</h1>
             <p style="opacity:0.5; font-size:11px; margin-bottom:30px; letter-spacing: 2px;">SFIDA L'INTELLIGENZA ARTIFICIALE</p>
             
             <div class="mode-toggle">
