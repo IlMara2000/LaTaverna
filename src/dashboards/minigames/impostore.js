@@ -2,7 +2,7 @@ import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
 // GIOCO: IMPOSTORE (Local Party Mode)
-// Versione Stabile 2.4 - Premium UI + Guess Mechanic & Safety Locks
+// Versione Stabile 2.5 - Premium UI + Guess Mechanic + Auto-Proportion
 // ==========================================
 
 let gameData = {
@@ -80,12 +80,15 @@ function renderSetup(container) {
                 background: rgba(255,255,255,0.02); padding: 12px 15px; border-radius: 16px; 
                 border: 1px solid rgba(255,255,255,0.05); 
             }
-            .config-row select { 
+            .config-row input[type="number"] { 
                 width: 60px; padding: 5px; background: transparent; border: none; 
                 color: var(--amethyst-bright); font-weight: 900; font-size: 1.1rem; text-align: right; 
-                box-shadow: none; outline: none;
+                box-shadow: none; outline: none; -moz-appearance: textfield;
             }
-            .config-row select:focus { background: transparent; box-shadow: none; border: none; }
+            .config-row input[type="number"]::-webkit-outer-spin-button,
+            .config-row input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none; margin: 0;
+            }
         </style>
 
         <div class="impostore-wrapper fade-in">
@@ -95,11 +98,11 @@ function renderSetup(container) {
             <div style="width: 100%;">
                 <div class="config-row">
                     <span style="font-weight: 600; font-size: 0.9rem;">🕵️ Impostori</span>
-                    <select id="select-impostors"><option value="1">1</option><option value="2">2</option></select>
+                    <input type="number" id="select-impostors" value="${gameData.config.impostors}" min="1">
                 </div>
                 <div class="config-row">
                     <span style="font-weight: 600; font-size: 0.9rem;">🕶️ Undercover</span>
-                    <select id="select-undercover"><option value="0">0</option><option value="1">1</option></select>
+                    <input type="number" id="select-undercover" value="${gameData.config.undercover}" min="0">
                 </div>
                 
                 <div id="player-inputs-container" style="margin-top: 25px;">
@@ -128,7 +131,6 @@ function renderSetup(container) {
         }
     };
 
-    // FIX: Sostituito il metodo di iniezione con insertAdjacentHTML, 100% stabile
     container.querySelector('#add-player').onclick = (e) => {
         e.preventDefault();
         const cont = container.querySelector('#player-inputs-container');
@@ -140,10 +142,33 @@ function renderSetup(container) {
     container.querySelector('#start-game').onclick = (e) => {
         e.preventDefault();
         const names = Array.from(container.querySelectorAll('.player-input')).map(i => i.value.trim()).filter(n => n !== "");
-        const numImp = parseInt(container.querySelector('#select-impostors').value);
-        const numUnd = parseInt(container.querySelector('#select-undercover').value);
+        
+        if (names.length < 3) return alert("Servono almeno 3 giocatori per avviare una partita ad Impostore!");
 
-        if (names.length < (numImp + numUnd + 1)) return alert(`Servono almeno ${numImp + numUnd + 1} giocatori!`);
+        let numImp = parseInt(container.querySelector('#select-impostors').value) || 0;
+        let numUnd = parseInt(container.querySelector('#select-undercover').value) || 0;
+
+        if (numImp < 1) numImp = 1; // Forza almeno un impostore
+
+        // Calcolo della proporzione automatica per non far crashare il gioco
+        const maxSpecialRoles = names.length - 1; // Deve esserci ALMENO 1 Civile vivo
+        
+        if ((numImp + numUnd) > maxSpecialRoles) {
+            const totalRequested = numImp + numUnd;
+            const impostorRatio = numImp / totalRequested;
+            
+            // Ricalcoliamo in proporzione
+            numImp = Math.round(maxSpecialRoles * impostorRatio);
+            numUnd = maxSpecialRoles - numImp;
+            
+            // Se l'arrotondamento azzera gli impostori (improbabile ma possibile), forziamone 1
+            if (numImp === 0 && maxSpecialRoles >= 1) {
+                numImp = 1;
+                numUnd = maxSpecialRoles - 1;
+            }
+
+            alert(`⚠️ Troppi ruoli speciali per ${names.length} giocatori!\nIl sistema ha proporzionato in automatico:\n🕵️ Impostori: ${numImp}\n🕶️ Undercover: ${numUnd}`);
+        }
 
         gameData.config.impostors = numImp;
         gameData.config.undercover = numUnd;
