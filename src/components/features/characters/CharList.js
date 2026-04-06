@@ -142,15 +142,13 @@ export async function initCharacters(container) {
         submitBtn.style.opacity = "0.7";
 
         try {
+            // FIX: Inseriamo SOLO i campi che siamo sicuri esistano nel DB attuale per evitare crash!
             const { error } = await supabase
                 .from(tables.characters)
                 .insert([{ 
-                    name, 
+                    name: name, 
                     class: className, 
-                    user_id: user.id,
-                    hp: 10,
-                    hp_max: 10,
-                    level: 1
+                    user_id: user.id
                 }]);
 
             if (error) throw error;
