@@ -186,7 +186,7 @@ export function initDndDashboard(container) {
         showLobby(container);
     };
 
-    // GESTIONE PERSONAGGI (Punta esattamente a CharList.js per far felice Vercel)
+    // GESTIONE PERSONAGGI (L'unico che importiamo perché esiste)
     document.getElementById('btn-personaggi').onclick = async (e) => {
         e.preventDefault();
         try {
@@ -198,27 +198,15 @@ export function initDndDashboard(container) {
         }
     };
 
-    // SESSIONI ATTIVE (Punta a tabletop/index.js)
-    document.getElementById('btn-sessioni').onclick = async (e) => {
+    // SESSIONI ATTIVE (Niente import, blocchiamo Vercel dal crashare)
+    document.getElementById('btn-sessioni').onclick = (e) => {
         e.preventDefault();
-        try {
-            const { initTabletop } = await import('../components/features/tabletop/index.js');
-            initTabletop(container);
-        } catch(error) {
-            console.error("Errore caricamento tabletop:", error);
-            alert("Il file src/components/features/tabletop/index.js non è stato trovato!");
-        }
+        alert("In sviluppo: La lista Sessioni Attive sarà disponibile a breve!");
     };
 
-    // BIBLIOTECA DEI MANUALI (Punta a manuals/index.js)
-    document.getElementById('btn-manuali').onclick = async (e) => {
+    // BIBLIOTECA DEI MANUALI (Niente import)
+    document.getElementById('btn-manuali').onclick = (e) => {
         e.preventDefault();
-        try {
-            const { initManuali } = await import('../components/features/manuals/index.js');
-            initManuali(container);
-        } catch(error) {
-            console.error("Errore caricamento manuali:", error);
-            alert("Il file src/components/features/manuals/index.js non è stato trovato!");
-        }
+        alert("In sviluppo: La Biblioteca dei Manuali sarà disponibile a breve!");
     };
 }
