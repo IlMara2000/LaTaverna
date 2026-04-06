@@ -111,7 +111,6 @@ function renderSetup(container) {
                 <button id="start-game" class="btn-primary" style="margin-bottom: 20px;">INIZIA PARTITA</button>
             </div>
             
-            <button id="btn-quit-setup" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
         </div>
     `;
 
