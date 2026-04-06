@@ -101,8 +101,9 @@ function renderLayout(container, state) {
         
         <div id="start-overlay" style="position:absolute; inset:0; background:rgba(5, 2, 10, 0.95); backdrop-filter: blur(10px); z-index:11000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 20px; box-sizing: border-box;">
             <h1 class="main-title" style="font-size: 4.5rem; background: linear-gradient(to bottom, #00d2ff, #9d4ede); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">SOLO</h1>
-            <button id="btn-start" class="btn-primary" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none;">GIOCA ORA</button>
-            <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">← TORNA ALLA LIBRERIA</button>
+            <button class="btn-primary" id="start-game-btn" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA ORA</button>
+            <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">MULTIPLAYER</button>
+            
         </div>
 
         <button class="btn-exit-game" id="btn-exit-ingame">← ESCI</button>
