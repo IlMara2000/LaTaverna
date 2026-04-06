@@ -11,7 +11,9 @@ export function initDndDashboard(container) {
     document.body.style.overflowY = 'auto'; 
     document.body.style.touchAction = 'pan-y'; 
     document.body.style.overscrollBehavior = 'none';
-    document.body.style.backgroundColor = '#05010a'; // Background Amethyst Dark
+    
+    // Applichiamo lo sfondo direttamente al body per evitare contorni
+    document.body.style.backgroundColor = '#05010a'; 
     window.scrollTo(0, 0);
 
     container.innerHTML = `
@@ -184,36 +186,39 @@ export function initDndDashboard(container) {
         showLobby(container);
     };
 
-    document.getElementById('btn-manuali').onclick = async (e) => {
-        e.preventDefault();
-        try {
-            const { initManuali } = await import('./manuali.js');
-            initManuali(container);
-        } catch(error) {
-            console.error("Modulo Biblioteca non ancora creato:", error);
-            alert("In sviluppo: La Biblioteca dei Manuali sarà disponibile a breve!");
-        }
-    };
-
+    // GESTIONE PERSONAGGI (Punta alla tua cartella features/characters)
     document.getElementById('btn-personaggi').onclick = async (e) => {
         e.preventDefault();
         try {
-            const { initPersonaggi } = await import('./personaggi.js');
-            initPersonaggi(container);
+            const { initCharacters } = await import('../components/features/characters/index.js');
+            initCharacters(container);
         } catch(error) {
-            console.error("Modulo Gestione Personaggi non ancora creato:", error);
-            alert("In sviluppo: La creazione Personaggi sarà disponibile a breve!");
+            console.error("Errore caricamento characters:", error);
+            alert("In sviluppo: Il modulo Gestione Personaggi sarà disponibile a breve!");
         }
     };
 
+    // SESSIONI ATTIVE (Punta alla tua cartella features/tabletop)
     document.getElementById('btn-sessioni').onclick = async (e) => {
         e.preventDefault();
         try {
-            const { initSessioni } = await import('./sessioni.js');
-            initSessioni(container);
+            const { initTabletop } = await import('../components/features/tabletop/index.js');
+            initTabletop(container);
         } catch(error) {
-            console.error("Modulo Sessioni Attive non ancora creato:", error);
+            console.error("Errore caricamento tabletop:", error);
             alert("In sviluppo: La lista Sessioni Attive sarà disponibile a breve!");
+        }
+    };
+
+    // BIBLIOTECA DEI MANUALI (Punta a una futura cartella features/manuals)
+    document.getElementById('btn-manuali').onclick = async (e) => {
+        e.preventDefault();
+        try {
+            const { initManuali } = await import('../components/features/manuals/index.js');
+            initManuali(container);
+        } catch(error) {
+            console.error("Errore caricamento manuali:", error);
+            alert("In sviluppo: La Biblioteca dei Manuali sarà disponibile a breve! (Crea la cartella features/manuals/index.js)");
         }
     };
 }
