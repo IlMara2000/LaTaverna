@@ -91,7 +91,6 @@ function renderSetup(container) {
                 <button id="start-game" class="btn-primary" style="background: linear-gradient(45deg, #9d4ede, #c77dff); border: none; margin-bottom: 20px;">INIZIA PARTITA</button>
             </div>
             
-            <button id="btn-quit" class="btn-back-glass">← TORNA ALLA LIBRERIA</button>
         </div>
     `;
 
