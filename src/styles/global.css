@@ -1,272 +1,822 @@
 /* =========================================
-   LA TAVERNA - AMETHYST DARK UI (VER. 5.4 PREMIUM ULTIMATE)
+   LA TAVERNA - AMETHYST DARK UI (VER. 5.5 MASTER UNIFIED)
+   Gestione TOTALE di UI + Giochi da un unico file
    ========================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
+   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
 
-:root {
-    --bg-dark: radial-gradient(circle at 50% -20%, #2a124d 0%, #05010a 80%);
-    --amethyst-glow: rgba(157, 78, 221, 0.5);
-    --amethyst-bright: #9d4ede;
-    --amethyst-light: #c77dff;
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --glass-surface: rgba(255, 255, 255, 0.03);
-    --text-primary: #ffffff;
-    --text-secondary: #b79ced;
-    --danger: #ff4444;
-    --accent-gradient: linear-gradient(135deg, #9d4ede 0%, #5a189a 100%);
-}
-
-/* 1. RESET & FULL-SCREEN LOCK (ANTI-RIMBALZO) */
-html, body {
-    height: 100%;
-    width: 100vw;
-    margin: 0;
-    padding: 0;
-    background: #05010a; 
-    background: var(--bg-dark) no-repeat fixed;
-    color: var(--text-primary);
-    font-family: 'Poppins', sans-serif;
-    
-    /* FIX CRITICO: Incolla l'app allo schermo */
-    overflow: hidden !important; 
-    position: fixed;
-    top: 0;
-    left: 0;
-    
-    /* Uccide il pull-to-refresh e il rimbalzo elastico di iOS */
-    overscroll-behavior: none !important;
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* FIX GLOBALE INTERAZIONI */
-button, a, .game-card, .action-card, .nav-logo-right {
-    outline: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-    -webkit-user-select: none;
-    user-select: none;
-}
-
-/* 2. SAFE AREA & APP CONTAINER */
-#app {
-    height: 100dvh; /* Altezza esatta dello schermo mobile */
-    width: 100vw;
-    overflow-y: auto !important; /* Lo scroll avviene SOLO qui dentro */
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch;
-    
-    /* Gestione dinamica degli spazi per Notch e Home Bar */
-    padding: env(safe-area-inset-top, 20px) 20px calc(100px + env(safe-area-inset-bottom)) 20px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-}
-
-/* 3. LOGO (Centrato e stabile) */
-.nav-logo-right {
-    position: fixed;
-    top: calc(15px + env(safe-area-inset-top));
-    right: 20px;
-    width: 45px;
-    height: 45px;
-    z-index: 1500;
-    filter: drop-shadow(0 0 10px var(--amethyst-bright));
-    animation: floatLogo 4s ease-in-out infinite;
-}
-
-@keyframes floatLogo {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); filter: drop-shadow(0 0 15px var(--amethyst-light)); }
-}
-
-/* 4. ANIMAZIONI GLOBALI (ONLY VERTICAL - NO LATERAL SHOTS) */
-@keyframes cardEntrance {
-    from { opacity: 0; transform: translateY(25px) scale(0.98); filter: blur(5px); }
-    to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in {
-    animation: fadeInUp 0.5s ease-out forwards;
-}
-
-/* 5. GRID & CARD SYSTEM */
-.grid-layout {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-    margin-top: 20px;
-    width: 100%;
-}
-
-.game-card, .action-card {
-    background: var(--glass-surface);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 24px 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    text-align: center;
-    animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-    cursor: pointer;
-}
-
-.game-card:active, .action-card:active {
-    transform: scale(0.94);
-    background: rgba(157, 78, 221, 0.1);
-    border-color: var(--amethyst-light);
-}
-
-/* Delays per le card */
-.game-card:nth-child(1) { animation-delay: 0.1s; }
-.game-card:nth-child(2) { animation-delay: 0.15s; }
-.game-card:nth-child(3) { animation-delay: 0.2s; }
-.game-card:nth-child(4) { animation-delay: 0.25s; }
-.game-card:nth-child(5) { animation-delay: 0.3s; }
-.game-card:nth-child(6) { animation-delay: 0.35s; }
-
-/* 6. TYPOGRAPHY */
-.main-title {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 900;
-    font-size: 2.2rem;
-    text-align: center;
-    text-transform: uppercase;
-    background: linear-gradient(180deg, #ffffff 0%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.3));
-}
-
-.text-amethyst {
-    color: var(--amethyst-bright);
-    text-shadow: 0 0 15px var(--amethyst-glow);
-}
-
-/* 7. SIDEBAR & OVERLAY (Blindata) */
-.sidebar-glass {
-    position: fixed;
-    right: -110%;
-    top: 0;
-    width: 290px;
-    height: 100dvh;
-    background: rgba(5, 2, 10, 0.85);
-    backdrop-filter: blur(40px) saturate(150%);
-    -webkit-backdrop-filter: blur(40px) saturate(150%);
-    z-index: 2000;
-    transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    padding: calc(60px + env(safe-area-inset-top)) 20px;
-    border-left: 1px solid var(--glass-border);
-    box-sizing: border-box;
-    box-shadow: -15px 0 40px rgba(0,0,0,0.6);
-}
-
-.sidebar-glass.active { right: 0; }
-
-/* 8. TRIGGER DINAMICO & NAV BARS (HAMBURGER -> X) */
-.floating-trigger {
-    position: fixed;
-    bottom: calc(25px + env(safe-area-inset-bottom));
-    right: 20px;
-    width: 62px;
-    height: 62px;
-    border-radius: 20px;
-    background: var(--accent-gradient);
-    z-index: 2100;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
-    box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    cursor: pointer;
-}
-
-.floating-trigger.is-active {
-    background: var(--danger) !important;
-    transform: rotate(180deg);
-    box-shadow: 0 0 30px rgba(255, 68, 68, 0.6);
-    border-color: rgba(255, 68, 68, 0.4);
-}
-
-.nav-bar {
-    width: 26px;
-    height: 3px;
-    background: white;
-    border-radius: 10px;
-    transition: all 0.4s cubic-bezier(0.68, -0.6, 0.32, 1.6);
-    transform-origin: center;
-}
-
-.floating-trigger.is-active .nav-bar:nth-child(1) { transform: translateY(8px) rotate(45deg); }
-.floating-trigger.is-active .nav-bar:nth-child(2) { opacity: 0; transform: scale(0.2); }
-.floating-trigger.is-active .nav-bar:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
-
-/* 9. PULSANTI PREMIUM (SIDEBAR & APP) */
-.btn-back-glass, .btn-glass, .btn-primary {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--glass-border);
-    border-left: 3px solid transparent; 
-    color: white;
-    padding: 16px 20px;
-    border-radius: 16px;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 800;
-    font-size: 0.85rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.btn-back-glass:active, .btn-glass:active, .btn-primary:active {
-    transform: scale(0.96);
-    background: rgba(157, 78, 221, 0.15);
-    border-color: var(--amethyst-light);
-    border-left: 3px solid var(--amethyst-bright);
-    box-shadow: 0 0 20px rgba(157, 78, 221, 0.4);
-}
-
-/* 10. FIX SCROLLBARS */
-::-webkit-scrollbar { width: 0px; background: transparent; }
-
-/* 11. INPUT & SELECT SERI */
-input[type="text"], select {
-    width: 100%;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 16px;
-    padding: 14px;
-    color: white;
-    font-size: 16px; 
-    font-family: 'Poppins', sans-serif;
-    outline: none;
-    transition: 0.3s;
-    box-sizing: border-box;
-}
-
-input[type="text"]:focus, select:focus {
-    border-color: var(--amethyst-bright);
-    background: rgba(157, 78, 221, 0.05);
-    box-shadow: 0 0 15px rgba(157, 78, 221, 0.2);
-}
+   :root {
+       --bg-dark: radial-gradient(circle at 50% -20%, #2a124d 0%, #05010a 80%);
+       --amethyst-glow: rgba(157, 78, 221, 0.5);
+       --amethyst-bright: #9d4ede;
+       --amethyst-light: #c77dff;
+       --glass-border: rgba(255, 255, 255, 0.1);
+       --glass-surface: rgba(255, 255, 255, 0.03);
+       --text-primary: #ffffff;
+       --text-secondary: #b79ced;
+       --danger: #ff4444;
+       --accent-gradient: linear-gradient(135deg, #9d4ede 0%, #5a189a 100%);
+       
+       /* CARTE DARK OPACHE */
+       --card-dark-bg: #0a0a0a;
+       --card-dark-border: rgba(255, 255, 255, 0.08);
+       --card-dark-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+   }
+   
+   /* ============================================
+      1. RESET GLOBALE & LOCK SCREEN
+      ============================================ */
+   
+   html, body {
+       height: 100%;
+       width: 100vw;
+       margin: 0;
+       padding: 0;
+       background: #05010a;
+       background: var(--bg-dark) no-repeat fixed;
+       color: var(--text-primary);
+       font-family: 'Poppins', sans-serif;
+       
+       /* LOCK CRITICO */
+       overflow: hidden !important;
+       position: fixed;
+       top: 0;
+       left: 0;
+       overscroll-behavior: none !important;
+       -webkit-tap-highlight-color: transparent;
+       -webkit-font-smoothing: antialiased;
+   }
+   
+   * {
+       -webkit-tap-highlight-color: transparent !important;
+       box-sizing: border-box;
+   }
+   
+   button, a, .game-card, .action-card, .nav-logo-right {
+       outline: none !important;
+       -webkit-tap-highlight-color: transparent !important;
+       -webkit-user-select: none;
+       user-select: none;
+   }
+   
+   /* ============================================
+      2. APP CONTAINER
+      ============================================ */
+   
+   #app {
+       height: 100dvh;
+       width: 100vw;
+       overflow-y: auto !important;
+       overflow-x: hidden !important;
+       -webkit-overflow-scrolling: touch;
+       padding: env(safe-area-inset-top, 20px) 20px calc(100px + env(safe-area-inset-bottom)) 20px;
+       box-sizing: border-box;
+       display: flex;
+       flex-direction: column;
+   }
+   
+   /* ============================================
+      3. SCROLLBAR HIDE
+      ============================================ */
+   
+   ::-webkit-scrollbar {
+       width: 0px;
+       background: transparent;
+   }
+   
+   /* ============================================
+      4. ANIMAZIONI GLOBALI (SOLO VERTICALI)
+      ============================================ */
+   
+   @keyframes cardEntrance {
+       from {
+           opacity: 0;
+           transform: translateY(25px) scale(0.98);
+           filter: blur(5px);
+       }
+       to {
+           opacity: 1;
+           transform: translateY(0) scale(1);
+           filter: blur(0);
+       }
+   }
+   
+   @keyframes fadeInUp {
+       from {
+           opacity: 0;
+           transform: translateY(30px);
+       }
+       to {
+           opacity: 1;
+           transform: translateY(0);
+       }
+   }
+   
+   @keyframes floatLogo {
+       0%, 100% {
+           transform: translateY(0);
+       }
+       50% {
+           transform: translateY(-5px);
+           filter: drop-shadow(0 0 15px var(--amethyst-light));
+       }
+   }
+   
+   @keyframes pulse {
+       0%, 100% {
+           transform: scale(0.95);
+           opacity: 0.6;
+       }
+       50% {
+           transform: scale(1.05);
+           opacity: 1;
+           filter: drop-shadow(0 0 25px var(--amethyst-bright));
+       }
+   }
+   
+   .fade-in {
+       animation: fadeInUp 0.5s ease-out forwards;
+   }
+   
+   .pulse-logo {
+       animation: pulse 1.5s infinite ease-in-out;
+   }
+   
+   /* ============================================
+      5. LOGO FISSO
+      ============================================ */
+   
+   .nav-logo-right {
+       position: fixed;
+       top: calc(15px + env(safe-area-inset-top));
+       right: 20px;
+       width: 45px;
+       height: 45px;
+       z-index: 1500;
+       filter: drop-shadow(0 0 10px var(--amethyst-bright));
+       animation: floatLogo 4s ease-in-out infinite;
+   }
+   
+   /* ============================================
+      6. GRID & CARD SYSTEM (HOME)
+      ============================================ */
+   
+   .grid-layout {
+       display: grid;
+       grid-template-columns: repeat(2, 1fr);
+       gap: 14px;
+       margin-top: 20px;
+       width: 100%;
+   }
+   
+   .game-card, .action-card {
+       background: var(--glass-surface);
+       backdrop-filter: blur(15px);
+       -webkit-backdrop-filter: blur(15px);
+       border: 1px solid var(--glass-border);
+       border-radius: 24px;
+       padding: 24px 12px;
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       justify-content: center;
+       gap: 10px;
+       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+       text-align: center;
+       animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+       cursor: pointer;
+   }
+   
+   .game-card:active, .action-card:active {
+       transform: scale(0.94);
+       background: rgba(157, 78, 221, 0.1);
+       border-color: var(--amethyst-light);
+   }
+   
+   .game-card:nth-child(1) { animation-delay: 0.1s; }
+   .game-card:nth-child(2) { animation-delay: 0.15s; }
+   .game-card:nth-child(3) { animation-delay: 0.2s; }
+   .game-card:nth-child(4) { animation-delay: 0.25s; }
+   .game-card:nth-child(5) { animation-delay: 0.3s; }
+   .game-card:nth-child(6) { animation-delay: 0.35s; }
+   
+   /* ============================================
+      7. TYPOGRAPHY
+      ============================================ */
+   
+   .main-title {
+       font-family: 'Montserrat', sans-serif;
+       font-weight: 900;
+       font-size: 2.2rem;
+       text-align: center;
+       text-transform: uppercase;
+       background: linear-gradient(180deg, #ffffff 0%, var(--text-secondary) 100%);
+       -webkit-background-clip: text;
+       background-clip: text;
+       -webkit-text-fill-color: transparent;
+       filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.3));
+   }
+   
+   .text-amethyst {
+       color: var(--amethyst-bright);
+       text-shadow: 0 0 15px var(--amethyst-glow);
+   }
+   
+   /* ============================================
+      8. SIDEBAR & OVERLAY
+      ============================================ */
+   
+   .sidebar-glass {
+       position: fixed;
+       right: -110%;
+       top: 0;
+       width: 290px;
+       height: 100dvh;
+       background: rgba(5, 2, 10, 0.85);
+       backdrop-filter: blur(40px) saturate(150%);
+       -webkit-backdrop-filter: blur(40px) saturate(150%);
+       z-index: 2000;
+       transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+       padding: calc(60px + env(safe-area-inset-top)) 20px;
+       border-left: 1px solid var(--glass-border);
+       box-sizing: border-box;
+       box-shadow: -15px 0 40px rgba(0, 0, 0, 0.6);
+   }
+   
+   .sidebar-glass.active {
+       right: 0;
+   }
+   
+   /* ============================================
+      9. HAMBURGER TRIGGER & NAV BARS
+      ============================================ */
+   
+   .floating-trigger {
+       position: fixed;
+       bottom: calc(25px + env(safe-area-inset-bottom));
+       right: 20px;
+       width: 62px;
+       height: 62px;
+       border-radius: 20px;
+       background: var(--accent-gradient);
+       z-index: 2100;
+       display: flex;
+       flex-direction: column;
+       justify-content: center;
+       align-items: center;
+       gap: 5px;
+       box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
+       border: 1px solid rgba(255, 255, 255, 0.1);
+       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+       cursor: pointer;
+   }
+   
+   .floating-trigger.is-active {
+       background: var(--danger) !important;
+       transform: rotate(180deg);
+       box-shadow: 0 0 30px rgba(255, 68, 68, 0.6);
+       border-color: rgba(255, 68, 68, 0.4);
+   }
+   
+   .nav-bar {
+       width: 26px;
+       height: 3px;
+       background: white;
+       border-radius: 10px;
+       transition: all 0.4s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+       transform-origin: center;
+   }
+   
+   .floating-trigger.is-active .nav-bar:nth-child(1) {
+       transform: translateY(8px) rotate(45deg);
+   }
+   
+   .floating-trigger.is-active .nav-bar:nth-child(2) {
+       opacity: 0;
+       transform: scale(0.2);
+   }
+   
+   .floating-trigger.is-active .nav-bar:nth-child(3) {
+       transform: translateY(-8px) rotate(-45deg);
+   }
+   
+   /* ============================================
+      10. PULSANTI PREMIUM
+      ============================================ */
+   
+   .btn-back-glass, .btn-glass, .btn-primary {
+       width: 100%;
+       background: rgba(255, 255, 255, 0.04);
+       border: 1px solid var(--glass-border);
+       border-left: 3px solid transparent;
+       color: white;
+       padding: 16px 20px;
+       border-radius: 16px;
+       font-family: 'Montserrat', sans-serif;
+       font-weight: 800;
+       font-size: 0.85rem;
+       letter-spacing: 1px;
+       text-transform: uppercase;
+       cursor: pointer;
+       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       gap: 12px;
+       margin-bottom: 12px;
+       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+   }
+   
+   .btn-back-glass:active, .btn-glass:active, .btn-primary:active {
+       transform: scale(0.96);
+       background: rgba(157, 78, 221, 0.15);
+       border-color: var(--amethyst-light);
+       border-left: 3px solid var(--amethyst-bright);
+       box-shadow: 0 0 20px rgba(157, 78, 221, 0.4);
+   }
+   
+   /* ============================================
+      11. INPUT & SELECT
+      ============================================ */
+   
+   input[type="text"], select {
+       width: 100%;
+       background: rgba(255, 255, 255, 0.05);
+       border: 1px solid var(--glass-border);
+       border-radius: 16px;
+       padding: 14px;
+       color: white;
+       font-size: 16px;
+       font-family: 'Poppins', sans-serif;
+       outline: none;
+       transition: 0.3s;
+       box-sizing: border-box;
+   }
+   
+   input[type="text"]:focus, select:focus {
+       border-color: var(--amethyst-bright);
+       background: rgba(157, 78, 221, 0.05);
+       box-shadow: 0 0 15px rgba(157, 78, 221, 0.2);
+   }
+   
+   /* ============================================
+      12. GAME ENGINE - SETUP & MENU
+      ============================================ */
+   
+   .game-setup-overlay {
+       position: fixed;
+       inset: 0;
+       background: #05010a;
+       z-index: 11000;
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       justify-content: center;
+       padding: 20px;
+       animation: fadeInUp 0.6s ease-out forwards;
+   }
+   
+   .game-setup-logo {
+       width: 100px;
+       margin-bottom: 30px;
+       filter: drop-shadow(0 0 15px var(--amethyst-bright));
+   }
+   
+   .game-setup-subtitle {
+       opacity: 0.6;
+       text-align: center;
+       font-size: 12px;
+       margin-bottom: 30px;
+       letter-spacing: 2px;
+   }
+   
+   .game-setup-card {
+       background: var(--glass-surface);
+       backdrop-filter: blur(15px);
+       border: 1px solid var(--glass-border);
+       border-radius: 24px;
+       padding: 28px 20px;
+       width: 100%;
+       max-width: 300px;
+       margin-bottom: 20px;
+   }
+   
+   .game-mode-toggle {
+       display: flex;
+       gap: 8px;
+       background: rgba(0, 0, 0, 0.3);
+       padding: 5px;
+       border-radius: 12px;
+       margin-bottom: 20px;
+   }
+   
+   .game-mode-btn {
+       flex: 1;
+       padding: 12px;
+       border-radius: 8px;
+       border: none;
+       background: transparent;
+       color: white;
+       font-weight: 600;
+       font-size: 13px;
+       cursor: pointer;
+       transition: 0.3s;
+   }
+   
+   .game-mode-btn.active {
+       background: var(--amethyst-bright);
+       box-shadow: 0 4px 15px rgba(157, 78, 221, 0.4);
+   }
+   
+   .game-difficulty-grid {
+       display: grid;
+       grid-template-columns: 1fr 1fr 1fr;
+       gap: 8px;
+       margin-bottom: 20px;
+   }
+   
+   .game-difficulty-btn {
+       padding: 10px;
+       border-radius: 8px;
+       background: rgba(255, 255, 255, 0.05);
+       border: 1px solid var(--glass-border);
+       color: white;
+       font-size: 10px;
+       cursor: pointer;
+       font-weight: 800;
+       transition: 0.2s;
+   }
+   
+   .game-difficulty-btn.active {
+       background: rgba(157, 78, 221, 0.2);
+       border-color: var(--amethyst-bright);
+   }
+   
+   .game-start-btn {
+       width: 100%;
+       margin-top: 10px !important;
+   }
+   
+   /* ============================================
+      13. GAME ENGINE - BOARD & PLAY AREA
+      ============================================ */
+   
+   .game-master-wrapper {
+       width: 100%;
+       height: 100dvh;
+       display: flex;
+       flex-direction: column;
+       justify-content: space-between;
+       align-items: center;
+       position: relative;
+       overflow: hidden;
+       padding: env(safe-area-inset-top, 20px) 15px env(safe-area-inset-bottom, 20px) 15px;
+       background: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #05010a 100%);
+       animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+   }
+   
+   .game-master-header {
+       width: 100%;
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       z-index: 1000;
+       height: 50px;
+       gap: 10px;
+   }
+   
+   .game-title-small {
+       font-weight: 900;
+       font-size: 14px;
+       color: var(--text-secondary);
+   }
+   
+   .game-turn-indicator {
+       background: var(--glass-surface);
+       backdrop-filter: blur(10px);
+       border: 1px solid var(--glass-border);
+       padding: 8px 16px;
+       border-radius: 50px;
+       font-size: 12px;
+       font-weight: 800;
+       flex: 1;
+       text-align: center;
+   }
+   
+   .game-turn-indicator.white-turn {
+       background: rgba(0, 255, 163, 0.15);
+       border-color: #00ffa3;
+       color: #00ffa3;
+   }
+   
+   .game-turn-indicator.black-turn {
+       background: rgba(255, 65, 108, 0.15);
+       border-color: #ff416c;
+       color: #ff416c;
+   }
+   
+   .game-exit-btn {
+       padding: 8px 16px !important;
+       font-size: 12px !important;
+       margin: 0 !important;
+       width: auto !important;
+   }
+   
+   /* ============================================
+      14. SCACCHIERA
+      ============================================ */
+   
+   .game-board-container {
+       flex: 1;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       width: 100%;
+   }
+   
+   .game-chess-board {
+       display: grid;
+       grid-template-columns: repeat(8, 1fr);
+       width: 90vw;
+       max-width: 380px;
+       height: 90vw;
+       max-height: 380px;
+       border: 2px solid var(--glass-border);
+       border-radius: 8px;
+       overflow: hidden;
+       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+   }
+   
+   .game-chess-square {
+       width: 100%;
+       height: 100%;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 28px;
+       cursor: pointer;
+       position: relative;
+       transition: all 0.2s;
+   }
+   
+   .game-chess-square.light {
+       background: #d1d9e0;
+   }
+   
+   .game-chess-square.dark {
+       background: #5c7c99;
+   }
+   
+   .game-chess-square.selected {
+       background: #f6f669 !important;
+       box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+   }
+   
+   .game-chess-piece {
+       user-select: none;
+       pointer-events: none;
+       color: inherit;
+   }
+   
+   /* ============================================
+      15. CARTE DARK OPACHE (UNIVERSAL)
+      ============================================ */
+   
+   .game-card-unit {
+       width: clamp(70px, 15vw, 95px);
+       height: clamp(100px, 22vw, 135px);
+       background: var(--card-dark-bg);
+       border: 1px solid var(--card-dark-border);
+       border-radius: 12px;
+       display: flex;
+       flex-direction: column;
+       justify-content: center;
+       align-items: center;
+       padding: 8px;
+       box-sizing: border-box;
+       box-shadow: var(--card-dark-shadow);
+       transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+       position: relative;
+       user-select: none;
+       cursor: pointer;
+       color: white;
+       font-weight: 900;
+       font-size: 1.4rem;
+   }
+   
+   .game-card-unit.back {
+       background: var(--accent-gradient);
+       border: 2px solid var(--amethyst-bright);
+       color: transparent;
+   }
+   
+   .game-card-unit:active {
+       transform: translateY(-8px) scale(1.05);
+       box-shadow: 0 0 20px rgba(157, 78, 221, 0.4);
+   }
+   
+   .flying-card {
+       position: fixed;
+       z-index: 9999;
+       pointer-events: none !important;
+   }
+   
+   /* ============================================
+      16. AREA GIOCATORE
+      ============================================ */
+   
+   .game-player-area {
+       width: 100%;
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       background: rgba(0, 0, 0, 0.3);
+       padding: 15px;
+       border-radius: 24px 24px 0 0;
+       z-index: 10;
+   }
+   
+   .game-action-buttons {
+       display: flex;
+       gap: 10px;
+       margin-bottom: 10px;
+   }
+   
+   .game-player-hand {
+       display: flex;
+       gap: 10px;
+       padding: 15px;
+       overflow-x: auto;
+       width: 100%;
+       justify-content: center;
+       box-sizing: border-box;
+   }
+   
+   .game-btn-action {
+       background: var(--glass-surface);
+       border: 1px solid var(--glass-border);
+       color: white;
+       padding: 10px 20px;
+       border-radius: 16px;
+       font-weight: 800;
+       text-transform: uppercase;
+       font-size: 12px;
+       cursor: pointer;
+       transition: 0.2s;
+   }
+   
+   .game-btn-action:active {
+       transform: scale(0.95);
+       border-color: var(--amethyst-bright);
+       background: var(--amethyst-glow);
+   }
+   
+   /* ============================================
+      17. SOLO SPECIFICO
+      ============================================ */
+   
+   .game-opponents-row {
+       display: flex;
+       justify-content: space-evenly;
+       width: 100%;
+       padding: 10px 0;
+       box-sizing: border-box;
+   }
+   
+   .game-bot-pill {
+       background: var(--glass-surface);
+       backdrop-filter: blur(10px);
+       border: 1px solid var(--glass-border);
+       border-radius: 20px;
+       padding: 10px 20px;
+       text-align: center;
+       transition: 0.3s;
+       min-width: 80px;
+       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+       font-size: 11px;
+   }
+   
+   .game-bot-pill.active {
+       border-color: var(--amethyst-bright);
+       background: rgba(157, 78, 221, 0.15);
+       transform: translateY(-5px);
+       box-shadow: 0 10px 20px rgba(157, 78, 221, 0.3);
+   }
+   
+   .game-bot-count {
+       font-weight: 900;
+       color: var(--amethyst-bright);
+       font-size: 16px;
+   }
+   
+   .game-master-table {
+       flex: 1;
+       display: flex;
+       flex-direction: column;
+       justify-content: center;
+       align-items: center;
+       position: relative;
+       width: 100%;
+   }
+   
+   .game-stack-indicator {
+       color: var(--danger);
+       font-weight: 900;
+       height: 24px;
+       margin-bottom: 15px;
+       text-shadow: 0 0 10px rgba(255, 65, 108, 0.5);
+   }
+   
+   .game-card-center {
+       display: flex;
+       gap: 30px;
+       align-items: center;
+       margin-bottom: 20px;
+   }
+   
+   .game-color-line {
+       width: 100px;
+       height: 6px;
+       border-radius: 10px;
+       transition: 0.5s;
+       box-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+   }
+   
+   .game-color-picker {
+       display: none;
+       position: fixed;
+       inset: 0;
+       background: rgba(5, 2, 10, 0.95);
+       backdrop-filter: blur(20px);
+       z-index: 10000;
+       grid-template-columns: 1fr 1fr;
+       gap: 20px;
+       padding: 40px;
+       align-content: center;
+   }
+   
+   .game-color-tile {
+       height: 140px;
+       border-radius: 25px;
+       cursor: pointer;
+       border: 3px solid rgba(255, 255, 255, 0.1);
+       transition: 0.2s;
+   }
+   
+   .game-color-tile:active {
+       transform: scale(0.9);
+   }
+   
+   /* ============================================
+      18. RESPONSIVE MEDIA QUERIES
+      ============================================ */
+   
+   @media (max-width: 480px) {
+       .main-title {
+           font-size: 1.8rem;
+       }
+   
+       .game-card, .action-card {
+           padding: 18px 10px;
+           gap: 8px;
+       }
+   
+       .grid-layout {
+           gap: 12px;
+       }
+   
+       .game-master-wrapper {
+           padding: env(safe-area-inset-top, 15px) 12px env(safe-area-inset-bottom, 15px) 12px;
+       }
+   
+       .game-card-unit {
+           width: clamp(60px, 12vw, 85px);
+           height: clamp(90px, 20vw, 125px);
+       }
+   
+       .game-chess-board {
+           width: 85vw;
+           height: 85vw;
+       }
+   }
+   
+   @media (min-width: 769px) {
+       .floating-trigger {
+           display: none;
+       }
+   
+       .sidebar-glass {
+           right: 0;
+           border-left: 1px solid var(--glass-border);
+       }
+   }
+   
+   /* ============================================
+      19. UTILITY CLASSES
+      ============================================ */
+   
+   .fade-out {
+       opacity: 0;
+       pointer-events: none;
+       transition: 0.5s;
+   }
