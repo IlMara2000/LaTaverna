@@ -1,18 +1,19 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
+/**
+ * GIOCO: BRISCOLA - MASTER EDITION (Responsive & Animated)
+ * Tema: Amethyst Ultra-Dark
+ */
+
 export function initBriscola(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // BLOCCO SCROLL GLOBALE 100% (Amethyst 5.4 Standard)
-    document.documentElement.style.overflowX = 'hidden';
-    document.body.style.overflowX = 'hidden';
-    document.body.style.overflowY = 'hidden'; // Blocco totale pagina
-    document.body.style.position = 'relative';
-    document.body.style.touchAction = 'none'; // Nessun trascinamento
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.backgroundColor = '#05010a'; // Match del bg-dark
-    window.scrollTo(0, 0);
+    // BLOCCO TOTALE DELLO SCROLL E DEL PULL-TO-REFRESH
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    document.body.style.backgroundColor = '#05010a';
 
     const SUITS = [
         { id: 'bastoni', icon: '🪵', color: '#00ffa3' },
@@ -37,161 +38,300 @@ export function initBriscola(container) {
 
     container.innerHTML = `
     <style>
-        .briscola-wrapper { 
-            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-            position: relative; overflow: hidden; color: var(--text-primary); 
-            font-family: 'Poppins', sans-serif; box-sizing: border-box; 
-            background: radial-gradient(circle at center, rgba(27,39,53,0.8) 0%, rgba(9,10,15,0.9) 100%);
+        /* LAYOUT ADATTIVO FULL-SCREEN */
+        .briscola-master-container {
+            width: 100%;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            background: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #05010a 100%);
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            position: relative;
+            overflow: hidden;
+            padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom) 20px;
+            box-sizing: border-box;
         }
-        
-        .btn-exit-game {
-            position: absolute; top: calc(15px + env(safe-area-inset-top)); left: 15px; z-index: 100;
-            background: var(--glass-surface); border: 1px solid var(--glass-border);
-            color: white; padding: 8px 16px; border-radius: 14px; font-weight: 800; font-size: 10px;
-            cursor: pointer; outline: none; transition: 0.2s; backdrop-filter: blur(10px);
-        }
-        .btn-exit-game:active { transform: scale(0.95); background: rgba(157, 78, 221, 0.2); border-color: var(--amethyst-bright); }
-        
-        .score-widget { 
-            position: absolute; top: calc(15px + env(safe-area-inset-top)); right: 15px; 
-            background: var(--glass-surface); backdrop-filter: blur(10px); 
-            border: 1px solid var(--glass-border); padding: 10px 15px; border-radius: 16px; 
-            min-width: 110px; z-index: 10; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        .score-line { display: flex; justify-content: space-between; align-items: center; font-weight: 900; font-size: 0.75rem; margin-bottom: 4px; }
-        
-        .b-card { 
-            width: 75px; height: 110px; border-radius: 14px; 
-            background: var(--glass-surface); color: white; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; 
-            border: 1px solid var(--glass-border); transition: transform 0.2s, box-shadow 0.2s; position: relative; 
-            cursor: pointer; text-align: center; user-select: none; -webkit-tap-highlight-color: transparent;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-        
-        .player-card:active { transform: translateY(-15px) scale(1.05); z-index: 10; box-shadow: 0 10px 20px rgba(157, 78, 221, 0.4); border-color: var(--amethyst-bright); }
-        
-        .b-card.back { background: var(--accent-gradient); border: 1px solid var(--amethyst-bright); color: transparent; }
-        
-        .active-glow { position: relative; }
-        .active-glow::after {
-            content: ''; position: absolute; inset: -5px; border-radius: 20px;
-            border: 2px solid #00ffa3; opacity: 0.5; animation: pulseGlow 1.5s infinite; pointer-events: none;
-        }
-        #bot-side.active-glow::after { border-color: var(--danger); }
-        
-        @keyframes pulseGlow { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.05); opacity: 0; } }
 
-        #player-side { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
-        #bot-side { position: absolute; top: calc(75px + env(safe-area-inset-top)); width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 5; }
-        #mid-table { width: 100%; height: 200px; position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+        /* HEADER E SCORE */
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .score-display {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(157, 78, 221, 0.3);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: flex;
+            gap: 20px;
+            font-weight: 900;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* TAVOLO CENTRALE */
+        .game-table {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .played-area {
+            display: flex;
+            gap: 20px;
+            height: 150px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        /* CARTE: DIMENSIONI DINAMICHE */
+        .card-b {
+            width: clamp(70px, 15vw, 100px);
+            height: clamp(100px, 22vw, 145px);
+            background: #fff;
+            border-radius: 12px;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 8px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            user-select: none;
+        }
+
+        .card-b.back {
+            background: linear-gradient(135deg, #5a189a 0%, #240046 100%);
+            border: 2px solid var(--amethyst-bright);
+            color: transparent;
+        }
+
+        .player-hand .card-b:hover {
+            transform: translateY(-20px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(157, 78, 221, 0.5);
+        }
+
+        /* ANIMAZIONE CARTA CHE VOLA */
+        .flying-card {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hand-container {
+            display: flex;
+            gap: 15px;
+            padding: 20px;
+            z-index: 5;
+        }
+
+        .briscola-side-info {
+            position: absolute;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* OVERLAY START */
+        #start-screen {
+            position: fixed;
+            inset: 0;
+            background: #05010a;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .btn-glow {
+            background: var(--accent-gradient);
+            border: none;
+            color: white;
+            padding: 18px 50px;
+            border-radius: 50px;
+            font-weight: 900;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--amethyst-glow);
+            transition: 0.3s;
+        }
+
+        .btn-glow:active { transform: scale(0.9); }
     </style>
 
-    <div class="briscola-wrapper fade-in">
+    <div class="briscola-master-container">
         
-        <div id="briscola-overlay" style="position:absolute; inset:0; background:rgba(5, 2, 10, 0.95); backdrop-filter: blur(10px); z-index:11000; display:flex; align-items:center; justify-content:center; flex-direction:column; padding: 20px; box-sizing: border-box;">
-            
-            <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(157,78,221,0.5));">BRISCOLA</h1>
-            
-            <button class="btn-primary" id="start-game-btn" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA ORA</button>
-            <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">MULTIPLAYER</button>
-            
+        <div id="start-screen">
+            <img src="/assets/logo.png" style="width: 100px; margin-bottom: 20px;" class="pulse-logo">
+            <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 40px;">BRISCOLA</h1>
+            <button class="btn-glow" id="play-btn">INIZIA SFIDA</button>
+            <button id="exit-btn" style="margin-top: 25px; background:none; border:none; color:white; opacity:0.4; font-weight:700; cursor:pointer;">TORNA INDIETRO</button>
         </div>
 
-        <button class="btn-exit-game" id="btn-exit-ingame" style="display: none;">← ESCI</button>
-
-        <div class="score-widget" id="score-ui" style="display: none;">
-            <div class="score-line"><span>TU</span> <span id="s0" style="color:#00ffa3;">0</span></div>
-            <div class="score-line"><span>BOT</span> <span id="s1" style="color:var(--danger);">0</span></div>
-            <div id="deck-count" style="font-size: 9px; opacity:0.5; margin-top:8px; text-align:center; font-family: 'Montserrat', sans-serif; letter-spacing: 1px;">CARTE: 40</div>
-        </div>
-
-        <div id="bot-side" style="display: none;"></div>
-        
-        <div id="mid-table" style="display: none;">
-            <div id="played-cards" style="display:flex; gap:10px; height: 110px;"></div>
-            <div style="position:relative; width:120px; height:80px; margin-top: 20px;">
-                <div id="briscola-slot" style="position:absolute; transform:rotate(90deg); left: 30px;"></div>
-                <div id="deck-visual" class="b-card back" style="position:absolute; transform: scale(0.8); left: -10px; font-size:9px;"></div>
+        <div class="game-header">
+            <button id="btn-ingame-exit" style="background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 15px; font-weight: 800; font-size: 12px; cursor:pointer;">← ESCI</button>
+            <div class="score-display">
+                <div style="color: #00ffa3;">TU: <span id="p0-score">0</span></div>
+                <div style="color: #ff416c;">BOT: <span id="p1-score">0</span></div>
             </div>
         </div>
-        
-        <div id="player-side" style="display: none;"></div>
+
+        <div id="bot-hand" class="hand-container" style="opacity: 0.6; transform: scale(0.85);"></div>
+
+        <div class="game-table">
+            <div class="played-area" id="table-cards"></div>
+            
+            <div class="briscola-side-info">
+                <div id="deck-count" style="font-size: 10px; opacity: 0.5; font-weight: 800;">CARTE: 40</div>
+                <div id="main-deck-visual" class="card-b back" style="transform: scale(0.6); margin-top: -30px;"></div>
+                <div id="briscola-card-visual" style="transform: rotate(90deg) scale(0.7); margin-top: -20px;"></div>
+            </div>
+        </div>
+
+        <div id="player-hand" class="hand-container player-hand"></div>
+
     </div>
     `;
 
-    const quitGame = async () => {
+    // Funzione di uscita fluida
+    const quit = async () => {
         document.body.style.touchAction = '';
-        document.body.style.overflowX = '';
-        document.body.style.overflowY = 'auto'; // Ripristina scroll verticale
-        document.body.style.overscrollBehavior = '';
-        document.body.style.backgroundColor = '';
+        document.body.style.overflow = 'auto';
         try {
             const { showMinigamesList } = await import('../../minigamelist.js');
             showMinigamesList(document.getElementById('app') || container);
-        } catch (e) {
-            window.location.reload(); 
-        }
+        } catch (e) { window.location.reload(); }
     };
 
-    container.querySelector('#btn-quit-start').onclick = quitGame;
-    container.querySelector('#btn-exit-ingame').onclick = quitGame;
+    container.querySelector('#exit-btn').onclick = quit;
+    container.querySelector('#btn-ingame-exit').onclick = quit;
 
-    const getCardUI = (c) => {
+    // --- LOGICA ANIMAZIONI ---
+    async function animateCardMove(startEl, targetEl, cardData, isBack = false) {
+        return new Promise(resolve => {
+            const startRect = startEl.getBoundingClientRect();
+            const targetRect = targetEl.getBoundingClientRect();
+            
+            const flyer = document.createElement('div');
+            flyer.className = `card-b flying-card ${isBack ? 'back' : ''}`;
+            
+            if (!isBack) {
+                const suitData = SUITS.find(s => s.id === cardData.suit);
+                flyer.innerHTML = `
+                    <div style="font-weight:900; color:${suitData.color}">${cardData.name[0]}</div>
+                    <div style="font-size: 2rem; align-self:center;">${suitData.icon}</div>
+                    <div style="font-weight:900; align-self:flex-end; transform:rotate(180deg); color:${suitData.color}">${cardData.name[0]}</div>
+                `;
+            }
+
+            flyer.style.left = `${startRect.left}px`;
+            flyer.style.top = `${startRect.top}px`;
+            document.body.appendChild(flyer);
+
+            // Frame successivo per far partire la transizione
+            requestAnimationFrame(() => {
+                flyer.style.left = `${targetRect.left}px`;
+                flyer.style.top = `${targetRect.top}px`;
+                flyer.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+            });
+
+            setTimeout(() => {
+                flyer.remove();
+                resolve();
+            }, 500);
+        });
+    }
+
+    const renderCardHTML = (c) => {
         if (!c) return '';
-        const suitData = SUITS.find(s => s.id === c.suit);
+        const suit = SUITS.find(s => s.id === c.suit);
         return `
-            <span style="font-size:9px; color:${suitData.color}; font-weight:900; letter-spacing: 1px;">${c.suit.toUpperCase()}</span>
-            <span style="font-size:1.8rem; margin: 5px 0; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">${suitData.icon}</span>
-            <span style="font-size:15px; font-weight:900; color: white;">${c.name}</span>
+            <div style="width:100%; text-align:left; font-weight:900; font-size: 14px; color:${suit.color}">${c.name === 'Asso' ? 'A' : (c.name === 'Re' ? 'R' : (c.name === 'Cavallo' ? 'C' : (c.name === 'Fante' ? 'F' : c.name)))}</div>
+            <div style="font-size: 2.2rem; align-self: center; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.2));">${suit.icon}</div>
+            <div style="width:100%; text-align:right; font-weight:900; font-size: 14px; transform: rotate(180deg); color:${suit.color}">${c.name === 'Asso' ? 'A' : (c.name === 'Re' ? 'R' : (c.name === 'Cavallo' ? 'C' : (c.name === 'Fante' ? 'F' : c.name)))}</div>
         `;
     };
 
-    const renderView = () => {
+    const updateUI = () => {
         if (!state.gameActive) return;
         
-        const bSlot = container.querySelector('#briscola-slot');
-        bSlot.innerHTML = state.briscola ? `<div class="b-card" style="transform: scale(0.8); border: 2px solid var(--amethyst-bright); box-shadow: 0 0 15px var(--amethyst-glow);">${getCardUI(state.briscola)}</div>` : '';
-        
-        container.querySelector('#deck-visual').style.display = state.deck.length > 0 ? 'flex' : 'none';
+        // Punteggi
+        container.querySelector('#p0-score').innerText = state.scores[0];
+        container.querySelector('#p1-score').innerText = state.scores[1];
         container.querySelector('#deck-count').innerText = `CARTE: ${state.deck.length}`;
-        
-        const botSide = container.querySelector('#bot-side');
-        botSide.innerHTML = state.players[1].map(() => `<div class="b-card back" style="transform: scale(0.85); margin: 0 -10px;"></div>`).join('');
-        botSide.classList.toggle('active-glow', state.turn === 1);
-        
-        const pSide = container.querySelector('#player-side');
-        pSide.innerHTML = state.players[0].map((c, i) => `<div class="b-card player-card" data-idx="${i}">${getCardUI(c)}</div>`).join('');
-        pSide.classList.toggle('active-glow', state.turn === 0);
-        
-        container.querySelector('#played-cards').innerHTML = state.table.map(t => `<div class="b-card" style="cursor:default;">${getCardUI(t.card)}</div>`).join('');
-        container.querySelector('#s0').innerText = state.scores[0];
-        container.querySelector('#s1').innerText = state.scores[1];
 
-        pSide.querySelectorAll('.b-card.player-card').forEach(card => {
-            card.onclick = (e) => { 
-                e.preventDefault();
-                if(state.turn === 0 && !state.isAnimating) playCard(parseInt(card.dataset.idx), 0); 
-            };
+        // Briscola
+        const bVis = container.querySelector('#briscola-card-visual');
+        bVis.innerHTML = state.briscola ? `<div class="card-b">${renderCardHTML(state.briscola)}</div>` : '';
+
+        // Mano Giocatore
+        const pHand = container.querySelector('#player-hand');
+        pHand.innerHTML = state.players[0].map((c, i) => `
+            <div class="card-b" data-idx="${i}">${renderCardHTML(c)}</div>
+        `).join('');
+
+        // Mano Bot (Coperte)
+        const bHand = container.querySelector('#bot-hand');
+        bHand.innerHTML = state.players[1].map(() => `<div class="card-b back"></div>`).join('');
+
+        // Tavolo
+        const tArea = container.querySelector('#table-cards');
+        tArea.innerHTML = state.table.map(t => `<div class="card-b">${renderCardHTML(t.card)}</div>`).join('');
+
+        // Listeners carte giocatore
+        pHand.querySelectorAll('.card-b').forEach(el => {
+            el.onclick = () => { if(state.turn === 0 && !state.isAnimating) playCard(parseInt(el.dataset.idx), 0); };
         });
     };
 
-    const playCard = (idx, pIdx) => {
+    async function playCard(idx, pIdx) {
         state.isAnimating = true;
+        const card = state.players[pIdx][idx];
+        
+        // Animazione
+        const startEl = pIdx === 0 
+            ? container.querySelector(`#player-hand .card-b[data-idx="${idx}"]`)
+            : container.querySelector(`#bot-hand .card-b`);
+        
+        const targetPlaceholder = document.createElement('div');
+        targetPlaceholder.style.width = '80px';
+        container.querySelector('#table-cards').appendChild(targetPlaceholder);
+
+        await animateCardMove(startEl, targetPlaceholder, card, pIdx !== 0);
+        targetPlaceholder.remove();
+
         state.table.push({ card: state.players[pIdx].splice(idx, 1)[0], owner: pIdx });
-        renderView();
+        updateUI();
 
         if (state.table.length === 2) {
             setTimeout(resolveRound, 800);
         } else {
             state.turn = 1 - pIdx;
             state.isAnimating = false;
-            renderView();
             if (state.turn === 1) setTimeout(() => playCard(0, 1), 1000);
         }
-    };
+    }
 
-    const resolveRound = () => {
+    function resolveRound() {
         const [t1, t2] = state.table;
         const bSuit = state.briscola?.suit || state.lastBriscolaSuit;
         
@@ -210,6 +350,7 @@ export function initBriscola(container) {
         state.table = [];
         
         setTimeout(() => {
+            // Pesca
             if (state.deck.length > 0) {
                 state.players[winner].push(state.deck.pop());
                 if (state.deck.length === 0) {
@@ -221,37 +362,24 @@ export function initBriscola(container) {
             }
 
             if (state.players[0].length === 0 && state.deck.length === 0) {
-                const isWin = state.scores[0] > 60;
-                const isDraw = state.scores[0] === 60;
-                const msg = isWin ? "🏆 VITTORIA!" : (isDraw ? "🤝 PAREGGIO!" : "💀 SCONFITTA!");
+                const msg = state.scores[0] > 60 ? "VITTORIA!" : (state.scores[0] === 60 ? "PAREGGIO" : "SCONFITTA");
                 alert(`${msg}\nTu: ${state.scores[0]} - Bot: ${state.scores[1]}`);
-                return quitGame();
+                return quit();
             }
 
             state.turn = winner;
             state.isAnimating = false;
-            renderView();
+            updateUI();
             if (state.turn === 1) setTimeout(() => playCard(0, 1), 800);
         }, 600);
-    };
+    }
 
-    container.querySelector('#start-game-btn').onclick = (e) => {
-        e.preventDefault();
-        container.querySelector('#briscola-overlay').style.display = 'none';
-        container.querySelector('#btn-exit-ingame').style.display = 'block';
-        container.querySelector('#score-ui').style.display = 'block';
-        container.querySelector('#bot-side').style.display = 'flex';
-        container.querySelector('#mid-table').style.display = 'flex';
-        container.querySelector('#player-side').style.display = 'flex';
-
+    container.querySelector('#play-btn').onclick = () => {
+        container.querySelector('#start-screen').style.display = 'none';
         state.deck = [];
         SUITS.forEach(s => VALUES.forEach(v => state.deck.push({ suit: s.id, ...v })));
+        state.deck.sort(() => Math.random() - 0.5);
         
-        for (let i = state.deck.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [state.deck[i], state.deck[j]] = [state.deck[j], state.deck[i]];
-        }
-
         for(let i=0; i<3; i++) {
             state.players[0].push(state.deck.pop());
             state.players[1].push(state.deck.pop());
@@ -259,6 +387,6 @@ export function initBriscola(container) {
         state.briscola = state.deck.pop();
         state.lastBriscolaSuit = state.briscola.suit;
         state.gameActive = true;
-        renderView();
+        updateUI();
     };
 }
