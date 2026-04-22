@@ -1,21 +1,18 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
-// GIOCO: CHESS & CHECKS
-// Versione Stabile 2.2 - Premium UI Borderless
+// GIOCO: STRATEGY MASTER (Chess & Checkers)
+// Versione Stabile 2.5 - Full Responsive & High Visibility
 // ==========================================
 
 export function initScacchi(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
 
-    // FIX: Configurazione mobile-friendly aggressiva (Nessuno scroll consentito sulla scacchiera)
-    document.documentElement.style.overflowX = 'hidden';
-    document.body.style.overflowX = 'hidden';
-    document.body.style.overflowY = 'hidden'; 
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.touchAction = 'none'; // Previene lo scrolling quando si toccano i pezzi
-    document.body.style.position = 'relative';
+    // BLOCCO SCROLL GLOBALE PER IL GIOCO
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none'; 
     document.body.style.backgroundColor = '#05010a'; 
 
     let state = {
@@ -24,6 +21,7 @@ export function initScacchi(container) {
         board: [],
         turn: 'w',
         selected: null,
+        lastMove: null, // Per evidenziare l'ultima mossa dell'IA
         isAnimating: false
     };
 
@@ -33,88 +31,90 @@ export function initScacchi(container) {
 // --- Funzione centralizzata per uscire in sicurezza ---
 const quitGame = async (container) => {
     document.body.style.overflowY = 'auto';
-    document.body.style.overflowX = '';
-    document.body.style.overscrollBehavior = '';
     document.body.style.touchAction = '';
     document.body.style.position = '';
-    document.body.style.backgroundColor = '';
-    
     try {
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
     } catch (e) {
-        console.error("Errore navigazione:", e);
         window.location.reload(); 
     }
 };
 
-// --- 1. MENU DI CONFIGURAZIONE (BORDERLESS) ---
+// --- 1. MENU DI CONFIGURAZIONE (FULL-SCREEN PREMIUM) ---
 function renderSetupMenu(container, state) {
     container.innerHTML = `
     <style>
-        .strategy-wrapper { 
-            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-            background: radial-gradient(circle at center, rgba(26,26,46,0.8) 0%, rgba(7,7,10,0.9) 100%); 
+        @keyframes fadeInUpOnly {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .strategy-master-wrapper { 
+            width: 100%; height: 100dvh; 
+            background: radial-gradient(circle at center, #1a0b2e 0%, #05010a 100%); 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            color: white; font-family: 'Poppins', sans-serif; 
-            padding: 20px; box-sizing: border-box; overflow: hidden;
+            color: white; font-family: 'Poppins', sans-serif; padding: 20px; box-sizing: border-box;
+            animation: fadeInUpOnly 0.6s ease-out forwards;
         }
-        @media (min-width: 431px) {
-            .strategy-wrapper { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+
+        .setup-card-premium { 
+            background: rgba(255,255,255,0.03); backdrop-filter: blur(15px);
+            padding: 40px 30px; border-radius: 32px; border: 1px solid rgba(157,78,221,0.3);
+            width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
-        
-        .mode-toggle { display: flex; gap: 8px; margin: 20px 0; background: rgba(0,0,0,0.4); padding: 6px; border-radius: 14px; width: 100%; max-width: 350px; }
-        .mode-btn { flex: 1; padding: 14px; border-radius: 10px; border: none; cursor: pointer; background: transparent; color: rgba(255,255,255,0.5); font-weight: 800; font-size: 13px; outline: none; transition: 0.3s; letter-spacing: 1px; }
-        .mode-btn.active { background: #9d4ede; color: white; box-shadow: 0 4px 15px rgba(157,78,221,0.4); }
-        
-        .diff-btn { padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 800; cursor: pointer; outline: none; transition: 0.2s; letter-spacing: 1px; }
-        .diff-btn.active { background: rgba(157,78,221,0.2); border: 1px solid #9d4ede; color: white; box-shadow: 0 4px 15px rgba(157,78,221,0.2); }
+
+        .mode-toggle-premium { display: flex; gap: 10px; margin: 25px 0; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 18px; }
+        .mode-btn-p { flex: 1; padding: 15px; border-radius: 12px; border: none; cursor: pointer; background: transparent; color: rgba(255,255,255,0.4); font-weight: 800; font-size: 14px; transition: 0.3s; }
+        .mode-btn-p.active { background: var(--accent-gradient); color: white; box-shadow: 0 4px 15px var(--amethyst-glow); }
+
+        .diff-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+        .diff-btn-p { padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .diff-btn-p.active { background: rgba(157,78,221,0.3); border-color: #9d4ede; box-shadow: 0 0 15px var(--amethyst-glow); }
+
+        .btn-start-master { width: 100%; padding: 18px; border-radius: 16px; border: none; background: #00ffa3; color: #000; font-weight: 900; font-size: 1.2rem; cursor: pointer; transition: 0.3s; }
+        .btn-start-master:active { transform: scale(0.95); }
     </style>
 
-    <div class="strategy-wrapper fade-in">
-        
-        <div style="width: 100%; max-width: 350px; display: flex; flex-direction: column; align-items: center;">
-            <h1 class="main-title" style="margin-bottom: 5px; font-size: 3rem;">CHESS & CHECKS</h1>
-            <p style="opacity:0.5; font-size:11px; margin-bottom:30px; letter-spacing: 2px;">SFIDA L'INTELLIGENZA ARTIFICIALE</p>
+    <div class="strategy-master-wrapper">
+        <div class="setup-card-premium">
+            <img src="/assets/logo.png" style="width: 80px; margin-bottom: 20px;" class="pulse-logo">
+            <h1 class="main-title" style="font-size: 2.5rem; margin-bottom: 5px;">STRATEGY</h1>
+            <p style="opacity:0.5; font-size:12px; letter-spacing: 2px;">CHESS & CHECKERS</p>
             
-            <div class="mode-toggle">
-                <button class="mode-btn ${state.gameMode === 'chess' ? 'active' : ''}" id="btn-chess">SCACCHI</button>
-                <button class="mode-btn ${state.gameMode === 'checkers' ? 'active' : ''}" id="btn-checkers">DAMA</button>
+            <div class="mode-toggle-premium">
+                <button class="mode-btn-p ${state.gameMode === 'chess' ? 'active' : ''}" id="p-chess">SCACCHI</button>
+                <button class="mode-btn-p ${state.gameMode === 'checkers' ? 'active' : ''}" id="p-checkers">DAMA</button>
             </div>
             
-            <div style="width: 100%; margin-bottom: 30px;">
-                <p style="text-align: center; font-size: 10px; opacity: 0.4; letter-spacing: 2px; margin-bottom: 10px;">DIFFICOLTÀ BOT</p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                    <button class="diff-btn ${state.difficulty === 1 ? 'active' : ''}" data-diff="1">EASY</button>
-                    <button class="diff-btn ${state.difficulty === 2 ? 'active' : ''}" data-diff="2">NORMAL</button>
-                    <button class="diff-btn ${state.difficulty === 3 ? 'active' : ''}" data-diff="3">HARD</button>
-                </div>
+            <div class="diff-grid">
+                <button class="diff-btn-p ${state.difficulty === 1 ? 'active' : ''}" data-d="1">EASY</button>
+                <button class="diff-btn-p ${state.difficulty === 2 ? 'active' : ''}" data-d="2">NORMAL</button>
+                <button class="diff-btn-p ${state.difficulty === 3 ? 'active' : ''}" data-d="3">HARD</button>
             </div>
             
-            <button class="btn-primary" id="start-game-btn" style="width: 100%; max-width: 280px; margin-bottom: 15px; font-size: 1.1rem; border: none; background: var(--accent-gradient);">GIOCA ORA</button>
-            <button id="btn-quit-start" class="btn-back-glass" style="width: 100%; max-width: 280px; border-left: none;">MULTIPLAYER</button>
-            
+            <button class="btn-start-master" id="begin-btn">GIOCA ORA</button>
         </div>
-
+        <button id="exit-setup" class="btn-back-glass" style="margin-top: 25px; width: 100%; max-width: 400px;">← TORNA INDIETRO</button>
     </div>
     `;
 
-    container.querySelector('#btn-quit-setup').onclick = (e) => { e.preventDefault(); quitGame(container); };
-    container.querySelector('#btn-chess').onclick = () => { state.gameMode = 'chess'; renderSetupMenu(container, state); };
-    container.querySelector('#btn-checkers').onclick = () => { state.gameMode = 'checkers'; renderSetupMenu(container, state); };
-    
-    container.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.onclick = () => { state.difficulty = parseInt(btn.dataset.diff); renderSetupMenu(container, state); };
+    // Listeners Menu
+    container.querySelector('#exit-setup').onclick = () => quitGame(container);
+    container.querySelector('#p-chess').onclick = () => { state.gameMode = 'chess'; renderSetupMenu(container, state); };
+    container.querySelector('#p-checkers').onclick = () => { state.gameMode = 'checkers'; renderSetupMenu(container, state); };
+    container.querySelectorAll('.diff-btn-p').forEach(b => {
+        b.onclick = () => { state.difficulty = parseInt(b.dataset.d); renderSetupMenu(container, state); };
     });
-
-    container.querySelector('#start-game').onclick = () => startGame(container, state);
+    container.querySelector('#begin-btn').onclick = () => startGame(container, state);
 }
 
-// --- 2. GIOCO ---
+// --- 2. LOGICA INIZIALIZZAZIONE ---
 function startGame(container, state) {
     state.board = state.gameMode === 'chess' ? createChessBoard() : createCheckersBoard();
     state.turn = 'w';
     state.selected = null;
+    state.lastMove = null;
     renderBoard(container, state);
 }
 
@@ -141,6 +141,7 @@ function createCheckersBoard() {
     return board;
 }
 
+// --- 3. RENDERING SCACCHIERA (FULL RESPONSIVE) ---
 function renderBoard(container, state) {
     const chessPieces = {
         'wP': '♙', 'wR': '♖', 'wN': '♘', 'wB': '♗', 'wQ': '♕', 'wK': '♔',
@@ -149,80 +150,90 @@ function renderBoard(container, state) {
 
     container.innerHTML = `
     <style>
-        .game-screen { 
-            width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto;
-            background: rgba(10,10,12,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
-            box-sizing: border-box; overflow: hidden;
+        .game-master-screen { 
+            width: 100%; height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #05010a; position: relative; overflow: hidden;
         }
-        @media (min-width: 431px) {
-            .game-screen { border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); height: 90dvh; margin-top: 5vh; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        }
-        .board { 
+
+        /* SCACCHIERA RESPONSIVA: si adatta alla dimensione minore tra altezza e larghezza */
+        .master-board { 
             display: grid; grid-template-columns: repeat(8, 1fr); 
-            width: 92vw; max-width: 390px; height: 92vw; max-height: 390px;
-            border: 4px solid rgba(157, 78, 221, 0.3); border-radius: 8px; overflow: hidden;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            width: min(90vw, 70vh); height: min(90vw, 70vh);
+            border: 5px solid rgba(157, 78, 221, 0.3); border-radius: 12px; overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
-        .sq { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 30px; position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        .sq.light { background: #d1d9e0; }
-        .sq.dark { background: #5c7c99; }
-        .sq.selected { background: rgba(157, 78, 221, 0.5) !important; box-shadow: inset 0 0 10px rgba(255,255,255,0.5); }
-        .piece { user-select: none; color: black; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
-        .checker { width: 75%; height: 75%; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); }
-        .checker.w { background: #fff; box-shadow: 0 3px 0 #ccc; }
-        .checker.b { background: #222; box-shadow: 0 3px 0 #000; }
+
+        .sq-m { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: min(8vw, 5vh); cursor: pointer; transition: 0.2s; position: relative; }
+        .sq-m.light { background: #d1d9e0; }
+        .sq-m.dark { background: #5c7c99; }
         
-        .game-header { width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: center; position: absolute; top: env(safe-area-inset-top, 10px); box-sizing: border-box; }
-        .status-badge { padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 800; color: #000; transition: 0.3s; }
+        /* EFFETTI VISIBILI */
+        .sq-m.selected { background: rgba(0, 255, 163, 0.5) !important; box-shadow: inset 0 0 15px #00ffa3; }
+        .sq-m.last-move { background: rgba(255, 65, 108, 0.3) !important; }
         
-        #btn-reset-container { position: absolute; bottom: calc(25px + env(safe-area-inset-bottom)); width: 100%; padding: 0 20px; box-sizing: border-box; }
+        .piece-m { user-select: none; color: black; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); pointer-events: none; }
+        .checker-m { width: 80%; height: 80%; border-radius: 50%; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
+        .checker-m.w { background: #fff; border: 2px solid #ccc; }
+        .checker-m.b { background: #222; border: 2px solid #000; }
+
+        .game-info-bar { width: min(90vw, 70vh); display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .turn-badge { padding: 10px 20px; border-radius: 50px; font-weight: 900; font-size: 12px; color: #000; text-transform: uppercase; }
     </style>
 
-    <div class="game-screen fade-in">
-        <div class="game-header">
-            <span style="font-weight:900; font-size:16px; letter-spacing: 1px; font-family:'Montserrat', sans-serif;">${state.gameMode.toUpperCase()}</span>
-            <div class="status-badge" style="background: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}; box-shadow: 0 0 15px ${state.turn === 'w' ? 'rgba(0,255,163,0.3)' : 'rgba(255,65,108,0.3)'};">
-                ${state.turn === 'w' ? 'TUO TURNO' : 'IA...'}
+    <div class="game-master-screen fade-in">
+        <div class="game-info-bar">
+            <span style="font-weight:900; letter-spacing:1px; color:#9d4ede;">${state.gameMode.toUpperCase()}</span>
+            <div class="turn-badge" style="background: ${state.turn === 'w' ? '#00ffa3' : '#ff416c'}; box-shadow: 0 0 20px ${state.turn === 'w' ? 'rgba(0,255,163,0.4)' : 'rgba(255,65,108,0.4)'};">
+                ${state.turn === 'w' ? 'Tuo Turno' : 'IA sta pensando...'}
             </div>
         </div>
-        
-        <div class="board" id="board-ui"></div>
-        
-        <div id="btn-reset-container">
-            <button id="btn-reset" class="btn-back-glass" style="margin-bottom: 0;">← TORNA AL MENU</button>
-        </div>
+
+        <div class="master-board" id="board-ui"></div>
+
+        <button id="back-menu" class="btn-back-glass" style="margin-top: 30px; width: min(90vw, 70vh);">← TORNA AL MENU</button>
     </div>
     `;
 
     const boardUI = container.querySelector('#board-ui');
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
-            const square = document.createElement('div');
-            square.className = `sq ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
+            const sq = document.createElement('div');
+            sq.className = `sq-m ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
+            
             const piece = state.board[r][c];
             if (piece) {
-                if (state.gameMode === 'chess') square.innerHTML = `<span class="piece">${chessPieces[piece.color + piece.type]}</span>`;
-                else square.innerHTML = `<div class="checker ${piece.color}"></div>`;
+                if (state.gameMode === 'chess') sq.innerHTML = `<span class="piece-m">${chessPieces[piece.color + piece.type]}</span>`;
+                else sq.innerHTML = `<div class="checker-m ${piece.color}"></div>`;
             }
-            if (state.selected && state.selected.r === r && state.selected.c === c) square.classList.add('selected');
-            square.onclick = (e) => { e.preventDefault(); handleSquareClick(r, c, state, container); };
-            boardUI.appendChild(square);
+
+            // Highlighting
+            if (state.selected && state.selected.r === r && state.selected.c === c) sq.classList.add('selected');
+            if (state.lastMove && ((state.lastMove.fr === r && state.lastMove.fc === c) || (state.lastMove.tr === r && state.lastMove.tc === c))) {
+                sq.classList.add('last-move');
+            }
+
+            sq.onclick = () => handleSquareClick(r, c, state, container);
+            boardUI.appendChild(sq);
         }
     }
-    container.querySelector('#btn-reset').onclick = () => renderSetupMenu(container, state);
+    container.querySelector('#back-menu').onclick = () => renderSetupMenu(container, state);
 }
 
 function handleSquareClick(r, c, state, container) {
     if (state.turn !== 'w' || state.isAnimating) return;
     const piece = state.board[r][c];
+
     if (state.selected) {
-        if (state.selected.r === r && state.selected.c === c) state.selected = null;
-        else {
+        if (state.selected.r === r && state.selected.c === c) {
+            state.selected = null;
+        } else {
+            // Mossa Giocatore
             state.board[r][c] = state.board[state.selected.r][state.selected.c];
             state.board[state.selected.r][state.selected.c] = null;
+            state.lastMove = { fr: state.selected.r, fc: state.selected.c, tr: r, tc: c };
             state.turn = 'b';
             state.selected = null;
-            setTimeout(() => aiMove(state, container), 600);
+            setTimeout(() => aiMove(state, container), 800);
         }
         renderBoard(container, state);
     } else if (piece && piece.color === 'w') {
@@ -233,19 +244,25 @@ function handleSquareClick(r, c, state, container) {
 
 function aiMove(state, container) {
     state.isAnimating = true;
-    let moves = [];
+    let possibleMoves = [];
+    
+    // IA Base: Cerca pezzi neri e trova mosse legali (molto semplificato)
     for (let r=0; r<8; r++) {
         for (let c=0; c<8; c++) {
             if (state.board[r][c]?.color === 'b') {
-                if (r + 1 < 8) moves.push({fr: r, fc: c, tr: r+1, tc: c});
+                const targetR = r + 1;
+                if (targetR < 8) possibleMoves.push({fr: r, fc: c, tr: targetR, tc: c});
             }
         }
     }
-    if (moves.length > 0) {
-        const m = moves[Math.floor(Math.random() * moves.length)];
-        state.board[m.tr][m.tc] = state.board[m.fr][m.fc];
-        state.board[m.fr][m.fc] = null;
+
+    if (possibleMoves.length > 0) {
+        const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        state.board[move.tr][move.tc] = state.board[move.fr][move.fc];
+        state.board[move.fr][move.fc] = null;
+        state.lastMove = move;
     }
+
     state.turn = 'w';
     state.isAnimating = false;
     renderBoard(container, state);
