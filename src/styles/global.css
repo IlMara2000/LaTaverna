@@ -767,49 +767,59 @@
        transform: scale(0.9);
    }
    
-   /* ============================================
-      18. RESPONSIVE MEDIA QUERIES
-      ============================================ */
-   
-   @media (max-width: 480px) {
-       .main-title {
-           font-size: 1.8rem;
-       }
-   
-       .game-card, .action-card {
-           padding: 18px 10px;
-           gap: 8px;
-       }
-   
-       .grid-layout {
-           gap: 12px;
-       }
-   
-       .game-master-wrapper {
-           padding: env(safe-area-inset-top, 15px) 12px env(safe-area-inset-bottom, 15px) 12px;
-       }
-   
-       .game-card-unit {
-           width: clamp(60px, 12vw, 85px);
-           height: clamp(90px, 20vw, 125px);
-       }
-   
-       .game-chess-board {
-           width: 85vw;
-           height: 85vw;
-       }
-   }
-   
-   @media (min-width: 769px) {
-       .floating-trigger {
-           display: none;
-       }
-   
-       .sidebar-glass {
-           right: 0;
-           border-left: 1px solid var(--glass-border);
-       }
-   }
+/* ============================================
+   18. RESPONSIVE MEDIA QUERIES
+   ============================================ */
+
+   @media (max-width: 768px) {
+    .main-title {
+        font-size: 1.8rem;
+    }
+
+    .game-card, .action-card {
+        padding: 18px 10px;
+        gap: 8px;
+    }
+
+    .grid-layout {
+        gap: 12px;
+    }
+
+    .game-master-wrapper {
+        padding: env(safe-area-inset-top, 15px) 12px env(safe-area-inset-bottom, 15px) 12px;
+    }
+
+    .game-card-unit {
+        width: clamp(60px, 12vw, 85px);
+        height: clamp(90px, 20vw, 125px);
+    }
+
+    .game-chess-board {
+        width: 85vw;
+        height: 85vw;
+    }
+
+    /* MOBILE: Hamburger visibile, sidebar nascosta */
+    .floating-trigger {
+        display: flex !important;
+    }
+
+    .sidebar-glass {
+        right: -110%;
+    }
+}
+
+@media (min-width: 769px) {
+    /* DESKTOP: Hamburger nascosto, sidebar sempre aperta */
+    .floating-trigger {
+        display: none !important;
+    }
+
+    .sidebar-glass {
+        right: 0 !important;
+        border-left: 1px solid var(--glass-border);
+    }
+}
    
    /* ============================================
       19. UTILITY CLASSES
