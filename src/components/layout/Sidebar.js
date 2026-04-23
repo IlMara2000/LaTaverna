@@ -31,24 +31,6 @@ function renderSidebarContent(container, context) {
                 <h2 class="text-amethyst" style="font-size: 1.6rem; letter-spacing: -1px; margin-bottom: 5px;">${userName.toUpperCase()}</h2>
                 <span class="subtitle" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 2px;">MODALITÀ ${context.toUpperCase()}</span>
             </div>
-            
-            <div class="sidebar-nav-links" style="display: flex; flex-direction: column; gap: 18px; margin-bottom: 30px;">
-                <a href="#" data-context="lobby" id="nav-lobby" style="color: white; text-decoration: none; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 12px; transition: 0.3s;">
-                    <span>🏠</span> Sala Principale
-                </a>
-                <a href="#" data-context="profile" id="nav-profile" style="color: white; text-decoration: none; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 12px; transition: 0.3s;">
-                    <span>📜</span> Pergamena
-                </a>
-                <a href="#" data-context="zaino" id="nav-zaino" style="color: white; text-decoration: none; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 12px; transition: 0.3s;">
-                    <span>🎒</span> Zaino
-                </a>
-                <a href="#" data-context="minigames" id="nav-minigames" style="color: white; text-decoration: none; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 12px; transition: 0.3s;">
-                    <span>🎲</span> Minigiochi
-                </a>
-                <a href="#" data-context="settings" id="nav-settings" style="color: white; text-decoration: none; font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 12px; transition: 0.3s;">
-                    <span>⚙️</span> Impostazioni
-                </a>
-            </div>
 
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
