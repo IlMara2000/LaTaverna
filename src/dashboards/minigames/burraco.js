@@ -1,9 +1,9 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
+import { getUnlockedLevel, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 
 /**
  * GIOCO: BURRACO - MASTER EDITION
- * Integrazione totale con global.css
- * Stile Carte: Matte Black Minimalist
+ * Integrazione UI Matte Black + Scala Livelli Infiniti
  */
 
 export function initBurraco(container) {
@@ -22,7 +22,8 @@ export function initBurraco(container) {
         tables: { team1: [], team2: [] },
         discardPile: [], turn: 'player', phase: 'draw',
         selectedIndices: [], tutorMsg: "Tocca il mazzo per pescare.",
-        isAnimating: false
+        isAnimating: false,
+        currentLevel: 1
     };
 
     renderLayout(container, state);
@@ -38,119 +39,62 @@ const quitGame = async (container) => {
     } catch (e) { window.location.reload(); }
 };
 
-// --- 1. LAYOUT GIOCO (MASTER UI & MATTE BLACK CARDS) ---
+// --- 1. LAYOUT GIOCO ---
 function renderLayout(container, state) {
     container.innerHTML = `
-    <style>
-        /* OVERRIDES SPECIFICI BURRACO (Design Matte Black) */
-        .card-matte {
-            background: #121212 !important; 
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.7) !important;
-            color: rgba(255, 255, 255, 0.9) !important;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .card-matte.back {
-            background: linear-gradient(135deg, #1a1a1a 0%, #050505 100%) !important;
-            border: 2px solid rgba(255, 255, 255, 0.05) !important;
-            color: transparent !important;
-        }
-
-        .card-red { color: #ff416c !important; }
-
-        /* Interazione Carte Giocatore */
-        .player-card:active {
-            transform: translateY(-15px) scale(1.02);
-            border-color: var(--amethyst-bright) !important;
-            box-shadow: 0 15px 30px rgba(157, 78, 221, 0.4) !important;
-            z-index: 100;
-        }
-
-        .card-matte.selected { 
-            transform: translateY(-20px); 
-            border: 2px solid var(--amethyst-bright) !important; 
-            box-shadow: 0 0 20px var(--amethyst-glow) !important; 
-            z-index: 100; 
-        }
-        
-        .flying-card { position: fixed; z-index: 9999; pointer-events: none; transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
-
-        /* Aree di Gioco */
-        .tables-container { flex: 1; display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 500px; padding: 15px; box-sizing: border-box; }
-        
-        .mats { 
-            flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); 
-            border-radius: 20px; padding: 15px; position: relative; display: flex; gap: 12px; 
-            overflow-x: auto; overflow-y: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.3);
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .tutor-box { 
-            position: absolute; top: 65px; left: 50%; transform: translateX(-50%); 
-            background: rgba(157, 78, 221, 0.2); border: 1px solid var(--amethyst-bright); padding: 8px 20px; 
-            border-radius: 50px; font-size: 11px; z-index: 10; backdrop-filter: blur(10px); 
-            pointer-events: none; white-space: nowrap; font-weight: 800; color: #fff;
-        }
-        
-        .center-area { display: flex; justify-content: center; align-items: center; gap: 50px; padding: 15px; background: rgba(0,0,0,0.3); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); width: 100%; }
-        
-        .deck-stack { 
-            width: clamp(60px, 15vw, 85px); height: clamp(90px, 22vw, 125px); 
-            background: linear-gradient(135deg, #1a1a1a 0%, #050505 100%); 
-            border: 2px solid rgba(255, 255, 255, 0.05); border-radius: 12px; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.7); cursor: pointer; transition: 0.2s;
-        }
-        .deck-stack:active { transform: scale(0.95); }
-    </style>
-
     <div class="game-master-wrapper fade-in">
         
-        <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center;">
+        <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
-            <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 40px;">BURRACO</h1>
-            <button class="game-btn-action" id="play-btn" style="width: 100%; max-width: 280px; padding: 18px; font-size: 1.1rem; background: var(--accent-gradient); border: none;">GIOCA 1 VS 1</button>
-            <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; margin-top: 15px; opacity: 0.6;">TORNA ALLA TAVERNA</button>
+            <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">BURRACO</h1>
+            <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
+            
+            <div id="levels-container" style="display: flex; flex-direction: column; width: 100%; max-width: 280px; max-height: 250px; overflow-y: auto; padding: 10px; margin-bottom: 20px;">
+                </div>
+
+            <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; opacity: 0.6;">TORNA ALLA TAVERNA</button>
         </div>
 
         <header class="game-master-header">
-            <button class="game-btn-action" id="btn-exit-ingame">← ESCI</button>
+            <button class="game-btn-action" id="btn-exit-ingame" style="padding: 10px 20px;">← ESCI</button>
             <div class="game-score-widget">
                 <span id="turn-display" style="color: #00ffa3; font-weight: 900;">TUO TURNO</span>
             </div>
         </header>
         
-        <div id="tutor-container" class="tutor-box"><span id="tutor-text"></span></div>
-        
-        <div class="tables-container">
-            <div class="mats" id="bot-table"></div>
-            <div class="mats" id="player-table"></div>
+        <div id="tutor-container" style="position: absolute; top: 65px; left: 50%; transform: translateX(-50%); background: rgba(157, 78, 221, 0.2); border: 1px solid var(--amethyst-bright); padding: 8px 20px; border-radius: 50px; font-size: 11px; z-index: 10; backdrop-filter: blur(10px); pointer-events: none; white-space: nowrap; font-weight: 800; color: #fff;">
+            <span id="tutor-text"></span>
         </div>
         
-        <div class="center-area">
-            <div id="main-deck" class="deck-stack"></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 500px; padding: 15px 0; box-sizing: border-box; overflow: hidden; margin-top: 30px;">
+            <div id="bot-table" style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 20px; padding: 15px; position: relative; display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch;"></div>
+            <div id="player-table" style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 20px; padding: 15px; position: relative; display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch;"></div>
+        </div>
+        
+        <div style="display: flex; justify-content: center; align-items: center; gap: 50px; padding: 15px; background: rgba(0,0,0,0.3); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); width: 100%;">
+            <div id="main-deck" class="game-card-unit back" style="width: clamp(60px, 15vw, 85px); height: clamp(90px, 22vw, 125px); cursor: pointer;"></div>
             <div id="discard-pile-ui" style="display:flex; min-width:60px; min-height:90px; position:relative;"></div>
         </div>
         
-        <div style="width:100%; max-width: 500px; display:flex; flex-direction:column; align-items:center; margin-top: 10px;">
+        <div style="width:100%; max-width: 500px; display:flex; flex-direction:column; align-items:center; margin-top: 15px;">
             <div style="display:flex; gap:15px; width:100%; padding: 0 15px; box-sizing: border-box;">
-                <button class="game-btn-action" id="btn-meld" style="flex:1; background: #00ffa3; color: #000;">CALA COMBO</button>
-                <button class="game-btn-action" id="btn-discard" style="flex:1; background: #ff416c;">SCARTA</button>
+                <button class="game-btn-action" id="btn-meld" style="flex:1; background: #00ffa3; color: #000; border: none;">CALA COMBO</button>
+                <button class="game-btn-action" id="btn-discard" style="flex:1; background: #ff416c; border: none;">SCARTA</button>
             </div>
-            <div id="player-hand" class="game-player-hand" style="overflow-x: auto; padding-bottom: 5px; height: 110px; align-items: flex-end;"></div>
+            <div id="player-hand" class="game-player-hand" style="overflow-x: auto; padding-bottom: 5px; height: 125px; align-items: flex-end;"></div>
         </div>
     </div>
     `;
 
-    container.querySelector('#exit-btn').onclick = (e) => { e.preventDefault(); quitGame(container); };
-    container.querySelector('#btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(container); };
-    
-    container.querySelector('#play-btn').onclick = (e) => {
-        e.preventDefault();
+    // Render della Scala
+    renderLevelLadder('burraco', container.querySelector('#levels-container'), (selectedLevel) => {
+        state.currentLevel = selectedLevel;
         container.querySelector('#start-screen').remove();
         initLogic(state, container);
-    };
+    });
+
+    container.querySelector('#exit-btn').onclick = (e) => { e.preventDefault(); quitGame(container); };
+    container.querySelector('#btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(container); };
 }
 
 // --- 2. LOGICA E AGGIORNAMENTO UI ---
@@ -184,7 +128,7 @@ function updateUI(state) {
     
     if(tutorEl) tutorEl.innerText = state.tutorMsg;
     if(turnDisplay) {
-        turnDisplay.innerText = isPlayer ? "TUO TURNO" : "IA PENSANDO...";
+        turnDisplay.innerText = isPlayer ? "TUO TURNO" : `BOT LV.${state.currentLevel} PENSANDO...`;
         turnDisplay.style.color = isPlayer ? "#00ffa3" : "#ff416c";
     }
 
@@ -213,16 +157,32 @@ function updateUI(state) {
 // --- 3. RENDERING CARTE (MATTE BLACK) ---
 function createCardElement(card) {
     const el = document.createElement('div');
-    el.className = `game-card-unit card-matte`;
+    el.className = `game-card-unit`;
     const icon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[card.suit];
     const isRed = (card.suit === 'hearts' || card.suit === 'diamonds');
     
+    let faceEmoji = '';
+    if (card.val === 'K') faceEmoji = '👑';
+    else if (card.val === 'Q') faceEmoji = '👸';
+    else if (card.val === 'J') faceEmoji = '💂';
+    
+    const centerIcon = faceEmoji ? faceEmoji : icon;
+
+    if (isRed) el.style.color = '#ff416c';
+    
     el.innerHTML = `
-        <div style="font-size: 1.1rem; font-weight: 900; align-self: flex-start; line-height: 1;">${card.val}</div>
-        <div style="font-size: 2.2rem; align-self: center; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); margin: auto 0;">${icon}</div>
-        <div style="font-size: 1.1rem; font-weight: 900; align-self: flex-end; line-height: 1; transform: rotate(180deg);">${card.val}</div>
+        <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="align-self: flex-start; display: flex; align-items: center; gap: 2px; font-size: 0.9rem; line-height: 1;">
+                <span>${card.val}</span><span style="font-size: 0.7rem;">${icon}</span>
+            </div>
+            <div style="align-self: center; font-size: 1.8rem; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
+                ${centerIcon}
+            </div>
+            <div style="align-self: flex-end; display: flex; align-items: center; gap: 2px; font-size: 0.9rem; line-height: 1; transform: rotate(180deg);">
+                <span>${card.val}</span><span style="font-size: 0.7rem;">${icon}</span>
+            </div>
+        </div>
     `;
-    if(isRed) el.classList.add('card-red');
     return el;
 }
 
@@ -231,14 +191,18 @@ function renderHand(state) {
     if(!container) return;
     container.innerHTML = '';
     
-    // Calcolo dinamico della sovrapposizione
     const overlap = state.hands.player.length > 10 ? "-35px" : "-20px";
     
     state.hands.player.forEach((card, i) => {
         const el = createCardElement(card);
-        el.classList.add('player-card');
         el.setAttribute('data-hand-idx', i);
-        if (state.selectedIndices.includes(i)) el.classList.add('selected');
+        
+        if (state.selectedIndices.includes(i)) {
+            el.style.transform = 'translateY(-20px)';
+            el.style.borderColor = 'var(--amethyst-bright)';
+            el.style.boxShadow = '0 0 20px var(--amethyst-glow)';
+            el.style.zIndex = '100';
+        }
         
         el.style.marginRight = overlap; 
         
@@ -297,17 +261,33 @@ async function animateCardMove(startEl, targetEl, cardData, isBack = false) {
         const targetRect = targetEl.getBoundingClientRect();
         
         const flyer = document.createElement('div');
-        flyer.className = `game-card-unit card-matte flying-card ${isBack ? 'back' : ''}`;
+        flyer.className = `game-card-unit flying-card ${isBack ? 'back' : ''}`;
         
         if (!isBack && cardData.suit) {
             const icon = { hearts: '♥', diamonds: '♦', clubs: '♣', spades: '♠' }[cardData.suit];
             const isRed = (cardData.suit === 'hearts' || cardData.suit === 'diamonds');
+            if (isRed) flyer.style.color = '#ff416c';
+            
+            let faceEmoji = '';
+            if (cardData.val === 'K') faceEmoji = '👑';
+            else if (cardData.val === 'Q') faceEmoji = '👸';
+            else if (cardData.val === 'J') faceEmoji = '💂';
+            
+            const centerIcon = faceEmoji ? faceEmoji : icon;
+
             flyer.innerHTML = `
-                <div style="font-size: 1.1rem; font-weight: 900; align-self: flex-start; line-height: 1;">${cardData.val}</div>
-                <div style="font-size: 2rem; align-self: center; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); margin: auto 0;">${icon}</div>
-                <div style="font-size: 1.1rem; font-weight: 900; align-self: flex-end; line-height: 1; transform: rotate(180deg);">${cardData.val}</div>
+                <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div style="align-self: flex-start; display: flex; align-items: center; gap: 2px; font-size: 0.9rem; line-height: 1;">
+                        <span>${cardData.val}</span><span style="font-size: 0.7rem;">${icon}</span>
+                    </div>
+                    <div style="align-self: center; font-size: 1.8rem; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));">
+                        ${centerIcon}
+                    </div>
+                    <div style="align-self: flex-end; display: flex; align-items: center; gap: 2px; font-size: 0.9rem; line-height: 1; transform: rotate(180deg);">
+                        <span>${cardData.val}</span><span style="font-size: 0.7rem;">${icon}</span>
+                    </div>
+                </div>
             `;
-            if(isRed) flyer.classList.add('card-red');
         }
 
         flyer.style.left = `${startRect.left}px`;
@@ -364,20 +344,21 @@ async function handlePlayerDiscard(state) {
     state.hands.player.splice(idx, 1);
     state.discardPile.push(card);
     state.selectedIndices = [];
+    
+    if (state.hands.player.length === 0) {
+        alert(`🏆 VITTORIA!\nHai chiuso e superato il Livello ${state.currentLevel}!`);
+        unlockNextLevel('burraco', state.currentLevel);
+        quitGame(state.container);
+        return;
+    }
+
     state.turn = 'bot';
     state.phase = 'draw';
     state.tutorMsg = "Il Bot sta pensando...";
     state.isAnimating = false;
     updateUI(state);
     
-    setTimeout(() => {
-        if (state.hands.player.length === 0) {
-            alert("🏆 VITTORIA! Hai chiuso la partita.");
-            quitGame(state.container);
-            return;
-        }
-        botAction(state);
-    }, 1000);
+    setTimeout(() => { botAction(state); }, 1000);
 }
 
 function handleMeld(state, targetPilaIndex) {
@@ -393,17 +374,67 @@ function handleMeld(state, targetPilaIndex) {
     updateUI(state);
 }
 
-// --- BOT E UTILITY ---
+// --- BOT E IA PROGRESSIVA ---
 function botAction(state) {
     if (state.turn !== 'bot') return;
-    state.hands.bot1.push(state.deck.pop());
-    setTimeout(() => {
-        state.discardPile.push(state.hands.bot1.pop());
-        state.turn = 'player';
-        state.phase = 'draw';
-        state.tutorMsg = "Tocca il mazzo per pescare.";
-        updateUI(state);
-    }, 1000);
+    state.isAnimating = true;
+
+    // IA Accurancy (max 95%) basata sul livello
+    const accuracy = Math.min(0.95, state.currentLevel * 0.025);
+    const isSmart = Math.random() <= accuracy;
+
+    setTimeout(async () => {
+        // 1. Pesca
+        const card = state.deck.pop();
+        const startEl = document.getElementById('main-deck');
+        const targetEl = document.getElementById('bot-table');
+        await animateCardMove(startEl, targetEl, card, true);
+        state.hands.bot1.push(card);
+
+        // 2. Tenta di Calare se è "Smart"
+        if (isSmart) {
+            let valCounts = {};
+            state.hands.bot1.forEach(c => valCounts[c.val] = (valCounts[c.val] || 0) + 1);
+            for (let v in valCounts) {
+                if (valCounts[v] >= 3) {
+                    const meld = state.hands.bot1.filter(c => c.val === v);
+                    state.hands.bot1 = state.hands.bot1.filter(c => c.val !== v);
+                    state.tables.team2.push(meld);
+                    state.tutorMsg = `Il Bot ha calato un tris di ${v}!`;
+                    break; 
+                }
+            }
+        }
+
+        // 3. Scarta
+        setTimeout(async () => {
+            let discardIdx = 0;
+            if (isSmart) {
+                let valCounts = {};
+                state.hands.bot1.forEach(c => valCounts[c.val] = (valCounts[c.val] || 0) + 1);
+                discardIdx = state.hands.bot1.findIndex(c => valCounts[c.val] === 1);
+                if(discardIdx === -1) discardIdx = 0;
+            } else {
+                discardIdx = Math.floor(Math.random() * state.hands.bot1.length);
+            }
+
+            const dCard = state.hands.bot1.splice(discardIdx, 1)[0];
+            const dTarget = document.getElementById('discard-pile-ui');
+            await animateCardMove(document.getElementById('bot-table'), dTarget, dCard, false);
+            state.discardPile.push(dCard);
+
+            if (state.hands.bot1.length === 0) {
+                alert(`💀 SCONFITTA!\nIl Bot di Livello ${state.currentLevel} ha chiuso!`);
+                return quitGame(state.container);
+            }
+
+            state.turn = 'player';
+            state.phase = 'draw';
+            state.tutorMsg = "Tocca il mazzo per pescare.";
+            state.isAnimating = false;
+            updateUI(state);
+        }, 800);
+    }, 800);
 }
 
 function findTargetPila(selectedCards, table) {
