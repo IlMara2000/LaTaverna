@@ -3,7 +3,7 @@ import { getUnlockedLevel, unlockNextLevel, renderLevelLadder } from '../../serv
 
 /**
  * GIOCO: SOLO - MASTER EDITION (Responsive & Matte Black)
- * Integrazione Scala Livelli Infiniti + Carte Premium
+ * Integrazione Scala Livelli + Carte Premium + Regola "SOLO!"
  */
 
 const COLORS = ['red', 'blue', 'green', 'yellow'];
@@ -35,7 +35,10 @@ export function initSoloGame(container) {
         turn: 0, direction: 1, currentColor: '', currentVal: '',
         gameActive: false, isAnimating: false,
         drawnCardThisTurn: false,
-        currentLevel: 1
+        currentLevel: 1,
+        // Nuove variabili per la regola "SOLO!"
+        playerSaidSolo: false,
+        catchableBots: [] 
     };
 
     renderLayout(container, state);
@@ -93,9 +96,11 @@ function renderLayout(container, state) {
         
         <footer class="game-player-area" style="padding: 10px 0 0 0; background: transparent;">
             <div class="game-action-buttons">
+                <button class="game-btn-action" id="btn-catch" style="display:none; background: #c77dff; border: none; padding: 12px 20px; color: black; box-shadow: 0 0 15px #c77dff;">SGAMA BOT!</button>
+                <button class="game-btn-action" id="btn-solo" style="display:none; background: #ffbd39; border: none; padding: 12px 30px; color: black; box-shadow: 0 0 15px #ffbd39;">SOLO!</button>
                 <button class="game-btn-action" id="btn-pass" style="display:none; background: #ff416c; border: none; padding: 12px 30px;">PASSA IL TURNO</button>
             </div>
-            <div id="player-hand" class="game-player-hand" style="height: 140px; align-items: flex-end; padding-bottom: 15px;"></div>
+            <div id="player-hand" class="game-player-hand" style="height: 175px; align-items: flex-end; padding-top: 30px; padding-bottom: 15px;"></div>
         </footer>
         
         <div id="picker-wild" class="game-color-picker">
@@ -187,6 +192,24 @@ function attachInitialListeners(container, state) {
         endTurn(state, container);
     };
 
+    // Bottone SOLO per il giocatore
+    container.querySelector('#btn-solo').onclick = () => {
+        state.playerSaidSolo = true;
+        logStatus(container, "Hai gridato: SOLO!");
+        updateUI(state, container);
+    };
+
+    // Bottone Sgama Bot
+    container.querySelector('#btn-catch').onclick = async () => {
+        if (state.catchableBots.length > 0) {
+            const caughtBot = state.catchableBots.shift();
+            logStatus(container, `Sgamato BOT ${caughtBot}! +2 Carte.`);
+            await drawCard(caughtBot, state, container);
+            await drawCard(caughtBot, state, container);
+            updateUI(state, container);
+        }
+    };
+
     container.querySelectorAll('.game-color-tile').forEach(tile => {
         tile.onclick = () => {
             state.currentColor = tile.dataset.color;
@@ -251,12 +274,21 @@ async function drawCard(pIdx, state, container, manual = false) {
     await animateCardMove(startEl, targetEl, card, pIdx !== 0);
     
     state.players[pIdx].push(card);
+    
+    // Se un bot era catchable e pesca, si "salva" (non è più a 1 carta)
+    state.catchableBots = state.catchableBots.filter(b => b !== pIdx);
+
+    // Se il giocatore pesca, resetta il suo "SOLO!" così deve ridirlo se scende di nuovo a 1
+    if (pIdx === 0) {
+        state.playerSaidSolo = false;
+    }
+
     state.isAnimating = false;
     
     if (pIdx === 0 && manual) {
         state.drawnCardThisTurn = true;
         logStatus(container, "Hai pescato. Gioca o Passa.");
-    } else if (pIdx !== 0) {
+    } else if (pIdx !== 0 && !manual) { // Non logghiamo quando il bot pesca per penalità
         logStatus(container, `BOT ${pIdx} pesca.`);
     }
     
@@ -283,7 +315,31 @@ async function playCard(pIdx, cardIdx, state, container) {
     state.currentVal = card.val;
     if (card.color !== 'wild') state.currentColor = card.color;
 
+    // Se un bot gioca una carta, non è più catchable (o ha chiuso, o non ha 1 carta)
+    state.catchableBots = state.catchableBots.filter(b => b !== pIdx);
+
     logStatus(container, pIdx === 0 ? `Hai giocato ${card.val}` : `BOT ${pIdx} gioca ${card.val}`);
+
+    // LOGICA REGOLA "SOLO!"
+    if (state.players[pIdx].length === 1) {
+        if (pIdx === 0) {
+            // Controllo se il giocatore ha chiamato SOLO!
+            if (!state.playerSaidSolo) {
+                logStatus(container, "Dimenticato SOLO! +2 Carte");
+                await drawCard(0, state, container);
+                await drawCard(0, state, container);
+            }
+        } else {
+            // Controllo se il Bot si ricorda di chiamare SOLO!
+            // Accuratezza: Livello 1 = 55%, Livello 10 = 100%
+            const accuracy = Math.min(1.0, state.currentLevel * 0.05 + 0.5);
+            if (Math.random() <= accuracy) {
+                logStatus(container, `BOT ${pIdx} grida: SOLO!`);
+            } else {
+                state.catchableBots.push(pIdx); // Il giocatore può sgamarlo!
+            }
+        }
+    }
 
     state.isAnimating = false;
     state.drawnCardThisTurn = false;
@@ -351,14 +407,12 @@ function botLogic(state, container) {
         }
     });
 
-    // Accuratezza dell'IA cresce col livello (Max 95%)
     const accuracy = Math.min(0.95, state.currentLevel * 0.025);
     const isSmart = Math.random() <= accuracy;
 
     if (validIdxs.length > 0) {
         let chosenIdx;
         if (isSmart) {
-            // IA Intelligente: se ha un +4 o +2 lo tiene per dopo, gioca prima le carte normali
             const normalCards = validIdxs.filter(i => hand[i].color !== 'wild' && !['+2', 'SKIP', 'REV'].includes(hand[i].val));
             if (normalCards.length > 0) {
                 chosenIdx = normalCards[Math.floor(Math.random() * normalCards.length)];
@@ -366,7 +420,6 @@ function botLogic(state, container) {
                 chosenIdx = validIdxs[Math.floor(Math.random() * validIdxs.length)];
             }
         } else {
-            // IA Casual
             chosenIdx = validIdxs[Math.floor(Math.random() * validIdxs.length)];
         }
         playCard(state.turn, chosenIdx, state, container);
@@ -396,6 +449,33 @@ function updateUI(state, container) {
     cLine.style.backgroundColor = getHex(state.currentColor);
     cLine.style.boxShadow = `0 0 20px ${getHex(state.currentColor)}`;
 
+    // Aggiorna Bot (Evidenzia chi sta giocando)
+    for(let i=1; i<=3; i++) {
+        const botPill = container.querySelector(`#bot-${i}`);
+        botPill.classList.toggle('active', state.turn === i);
+        container.querySelector(`#cnt-${i}`).innerText = state.players[i].length;
+    }
+
+    // Gestione Bottoni Azione
+    container.querySelector('#btn-pass').style.display = (isPlayer && state.drawnCardThisTurn) ? 'block' : 'none';
+    
+    const btnSolo = container.querySelector('#btn-solo');
+    // Mostra il tasto SOLO se il giocatore ha 2 carte (prima di giocarne una) o 1 carta (se l'ha dimenticato e non l'ha ancora premuto)
+    if (isPlayer && (state.players[0].length === 2 || state.players[0].length === 1) && !state.playerSaidSolo) {
+        btnSolo.style.display = 'block';
+    } else {
+        btnSolo.style.display = 'none';
+    }
+
+    const btnCatch = container.querySelector('#btn-catch');
+    // Mostra il tasto per beccare un bot se qualcuno si è scordato di dire SOLO
+    if (state.catchableBots.length > 0) {
+        btnCatch.style.display = 'block';
+    } else {
+        btnCatch.style.display = 'none';
+    }
+
+    // Aggiorna Mano Giocatore
     const pArea = container.querySelector('#player-hand');
     pArea.innerHTML = '';
     const overlap = state.players[0].length > 8 ? "-30px" : "-15px";
@@ -407,6 +487,7 @@ function updateUI(state, container) {
         
         const canPlay = c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal;
         if (isPlayer && canPlay) {
+            // FIX: Ora la traslazione in Y avviene in sicurezza grazie allo spazio extra nel container
             el.style.transform = 'translateY(-15px)';
             el.style.boxShadow = `0 10px 25px ${getHex(c.color)}80`;
         } else if (isPlayer) {
@@ -418,12 +499,4 @@ function updateUI(state, container) {
         };
         pArea.appendChild(el);
     });
-
-    container.querySelector('#btn-pass').style.display = (isPlayer && state.drawnCardThisTurn) ? 'block' : 'none';
-
-    for(let i=1; i<=3; i++) {
-        const botPill = container.querySelector(`#bot-${i}`);
-        botPill.classList.toggle('active', state.turn === i);
-        container.querySelector(`#cnt-${i}`).innerText = state.players[i].length;
-    }
 }
