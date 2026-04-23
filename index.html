@@ -12,6 +12,7 @@
     <title>LA TAVERNA 🍷</title>
     
     <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="shortcut icon" href="/assets/favicon.ico">
     <link rel="apple-touch-icon" href="/assets/logo.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,22 +21,85 @@
     <link rel="stylesheet" href="/src/styles/global.css">
 
     <style>
-        /* Loader professionale ultra-rapido */
+        :root { 
+            --bg-deep: #05010a; 
+            --amethyst: #7b2cbf;
+            --amethyst-bright: #9d4ede; 
+            --amethyst-glow: rgba(157, 78, 221, 0.4);
+        }
+
+        /* RESET AGGRESSIVO ANTI-CRASH */
+        * {
+            -webkit-tap-highlight-color: transparent !important;
+            -webkit-touch-callout: none;
+            box-sizing: border-box;
+        }
+
+        html, body { 
+            background-color: var(--bg-deep) !important; 
+            margin: 0; padding: 0; 
+            height: 100%; width: 100%;
+            /* Blocca ogni movimento involontario */
+            overflow: hidden !important; 
+            position: fixed; /* Impedisce lo scroll dell'intera pagina su iOS */
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
+        }
+
+        /* UI Wrapper per contenere i componenti */
+        #ui { 
+            width: 100%; 
+            height: 100dvh; 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* LOADER PROFESSIONALE */
         #app-loader {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100dvh; width: 100%; background: #05010a;
-            position: fixed; top: 0; left: 0; z-index: 999999;
-            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
+            height: 100dvh; width: 100%; background: var(--bg-deep);
+            position: fixed; top: 0; left: 0; 
+            z-index: 999999; /* FIX: Sopra a tutto, anche all'hamburger (9999) */
+            transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s;
         }
 
         .pulse-logo {
             width: 90px;
+            height: 90px;
+            object-fit: contain;
             animation: amethystPulse 2s infinite ease-in-out;
+            filter: drop-shadow(0 0 20px var(--amethyst-glow));
         }
 
         @keyframes amethystPulse {
-            0%, 100% { transform: scale(0.92); opacity: 0.6; filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.4)); }
-            50% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 30px #9d4ede); }
+            0%, 100% { transform: scale(0.92); opacity: 0.6; filter: drop-shadow(0 0 10px var(--amethyst-glow)); }
+            50% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 30px var(--amethyst-bright)); }
+        }
+
+        .loader-text {
+            margin-top: 25px; 
+            font-size: 11px; 
+            letter-spacing: 4px; 
+            opacity: 0.4; 
+            text-transform: uppercase; 
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Nascondi scrollbar per pulizia totale */
+        ::-webkit-scrollbar { display: none; }
+
+        /* Fix per i contenuti dell'app */
+        #app {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto !important; /* Consente lo scroll solo qui dentro */
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
@@ -43,29 +107,31 @@
     
     <div id="ui">
         <div id="navbar-container"></div>
+
         <div id="sidebar-container"></div>
 
         <main id="app"></main>
 
         <div id="app-loader">
             <img src="/assets/logo.png" class="pulse-logo" alt="La Taverna">
-            <p style="margin-top:25px; font-size:10px; letter-spacing:4px; opacity:0.4; text-transform:uppercase; font-weight:700; font-family: 'Montserrat', sans-serif; color: white;">Entrando nella sala...</p>
+            <p class="loader-text">Chiamando l'oste...</p>
         </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>
 
     <script>
-        // Blocco preventivo dei comportamenti browser indesiderati
+        // LOCK TOTALE DELLO SCROLL ORIZZONTALE E ZOOM (JS FALLBACK)
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // Impedisce il trascinamento della pagina oltre i limiti (Glow bianco iOS)
         document.addEventListener('touchmove', (e) => {
-            // Permette lo scroll solo dentro l'app o la sidebar
+            // FIX: Permette lo scroll sia dentro l'app che dentro la sidebar per i menù lunghi
             if (!e.target.closest('#app') && !e.target.closest('.sidebar-glass')) {
                 e.preventDefault();
             }
-        }, { passive: false });
-
-        window.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
     </script>
 </body>
