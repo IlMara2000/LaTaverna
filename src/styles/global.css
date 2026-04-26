@@ -377,6 +377,291 @@
        font-weight: 800;
        cursor: pointer;
    }
+
+   .side-music-toggle {
+       width: 100%;
+       height: 52px;
+       border: 1px solid var(--glass-border);
+       border-radius: 999px;
+       background: rgba(255, 255, 255, 0.05);
+       color: white;
+       position: relative;
+       overflow: hidden;
+       cursor: pointer;
+       font-family: 'Montserrat', sans-serif;
+       font-weight: 900;
+       letter-spacing: 2px;
+       transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+   }
+
+   .side-music-toggle-label {
+       position: absolute;
+       inset: 0;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       font-size: 0.72rem;
+       opacity: 0.34;
+       pointer-events: none;
+   }
+
+   .side-music-toggle-knob {
+       position: absolute;
+       top: 5px;
+       left: 5px;
+       width: 40px;
+       height: 40px;
+       border-radius: 50%;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       background: rgba(255, 255, 255, 0.92);
+       box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+       transition: left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+   }
+
+   .side-music-toggle-state {
+       position: absolute;
+       top: 50%;
+       right: 18px;
+       transform: translateY(-50%);
+       font-size: 0.68rem;
+       color: rgba(255, 255, 255, 0.55);
+       pointer-events: none;
+   }
+
+   .side-music-toggle.is-on {
+       background: linear-gradient(135deg, rgba(157, 78, 222, 0.85), rgba(0, 255, 163, 0.28));
+       border-color: rgba(199, 125, 255, 0.6);
+       box-shadow: 0 0 22px rgba(157, 78, 222, 0.28);
+   }
+
+   .side-music-toggle.is-on .side-music-toggle-knob {
+       left: calc(100% - 45px);
+   }
+
+   .side-music-toggle.is-on .side-music-toggle-state {
+       left: 18px;
+       right: auto;
+       color: white;
+   }
+
+   .settings-profile-page, .music-center {
+       width: 100%;
+       max-width: 720px;
+       margin: 0 auto;
+       padding: 20px 0 120px;
+       color: white;
+   }
+
+   .settings-back, .music-back {
+       width: auto !important;
+       display: inline-flex;
+       border-left: none !important;
+       margin-bottom: 28px;
+   }
+
+   .settings-profile-header, .music-header {
+       text-align: center;
+       margin-bottom: 24px;
+   }
+
+   .settings-kicker {
+       margin: 0 0 8px;
+       text-transform: uppercase;
+       letter-spacing: 3px;
+       font-size: 0.72rem;
+       opacity: 0.55;
+       font-weight: 800;
+   }
+
+   .settings-title, .music-title {
+       margin: 0;
+   }
+
+   .settings-profile-preview {
+       display: flex;
+       align-items: center;
+       gap: 18px;
+       padding: 20px;
+       margin-bottom: 18px;
+   }
+
+   .settings-avatar-preview {
+       width: 72px;
+       height: 72px;
+       border-radius: 20px;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       flex: 0 0 auto;
+       background: rgba(157, 78, 222, 0.14);
+       border: 1px solid rgba(199, 125, 255, 0.4);
+       color: var(--amethyst-light);
+       font-size: 2rem;
+       font-weight: 900;
+       overflow: hidden;
+   }
+
+   .settings-avatar-preview img {
+       width: 100%;
+       height: 100%;
+       object-fit: cover;
+   }
+
+   .settings-profile-preview h2 {
+       margin: 0;
+       font-size: 1.35rem;
+       text-transform: uppercase;
+   }
+
+   .settings-profile-preview p, .music-playlist p, .music-note p {
+       margin: 6px 0 0;
+       opacity: 0.58;
+       font-size: 0.82rem;
+       line-height: 1.5;
+   }
+
+   .settings-form {
+       display: grid;
+       gap: 16px;
+       padding: 20px;
+   }
+
+   .settings-form label, .settings-row {
+       display: grid;
+       gap: 8px;
+       font-size: 0.75rem;
+       text-transform: uppercase;
+       letter-spacing: 1px;
+       opacity: 0.9;
+   }
+
+   .settings-check {
+       grid-template-columns: 1fr auto;
+       align-items: center;
+   }
+
+   .settings-check input {
+       width: 22px;
+       height: 22px;
+       accent-color: var(--amethyst-bright);
+   }
+
+   .settings-save {
+       margin-top: 8px;
+   }
+
+   .settings-saved {
+       min-height: 18px;
+       margin: 0;
+       text-align: center;
+       color: #00ffa3;
+       font-size: 0.78rem;
+       font-weight: 800;
+   }
+
+   .music-now {
+       padding: 18px;
+       margin-bottom: 18px;
+       text-align: center;
+   }
+
+   .music-now-label {
+       display: block;
+       text-transform: uppercase;
+       letter-spacing: 2px;
+       font-size: 0.68rem;
+       opacity: 0.5;
+       margin-bottom: 6px;
+   }
+
+   .music-now strong {
+       color: var(--amethyst-light);
+       font-size: 1.35rem;
+       text-transform: uppercase;
+   }
+
+   .music-now p {
+       margin: 6px 0 0;
+       opacity: 0.65;
+   }
+
+   .music-playlists {
+       display: grid;
+       gap: 16px;
+   }
+
+   .music-playlist {
+       padding: 18px;
+       transition: border-color 0.2s ease, background 0.2s ease;
+   }
+
+   .music-playlist.is-selected {
+       border-color: rgba(199, 125, 255, 0.75);
+       background: rgba(157, 78, 222, 0.08);
+   }
+
+   .music-playlist-head {
+       display: flex;
+       justify-content: space-between;
+       gap: 16px;
+       align-items: flex-start;
+       margin-bottom: 14px;
+   }
+
+   .music-playlist h2 {
+       margin: 0;
+       font-size: 1rem;
+       text-transform: uppercase;
+   }
+
+   .music-playlist-select, .music-track {
+       border: 1px solid var(--glass-border);
+       background: rgba(255, 255, 255, 0.04);
+       color: white;
+       border-radius: 12px;
+       cursor: pointer;
+       font-family: 'Montserrat', sans-serif;
+       font-weight: 800;
+   }
+
+   .music-playlist-select {
+       padding: 10px 12px;
+       font-size: 0.68rem;
+   }
+
+   .music-track-list {
+       display: grid;
+       gap: 10px;
+   }
+
+   .music-track {
+       min-height: 48px;
+       padding: 12px 14px;
+       display: flex;
+       justify-content: space-between;
+       align-items: center;
+       gap: 12px;
+       text-align: left;
+   }
+
+   .music-track small {
+       color: var(--amethyst-light);
+       opacity: 0.8;
+   }
+
+   .music-actions {
+       display: grid;
+       grid-template-columns: 1fr 1fr;
+       gap: 12px;
+       margin-top: 18px;
+   }
+
+   .music-note {
+       padding: 14px 18px;
+       margin-top: 18px;
+   }
    
    /* ============================================
       12. GAME ENGINE - SETUP & MENU
@@ -825,6 +1110,15 @@
            width: min(86vw, 320px);
            overflow-y: auto;
            -webkit-overflow-scrolling: touch;
+       }
+
+       .settings-profile-preview, .music-playlist-head {
+           align-items: stretch;
+           flex-direction: column;
+       }
+
+       .music-actions {
+           grid-template-columns: 1fr;
        }
    }
 

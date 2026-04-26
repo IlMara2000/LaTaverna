@@ -2,38 +2,64 @@ import { Howl, Howler } from 'howler';
 
 // Configurazione Playlist Tematiche Unificata
 const PLAYLISTS = {
-    dnd: [
-        { name: "Esplorazione Taverna", url: "https://archives.tabletopaudio.com/124_Adventure_Await.mp3", tags: "ambient" },
-        { name: "Combattimento Epico", url: "https://archives.tabletopaudio.com/111_Combat_Music.mp3", tags: "combat" },
-        { name: "Dungeon Oscuro", url: "https://archives.tabletopaudio.com/132_The_Dungeon_Awaits.mp3", tags: "exploration" }
-    ],
-    minigames: [
-        { id: "scopa", name: "Scopa / Carte", url: "https://www.bensound.com/bensound-music/bensound-funnysong.mp3", tags: "relax" },
-        { id: "scacchi", name: "Scacchi (Jazz)", url: "https://www.bensound.com/bensound-music/bensound-thejazzpiano.mp3", tags: "focus" },
-        { id: "default", name: "Sfida Intensa", url: "https://www.bensound.com/bensound-music/bensound-epic.mp3", tags: "action" }
-    ]
+    tavern: {
+        label: "Taverna",
+        description: "Atmosfera calda per lobby e preparazione della sessione.",
+        tracks: [
+            { name: "Esplorazione Taverna", url: "https://archives.tabletopaudio.com/124_Adventure_Await.mp3", tags: "ambient" },
+            { name: "Sala Comune", url: "https://archives.tabletopaudio.com/190_Tavern_Music.mp3", tags: "social" }
+        ]
+    },
+    dnd: {
+        label: "D&D",
+        description: "Esplorazione, tensione e combattimento per campagne GDR.",
+        tracks: [
+            { name: "Dungeon Oscuro", url: "https://archives.tabletopaudio.com/132_The_Dungeon_Awaits.mp3", tags: "exploration" },
+            { name: "Combattimento Epico", url: "https://archives.tabletopaudio.com/111_Combat_Music.mp3", tags: "combat" },
+            { name: "Mistero Arcano", url: "https://archives.tabletopaudio.com/157_Mystic_Realm.mp3", tags: "mystery" }
+        ]
+    },
+    minigames: {
+        label: "Minigiochi",
+        description: "Tracce più leggere per carte, strategia e partite rapide.",
+        tracks: [
+            { id: "cards", name: "Carte al Tavolo", url: "https://www.bensound.com/bensound-music/bensound-funnysong.mp3", tags: "relax" },
+            { id: "scacchi", name: "Scacchi Focus", url: "https://www.bensound.com/bensound-music/bensound-thejazzpiano.mp3", tags: "focus" },
+            { id: "default", name: "Sfida Intensa", url: "https://www.bensound.com/bensound-music/bensound-epic.mp3", tags: "action" }
+        ]
+    }
 };
 
 let currentSound = null;
 let currentTrackIndex = 0;
-let isDnDPlaylistActive = false;
+let currentPlaylistKey = localStorage.getItem('taverna_selected_playlist') || 'tavern';
+let currentTrackName = localStorage.getItem('taverna_selected_track') || 'Nessuna traccia';
+let isPlaylistActive = false;
+
+const getPlaylist = (key = currentPlaylistKey) => PLAYLISTS[key] || PLAYLISTS.tavern;
 
 export const AudioManager = {
     // Riproduzione universale
-    play: (url, isPlaylist = false) => {
+    play: (url, isPlaylist = false, meta = {}) => {
         if (currentSound) currentSound.stop();
         
-        isDnDPlaylistActive = isPlaylist;
+        isPlaylistActive = isPlaylist;
+        currentPlaylistKey = meta.playlistKey || currentPlaylistKey;
+        currentTrackName = meta.trackName || currentTrackName;
+        localStorage.setItem('taverna_selected_playlist', currentPlaylistKey);
+        localStorage.setItem('taverna_selected_track', currentTrackName);
 
         currentSound = new Howl({
             src: [url],
             html5: true,
             volume: 0.5,
             loop: !isPlaylist,
-            onplay: () => window.dispatchEvent(new CustomEvent('musicStarted')),
+            onplay: () => window.dispatchEvent(new CustomEvent('musicStarted', {
+                detail: { playlistKey: currentPlaylistKey, trackName: currentTrackName }
+            })),
             onstop: () => window.dispatchEvent(new CustomEvent('musicStopped')),
             onend: () => {
-                if (isDnDPlaylistActive) AudioManager.playNextDnD();
+                if (isPlaylistActive) AudioManager.playNext();
             }
         });
 
@@ -44,64 +70,123 @@ export const AudioManager = {
     },
 
     stop: () => {
-        isDnDPlaylistActive = false;
+        isPlaylistActive = false;
         if (currentSound) currentSound.stop();
         else Howler.stop();
     },
 
-    playNextDnD: () => {
-        currentTrackIndex = (currentTrackIndex + 1) % PLAYLISTS.dnd.length;
-        AudioManager.play(PLAYLISTS.dnd[currentTrackIndex].url, true);
+    playNext: () => {
+        const playlist = getPlaylist();
+        currentTrackIndex = (currentTrackIndex + 1) % playlist.tracks.length;
+        const track = playlist.tracks[currentTrackIndex];
+        AudioManager.play(track.url, true, {
+            playlistKey: currentPlaylistKey,
+            trackName: track.name
+        });
     },
 
     // UI del Music Center
     showMusicCenter: (container) => {
+        const selectedPlaylist = getPlaylist();
         container.innerHTML = `
-            <div class="music-center fade-in" style="padding: 20px; color: white; max-width: 600px; margin: 0 auto; background: rgba(10, 5, 20, 0.9); border-radius: 20px; border: 1px solid rgba(157, 78, 222, 0.3);">
-                <h1 style="text-align: center; color: #9d4ede; letter-spacing: 2px;">MUSIC CENTER</h1>
-                
-                <section style="margin-bottom: 30px;">
-                    <h3 style="border-bottom: 1px solid #9d4ede; padding-bottom: 5px; font-size: 0.9rem; opacity: 0.8;">⚔️ D&D & AMBIENT (PLAYLIST)</h3>
-                    <div style="display: grid; gap: 10px; margin-top: 15px;">
-                        ${PLAYLISTS.dnd.map((track, index) => `
-                            <button class="btn-track dnd-track" data-url="${track.url}" data-index="${index}" style="background: rgba(157, 78, 222, 0.1); border: 1px solid #9d4ede; color: white; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.3s;">
-                                🎵 ${track.name} <small style="opacity:0.5; float:right;">${track.tags}</small>
-                            </button>
-                        `).join('')}
-                    </div>
+            <div class="music-center fade-in">
+                <button id="musicBack" class="btn-back-glass music-back">TORNA ALLA LIBRERIA</button>
+
+                <header class="music-header">
+                    <p class="settings-kicker">Audio ambiente</p>
+                    <h1 class="main-title music-title">LIBRERIA MUSICALE</h1>
+                </header>
+
+                <section class="music-now glass-box">
+                    <span class="music-now-label">Playlist selezionata</span>
+                    <strong id="selectedPlaylistName">${selectedPlaylist.label}</strong>
+                    <p id="selectedTrackName">${currentTrackName}</p>
                 </section>
 
-                <section>
-                    <h3 style="border-bottom: 1px solid #ffcc00; padding-bottom: 5px; color: #ffcc00; font-size: 0.9rem; opacity: 0.8;">🎲 MINIGIOCHI</h3>
-                    <div style="display: grid; gap: 10px; margin-top: 15px;">
-                        ${PLAYLISTS.minigames.map(track => `
-                            <button class="btn-track mini-track" data-url="${track.url}" style="background: rgba(255, 204, 0, 0.1); border: 1px solid #ffcc00; color: white; padding: 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.3s;">
-                                🃏 ${track.name}
-                            </button>
-                        `).join('')}
-                    </div>
+                <section class="music-playlists">
+                    ${Object.entries(PLAYLISTS).map(([playlistKey, playlist]) => `
+                        <article class="music-playlist glass-box ${playlistKey === currentPlaylistKey ? 'is-selected' : ''}" data-playlist="${playlistKey}">
+                            <div class="music-playlist-head">
+                                <div>
+                                    <h2>${playlist.label}</h2>
+                                    <p>${playlist.description}</p>
+                                </div>
+                                <button class="music-playlist-select" data-playlist="${playlistKey}" type="button">SELEZIONA</button>
+                            </div>
+
+                            <div class="music-track-list">
+                                ${playlist.tracks.map((track, index) => `
+                                    <button class="music-track" data-playlist="${playlistKey}" data-index="${index}" data-url="${track.url}" type="button">
+                                        <span>${track.name}</span>
+                                        <small>${track.tags}</small>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </article>
+                    `).join('')}
                 </section>
 
-                <button id="stopMusic" style="margin-top: 30px; width: 100%; padding: 15px; background: #ff4444; border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s;">
-                    STOP TUTTA LA MUSICA
-                </button>
+                <div class="music-actions">
+                    <button id="playSelectedPlaylist" class="btn-primary" type="button">AVVIA PLAYLIST</button>
+                    <button id="stopMusic" class="btn-back-glass" type="button">STOP MUSICA</button>
+                </div>
+
+                <section class="music-note glass-box">
+                    <p>Le tracce definitive possono essere sostituite aggiungendo URL o file locali nella configurazione playlist. La struttura e la selezione sono gia pronte.</p>
+                </section>
             </div>
         `;
 
-        // Listeners per tracce D&D (attivano playlist ciclica)
-        container.querySelectorAll('.dnd-track').forEach(btn => {
+        const refreshSelectionUI = () => {
+            const playlist = getPlaylist();
+            container.querySelector('#selectedPlaylistName').textContent = playlist.label;
+            container.querySelector('#selectedTrackName').textContent = currentTrackName;
+            container.querySelectorAll('.music-playlist').forEach(card => {
+                card.classList.toggle('is-selected', card.dataset.playlist === currentPlaylistKey);
+            });
+        };
+
+        container.querySelectorAll('.music-playlist-select').forEach(btn => {
             btn.onclick = () => {
-                currentTrackIndex = parseInt(btn.dataset.index);
-                AudioManager.play(btn.dataset.url, true);
+                currentPlaylistKey = btn.dataset.playlist;
+                currentTrackIndex = 0;
+                currentTrackName = getPlaylist().tracks[0]?.name || 'Nessuna traccia';
+                localStorage.setItem('taverna_selected_playlist', currentPlaylistKey);
+                localStorage.setItem('taverna_selected_track', currentTrackName);
+                refreshSelectionUI();
             };
         });
 
-        // Listeners per Minigiochi (loop singolo)
-        container.querySelectorAll('.mini-track').forEach(btn => {
-            btn.onclick = () => AudioManager.play(btn.dataset.url, false);
+        container.querySelectorAll('.music-track').forEach(btn => {
+            btn.onclick = () => {
+                currentPlaylistKey = btn.dataset.playlist;
+                currentTrackIndex = parseInt(btn.dataset.index, 10);
+                const playlist = getPlaylist();
+                const track = playlist.tracks[currentTrackIndex];
+                AudioManager.play(track.url, false, {
+                    playlistKey: currentPlaylistKey,
+                    trackName: track.name
+                });
+                refreshSelectionUI();
+            };
         });
 
+        container.querySelector('#playSelectedPlaylist').onclick = () => {
+            const playlist = getPlaylist();
+            const track = playlist.tracks[currentTrackIndex] || playlist.tracks[0];
+            if (!track) return;
+            AudioManager.play(track.url, true, {
+                playlistKey: currentPlaylistKey,
+                trackName: track.name
+            });
+            refreshSelectionUI();
+        };
+
         container.querySelector('#stopMusic').onclick = () => AudioManager.stop();
+        container.querySelector('#musicBack').onclick = async () => {
+            const { showLobby } = await import('../../lobby.js');
+            showLobby(container);
+        };
     }
 };
 
@@ -120,8 +205,11 @@ window.addEventListener('musicToggled', (e) => {
 
 // Caricamento manuale file MP3
 window.addEventListener('musicUploaded', (e) => {
-    const { url } = e.detail;
-    AudioManager.play(url, false);
+    const { url, name } = e.detail;
+    AudioManager.play(url, false, {
+        playlistKey: 'tavern',
+        trackName: name || 'Traccia caricata'
+    });
 });
 
 // Cambio Contesto Automatico (es. entri in un gioco)
@@ -129,9 +217,20 @@ window.addEventListener('contextChanged', (e) => {
     const context = e.detail;
 
     if (context === "dnd5e") {
-        AudioManager.play(PLAYLISTS.dnd[0].url, true);
+        currentPlaylistKey = 'dnd';
+        currentTrackIndex = 0;
+        const track = PLAYLISTS.dnd.tracks[0];
+        AudioManager.play(track.url, true, {
+            playlistKey: 'dnd',
+            trackName: track.name
+        });
     } else {
-        const track = PLAYLISTS.minigames.find(t => t.id === context) || PLAYLISTS.minigames.find(t => t.id === "default");
-        if (track) AudioManager.play(track.url, false);
+        currentPlaylistKey = 'minigames';
+        const tracks = PLAYLISTS.minigames.tracks;
+        const track = tracks.find(t => t.id === context) || tracks.find(t => t.id === "default");
+        if (track) AudioManager.play(track.url, false, {
+            playlistKey: 'minigames',
+            trackName: track.name
+        });
     }
 });

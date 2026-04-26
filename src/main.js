@@ -140,6 +140,35 @@ function renderDashboard(user) {
 
     // 2. Mostra la Lobby principale
     showLobby(appContainer);
+
+    const recoveryContext = sessionStorage.getItem('taverna_soft_recovery_context');
+    if (recoveryContext) {
+        sessionStorage.removeItem('taverna_soft_recovery_context');
+        restoreRecoveredContext(appContainer, recoveryContext, user);
+    }
+}
+
+async function restoreRecoveredContext(container, context, user) {
+    try {
+        if (context === 'settings') {
+            const { showSettings } = await import('./components/features/user/Settings.js');
+            showSettings(container, user);
+            return;
+        }
+
+        if (context === 'minigames') {
+            const { showMinigamesList } = await import('./minigamelist.js');
+            showMinigamesList(container);
+            return;
+        }
+
+        if (context === 'dnd5e') {
+            const { initDndDashboard } = await import('./dashboards/dnd5e.js');
+            initDndDashboard(container);
+        }
+    } catch (err) {
+        console.warn('Recovery soft non completata:', err);
+    }
 }
 
 // Lancia l'app in modo sicuro appena il DOM è pronto
