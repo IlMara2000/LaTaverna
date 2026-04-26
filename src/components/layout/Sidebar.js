@@ -36,38 +36,24 @@ function renderSidebarContent(container, context) {
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
 
-                <button class="btn-glass sidebar-nav-item" id="nav-lobby" data-context="home" style="font-size: 0.8rem; padding: 12px;">
-                    LIBRERIA
-                </button>
-
-                <button class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" style="font-size: 0.8rem; padding: 12px;">
-                    MINI GIOCHI
-                </button>
-
-                <button class="btn-glass sidebar-nav-item" id="nav-profile" data-context="profile" style="font-size: 0.8rem; padding: 12px;">
-                    PROFILO
-                </button>
-
-                <button class="btn-glass sidebar-nav-item" id="nav-zaino" data-context="zaino" style="font-size: 0.8rem; padding: 12px;">
-                    ZAINO
-                </button>
-
                 <button class="btn-glass sidebar-nav-item" id="nav-settings" data-context="settings" style="font-size: 0.8rem; padding: 12px;">
                     IMPOSTAZIONI
                 </button>
 
+                <button class="btn-glass" id="sideMusicCenterBtn" style="font-size: 0.8rem; padding: 12px;">
+                    LIBRERIA MUSICALE
+                </button>
+                
+                <button id="btn-fix-games" class="btn-glass" style="font-size: 0.8rem; padding: 12px;">
+                    SBLOCCA SCHERMO
+                </button>
+
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0 10px;"></div>
                 
-                <button class="btn-glass" id="sideMusicBtn" style="font-size: 0.8rem; padding: 12px;">
-                    ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
-                </button>
-                
-                <button class="btn-glass" id="sideMusicCenterBtn" style="font-size: 0.8rem; padding: 12px;">
-                    🎵 LIBRERIA MUSICALE
-                </button>
-                
-                <button id="btn-fix-games" class="btn-primary" style="margin-top: 10px; background: rgba(255, 65, 108, 0.1); border-color: #ff416c; color: #ff416c; font-size: 0.8rem; padding: 12px;">
-                    🛠️ SBLOCCA SCHERMO
+                <button class="side-music-toggle ${isMusicOn ? 'is-on' : 'is-off'}" id="sideMusicBtn" aria-pressed="${isMusicOn ? 'true' : 'false'}">
+                    <span class="side-music-toggle-label">MUSICA</span>
+                    <span class="side-music-toggle-knob" aria-hidden="true">${isMusicOn ? '🔊' : '🔈'}</span>
+                    <span class="side-music-toggle-state">${isMusicOn ? 'ON' : 'OFF'}</span>
                 </button>
 
                 <div class="sidebar-divider" style="margin: 15px 0; height: 1px; background: rgba(255,255,255,0.1);"></div>
@@ -158,10 +144,6 @@ function setupEventListeners(container, context) {
         }
     };
 
-    attachNav('nav-lobby', '../../lobby.js', 'showLobby', 'lobby');
-    attachNav('nav-profile', '../features/user/Profile.js', 'showProfile', 'profile');
-    attachNav('nav-zaino', '../features/zaino/Assets.js', 'showZaino', 'zaino');
-    attachNav('nav-minigames', '../../minigamelist.js', 'showMinigamesList', 'minigames');
     attachNav('nav-settings', '../features/user/Settings.js', 'showSettings', 'settings');
 
     // --- TASTO AZIONE (ESCI O TORNA) ---
@@ -182,14 +164,23 @@ function setupEventListeners(container, context) {
     const btnFix = container.querySelector('#btn-fix-games');
     btnFix.onclick = () => {
         resetGlobalScroll();
-        window.location.href = '/'; 
+        sessionStorage.setItem('taverna_soft_recovery_context', currentActiveContext);
+        window.location.reload(); 
     };
 
     // --- MUSICA ---
-    container.querySelector('#sideMusicBtn').onclick = function() {
+    const musicToggle = container.querySelector('#sideMusicBtn');
+    const updateMusicToggle = () => {
+        musicToggle.classList.toggle('is-on', isMusicOn);
+        musicToggle.classList.toggle('is-off', !isMusicOn);
+        musicToggle.setAttribute('aria-pressed', isMusicOn ? 'true' : 'false');
+        musicToggle.querySelector('.side-music-toggle-knob').textContent = isMusicOn ? '🔊' : '🔈';
+        musicToggle.querySelector('.side-music-toggle-state').textContent = isMusicOn ? 'ON' : 'OFF';
+    };
+    musicToggle.onclick = () => {
         isMusicOn = !isMusicOn;
         localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
-        this.innerHTML = isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF';
+        updateMusicToggle();
         window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
     };
 
