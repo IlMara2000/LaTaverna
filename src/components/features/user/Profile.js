@@ -1,7 +1,13 @@
 export function showProfile(container, user) {
+    const escapeHTML = (value = '') => String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
     const avatar = user?.user_metadata?.avatar_url || 'https://placehold.co/100x100?text=V';
-    const name = user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Viandante";
-    const email = user?.email || "Email non disponibile";
+    const name = escapeHTML(user?.user_metadata?.full_name || user?.email?.split('@')[0] || "Viandante");
+    const email = escapeHTML(user?.email || "Email non disponibile");
 
     container.innerHTML = `
         <div class="fade-in" style="padding: 20px; max-width: 600px; margin: 0 auto;">

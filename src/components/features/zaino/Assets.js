@@ -2,6 +2,13 @@ import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 
 const buckets = SUPABASE_CONFIG?.buckets || { zaino: 'zaino' };
 
+const escapeHTML = (value = '') => String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
 export async function showAssets(container) {
     let files = [];
     
@@ -40,6 +47,7 @@ export async function showAssets(container) {
                 <div id="assetsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     ${files.length === 0 ? `<p style="grid-column:1/-1; text-align:center; opacity:0.3;">Vuoto.</p>` : 
                     files.map(file => {
+                        const safeName = escapeHTML(file.name);
                         const isImg = ['png','jpg','jpeg','webp'].includes(file.name.split('.').pop().toLowerCase());
                         const url = supabase.storage.from(buckets.zaino).getPublicUrl(file.name).data.publicUrl;
                         return `
@@ -47,7 +55,7 @@ export async function showAssets(container) {
                                 <div style="height: 100px; background: rgba(255,255,255,0.03); border-radius: 12px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; overflow:hidden;">
                                     ${isImg ? `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">` : `<span>📜</span>`}
                                 </div>
-                                <p style="font-size: 10px; overflow: hidden; text-overflow: ellipsis;">${file.name}</p>
+                                <p style="font-size: 10px; overflow: hidden; text-overflow: ellipsis;">${safeName}</p>
                             </div>`;
                     }).join('')}
                 </div>
@@ -72,3 +80,5 @@ export async function showAssets(container) {
         };
     }
 }
+
+export const showZaino = showAssets;

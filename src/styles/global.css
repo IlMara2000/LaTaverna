@@ -340,7 +340,7 @@
       11. INPUT & SELECT
       ============================================ */
    
-   input[type="text"], select {
+   input[type="text"], input[type="email"], input[type="password"], select, .auth-input {
        width: 100%;
        background: rgba(255, 255, 255, 0.05);
        border: 1px solid var(--glass-border);
@@ -354,10 +354,28 @@
        box-sizing: border-box;
    }
    
-   input[type="text"]:focus, select:focus {
+   input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus, .auth-input:focus {
        border-color: var(--amethyst-bright);
        background: rgba(157, 78, 221, 0.05);
        box-shadow: 0 0 15px rgba(157, 78, 221, 0.2);
+   }
+
+   .glass-box {
+       background: var(--glass-surface);
+       border: 1px solid var(--glass-border);
+       border-radius: 20px;
+       backdrop-filter: blur(15px);
+       -webkit-backdrop-filter: blur(15px);
+       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+   }
+
+   .sidebar-btn {
+       background: rgba(255, 255, 255, 0.04);
+       border: 1px solid var(--glass-border);
+       color: white;
+       font-family: 'Montserrat', sans-serif;
+       font-weight: 800;
+       cursor: pointer;
    }
    
    /* ============================================
@@ -775,7 +793,8 @@
    
    @media (max-width: 768px) {
        .main-title {
-           font-size: 1.8rem;
+           font-size: clamp(1.7rem, 8vw, 2.2rem) !important;
+           line-height: 1.08;
        }
    
        .game-card, .action-card {
@@ -803,6 +822,33 @@
    
        .sidebar-glass {
            right: -110%;
+           width: min(86vw, 320px);
+           overflow-y: auto;
+           -webkit-overflow-scrolling: touch;
+       }
+   }
+
+   @media (max-width: 380px) {
+       #app {
+           padding-left: 14px;
+           padding-right: 14px;
+       }
+
+       .grid-layout {
+           grid-template-columns: 1fr;
+       }
+
+       .floating-trigger {
+           width: 56px;
+           height: 56px;
+           right: 14px;
+           bottom: calc(18px + env(safe-area-inset-bottom));
+       }
+
+       .nav-logo-right {
+           right: 14px;
+           width: 40px;
+           height: 40px;
        }
    }
    
