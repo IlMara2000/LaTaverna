@@ -15,6 +15,8 @@ export function initLogin(container) {
     renderStartScreen(container);
 }
 
+export const showLogin = initLogin;
+
 // --- 1. SCHERMATA DI BENVENUTO (START) ---
 function renderStartScreen(container) {
     container.innerHTML = `

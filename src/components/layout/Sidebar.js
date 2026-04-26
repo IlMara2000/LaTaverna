@@ -4,6 +4,13 @@ let currentLogoutFn = null;
 let isMusicOn = localStorage.getItem('taverna_music') !== 'off';
 let currentActiveContext = "lobby";
 
+const escapeHTML = (value = '') => String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
 export function initSidebar(container, user, onLogout, context = "home") {
     const guestData = localStorage.getItem('taverna_guest_user');
     currentSidebarUser = user || (guestData ? JSON.parse(guestData) : null);
@@ -14,18 +21,12 @@ export function initSidebar(container, user, onLogout, context = "home") {
 
 function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
-    const userName = isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante");
+    const userName = escapeHTML(isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante"));
 
     // Testo dinamico per il tasto in fondo
     let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI DALLA TAVERNA') : "⬅ TORNA ALLA HOME";
 
     container.innerHTML = `
-        <div class="floating-trigger" id="sidebar-trigger">
-            <div class="nav-bar"></div>
-            <div class="nav-bar"></div>
-            <div class="nav-bar"></div>
-        </div>
-
         <nav id="sidebar-menu" class="sidebar-glass">
             <div class="sidebar-header" style="margin-bottom: 30px;">
                 <h2 class="text-amethyst" style="font-size: 1.6rem; letter-spacing: -1px; margin-bottom: 5px;">${userName.toUpperCase()}</h2>
@@ -34,6 +35,28 @@ function renderSidebarContent(container, context) {
 
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-lobby" data-context="home" style="font-size: 0.8rem; padding: 12px;">
+                    LIBRERIA
+                </button>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" style="font-size: 0.8rem; padding: 12px;">
+                    MINI GIOCHI
+                </button>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-profile" data-context="profile" style="font-size: 0.8rem; padding: 12px;">
+                    PROFILO
+                </button>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-zaino" data-context="zaino" style="font-size: 0.8rem; padding: 12px;">
+                    ZAINO
+                </button>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-settings" data-context="settings" style="font-size: 0.8rem; padding: 12px;">
+                    IMPOSTAZIONI
+                </button>
+
+                <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0 10px;"></div>
                 
                 <button class="btn-glass" id="sideMusicBtn" style="font-size: 0.8rem; padding: 12px;">
                     ${isMusicOn ? '🔊 MUSICA: ON' : '🔈 MUSICA: OFF'}
@@ -75,23 +98,27 @@ function resetGlobalScroll() {
 }
 
 function highlightActiveContext() {
-    const items = document.querySelectorAll('#sidebar-menu a');
+    const items = document.querySelectorAll('#sidebar-menu .sidebar-nav-item');
     items.forEach(item => {
+        item.style.color = "";
+        item.style.textShadow = "";
+        item.style.borderColor = "";
         if (item.dataset.context === currentActiveContext) {
             item.style.color = "var(--amethyst-bright)";
             item.style.textShadow = "0 0 10px var(--amethyst-glow)";
+            item.style.borderColor = "var(--amethyst-bright)";
         }
     });
 }
 
 function setupEventListeners(container, context) {
     const sidebar = container.querySelector('#sidebar-menu');
-    const trigger = container.querySelector('#sidebar-trigger');
+    const trigger = document.getElementById('navbar-trigger');
     const mainContent = document.getElementById('app'); 
     
     const toggle = () => {
         const isOpen = sidebar.classList.toggle('active');
-        trigger.classList.toggle('is-active');
+        trigger?.classList.toggle('is-active', isOpen);
         if (!isOpen) {
             sidebar.style.right = '-110%';
         } else {
@@ -100,7 +127,16 @@ function setupEventListeners(container, context) {
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
     };
 
-    trigger.onclick = toggle;
+    if (trigger) trigger.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggle();
+    };
+    if (window.__tavernaSidebarToggle) {
+        window.removeEventListener('toggleSidebar', window.__tavernaSidebarToggle);
+    }
+    window.__tavernaSidebarToggle = toggle;
+    window.addEventListener('toggleSidebar', window.__tavernaSidebarToggle);
 
     // --- NAVIGAZIONE LINKS ---
     const attachNav = (id, modulePath, funcName, contextName) => {
@@ -115,7 +151,7 @@ function setupEventListeners(container, context) {
                     const module = await import(modulePath);
                     if (mainContent) {
                          mainContent.innerHTML = '';
-                         module[funcName](mainContent);
+                         module[funcName](mainContent, currentSidebarUser);
                     }
                 } catch (err) { console.error(`Errore nav: ${modulePath}`, err); }
             };

@@ -1,5 +1,5 @@
 import { supabase } from '../../../services/supabase.js';
-import { showDashboard } from '../../../dashboard.js';
+import { showLogin } from './Login.js';
 
 export function showRegister(container) {
     container.innerHTML = `
@@ -48,7 +48,7 @@ export function showRegister(container) {
             if (error) throw error;
 
             if (data?.session) {
-                showDashboard(container, data.user);
+                window.location.reload();
             } else {
                 msg.textContent = "📜 Conferma l'email per entrare!";
                 msg.style.color = "#00ff00";
@@ -60,7 +60,6 @@ export function showRegister(container) {
     };
 
     container.querySelector('#toLogin').onclick = async () => {
-        const { showLogin } = await import('./Login.js');
         showLogin(container);
     };
 }
