@@ -1,9 +1,11 @@
-import { supabase } from '../../../services/supabase.js';
+import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 import { showTabletop } from './Map.js';
 
 const TABLES = {
     sessions: 'dnd_sessions',
-    chat: 'dnd_chat'
+    legacySessions: SUPABASE_CONFIG?.tables?.sessions || 'session',
+    chat: 'dnd_chat',
+    legacyChat: SUPABASE_CONFIG?.tables?.chat || 'chat_messages'
 };
 
 const escapeHTML = (value = '') => String(value)
@@ -18,6 +20,32 @@ const rollDice = (faces, count = 1, mod = 0) => {
     return { rolls, total: rolls.reduce((sum, value) => sum + value, 0) + mod };
 };
 
+const isMissingTableError = (error) => {
+    const message = String(error?.message || '');
+    return error?.code === 'PGRST205'
+        || message.includes('schema cache')
+        || message.includes('Could not find the table');
+};
+
+async function runWithFallback(primaryTable, fallbackTable, buildQuery) {
+    const primary = await buildQuery(primaryTable);
+    if (!primary.error || !isMissingTableError(primary.error)) return primary;
+    return buildQuery(fallbackTable);
+}
+
+const normalizeSession = (session = {}) => {
+    const data = session.data || {};
+    return {
+        ...session,
+        status: session.status || data.status || 'attiva',
+        party_level: session.party_level || data.party_level || 1,
+        next_date: session.next_date || data.next_date || '',
+        map_url: session.map_url || data.map_url || data.mapUrl || '',
+        description: session.description || data.description || '',
+        data
+    };
+};
+
 export async function showSession(container, sessionId) {
     const { data: { user } } = await supabase.auth.getUser();
     const guest = localStorage.getItem('taverna_guest_user');
@@ -26,8 +54,12 @@ export async function showSession(container, sessionId) {
 
     let sessionData = { id: sessionId, name: 'Tavolo Live', data: {} };
     try {
-        const { data } = await supabase.from(TABLES.sessions).select('*').eq('id', sessionId).single();
-        if (data) sessionData = data;
+        const { data } = await runWithFallback(TABLES.sessions, TABLES.legacySessions, (tableName) => supabase
+            .from(tableName)
+            .select('*')
+            .eq('id', sessionId)
+            .single());
+        if (data) sessionData = normalizeSession(data);
     } catch (err) {
         console.warn('Sessione non recuperata:', err);
     }
@@ -124,7 +156,7 @@ export async function showSession(container, sessionId) {
                 message,
                 is_roll: isRoll
             };
-            const { data, error } = await supabase.from(TABLES.chat).insert([payload]).select('*').single();
+            const { data, error } = await runWithFallback(TABLES.chat, TABLES.legacyChat, (tableName) => supabase.from(tableName).insert([payload]).select('*').single());
             if (error) throw error;
             if (data) renderMessage(data);
         } catch (err) {
@@ -134,12 +166,12 @@ export async function showSession(container, sessionId) {
 
     const loadMessages = async () => {
         try {
-            const { data, error } = await supabase
-                .from(TABLES.chat)
-                .select('*')
-                .eq('session_id', sessionId)
-                .order('created_at', { ascending: true })
-                .limit(80);
+            const { data, error } = await runWithFallback(TABLES.chat, TABLES.legacyChat, (tableName) => supabase
+                    .from(tableName)
+                    .select('*')
+                    .eq('session_id', sessionId)
+                    .order('created_at', { ascending: true })
+                    .limit(80));
             if (error) throw error;
             (data || []).forEach(renderMessage);
         } catch (err) {
@@ -167,7 +199,7 @@ export async function showSession(container, sessionId) {
     const saveSessionData = async () => {
         try {
             const nextData = { ...(sessionData.data || {}), ...sessionState };
-            await supabase.from(TABLES.sessions).update({ data: nextData }).eq('id', sessionId);
+            await runWithFallback(TABLES.sessions, TABLES.legacySessions, (tableName) => supabase.from(tableName).update({ data: nextData }).eq('id', sessionId));
         } catch (err) {
             console.warn('Stato sessione non salvato:', err);
         }

@@ -868,6 +868,15 @@
        line-height: 1.45;
    }
 
+   .dnd-manual-card small {
+       display: block;
+       margin-top: 10px;
+       opacity: 0.5;
+       font-size: 0.68rem;
+       text-transform: uppercase;
+       letter-spacing: 1.5px;
+   }
+
    .dnd-manual-viewer {
        min-height: 680px;
        overflow: hidden;
@@ -898,6 +907,43 @@
        padding: 10px 14px;
        font-weight: 900;
        font-size: 0.72rem;
+   }
+
+   .dnd-manual-controls {
+       display: flex;
+       align-items: center;
+       justify-content: flex-end;
+       gap: 10px;
+       flex-wrap: wrap;
+   }
+
+   .dnd-manual-controls button,
+   .dnd-manual-controls input {
+       border: 1px solid var(--glass-border);
+       background: rgba(255, 255, 255, 0.07);
+       color: white;
+       border-radius: 999px;
+       padding: 10px 14px;
+       font-weight: 900;
+       font-size: 0.72rem;
+   }
+
+   .dnd-manual-controls label {
+       display: flex;
+       align-items: center;
+       gap: 8px;
+   }
+
+   .dnd-manual-controls label span,
+   .dnd-manual-controls > span {
+       opacity: 0.62;
+       font-size: 0.68rem;
+       text-transform: uppercase;
+       letter-spacing: 1.5px;
+   }
+
+   .dnd-manual-controls input {
+       width: 88px;
    }
 
    .dnd-manual-viewer iframe {
@@ -938,6 +984,20 @@
        color: white;
        font: inherit;
        box-sizing: border-box;
+   }
+
+   .dnd-sheet input[type="file"] {
+       padding: 11px;
+       cursor: pointer;
+   }
+
+   .dnd-map-upload span {
+       color: rgba(255, 255, 255, 0.5);
+       font-size: 0.72rem;
+       line-height: 1.35;
+       text-transform: none;
+       letter-spacing: 0;
+       font-weight: 600;
    }
 
    .dnd-sheet textarea {
@@ -1129,6 +1189,17 @@
        width: 2200px;
        max-width: none;
        opacity: 0.92;
+   }
+
+   .map-pdf {
+       position: absolute;
+       top: 0;
+       left: 0;
+       width: 2200px;
+       height: 1600px;
+       border: 0;
+       background: rgba(0, 0, 0, 0.35);
+       pointer-events: none;
    }
 
    .map-fog {

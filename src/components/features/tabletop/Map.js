@@ -1,6 +1,7 @@
-import { supabase } from '../../../services/supabase.js';
+import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 
 const TOKEN_TABLE = 'dnd_tokens';
+const LEGACY_TOKEN_TABLE = SUPABASE_CONFIG?.tables?.tokens || 'tokens';
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -8,6 +9,24 @@ const escapeHTML = (value = '') => String(value)
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+
+const isMissingTableError = (error) => {
+    const message = String(error?.message || '');
+    return error?.code === 'PGRST205'
+        || message.includes('schema cache')
+        || message.includes('Could not find the table');
+};
+
+async function runTokenQuery(buildQuery) {
+    const primary = await buildQuery(TOKEN_TABLE);
+    if (!primary.error || !isMissingTableError(primary.error)) return primary;
+    return buildQuery(LEGACY_TOKEN_TABLE);
+}
+
+const isPdfMap = (url = '') => {
+    const cleanUrl = String(url).split('?')[0].toLowerCase();
+    return cleanUrl.endsWith('.pdf') || String(url).toLowerCase().includes('application/pdf');
+};
 
 export function showTabletop(container, sessionId, options = {}) {
     let scale = 1;
@@ -18,7 +37,11 @@ export function showTabletop(container, sessionId, options = {}) {
     container.innerHTML = `
         <div class="tabletop-viewport" id="viewport">
             <div class="map-layer" id="map-layer">
-                ${options.mapUrl ? `<img class="map-image" src="${escapeHTML(options.mapUrl)}" alt="">` : ''}
+                ${options.mapUrl ? (
+                    isPdfMap(options.mapUrl)
+                        ? `<iframe class="map-pdf" src="${escapeHTML(options.mapUrl)}" title="Mappa PDF"></iframe>`
+                        : `<img class="map-image" src="${escapeHTML(options.mapUrl)}" alt="">`
+                ) : ''}
                 <div class="map-grid"></div>
                 <div class="map-fog ${fogEnabled ? 'active' : ''}" id="map-fog"></div>
             </div>
@@ -109,13 +132,13 @@ export function showTabletop(container, sessionId, options = {}) {
                 el.removeEventListener('pointerup', onUp);
                 el.classList.remove('dragging');
                 try {
-                    await supabase
-                        .from(TOKEN_TABLE)
+                    await runTokenQuery((tableName) => supabase
+                        .from(tableName)
                         .update({
                             x: Math.round(parseFloat(el.style.left)),
                             y: Math.round(parseFloat(el.style.top))
                         })
-                        .eq('id', doc.id);
+                        .eq('id', doc.id));
                 } catch (err) {
                     console.error('Errore sync token:', err);
                 }
@@ -128,10 +151,10 @@ export function showTabletop(container, sessionId, options = {}) {
 
     const loadTokens = async () => {
         try {
-            const { data, error } = await supabase
-                .from(TOKEN_TABLE)
-                .select('*')
-                .eq('session_id', sessionId);
+            const { data, error } = await runTokenQuery((tableName) => supabase
+                    .from(tableName)
+                    .select('*')
+                    .eq('session_id', sessionId));
             if (error) throw error;
             (data || []).forEach(renderToken);
         } catch (err) {
@@ -171,7 +194,7 @@ export function showTabletop(container, sessionId, options = {}) {
                 x: 420,
                 y: 420
             };
-            const { data, error } = await supabase.from(TOKEN_TABLE).insert([payload]).select('*').single();
+            const { data, error } = await runTokenQuery((tableName) => supabase.from(tableName).insert([payload]).select('*').single());
             if (error) throw error;
             renderToken(data || payload);
         },

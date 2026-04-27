@@ -16,10 +16,29 @@ create table if not exists public.dnd_sessions (
 );
 
 alter table public.characters
+    add column if not exists user_id uuid references auth.users(id) on delete cascade,
     add column if not exists system_id text default 'dnd5e',
     add column if not exists hp integer default 10,
     add column if not exists hp_max integer default 10,
     add column if not exists data jsonb not null default '{}'::jsonb;
+
+alter table public.characters enable row level security;
+
+do $$
+begin
+    if not exists (
+        select 1 from pg_policies
+        where schemaname = 'public'
+        and tablename = 'characters'
+        and policyname = 'characters_owner_all'
+    ) then
+        create policy "characters_owner_all"
+        on public.characters
+        for all
+        using (user_id is null or auth.uid() = user_id)
+        with check (user_id is null or auth.uid() = user_id);
+    end if;
+end $$;
 
 create table if not exists public.dnd_tokens (
     id uuid primary key default gen_random_uuid(),
