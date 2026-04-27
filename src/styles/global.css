@@ -975,7 +975,7 @@
        letter-spacing: 1px;
    }
 
-   .dnd-sheet input, .dnd-sheet select, .dnd-sheet textarea, .dnd-session input {
+   .dnd-sheet input, .dnd-sheet select, .dnd-sheet textarea, .dnd-session input, .dnd-session select, .dnd-session textarea {
        width: 100%;
        border: 1px solid var(--glass-border);
        border-radius: 14px;
@@ -984,6 +984,17 @@
        color: white;
        font: inherit;
        box-sizing: border-box;
+   }
+
+   .dnd-session textarea {
+       min-height: 96px;
+       resize: vertical;
+   }
+
+   .dnd-session input[type="color"] {
+       height: 44px;
+       padding: 6px;
+       cursor: pointer;
    }
 
    .dnd-sheet input[type="file"] {
@@ -1143,9 +1154,76 @@
        background: rgba(255, 255, 255, 0.04);
    }
 
+   .initiative-item > div {
+       display: flex;
+       align-items: center;
+       gap: 8px;
+   }
+
+   .initiative-item button,
+   .token-list-item button {
+       border: 1px solid var(--glass-border);
+       border-radius: 999px;
+       background: rgba(255, 255, 255, 0.06);
+       color: white;
+       font-size: 0.64rem;
+       font-weight: 900;
+       padding: 6px 9px;
+       cursor: pointer;
+   }
+
    .initiative-item.active {
        border-color: #00ffa3;
        background: rgba(0, 255, 163, 0.08);
+   }
+
+   .token-list {
+       display: grid;
+       gap: 8px;
+   }
+
+   .token-list-item {
+       display: flex;
+       align-items: center;
+       justify-content: space-between;
+       gap: 10px;
+       border: 1px solid var(--glass-border);
+       border-radius: 12px;
+       padding: 9px 10px;
+       background: rgba(255, 255, 255, 0.04);
+   }
+
+   .token-list-item span {
+       min-width: 0;
+       overflow: hidden;
+       text-overflow: ellipsis;
+       white-space: nowrap;
+       font-size: 0.78rem;
+       font-weight: 900;
+   }
+
+   .token-list-item span::before {
+       content: "";
+       display: inline-block;
+       width: 9px;
+       height: 9px;
+       margin-right: 8px;
+       border-radius: 50%;
+       background: var(--token-color);
+   }
+
+   .session-check {
+       display: grid;
+       grid-template-columns: auto 1fr;
+       align-items: center;
+       gap: 10px;
+       font-size: 0.76rem;
+       font-weight: 800;
+       color: rgba(255, 255, 255, 0.72);
+   }
+
+   .session-check input {
+       width: auto;
    }
 
    .dnd-table-area {
@@ -1281,6 +1359,14 @@
        pointer-events: auto;
    }
 
+   .map-control-row {
+       display: flex;
+       align-items: center;
+       justify-content: flex-end;
+       gap: 8px;
+       flex-wrap: wrap;
+   }
+
    .dnd-table-topbar strong {
        border: 1px solid var(--glass-border);
        border-radius: 999px;
@@ -1328,6 +1414,17 @@
        background: rgba(255, 255, 255, 0.06);
        color: white;
        padding: 10px;
+   }
+
+   #diceFormula {
+       width: 92px;
+       flex: 0 0 auto;
+       border: 1px solid var(--glass-border);
+       border-radius: 12px;
+       background: rgba(255, 255, 255, 0.06);
+       color: white;
+       padding: 10px;
+       font-weight: 900;
    }
 
    .dnd-chat-messages {
@@ -1871,10 +1968,23 @@
 
        .dnd-table-topbar {
            align-items: stretch;
+           flex-wrap: wrap;
        }
 
        .dnd-table-topbar strong {
            display: none;
+       }
+
+       .map-control-row {
+           width: 100%;
+           justify-content: space-between;
+       }
+
+       .dnd-dice-bar {
+           left: 12px;
+           right: 12px;
+           transform: none;
+           max-width: none;
        }
    }
 
