@@ -17,10 +17,32 @@ const isMissingTableError = (error) => {
         || message.includes('Could not find the table');
 };
 
+const isMissingColumnError = (error) => {
+    const message = String(error?.message || '');
+    return error?.code === '42703'
+        || message.includes('does not exist')
+        || message.includes('Could not find')
+        || message.includes('schema cache');
+};
+
 async function runTokenQuery(buildQuery) {
     const primary = await buildQuery(TOKEN_TABLE);
     if (!primary.error || !isMissingTableError(primary.error)) return primary;
     return buildQuery(LEGACY_TOKEN_TABLE);
+}
+
+async function insertToken(payload) {
+    const attempts = [
+        payload,
+        Object.fromEntries(Object.entries(payload).filter(([key]) => !['character_id', 'data'].includes(key)))
+    ];
+
+    let lastResult = null;
+    for (const nextPayload of attempts) {
+        lastResult = await runTokenQuery((tableName) => supabase.from(tableName).insert([nextPayload]).select('*').single());
+        if (!lastResult.error || !isMissingColumnError(lastResult.error)) return lastResult;
+    }
+    return lastResult;
 }
 
 const isPdfMap = (url = '') => {
@@ -33,6 +55,7 @@ export function showTabletop(container, sessionId, options = {}) {
     let translateX = 0;
     let translateY = 0;
     let fogEnabled = options.fogEnabled !== false;
+    let knownTokens = [];
 
     container.innerHTML = `
         <div class="tabletop-viewport" id="viewport">
@@ -55,6 +78,31 @@ export function showTabletop(container, sessionId, options = {}) {
     const updateTransform = () => {
         mapLayer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     };
+
+    const notifyTokens = () => {
+        if (typeof options.onTokensChange === 'function') {
+            options.onTokensChange([...knownTokens]);
+        }
+    };
+
+    const upsertKnownToken = (doc) => {
+        if (!doc?.id) return;
+        knownTokens = knownTokens.filter(token => String(token.id) !== String(doc.id));
+        knownTokens.push(doc);
+        knownTokens.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        notifyTokens();
+    };
+
+    const removeKnownToken = (id) => {
+        knownTokens = knownTokens.filter(token => String(token.id) !== String(id));
+        notifyTokens();
+    };
+
+    const setScale = (nextScale) => {
+        scale = Math.min(Math.max(0.35, nextScale), 3);
+        updateTransform();
+    };
+
     updateTransform();
 
     viewport.addEventListener('pointerdown', (e) => {
@@ -82,12 +130,12 @@ export function showTabletop(container, sessionId, options = {}) {
     viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        scale = Math.min(Math.max(0.35, scale * delta), 3);
-        updateTransform();
+        setScale(scale * delta);
     }, { passive: false });
 
     const renderToken = (doc) => {
         if (!doc?.id) return;
+        upsertKnownToken(doc);
         let el = mapLayer.querySelector(`#token-${CSS.escape(String(doc.id))}`);
         if (!el) {
             el = document.createElement('div');
@@ -101,6 +149,13 @@ export function showTabletop(container, sessionId, options = {}) {
             `;
             mapLayer.appendChild(el);
             makeTokenDraggable(el, doc);
+        } else {
+            el.querySelector('.token-name').textContent = doc.name || 'Token';
+            const img = el.querySelector('.token-img');
+            img.style.borderColor = doc.color || '#c77dff';
+            img.innerHTML = doc.img
+                ? `<img src="${escapeHTML(doc.img)}" alt="">`
+                : `<span>${escapeHTML((doc.name || '?').charAt(0).toUpperCase())}</span>`;
         }
 
         if (!el.classList.contains('dragging')) {
@@ -175,6 +230,7 @@ export function showTabletop(container, sessionId, options = {}) {
             }, payload => {
                 if (payload.eventType === 'DELETE') {
                     mapLayer.querySelector(`#token-${CSS.escape(String(payload.old.id))}`)?.remove();
+                    removeKnownToken(payload.old.id);
                 } else {
                     renderToken(payload.new);
                 }
@@ -192,11 +248,27 @@ export function showTabletop(container, sessionId, options = {}) {
                 img: token.img || '',
                 color: token.color || '#c77dff',
                 x: 420,
-                y: 420
+                y: 420,
+                character_id: token.character_id || null,
+                data: token.data || {}
             };
-            const { data, error } = await runTokenQuery((tableName) => supabase.from(tableName).insert([payload]).select('*').single());
+            const { data, error } = await insertToken(payload);
             if (error) throw error;
             renderToken(data || payload);
+        },
+        deleteToken: async (id) => {
+            const { error } = await runTokenQuery((tableName) => supabase.from(tableName).delete().eq('id', id));
+            if (error) throw error;
+            mapLayer.querySelector(`#token-${CSS.escape(String(id))}`)?.remove();
+            removeKnownToken(id);
+        },
+        zoomIn: () => setScale(scale * 1.15),
+        zoomOut: () => setScale(scale * 0.85),
+        resetView: () => {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+            updateTransform();
         },
         toggleFog: () => {
             fogEnabled = !fogEnabled;

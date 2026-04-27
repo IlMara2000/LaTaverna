@@ -44,13 +44,26 @@ const escapeHTML = (value = '') => String(value)
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
+const isUuid = (value = '') => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
+
 const getCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    const guest = localStorage.getItem('taverna_guest_user');
-    return user || (guest ? JSON.parse(guest) : null);
+    if (user?.id && isUuid(user.id)) return user;
+
+    try {
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (!error && data?.user?.id) {
+            localStorage.removeItem('taverna_guest_user');
+            return data.user;
+        }
+    } catch (err) {
+        console.warn('Login anonimo Supabase non disponibile:', err);
+    }
+
+    return null;
 };
 
-const getUserId = (user) => user?.id || 'guest';
+const getUserId = (user) => user?.id || null;
 
 const isMissingTableError = (error) => {
     const message = String(error?.message || '');
@@ -127,7 +140,9 @@ async function saveCharacterRow(char, fullPayload) {
             : await query.insert([payload]);
         if (!result.error) return { ...result, limitedSchema: payload !== fullPayload };
         lastError = result.error;
-        if (!isMissingColumnError(result.error)) break;
+        if (!isMissingColumnError(result.error)) {
+            break;
+        }
     }
     return { data: null, error: lastError };
 }
@@ -164,17 +179,18 @@ const buildSessionPayload = (form, user, compact = false, mapUrlOverride = null)
         dm_notes: form.get('dm_notes') || '',
         objectives: form.get('objectives') || ''
     };
+    const userId = getUserId(user);
 
     if (compact) {
         return {
-            user_id: getUserId(user),
+            user_id: userId,
             name: form.get('name'),
             data: details
         };
     }
 
     return {
-        user_id: getUserId(user),
+        user_id: userId,
         name: form.get('name'),
         status: details.status,
         party_level: details.party_level,
@@ -207,6 +223,31 @@ async function uploadSessionMapFile(form, user) {
 
     if (error) throw error;
     return supabase.storage.from(STORAGE.maps).getPublicUrl(filePath).data.publicUrl;
+}
+
+async function loadSessionRows(user) {
+    const userId = getUserId(user);
+
+    const result = await runSessionQuery((tableName) => supabase
+        .from(tableName)
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false }));
+    return result;
+}
+
+async function saveSessionRow(session, form, user, uploadedMapUrl) {
+    return runSessionQuery((tableName) => {
+        const payload = buildSessionPayload(form, user, tableName === TABLES.legacySessions, uploadedMapUrl);
+        const query = supabase.from(tableName);
+        return session?.id
+            ? query.update(payload).eq('id', session.id)
+            : query.insert([payload]);
+    });
+}
+
+async function deleteSessionRow(id, user) {
+    return runSessionQuery((tableName) => supabase.from(tableName).delete().eq('id', id));
 }
 
 const getCharacterData = (char = {}) => ({
@@ -395,7 +436,14 @@ async function renderCharacters(container) {
     renderShell(container, 'characters');
     const content = container.querySelector('#dnd-content');
     const user = await getCurrentUser();
-    const userId = getUserId(user);
+    if (!getUserId(user)) {
+        content.innerHTML = renderSupabaseAuthError();
+        return;
+    }
+    if (!userId) {
+        content.innerHTML = renderSupabaseAuthError();
+        return;
+    }
 
     content.innerHTML = `
         <section class="dnd-section-head dnd-section-actions">
@@ -479,6 +527,16 @@ function renderCharacterSchemaError(err) {
             <strong>Database personaggi non pronto.</strong>
             <span>${escapeHTML(err.message || 'Tabella personaggi non leggibile.')}</span>
             <p>Esegui lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor Supabase per abilitare salvataggio completo, ownership utente, HP, sistema e dati JSON della scheda.</p>
+        </div>
+    `;
+}
+
+function renderSupabaseAuthError() {
+    return `
+        <div class="dnd-empty glass-box dnd-schema-error">
+            <strong>Supabase non collegato.</strong>
+            <span>Non riesco a creare un utente Supabase valido per salvare online.</span>
+            <p>Configura <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code> e abilita Anonymous Sign-Ins oppure fai accedere l'utente prima di creare personaggi e sessioni.</p>
         </div>
     `;
 }
@@ -632,18 +690,15 @@ async function renderSessions(container) {
     const loadSessions = async () => {
         const list = content.querySelector('#sessionList');
         try {
-            const { data, error } = await runSessionQuery((tableName) => supabase
-                    .from(tableName)
-                    .select('*')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false }));
+            const { data, error } = await loadSessionRows(user);
             if (error) throw error;
             const sessions = (data || []).map(normalizeSession);
-            list.innerHTML = sessions.length ? sessions.map(renderSessionCard).join('') : `
+            list.innerHTML = `
+                ${sessions.length ? sessions.map(renderSessionCard).join('') : `
                 <div class="dnd-empty glass-box">
                     <strong>Nessuna sessione attiva.</strong>
                     <span>Crea il primo tavolo per mappa, chat, token e dadi.</span>
-                </div>
+                </div>`}
             `;
             list.querySelectorAll('[data-open-session]').forEach(btn => {
                 btn.onclick = async () => {
@@ -657,7 +712,7 @@ async function renderSessions(container) {
             list.querySelectorAll('[data-delete-session]').forEach(btn => {
                 btn.onclick = async () => {
                     if (!confirm('Eliminare questa sessione?')) return;
-                    const { error } = await runSessionQuery((tableName) => supabase.from(tableName).delete().eq('id', btn.dataset.deleteSession));
+                    const { error } = await deleteSessionRow(btn.dataset.deleteSession, user);
                     if (error) alert(error.message);
                     else loadSessions();
                 };
@@ -738,14 +793,13 @@ function renderSessionEditor(container, user, session) {
         const form = new FormData(e.currentTarget);
 
         try {
-            const uploadedMapUrl = await uploadSessionMapFile(form, user);
-            const result = await runSessionQuery((tableName) => {
-                const payload = buildSessionPayload(form, user, tableName === TABLES.legacySessions, uploadedMapUrl);
-                const query = supabase.from(tableName);
-                return session?.id
-                    ? query.update(payload).eq('id', session.id)
-                    : query.insert([payload]);
-            });
+            let uploadedMapUrl = null;
+            try {
+                uploadedMapUrl = await uploadSessionMapFile(form, user);
+            } catch (uploadErr) {
+                console.warn('Upload mappa non riuscito, salvo comunque la sessione:', uploadErr);
+            }
+            const result = await saveSessionRow(session, form, user, uploadedMapUrl);
             if (result.error) throw result.error;
             renderSessions(container);
         } catch (err) {

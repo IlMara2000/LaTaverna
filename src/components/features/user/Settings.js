@@ -1,4 +1,6 @@
-const PROFILE_SETTINGS_KEY = 'taverna_profile_settings';
+import { supabase } from '../../../services/supabase.js';
+
+const PROFILE_TABLE = 'user_profiles';
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -7,28 +9,86 @@ const escapeHTML = (value = '') => String(value)
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
-const getStoredSettings = () => {
+const isUuid = (value = '') => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
+
+async function getSupabaseUser(seedUser = null) {
+    if (seedUser?.id && isUuid(seedUser.id)) return seedUser;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id && isUuid(user.id)) return user;
+
     try {
-        return JSON.parse(localStorage.getItem(PROFILE_SETTINGS_KEY)) || {};
-    } catch {
-        return {};
+        const { data, error } = await supabase.auth.signInAnonymously();
+        if (!error && data?.user?.id) {
+            localStorage.removeItem('taverna_guest_user');
+            return data.user;
+        }
+    } catch (err) {
+        console.warn('Login anonimo Supabase non disponibile:', err);
     }
-};
 
-export function showSettings(container, user = null) {
-    const stored = getStoredSettings();
-    const defaultName = user?.isGuest
-        ? user?.user_metadata?.full_name || 'Ospite'
-        : user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Viandante';
+    return null;
+}
 
-    const settings = {
-        displayName: stored.displayName || defaultName,
-        title: stored.title || 'Viandante della Taverna',
-        avatarUrl: stored.avatarUrl || user?.user_metadata?.avatar_url || '',
-        accent: stored.accent || 'amethyst',
-        glow: stored.glow !== false,
-        compactCards: stored.compactCards === true
+function defaultSettings(user = null) {
+    const defaultName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Viandante';
+    return {
+        displayName: defaultName,
+        title: 'Viandante della Taverna',
+        avatarUrl: user?.user_metadata?.avatar_url || '',
+        accent: 'amethyst',
+        glow: true,
+        compactCards: false
     };
+}
+
+async function loadProfileSettings(user) {
+    const defaults = defaultSettings(user);
+    if (!user?.id) return defaults;
+
+    const { data, error } = await supabase
+        .from(PROFILE_TABLE)
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+    if (error) {
+        console.warn('Profilo Supabase non caricato:', error);
+        return defaults;
+    }
+
+    return {
+        displayName: data?.display_name || defaults.displayName,
+        title: data?.title || defaults.title,
+        avatarUrl: data?.avatar_url || defaults.avatarUrl,
+        accent: data?.accent || defaults.accent,
+        glow: data?.glow !== false,
+        compactCards: data?.compact_cards === true
+    };
+}
+
+async function saveProfileSettings(user, settings) {
+    if (!user?.id) {
+        return { error: { message: 'Utente Supabase non disponibile.' } };
+    }
+
+    return supabase
+        .from(PROFILE_TABLE)
+        .upsert({
+            user_id: user.id,
+            display_name: settings.displayName,
+            title: settings.title,
+            avatar_url: settings.avatarUrl,
+            accent: settings.accent,
+            glow: settings.glow,
+            compact_cards: settings.compactCards,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+}
+
+export async function showSettings(container, user = null) {
+    const supabaseUser = await getSupabaseUser(user);
+    const settings = await loadProfileSettings(supabaseUser);
 
     container.innerHTML = `
         <div class="fade-in settings-profile-page">
@@ -112,7 +172,7 @@ export function showSettings(container, user = null) {
         showLobby(container);
     };
 
-    form.onsubmit = (e) => {
+    form.onsubmit = async (e) => {
         e.preventDefault();
         const nextSettings = {
             displayName: displayName.value.trim() || 'Viandante',
@@ -122,8 +182,9 @@ export function showSettings(container, user = null) {
             glow: container.querySelector('#glowEffects').checked,
             compactCards: container.querySelector('#compactCards').checked
         };
-        localStorage.setItem(PROFILE_SETTINGS_KEY, JSON.stringify(nextSettings));
-        saved.textContent = 'Profilo aggiornato.';
-        setTimeout(() => { saved.textContent = ''; }, 1800);
+
+        const { error } = await saveProfileSettings(supabaseUser, nextSettings);
+        saved.textContent = error ? `Errore Supabase: ${error.message}` : 'Profilo aggiornato su Supabase.';
+        setTimeout(() => { saved.textContent = ''; }, 2200);
     };
 }

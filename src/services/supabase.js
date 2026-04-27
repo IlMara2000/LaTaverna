@@ -8,6 +8,10 @@ const createLocalFallbackClient = () => ({
         getUser: async () => ({ data: { user: null }, error: null }),
         getSession: async () => ({ data: { session: null }, error: null }),
         signOut: async () => ({ error: null }),
+        signInAnonymously: async () => ({
+            data: null,
+            error: { message: "Configura Supabase e abilita Anonymous Sign-Ins." }
+        }),
         signInWithOAuth: async () => ({
             data: null,
             error: { message: "Configura VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nel file .env." }

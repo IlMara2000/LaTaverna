@@ -85,17 +85,19 @@ function renderLoginMethods(container) {
         if (error) alert("Errore durante l'accesso: " + error.message);
     };
 
-    // Azione Ospite (Salvataggio locale)
-    document.getElementById('login-guest').onclick = () => {
-        const guestData = {
-            id: 'guest-' + Math.random().toString(36).substr(2, 9),
-            user_metadata: { full_name: "Viandante " + Math.floor(Math.random() * 999) },
-            isGuest: true,
-            created_at: new Date().toISOString()
-        };
-        localStorage.setItem('taverna_guest_user', JSON.stringify(guestData));
-        
-        // Refresh fluido per caricare la lobby
+    // Azione Ospite collegata a Supabase Anonymous Auth
+    document.getElementById('login-guest').onclick = async () => {
+        const btn = document.getElementById('login-guest');
+        btn.innerText = 'CREAZIONE OSPITE...';
+        const { data, error } = await supabase.auth.signInAnonymously();
+
+        if (error || !data?.user) {
+            btn.innerText = 'ENTRA COME OSPITE';
+            alert(`Accesso ospite Supabase non disponibile: ${error?.message || 'abilita Anonymous Sign-Ins in Supabase Auth.'}`);
+            return;
+        }
+
+        localStorage.removeItem('taverna_guest_user');
         window.location.reload();
     };
 

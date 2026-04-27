@@ -10,6 +10,7 @@ import { setupDiscordRedirect } from './components/features/auth/Discord.js';
 
 const uiContainer = document.getElementById('ui');
 const SERVER_INVITE = "https://discord.gg/9BqNgdqC";
+const isAnonymousUser = (user) => Boolean(user?.is_anonymous || user?.app_metadata?.provider === 'anonymous');
 
 async function initApp() {
     if (!uiContainer) return;
@@ -43,7 +44,7 @@ async function initApp() {
         // 3. LOGICA DI REDIRECT
         const isVerifiedDiscord = user && localStorage.getItem('taverna_member_verified') === 'true';
         
-        if ((isVerifiedDiscord && !shouldShowPortalButton()) || guestUser) {
+        if ((isVerifiedDiscord && !shouldShowPortalButton()) || isAnonymousUser(user) || guestUser) {
             renderDashboard(user || guestUser);
         } else {
             // Altrimenti mostra il Portale d'ingresso
@@ -91,7 +92,7 @@ function renderPortal(user) {
 
 function checkAccess(user, container) {
     const isVerified = localStorage.getItem('taverna_member_verified') === 'true';
-    if (isVerified) {
+    if (isVerified || isAnonymousUser(user)) {
         updateLastAccess();
         renderDashboard(user);
     } else {
@@ -128,9 +129,10 @@ function renderDashboard(user) {
     
     // 1. Inizializza la Navbar (Gestirà anche la Sidebar)
     initNavbar(user, async () => {
-        const isGuest = user?.isGuest || localStorage.getItem('taverna_guest_user');
+        const isGuest = user?.isGuest || isAnonymousUser(user) || localStorage.getItem('taverna_guest_user');
         if (isGuest) {
             localStorage.removeItem('taverna_guest_user');
+            await supabase.auth.signOut();
         } else {
             await supabase.auth.signOut();
             localStorage.removeItem('taverna_member_verified');
