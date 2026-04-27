@@ -1,10 +1,14 @@
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { showLobby } from '../lobby.js';
-import { supabase } from '../services/supabase.js';
+import { supabase, SUPABASE_CONFIG } from '../services/supabase.js';
 
 const TABLES = {
     characters: 'characters',
-    sessions: 'dnd_sessions'
+    sessions: 'dnd_sessions',
+    legacySessions: SUPABASE_CONFIG?.tables?.sessions || 'session'
+};
+const STORAGE = {
+    maps: SUPABASE_CONFIG?.buckets?.zaino || 'vtt_assets'
 };
 
 const MANUALS = [
@@ -12,21 +16,26 @@ const MANUALS = [
         id: 'player',
         title: 'Manuale del Giocatore',
         tag: 'Creazione personaggi, classi, razze, regole base',
-        file: '/assets/manuali/manuale-giocatore.pdf'
+        slug: 'Giocatore',
+        pages: 321
     },
     {
         id: 'master',
         title: 'Guida del Dungeon Master',
         tag: 'Sessioni, incontri, tesori, regole avanzate',
-        file: '/assets/manuali/guida-dungeon-master.pdf'
+        slug: 'DM',
+        pages: 320
     },
     {
         id: 'monsters',
         title: 'Manuale dei Mostri',
         tag: 'Creature, GS, statistiche e incontri',
-        file: '/assets/manuali/manuale-mostri.pdf'
+        slug: 'Mostri',
+        pages: 353
     }
 ];
+
+const getManualPageUrl = (manual, page = 1) => `/manuals/${manual.slug}/${manual.slug}-${page}.pdf`;
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -42,6 +51,163 @@ const getCurrentUser = async () => {
 };
 
 const getUserId = (user) => user?.id || 'guest';
+
+const isMissingTableError = (error) => {
+    const message = String(error?.message || '');
+    return error?.code === 'PGRST205'
+        || message.includes('schema cache')
+        || message.includes('Could not find the table');
+};
+
+const isMissingColumnError = (error) => {
+    const message = String(error?.message || '');
+    return error?.code === '42703'
+        || message.includes('does not exist')
+        || message.includes('Could not find')
+        || message.includes('schema cache');
+};
+
+async function runSessionQuery(buildQuery) {
+    const primary = await buildQuery(TABLES.sessions);
+    if (!primary.error || !isMissingTableError(primary.error)) return primary;
+    const legacy = await buildQuery(TABLES.legacySessions);
+    return {
+        ...legacy,
+        tableName: legacy.error ? TABLES.sessions : TABLES.legacySessions,
+        usedFallback: !legacy.error
+    };
+}
+
+async function loadCharacterRows(userId) {
+    const preferred = await supabase
+        .from(TABLES.characters)
+        .select('*')
+        .eq('user_id', userId)
+        .eq('system_id', 'dnd5e')
+        .order('created_at', { ascending: false });
+    if (!preferred.error) return preferred;
+    if (!isMissingColumnError(preferred.error)) return preferred;
+
+    const userOnly = await supabase
+        .from(TABLES.characters)
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    if (!userOnly.error) return { ...userOnly, limitedSchema: true };
+    if (!isMissingColumnError(userOnly.error)) return userOnly;
+
+    const allRows = await supabase
+        .from(TABLES.characters)
+        .select('*');
+    if (!allRows.error) return { ...allRows, limitedSchema: true };
+    return allRows;
+}
+
+async function saveCharacterRow(char, fullPayload) {
+    const attempts = [
+        fullPayload,
+        omitKeys(fullPayload, ['user_id', 'system_id']),
+        omitKeys(fullPayload, ['user_id', 'system_id', 'data']),
+        {
+            name: fullPayload.name,
+            class: fullPayload.class,
+            level: fullPayload.level
+        },
+        {
+            name: fullPayload.name,
+            class: fullPayload.class
+        }
+    ];
+
+    let lastError = null;
+    for (const payload of attempts) {
+        const query = supabase.from(TABLES.characters);
+        const result = char?.id
+            ? await query.update(payload).eq('id', char.id)
+            : await query.insert([payload]);
+        if (!result.error) return { ...result, limitedSchema: payload !== fullPayload };
+        lastError = result.error;
+        if (!isMissingColumnError(result.error)) break;
+    }
+    return { data: null, error: lastError };
+}
+
+async function deleteCharacterRow(id) {
+    return supabase.from(TABLES.characters).delete().eq('id', id);
+}
+
+function omitKeys(source, keys) {
+    return Object.fromEntries(Object.entries(source).filter(([key]) => !keys.includes(key)));
+}
+
+const normalizeSession = (session = {}) => {
+    const data = session.data || {};
+    return {
+        ...session,
+        status: session.status || data.status || 'attiva',
+        party_level: session.party_level || data.party_level || 1,
+        next_date: session.next_date || data.next_date || '',
+        map_url: session.map_url || data.map_url || data.mapUrl || '',
+        description: session.description || data.description || '',
+        data
+    };
+};
+
+const buildSessionPayload = (form, user, compact = false, mapUrlOverride = null) => {
+    const mapUrl = mapUrlOverride ?? form.get('map_url') ?? '';
+    const details = {
+        status: form.get('status'),
+        party_level: Number(form.get('party_level') || 1),
+        next_date: form.get('next_date') || '',
+        map_url: mapUrl,
+        description: form.get('description') || '',
+        dm_notes: form.get('dm_notes') || '',
+        objectives: form.get('objectives') || ''
+    };
+
+    if (compact) {
+        return {
+            user_id: getUserId(user),
+            name: form.get('name'),
+            data: details
+        };
+    }
+
+    return {
+        user_id: getUserId(user),
+        name: form.get('name'),
+        status: details.status,
+        party_level: details.party_level,
+        next_date: details.next_date,
+        map_url: mapUrl,
+        description: details.description,
+        data: {
+            dm_notes: details.dm_notes,
+            objectives: details.objectives
+        }
+    };
+};
+
+async function uploadSessionMapFile(form, user) {
+    const file = form.get('map_file');
+    if (!(file instanceof File) || !file.name || file.size === 0) return null;
+
+    const safeName = file.name
+        .normalize('NFKD')
+        .replace(/[^\w.\-]+/g, '_')
+        .replace(/^_+|_+$/g, '') || 'mappa';
+    const filePath = `dnd-maps/${getUserId(user)}/${Date.now()}_${safeName}`;
+    const { error } = await supabase.storage
+        .from(STORAGE.maps)
+        .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type || undefined
+        });
+
+    if (error) throw error;
+    return supabase.storage.from(STORAGE.maps).getPublicUrl(filePath).data.publicUrl;
+}
 
 const getCharacterData = (char = {}) => ({
     race: '',
@@ -98,9 +264,9 @@ function renderShell(container, activeView = 'overview') {
 
             <nav class="dnd-tabs" aria-label="Sezioni D&D">
                 <button class="${activeView === 'overview' ? 'active' : ''}" data-dnd-view="overview">Dashboard</button>
+                <button class="${activeView === 'sessions' ? 'active' : ''}" data-dnd-view="sessions">Sessioni</button>
                 <button class="${activeView === 'manuals' ? 'active' : ''}" data-dnd-view="manuals">Manuali</button>
                 <button class="${activeView === 'characters' ? 'active' : ''}" data-dnd-view="characters">Personaggi</button>
-                <button class="${activeView === 'sessions' ? 'active' : ''}" data-dnd-view="sessions">Sessioni</button>
             </nav>
 
             <main id="dnd-content"></main>
@@ -124,6 +290,11 @@ function renderDashboard(container) {
     const content = container.querySelector('#dnd-content');
     content.innerHTML = `
         <section class="dnd-grid">
+            <button class="dnd-panel" data-open="sessions">
+                <span>Tavolo</span>
+                <strong>Sessioni</strong>
+                <p>Crea campagne, entra al tavolo, usa mappa, dadi, token e chat.</p>
+            </button>
             <button class="dnd-panel" data-open="manuals">
                 <span>Biblioteca</span>
                 <strong>Manuali PDF</strong>
@@ -134,26 +305,25 @@ function renderDashboard(container) {
                 <strong>Personaggi completi</strong>
                 <p>Statistiche, abilita, tiri salvezza, incantesimi, inventario e note.</p>
             </button>
-            <button class="dnd-panel" data-open="sessions">
-                <span>Tavolo</span>
-                <strong>Sessioni attive</strong>
-                <p>Crea campagne, entra al tavolo, usa mappa, dadi, token e chat.</p>
-            </button>
         </section>
     `;
 
+    content.querySelector('[data-open="sessions"]').onclick = () => renderSessions(container);
     content.querySelector('[data-open="manuals"]').onclick = () => renderManuals(container);
     content.querySelector('[data-open="characters"]').onclick = () => renderCharacters(container);
-    content.querySelector('[data-open="sessions"]').onclick = () => renderSessions(container);
 }
 
 function renderManuals(container) {
     renderShell(container, 'manuals');
     const content = container.querySelector('#dnd-content');
+    let selectedManual = MANUALS[0];
+    let selectedPage = 1;
+    const selectedManualUrl = () => getManualPageUrl(selectedManual, selectedPage);
+
     content.innerHTML = `
         <section class="dnd-section-head">
             <h2>Biblioteca dei Manuali</h2>
-            <p>Carica i PDF nella cartella pubblica indicata e saranno consultabili da qui.</p>
+            <p>I manuali sono caricati a pagine separate dalla cartella pubblica.</p>
         </section>
 
         <div class="dnd-manual-layout">
@@ -162,34 +332,63 @@ function renderManuals(container) {
                     <button class="dnd-manual-card ${index === 0 ? 'active' : ''}" data-manual="${manual.id}">
                         <strong>${manual.title}</strong>
                         <span>${manual.tag}</span>
+                        <small>${manual.pages} pagine</small>
                     </button>
                 `).join('')}
             </aside>
             <section class="dnd-manual-viewer glass-box">
                 <div class="dnd-manual-toolbar">
                     <div>
-                        <span>File</span>
-                        <strong id="manualTitle">${MANUALS[0].title}</strong>
+                        <span>Manuale</span>
+                        <strong id="manualTitle">${selectedManual.title}</strong>
                     </div>
-                    <a id="manualOpen" href="${MANUALS[0].file}" target="_blank" rel="noreferrer">APRILO</a>
+                    <div class="dnd-manual-controls">
+                        <button type="button" id="manualPrev">INDIETRO</button>
+                        <label>
+                            <span>Pagina</span>
+                            <input id="manualPage" type="number" min="1" max="${selectedManual.pages}" value="${selectedPage}">
+                        </label>
+                        <span id="manualTotal">di ${selectedManual.pages}</span>
+                        <button type="button" id="manualNext">AVANTI</button>
+                        <a id="manualOpen" href="${selectedManualUrl()}" target="_blank" rel="noreferrer">APRILA</a>
+                    </div>
                 </div>
-                <iframe id="manualFrame" title="${MANUALS[0].title}" src="${MANUALS[0].file}"></iframe>
+                <iframe id="manualFrame" title="${selectedManual.title}" src="${selectedManualUrl()}"></iframe>
             </section>
         </div>
     `;
 
+    const syncManualViewer = () => {
+        const pageInput = content.querySelector('#manualPage');
+        content.querySelector('#manualTitle').textContent = selectedManual.title;
+        content.querySelector('#manualTotal').textContent = `di ${selectedManual.pages}`;
+        pageInput.max = selectedManual.pages;
+        pageInput.value = selectedPage;
+        content.querySelector('#manualOpen').href = selectedManualUrl();
+        const frame = content.querySelector('#manualFrame');
+        frame.src = selectedManualUrl();
+        frame.title = `${selectedManual.title} - pagina ${selectedPage}`;
+    };
+
+    const setManualPage = (page) => {
+        selectedPage = Math.min(selectedManual.pages, Math.max(1, Number(page) || 1));
+        syncManualViewer();
+    };
+
     content.querySelectorAll('[data-manual]').forEach(btn => {
         btn.onclick = () => {
             const manual = MANUALS.find(item => item.id === btn.dataset.manual);
+            selectedManual = manual;
+            selectedPage = 1;
             content.querySelectorAll('[data-manual]').forEach(item => item.classList.remove('active'));
             btn.classList.add('active');
-            content.querySelector('#manualTitle').textContent = manual.title;
-            content.querySelector('#manualOpen').href = manual.file;
-            const frame = content.querySelector('#manualFrame');
-            frame.src = manual.file;
-            frame.title = manual.title;
+            syncManualViewer();
         };
     });
+
+    content.querySelector('#manualPrev').onclick = () => setManualPage(selectedPage - 1);
+    content.querySelector('#manualNext').onclick = () => setManualPage(selectedPage + 1);
+    content.querySelector('#manualPage').onchange = event => setManualPage(event.target.value);
 }
 
 async function renderCharacters(container) {
@@ -214,19 +413,16 @@ async function renderCharacters(container) {
     const loadCharacters = async () => {
         const list = content.querySelector('#characterList');
         try {
-            const { data, error } = await supabase
-                .from(TABLES.characters)
-                .select('*')
-                .eq('user_id', userId)
-                .eq('system_id', 'dnd5e')
-                .order('created_at', { ascending: false });
+            const { data, error, limitedSchema } = await loadCharacterRows(userId);
             if (error) throw error;
             const chars = data || [];
-            list.innerHTML = chars.length ? chars.map(renderCharacterCard).join('') : `
+            list.innerHTML = `
+                ${limitedSchema ? renderCharacterSchemaNotice() : ''}
+                ${chars.length ? chars.map(renderCharacterCard).join('') : `
                 <div class="dnd-empty glass-box">
                     <strong>Nessun personaggio creato.</strong>
                     <span>Crea la prima scheda completa per iniziare.</span>
-                </div>
+                </div>`}
             `;
             list.querySelectorAll('[data-edit-character]').forEach(btn => {
                 btn.onclick = () => {
@@ -234,8 +430,16 @@ async function renderCharacters(container) {
                     renderCharacterEditor(container, user, char);
                 };
             });
+            list.querySelectorAll('[data-delete-character]').forEach(btn => {
+                btn.onclick = async () => {
+                    if (!confirm('Eliminare questo personaggio?')) return;
+                    const { error: deleteError } = await deleteCharacterRow(btn.dataset.deleteCharacter);
+                    if (deleteError) alert(deleteError.message);
+                    else loadCharacters();
+                };
+            });
         } catch (err) {
-            list.innerHTML = `<p class="dnd-error">Errore caricamento personaggi: ${escapeHTML(err.message)}</p>`;
+            list.innerHTML = renderCharacterSchemaError(err);
         }
     };
 
@@ -252,8 +456,30 @@ function renderCharacterCard(char) {
                 <strong>${escapeHTML(char.name || 'Senza nome')}</strong>
                 <p>${escapeHTML(char.class || 'Classe non impostata')} • CA ${escapeHTML(data.armorClass)} • PF ${escapeHTML(char.hp || 10)}/${escapeHTML(char.hp_max || 10)}</p>
             </div>
-            <button class="btn-back-glass" data-edit-character="${char.id}">APRIMI</button>
+            <div class="dnd-inline-actions">
+                <button class="btn-back-glass" data-edit-character="${char.id}">APRIMI</button>
+                <button class="btn-back-glass" data-delete-character="${char.id}">ELIMINA</button>
+            </div>
         </article>
+    `;
+}
+
+function renderCharacterSchemaNotice() {
+    return `
+        <div class="dnd-empty glass-box dnd-schema-error">
+            <strong>Schema personaggi limitato.</strong>
+            <span>La tabella Supabase non espone ancora tutte le colonne D&D. Puoi vedere e creare personaggi base, ma per salvare la scheda completa serve aggiornare lo schema.</span>
+        </div>
+    `;
+}
+
+function renderCharacterSchemaError(err) {
+    return `
+        <div class="dnd-empty glass-box dnd-schema-error">
+            <strong>Database personaggi non pronto.</strong>
+            <span>${escapeHTML(err.message || 'Tabella personaggi non leggibile.')}</span>
+            <p>Esegui lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor Supabase per abilitare salvataggio completo, ownership utente, HP, sistema e dati JSON della scheda.</p>
+        </div>
     `;
 }
 
@@ -372,14 +598,16 @@ function renderCharacterEditor(container, user, char) {
         };
 
         try {
-            const query = supabase.from(TABLES.characters);
-            const { error } = char?.id
-                ? await query.update(payload).eq('id', char.id)
-                : await query.insert([payload]);
+            const { error, limitedSchema } = await saveCharacterRow(char, payload);
             if (error) throw error;
+            if (limitedSchema) {
+                content.querySelector('#characterForm').insertAdjacentHTML('afterbegin', renderCharacterSchemaNotice());
+                setTimeout(() => renderCharacters(container), 1200);
+                return;
+            }
             renderCharacters(container);
         } catch (err) {
-            alert(`Errore salvataggio personaggio: ${err.message}`);
+            content.querySelector('#characterForm').insertAdjacentHTML('afterbegin', renderCharacterSchemaError(err));
         }
     };
 }
@@ -393,7 +621,7 @@ async function renderSessions(container) {
     content.innerHTML = `
         <section class="dnd-section-head dnd-section-actions">
             <div>
-                <h2>Sessioni Attive</h2>
+                <h2>Sessioni</h2>
                 <p>Crea, modifica, entra e gestisci i tavoli D&D.</p>
             </div>
             <button id="newSession" class="btn-primary">NUOVA SESSIONE</button>
@@ -404,13 +632,13 @@ async function renderSessions(container) {
     const loadSessions = async () => {
         const list = content.querySelector('#sessionList');
         try {
-            const { data, error } = await supabase
-                .from(TABLES.sessions)
-                .select('*')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
+            const { data, error } = await runSessionQuery((tableName) => supabase
+                    .from(tableName)
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false }));
             if (error) throw error;
-            const sessions = data || [];
+            const sessions = (data || []).map(normalizeSession);
             list.innerHTML = sessions.length ? sessions.map(renderSessionCard).join('') : `
                 <div class="dnd-empty glass-box">
                     <strong>Nessuna sessione attiva.</strong>
@@ -429,13 +657,13 @@ async function renderSessions(container) {
             list.querySelectorAll('[data-delete-session]').forEach(btn => {
                 btn.onclick = async () => {
                     if (!confirm('Eliminare questa sessione?')) return;
-                    const { error } = await supabase.from(TABLES.sessions).delete().eq('id', btn.dataset.deleteSession);
+                    const { error } = await runSessionQuery((tableName) => supabase.from(tableName).delete().eq('id', btn.dataset.deleteSession));
                     if (error) alert(error.message);
                     else loadSessions();
                 };
             });
         } catch (err) {
-            list.innerHTML = `<p class="dnd-error">Errore caricamento sessioni: ${escapeHTML(err.message)}</p>`;
+            list.innerHTML = renderSessionSchemaError(err);
         }
     };
 
@@ -463,7 +691,8 @@ function renderSessionCard(session) {
 function renderSessionEditor(container, user, session) {
     renderShell(container, 'sessions');
     const content = container.querySelector('#dnd-content');
-    const data = session?.data || {};
+    const normalizedSession = normalizeSession(session);
+    const data = normalizedSession?.data || {};
 
     content.innerHTML = `
         <form id="sessionForm" class="dnd-sheet">
@@ -479,19 +708,24 @@ function renderSessionEditor(container, user, session) {
             </section>
 
             <section class="dnd-sheet-grid glass-box">
-                <label>Nome sessione<input name="name" required value="${escapeHTML(session?.name || '')}"></label>
+                <label>Nome sessione<input name="name" required value="${escapeHTML(normalizedSession?.name || '')}"></label>
                 <label>Stato<select name="status">
-                    <option value="attiva" ${session?.status === 'attiva' ? 'selected' : ''}>Attiva</option>
-                    <option value="preparazione" ${session?.status === 'preparazione' ? 'selected' : ''}>Preparazione</option>
-                    <option value="archiviata" ${session?.status === 'archiviata' ? 'selected' : ''}>Archiviata</option>
+                    <option value="attiva" ${normalizedSession?.status === 'attiva' ? 'selected' : ''}>Attiva</option>
+                    <option value="preparazione" ${normalizedSession?.status === 'preparazione' ? 'selected' : ''}>Preparazione</option>
+                    <option value="archiviata" ${normalizedSession?.status === 'archiviata' ? 'selected' : ''}>Archiviata</option>
                 </select></label>
-                <label>Livello party<input name="party_level" type="number" min="1" max="20" value="${escapeHTML(session?.party_level || 1)}"></label>
-                <label>Prossima data<input name="next_date" type="text" placeholder="es. venerdi 21:30" value="${escapeHTML(session?.next_date || '')}"></label>
-                <label>URL mappa<input name="map_url" placeholder="https://..." value="${escapeHTML(session?.map_url || data.mapUrl || '')}"></label>
+                <label>Livello party<input name="party_level" type="number" min="1" max="20" value="${escapeHTML(normalizedSession?.party_level || 1)}"></label>
+                <label>Prossima data<input name="next_date" type="text" placeholder="es. venerdi 21:30" value="${escapeHTML(normalizedSession?.next_date || '')}"></label>
+                <label>URL mappa<input name="map_url" placeholder="https://..." value="${escapeHTML(normalizedSession?.map_url || '')}"></label>
+                <label class="dnd-map-upload">
+                    File mappa opzionale
+                    <input name="map_file" type="file" accept="image/*,application/pdf,.pdf,.png,.jpg,.jpeg,.webp,.gif">
+                    <span>Puoi caricare PDF, JPG, PNG, WEBP o GIF. Se carichi un file, sostituisce l'URL mappa.</span>
+                </label>
             </section>
 
             <section class="dnd-textareas glass-box">
-                <label>Descrizione<textarea name="description">${escapeHTML(session?.description || '')}</textarea></label>
+                <label>Descrizione<textarea name="description">${escapeHTML(normalizedSession?.description || '')}</textarea></label>
                 <label>Note master<textarea name="dm_notes">${escapeHTML(data.dm_notes || '')}</textarea></label>
                 <label>Obiettivi sessione<textarea name="objectives">${escapeHTML(data.objectives || '')}</textarea></label>
             </section>
@@ -502,31 +736,32 @@ function renderSessionEditor(container, user, session) {
     content.querySelector('#sessionForm').onsubmit = async (e) => {
         e.preventDefault();
         const form = new FormData(e.currentTarget);
-        const payload = {
-            user_id: getUserId(user),
-            name: form.get('name'),
-            status: form.get('status'),
-            party_level: Number(form.get('party_level') || 1),
-            next_date: form.get('next_date') || '',
-            map_url: form.get('map_url') || '',
-            description: form.get('description') || '',
-            data: {
-                dm_notes: form.get('dm_notes') || '',
-                objectives: form.get('objectives') || ''
-            }
-        };
 
         try {
-            const query = supabase.from(TABLES.sessions);
-            const { error } = session?.id
-                ? await query.update(payload).eq('id', session.id)
-                : await query.insert([payload]);
-            if (error) throw error;
+            const uploadedMapUrl = await uploadSessionMapFile(form, user);
+            const result = await runSessionQuery((tableName) => {
+                const payload = buildSessionPayload(form, user, tableName === TABLES.legacySessions, uploadedMapUrl);
+                const query = supabase.from(tableName);
+                return session?.id
+                    ? query.update(payload).eq('id', session.id)
+                    : query.insert([payload]);
+            });
+            if (result.error) throw result.error;
             renderSessions(container);
         } catch (err) {
-            alert(`Errore salvataggio sessione: ${err.message}`);
+            content.querySelector('#sessionForm').insertAdjacentHTML('afterbegin', renderSessionSchemaError(err));
         }
     };
+}
+
+function renderSessionSchemaError(err) {
+    return `
+        <div class="dnd-empty glass-box dnd-schema-error">
+            <strong>Database sessioni non pronto.</strong>
+            <span>${escapeHTML(err.message || 'Tabella sessioni non trovata in Supabase.')}</span>
+            <p>Per usare la sezione D&D completa devi eseguire lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor di Supabase, oppure avere una tabella <code>session</code> compatibile con almeno <code>user_id</code>, <code>name</code> e <code>data</code>.</p>
+        </div>
+    `;
 }
 
 function formatRows(rows = []) {
