@@ -1,4 +1,5 @@
 import { Howl, Howler } from 'howler';
+import { getPreference, setPreference } from '../../services/userPreferences.js';
 
 // Configurazione Playlist Tematiche Unificata
 const PLAYLISTS = {
@@ -32,11 +33,27 @@ const PLAYLISTS = {
 
 let currentSound = null;
 let currentTrackIndex = 0;
-let currentPlaylistKey = localStorage.getItem('taverna_selected_playlist') || 'tavern';
-let currentTrackName = localStorage.getItem('taverna_selected_track') || 'Nessuna traccia';
+let currentPlaylistKey = 'tavern';
+let currentTrackName = 'Nessuna traccia';
+let isMusicEnabled = true;
 let isPlaylistActive = false;
+let preferencesHydrated = false;
 
 const getPlaylist = (key = currentPlaylistKey) => PLAYLISTS[key] || PLAYLISTS.tavern;
+
+async function hydrateAudioPreferences() {
+    if (preferencesHydrated) return;
+    preferencesHydrated = true;
+    currentPlaylistKey = await getPreference('music.playlist', currentPlaylistKey);
+    currentTrackName = await getPreference('music.track', currentTrackName);
+    isMusicEnabled = await getPreference('music.enabled', true);
+}
+
+function persistAudioPreferences() {
+    setPreference('music.playlist', currentPlaylistKey);
+    setPreference('music.track', currentTrackName);
+    setPreference('music.enabled', isMusicEnabled);
+}
 
 export const AudioManager = {
     // Riproduzione universale
@@ -46,8 +63,7 @@ export const AudioManager = {
         isPlaylistActive = isPlaylist;
         currentPlaylistKey = meta.playlistKey || currentPlaylistKey;
         currentTrackName = meta.trackName || currentTrackName;
-        localStorage.setItem('taverna_selected_playlist', currentPlaylistKey);
-        localStorage.setItem('taverna_selected_track', currentTrackName);
+        persistAudioPreferences();
 
         currentSound = new Howl({
             src: [url],
@@ -64,7 +80,7 @@ export const AudioManager = {
         });
 
         // Controlla se l'utente non ha mutato l'audio globalmente
-        if (localStorage.getItem('taverna_music') !== 'off') {
+        if (isMusicEnabled) {
             currentSound.play();
         }
     },
@@ -86,7 +102,13 @@ export const AudioManager = {
     },
 
     // UI del Music Center
-    showMusicCenter: (container) => {
+    setMusicEnabled: (enabled) => {
+        isMusicEnabled = Boolean(enabled);
+        setPreference('music.enabled', isMusicEnabled);
+    },
+
+    showMusicCenter: async (container) => {
+        await hydrateAudioPreferences();
         const selectedPlaylist = getPlaylist();
         container.innerHTML = `
             <div class="music-center fade-in">
@@ -151,8 +173,7 @@ export const AudioManager = {
                 currentPlaylistKey = btn.dataset.playlist;
                 currentTrackIndex = 0;
                 currentTrackName = getPlaylist().tracks[0]?.name || 'Nessuna traccia';
-                localStorage.setItem('taverna_selected_playlist', currentPlaylistKey);
-                localStorage.setItem('taverna_selected_track', currentTrackName);
+                persistAudioPreferences();
                 refreshSelectionUI();
             };
         });
@@ -195,6 +216,7 @@ export const AudioManager = {
 // Toggle ON/OFF dalla Sidebar
 window.addEventListener('musicToggled', (e) => {
     const shouldPlay = e.detail;
+    AudioManager.setMusicEnabled(shouldPlay);
     if (shouldPlay) {
         if (currentSound) currentSound.play();
     } else {

@@ -1,3 +1,5 @@
+import { setPreference } from '../../services/userPreferences.js';
+
 /**
  * LOGICA TIMER (10 MINUTI)
  */
@@ -11,7 +13,9 @@ export function shouldShowPortalButton() {
 }
 
 export function updateLastAccess() {
-    localStorage.setItem('taverna_last_access', Date.now().toString());
+    const value = Date.now().toString();
+    localStorage.setItem('taverna_last_access', value);
+    setPreference('auth.last_access', value);
 }
 
 /**

@@ -16,6 +16,14 @@
        --text-secondary: #b79ced;
        --danger: #ff4444;
        --accent-gradient: linear-gradient(135deg, #9d4ede 0%, #5a189a 100%);
+       --accent-gradient-hot: linear-gradient(135deg, #c77dff 0%, #7b2cff 45%, #00ffa3 140%);
+       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+       --ease-spring: cubic-bezier(0.18, 0.9, 0.22, 1.18);
+       --motion-fast: 180ms;
+       --motion-med: 360ms;
+       --motion-slow: 620ms;
+       --focus-ring: 0 0 0 3px rgba(199, 125, 255, 0.18), 0 0 0 1px rgba(199, 125, 255, 0.65);
+       --surface-elevated: rgba(255, 255, 255, 0.065);
        
        /* CARTE DARK OPACHE MATTE BLACK */
        --card-dark-bg: #121212;
@@ -58,6 +66,17 @@
        -webkit-user-select: none;
        user-select: none;
    }
+
+   button:focus-visible,
+   a:focus-visible,
+   input:focus-visible,
+   select:focus-visible,
+   textarea:focus-visible,
+   .game-card:focus-visible,
+   .action-card:focus-visible {
+       box-shadow: var(--focus-ring);
+       border-color: rgba(199, 125, 255, 0.78) !important;
+   }
    
    /* ============================================
       2. APP CONTAINER
@@ -91,12 +110,12 @@
    @keyframes cardEntrance {
        from {
            opacity: 0;
-           transform: translateY(25px) scale(0.98);
-           filter: blur(5px);
+           transform: translate3d(0, 22px, 0) scale(0.965);
+           filter: blur(8px);
        }
        to {
            opacity: 1;
-           transform: translateY(0) scale(1);
+           transform: translate3d(0, 0, 0) scale(1);
            filter: blur(0);
        }
    }
@@ -104,11 +123,11 @@
    @keyframes fadeInUp {
        from {
            opacity: 0;
-           transform: translateY(30px);
+           transform: translate3d(0, 22px, 0);
        }
        to {
            opacity: 1;
-           transform: translateY(0);
+           transform: translate3d(0, 0, 0);
        }
    }
    
@@ -124,18 +143,65 @@
    
    @keyframes pulse {
        0%, 100% {
-           transform: scale(0.95);
-           opacity: 0.6;
+           transform: scale(0.98);
+           opacity: 0.72;
        }
        50% {
-           transform: scale(1.05);
+           transform: scale(1.035);
            opacity: 1;
-           filter: drop-shadow(0 0 25px var(--amethyst-bright));
+           filter: drop-shadow(0 0 22px var(--amethyst-bright));
+       }
+   }
+
+   @keyframes sheenSweep {
+       from {
+           transform: translateX(-130%) skewX(-18deg);
+           opacity: 0;
+       }
+       28% {
+           opacity: 0.42;
+       }
+       to {
+           transform: translateX(130%) skewX(-18deg);
+           opacity: 0;
+       }
+   }
+
+   @keyframes panelReveal {
+       from {
+           opacity: 0;
+           transform: translate3d(18px, 0, 0) scale(0.98);
+       }
+       to {
+           opacity: 1;
+           transform: translate3d(0, 0, 0) scale(1);
+       }
+   }
+
+   @keyframes floatDie {
+       0%, 100% {
+           transform: translate3d(0, 0, 0) rotate(-12deg);
+           filter: drop-shadow(0 0 0 rgba(199, 125, 255, 0));
+       }
+       50% {
+           transform: translate3d(0, -12px, 0) rotate(-8deg);
+           filter: drop-shadow(0 18px 34px rgba(157, 78, 222, 0.28));
+       }
+   }
+
+   @keyframes chatPop {
+       from {
+           opacity: 0;
+           transform: translate3d(0, 10px, 0) scale(0.98);
+       }
+       to {
+           opacity: 1;
+           transform: translate3d(0, 0, 0) scale(1);
        }
    }
    
    .fade-in {
-       animation: fadeInUp 0.5s ease-out forwards;
+       animation: fadeInUp var(--motion-slow) var(--ease-out) forwards;
    }
    
    .pulse-logo {
@@ -181,14 +247,43 @@
        align-items: center;
        justify-content: center;
        gap: 10px;
-       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+       position: relative;
+       overflow: hidden;
+       transform: translateZ(0);
+       will-change: transform;
+       transition: transform var(--motion-med) var(--ease-spring),
+                   border-color var(--motion-med) ease,
+                   background var(--motion-med) ease,
+                   box-shadow var(--motion-med) ease,
+                   filter var(--motion-med) ease;
        text-align: center;
-       animation: cardEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+       animation: cardEntrance 0.6s var(--ease-out) backwards;
        cursor: pointer;
+   }
+
+   .game-card::before, .action-card::before {
+       content: "";
+       position: absolute;
+       inset: -40% auto -40% 0;
+       width: 42%;
+       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+       transform: translateX(-140%) skewX(-18deg);
+       pointer-events: none;
+   }
+
+   .game-card:hover, .action-card:hover {
+       transform: translateY(-4px) scale(1.015);
+       background: var(--surface-elevated);
+       border-color: rgba(199, 125, 255, 0.42);
+       box-shadow: 0 18px 38px rgba(0, 0, 0, 0.34), 0 0 28px rgba(157, 78, 222, 0.13);
+   }
+
+   .game-card:hover::before, .action-card:hover::before {
+       animation: sheenSweep 900ms var(--ease-out);
    }
    
    .game-card:active, .action-card:active {
-       transform: scale(0.94);
+       transform: scale(0.965);
        background: rgba(157, 78, 221, 0.1);
        border-color: var(--amethyst-light);
    }
@@ -236,11 +331,14 @@
        backdrop-filter: blur(40px) saturate(150%);
        -webkit-backdrop-filter: blur(40px) saturate(150%);
        z-index: 9000 !important; /* FIX: Sidebar deve stare sotto al trigger */
-       transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+       transition: right var(--motion-slow) var(--ease-out),
+                   box-shadow var(--motion-med) ease,
+                   border-color var(--motion-med) ease;
        padding: calc(60px + env(safe-area-inset-top)) 20px;
        border-left: 1px solid var(--glass-border);
        box-sizing: border-box;
        box-shadow: -15px 0 40px rgba(0, 0, 0, 0.6);
+       animation: panelReveal var(--motion-slow) var(--ease-out);
    }
    
    .sidebar-glass.active {
@@ -265,11 +363,19 @@
        justify-content: center;
        align-items: center;
        gap: 5px;
-       box-shadow: 0 8px 25px rgba(157, 78, 221, 0.4);
+       box-shadow: 0 12px 26px rgba(157, 78, 221, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.18);
        border: 1px solid rgba(255, 255, 255, 0.1);
-       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+       transition: transform var(--motion-med) var(--ease-spring),
+                   background var(--motion-med) ease,
+                   box-shadow var(--motion-med) ease,
+                   border-color var(--motion-med) ease;
        cursor: pointer;
        visibility: visible !important;
+   }
+
+   .floating-trigger:hover {
+       transform: translateY(-3px) scale(1.04);
+       box-shadow: 0 18px 36px rgba(157, 78, 221, 0.42), 0 0 24px rgba(199, 125, 255, 0.18);
    }
    
    .floating-trigger.is-active {
@@ -319,7 +425,12 @@
        letter-spacing: 1px;
        text-transform: uppercase;
        cursor: pointer;
-       transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+       position: relative;
+       overflow: hidden;
+       transition: transform var(--motion-med) var(--ease-spring),
+                   background var(--motion-med) ease,
+                   border-color var(--motion-med) ease,
+                   box-shadow var(--motion-med) ease;
        display: flex;
        align-items: center;
        justify-content: center;
@@ -327,9 +438,16 @@
        margin-bottom: 12px;
        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
    }
+
+   .btn-back-glass:hover, .btn-glass:hover, .btn-primary:hover {
+       transform: translateY(-2px);
+       background: rgba(255, 255, 255, 0.075);
+       border-color: rgba(199, 125, 255, 0.42);
+       box-shadow: 0 10px 26px rgba(0, 0, 0, 0.28), 0 0 22px rgba(157, 78, 222, 0.12);
+   }
    
    .btn-back-glass:active, .btn-glass:active, .btn-primary:active {
-       transform: scale(0.96);
+       transform: scale(0.975);
        background: rgba(157, 78, 221, 0.15);
        border-color: var(--amethyst-light);
        border-left: 3px solid var(--amethyst-bright);
@@ -350,7 +468,10 @@
        font-size: 16px;
        font-family: 'Poppins', sans-serif;
        outline: none;
-       transition: 0.3s;
+       transition: border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease,
+                   transform var(--motion-fast) ease;
        box-sizing: border-box;
    }
    
@@ -391,7 +512,16 @@
        font-family: 'Montserrat', sans-serif;
        font-weight: 900;
        letter-spacing: 2px;
-       transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 20px rgba(0, 0, 0, 0.18);
+       transition: background var(--motion-med) ease,
+                   border-color var(--motion-med) ease,
+                   box-shadow var(--motion-med) ease,
+                   transform var(--motion-fast) ease;
+   }
+
+   .side-music-toggle:hover {
+       transform: translateY(-1px);
+       border-color: rgba(199, 125, 255, 0.42);
    }
 
    .side-music-toggle-label {
@@ -417,7 +547,9 @@
        justify-content: center;
        background: rgba(255, 255, 255, 0.92);
        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
-       transition: left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+       transition: left var(--motion-med) var(--ease-spring),
+                   transform var(--motion-med) var(--ease-spring),
+                   box-shadow var(--motion-med) ease;
    }
 
    .side-music-toggle-state {
@@ -438,6 +570,7 @@
 
    .side-music-toggle.is-on .side-music-toggle-knob {
        left: calc(100% - 45px);
+       box-shadow: 0 8px 22px rgba(0, 255, 163, 0.22), 0 0 0 6px rgba(255, 255, 255, 0.04);
    }
 
    .side-music-toggle.is-on .side-music-toggle-state {
@@ -594,7 +727,19 @@
 
    .music-playlist {
        padding: 18px;
-       transition: border-color 0.2s ease, background 0.2s ease;
+       position: relative;
+       overflow: hidden;
+       transition: border-color var(--motion-med) ease,
+                   background var(--motion-med) ease,
+                   transform var(--motion-med) var(--ease-out),
+                   box-shadow var(--motion-med) ease;
+   }
+
+   .music-playlist:hover {
+       transform: translateY(-3px);
+       border-color: rgba(199, 125, 255, 0.42);
+       background: rgba(255, 255, 255, 0.055);
+       box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
    }
 
    .music-playlist.is-selected {
@@ -624,6 +769,10 @@
        cursor: pointer;
        font-family: 'Montserrat', sans-serif;
        font-weight: 800;
+       transition: transform var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease;
    }
 
    .music-playlist-select {
@@ -644,6 +793,19 @@
        align-items: center;
        gap: 12px;
        text-align: left;
+   }
+
+   .music-playlist-select:hover,
+   .music-track:hover {
+       transform: translateY(-1px);
+       background: rgba(157, 78, 222, 0.12);
+       border-color: rgba(199, 125, 255, 0.46);
+       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+   }
+
+   .music-track:active,
+   .music-playlist-select:active {
+       transform: scale(0.985);
    }
 
    .music-track small {
@@ -693,6 +855,20 @@
            url('https://www.transparenttextures.com/patterns/dark-matter.png');
        overflow: hidden;
        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+       position: relative;
+       isolation: isolate;
+       animation: cardEntrance var(--motion-slow) var(--ease-out) backwards;
+   }
+
+   .dnd-hero::after {
+       content: "";
+       position: absolute;
+       inset: -35% -10% auto auto;
+       width: 360px;
+       height: 360px;
+       background: radial-gradient(circle, rgba(199, 125, 255, 0.14), transparent 68%);
+       pointer-events: none;
+       z-index: -1;
    }
 
    .dnd-kicker {
@@ -733,6 +909,7 @@
        color: rgba(199, 125, 255, 0.08);
        transform: rotate(-12deg);
        flex: 0 0 auto;
+       animation: floatDie 4.8s ease-in-out infinite;
    }
 
    .dnd-tabs {
@@ -754,6 +931,16 @@
        font-weight: 900;
        font-size: 0.76rem;
        cursor: pointer;
+       transition: transform var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease;
+   }
+
+   .dnd-tabs button:hover {
+       transform: translateY(-2px);
+       border-color: rgba(199, 125, 255, 0.46);
+       background: rgba(157, 78, 222, 0.1);
    }
 
    .dnd-tabs button.active {
@@ -776,11 +963,23 @@
        padding: 22px;
        text-align: left;
        cursor: pointer;
-       transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+       position: relative;
+       overflow: hidden;
+       transition: border-color var(--motion-med) ease,
+                   transform var(--motion-med) var(--ease-out),
+                   background var(--motion-med) ease,
+                   box-shadow var(--motion-med) ease;
+   }
+
+   .dnd-panel:hover, .dnd-list-card:hover {
+       transform: translateY(-3px);
+       border-color: rgba(199, 125, 255, 0.46);
+       background: rgba(255, 255, 255, 0.055);
+       box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28), 0 0 26px rgba(157, 78, 222, 0.1);
    }
 
    .dnd-panel:active {
-       transform: scale(0.98);
+       transform: scale(0.985);
        border-color: var(--amethyst-light);
        background: rgba(157, 78, 222, 0.1);
    }
@@ -850,6 +1049,17 @@
        color: white;
        text-align: left;
        cursor: pointer;
+       transition: transform var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease;
+   }
+
+   .dnd-manual-card:hover {
+       transform: translateX(4px);
+       border-color: rgba(199, 125, 255, 0.46);
+       background: rgba(157, 78, 222, 0.09);
+       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
    }
 
    .dnd-manual-card.active {
@@ -1079,6 +1289,7 @@
        color: white;
        font-family: 'Poppins', sans-serif;
        overflow: hidden;
+       animation: fadeInUp var(--motion-slow) var(--ease-out) forwards;
    }
 
    .dnd-session-panel {
@@ -1152,6 +1363,17 @@
        border-radius: 12px;
        padding: 10px 12px;
        background: rgba(255, 255, 255, 0.04);
+       transition: transform var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease;
+   }
+
+   .initiative-item:hover,
+   .token-list-item:hover {
+       transform: translateX(3px);
+       border-color: rgba(199, 125, 255, 0.42);
+       background: rgba(255, 255, 255, 0.06);
    }
 
    .initiative-item > div {
@@ -1191,6 +1413,9 @@
        border-radius: 12px;
        padding: 9px 10px;
        background: rgba(255, 255, 255, 0.04);
+       transition: transform var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease;
    }
 
    .token-list-item span {
@@ -1285,7 +1510,7 @@
        inset: 0;
        pointer-events: none;
        background: rgba(0, 0, 0, 0);
-       transition: background 0.2s ease;
+       transition: background var(--motion-med) ease;
    }
 
    .map-fog.active {
@@ -1298,11 +1523,19 @@
        height: 62px;
        cursor: pointer;
        z-index: 10;
+       transition: transform var(--motion-fast) ease, filter var(--motion-fast) ease;
+       will-change: transform;
+   }
+
+   .token:hover {
+       transform: scale(1.08);
+       filter: drop-shadow(0 0 18px rgba(199, 125, 255, 0.48));
    }
 
    .token.dragging {
        z-index: 1000;
        filter: brightness(1.2);
+       transform: scale(1.1);
    }
 
    .token-img {
@@ -1392,6 +1625,7 @@
        background: rgba(5, 2, 10, 0.78);
        backdrop-filter: blur(14px);
        padding: 10px;
+       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36);
    }
 
    .roll-btn {
@@ -1404,6 +1638,19 @@
        color: white;
        font-weight: 900;
        cursor: pointer;
+       transition: transform var(--motion-fast) var(--ease-spring),
+                   filter var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease;
+   }
+
+   .roll-btn:hover {
+       transform: translateY(-2px) scale(1.04);
+       filter: brightness(1.08);
+       box-shadow: 0 8px 20px rgba(157, 78, 222, 0.28);
+   }
+
+   .roll-btn:active {
+       transform: scale(0.96);
    }
 
    #rollMod {
@@ -1441,6 +1688,7 @@
        border-radius: 14px;
        background: rgba(255, 255, 255, 0.04);
        padding: 12px;
+       animation: chatPop var(--motion-med) var(--ease-out) both;
    }
 
    .dnd-chat-message.roll {
@@ -1532,7 +1780,14 @@
        font-weight: 600;
        font-size: 13px;
        cursor: pointer;
-       transition: 0.3s;
+       transition: transform var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease;
+   }
+
+   .game-mode-btn:hover {
+       transform: translateY(-1px);
+       background: rgba(255, 255, 255, 0.08);
    }
    
    .game-mode-btn.active {
@@ -1556,7 +1811,14 @@
        font-size: 10px;
        cursor: pointer;
        font-weight: 800;
-       transition: 0.2s;
+       transition: transform var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease;
+   }
+
+   .game-difficulty-btn:hover {
+       transform: translateY(-1px);
+       border-color: rgba(199, 125, 255, 0.46);
    }
    
    .game-difficulty-btn.active {
@@ -1668,7 +1930,14 @@
        font-size: 28px;
        cursor: pointer;
        position: relative;
-       transition: all 0.2s;
+       transition: transform var(--motion-fast) ease,
+                   filter var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease,
+                   background var(--motion-fast) ease;
+   }
+
+   .game-chess-square:hover {
+       filter: brightness(1.08);
    }
    
    .game-chess-square.light {
@@ -1707,7 +1976,10 @@
        padding: 8px;
        box-sizing: border-box;
        box-shadow: var(--card-dark-shadow);
-       transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+       transition: transform var(--motion-med) var(--ease-spring),
+                   border-color var(--motion-fast) ease,
+                   box-shadow var(--motion-med) ease,
+                   filter var(--motion-fast) ease;
        position: relative;
        user-select: none;
        cursor: pointer;
@@ -1726,6 +1998,12 @@
        transform: translateY(-8px) scale(1.05);
        box-shadow: 0 0 20px rgba(157, 78, 221, 0.4) !important;
        border-color: var(--amethyst-bright) !important;
+   }
+
+   .game-card-unit:hover {
+       transform: translateY(-6px) rotate(-1deg);
+       border-color: rgba(199, 125, 255, 0.7) !important;
+       box-shadow: 0 18px 32px rgba(0, 0, 0, 0.55), 0 0 18px rgba(157, 78, 221, 0.18) !important;
    }
    
    .flying-card {
@@ -1775,7 +2053,16 @@
        text-transform: uppercase;
        font-size: 12px;
        cursor: pointer;
-       transition: 0.2s;
+       transition: transform var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   box-shadow var(--motion-fast) ease;
+   }
+
+   .game-btn-action:hover {
+       transform: translateY(-2px);
+       border-color: rgba(199, 125, 255, 0.46);
+       background: rgba(157, 78, 222, 0.12);
    }
    
    .game-btn-action:active {
@@ -1803,7 +2090,10 @@
        border-radius: 20px;
        padding: 10px 20px;
        text-align: center;
-       transition: 0.3s;
+       transition: transform var(--motion-med) var(--ease-out),
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   box-shadow var(--motion-med) ease;
        min-width: 80px;
        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
        font-size: 11px;
@@ -1851,7 +2141,7 @@
        width: 100px;
        height: 6px;
        border-radius: 10px;
-       transition: 0.5s;
+       transition: background var(--motion-med) ease, box-shadow var(--motion-med) ease, width var(--motion-med) ease;
        box-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
    }
    
@@ -1873,7 +2163,15 @@
        border-radius: 25px;
        cursor: pointer;
        border: 3px solid rgba(255, 255, 255, 0.1);
-       transition: 0.2s;
+       transition: transform var(--motion-fast) ease,
+                   border-color var(--motion-fast) ease,
+                   filter var(--motion-fast) ease;
+   }
+
+   .game-color-tile:hover {
+       transform: translateY(-3px) scale(1.02);
+       border-color: rgba(255, 255, 255, 0.28);
+       filter: brightness(1.05);
    }
    
    .game-color-tile:active {
@@ -1953,22 +2251,41 @@
 
        .dnd-session {
            grid-template-columns: 1fr;
-           grid-template-rows: 220px minmax(0, 1fr) 240px;
+           grid-template-rows: minmax(190px, 25dvh) minmax(0, 1fr) minmax(210px, 28dvh);
        }
 
        .dnd-left-panel {
            border-right: 0;
            border-bottom: 1px solid rgba(157, 78, 222, 0.22);
+           padding: 14px;
+           gap: 12px;
+           min-height: 0;
        }
 
        .dnd-chat-panel {
            border-left: 0;
            border-top: 1px solid rgba(157, 78, 222, 0.22);
+           min-height: 0;
+       }
+
+       .dnd-session-panel header {
+           padding-bottom: 10px;
+       }
+
+       .dnd-session-block {
+           gap: 8px;
+       }
+
+       .initiative-form {
+           grid-template-columns: 1fr 64px;
        }
 
        .dnd-table-topbar {
            align-items: stretch;
            flex-wrap: wrap;
+           top: calc(10px + env(safe-area-inset-top));
+           left: 10px;
+           right: 10px;
        }
 
        .dnd-table-topbar strong {
@@ -1983,8 +2300,20 @@
        .dnd-dice-bar {
            left: 12px;
            right: 12px;
+           bottom: calc(12px + env(safe-area-inset-bottom));
            transform: none;
            max-width: none;
+           border-radius: 16px;
+           padding: 8px;
+       }
+
+       .roll-btn {
+           min-width: 44px;
+           padding: 10px 11px;
+       }
+
+       #diceFormula {
+           width: 84px;
        }
    }
 
@@ -2032,4 +2361,15 @@
        opacity: 0;
        pointer-events: none;
        transition: 0.5s;
+   }
+
+   @media (prefers-reduced-motion: reduce) {
+       *,
+       *::before,
+       *::after {
+           animation-duration: 0.001ms !important;
+           animation-iteration-count: 1 !important;
+           scroll-behavior: auto !important;
+           transition-duration: 0.001ms !important;
+       }
    }
