@@ -1,5 +1,5 @@
--- La Taverna - D&D 5e
--- Esegui questo script nel SQL editor Supabase per abilitare la sezione D&D completa.
+-- La Taverna - Supabase schema
+-- Incolla tutto questo file nel Supabase SQL Editor e premi Run.
 
 create table if not exists public.dnd_sessions (
     id uuid primary key default gen_random_uuid(),
@@ -27,11 +27,20 @@ create table if not exists public.user_profiles (
     updated_at timestamptz not null default now()
 );
 
+create table if not exists public.user_preferences (
+    user_id uuid not null references auth.users(id) on delete cascade,
+    key text not null,
+    value jsonb not null default 'null'::jsonb,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    primary key (user_id, key)
+);
+
 create table if not exists public.characters (
     id uuid primary key default gen_random_uuid(),
     user_id uuid references auth.users(id) on delete cascade,
     system_id text default 'dnd5e',
-    name text not null,
+    name text not null default '',
     class text default '',
     level integer not null default 1,
     hp integer default 10,
@@ -52,24 +61,6 @@ alter table public.characters
     add column if not exists data jsonb not null default '{}'::jsonb,
     add column if not exists created_at timestamptz not null default now(),
     add column if not exists updated_at timestamptz not null default now();
-
-alter table public.characters enable row level security;
-
-do $$
-begin
-    if not exists (
-        select 1 from pg_policies
-        where schemaname = 'public'
-        and tablename = 'characters'
-        and policyname = 'characters_owner_all'
-    ) then
-        create policy "characters_owner_all"
-        on public.characters
-        for all
-        using (user_id is null or auth.uid() = user_id)
-        with check (user_id is null or auth.uid() = user_id);
-    end if;
-end $$;
 
 create table if not exists public.dnd_tokens (
     id uuid primary key default gen_random_uuid(),
@@ -97,99 +88,80 @@ create table if not exists public.dnd_chat (
 
 alter table public.dnd_sessions enable row level security;
 alter table public.user_profiles enable row level security;
+alter table public.user_preferences enable row level security;
+alter table public.characters enable row level security;
 alter table public.dnd_tokens enable row level security;
 alter table public.dnd_chat enable row level security;
 
-do $$
-begin
-    if not exists (
-        select 1 from pg_policies
-        where schemaname = 'public'
-        and tablename = 'user_profiles'
-        and policyname = 'user_profiles_owner_all'
-    ) then
-        create policy "user_profiles_owner_all"
-        on public.user_profiles
-        for all
-        using (auth.uid() = user_id)
-        with check (auth.uid() = user_id);
-    end if;
-end $$;
+drop policy if exists "characters_owner_all" on public.characters;
+create policy "characters_owner_all"
+on public.characters
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
-do $$
-begin
-    if not exists (
-        select 1 from pg_policies
-        where schemaname = 'public'
-        and tablename = 'dnd_sessions'
-        and policyname = 'dnd_sessions_owner_all'
-    ) then
-        create policy "dnd_sessions_owner_all"
-        on public.dnd_sessions
-        for all
-        using (auth.uid() = user_id)
-        with check (auth.uid() = user_id);
-    end if;
-end $$;
+drop policy if exists "user_profiles_owner_all" on public.user_profiles;
+create policy "user_profiles_owner_all"
+on public.user_profiles
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
-do $$
-begin
-    if not exists (
-        select 1 from pg_policies
-        where schemaname = 'public'
-        and tablename = 'dnd_tokens'
-        and policyname = 'dnd_tokens_session_owner_all'
-    ) then
-        create policy "dnd_tokens_session_owner_all"
-        on public.dnd_tokens
-        for all
-        using (
-            exists (
-                select 1 from public.dnd_sessions
-                where dnd_sessions.id = dnd_tokens.session_id
-                and dnd_sessions.user_id = auth.uid()
-            )
-        )
-        with check (
-            exists (
-                select 1 from public.dnd_sessions
-                where dnd_sessions.id = dnd_tokens.session_id
-                and dnd_sessions.user_id = auth.uid()
-            )
-        );
-    end if;
-end $$;
+drop policy if exists "user_preferences_owner_all" on public.user_preferences;
+create policy "user_preferences_owner_all"
+on public.user_preferences
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
 
-do $$
-begin
-    if not exists (
-        select 1 from pg_policies
-        where schemaname = 'public'
-        and tablename = 'dnd_chat'
-        and policyname = 'dnd_chat_session_owner_all'
-    ) then
-        create policy "dnd_chat_session_owner_all"
-        on public.dnd_chat
-        for all
-        using (
-            exists (
-                select 1 from public.dnd_sessions
-                where dnd_sessions.id = dnd_chat.session_id
-                and dnd_sessions.user_id = auth.uid()
-            )
-        )
-        with check (
-            exists (
-                select 1 from public.dnd_sessions
-                where dnd_sessions.id = dnd_chat.session_id
-                and dnd_sessions.user_id = auth.uid()
-            )
-        );
-    end if;
-end $$;
+drop policy if exists "dnd_sessions_owner_all" on public.dnd_sessions;
+create policy "dnd_sessions_owner_all"
+on public.dnd_sessions
+for all
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "dnd_tokens_session_owner_all" on public.dnd_tokens;
+create policy "dnd_tokens_session_owner_all"
+on public.dnd_tokens
+for all
+using (
+    exists (
+        select 1 from public.dnd_sessions
+        where dnd_sessions.id = dnd_tokens.session_id
+        and dnd_sessions.user_id = auth.uid()
+    )
+)
+with check (
+    exists (
+        select 1 from public.dnd_sessions
+        where dnd_sessions.id = dnd_tokens.session_id
+        and dnd_sessions.user_id = auth.uid()
+    )
+);
+
+drop policy if exists "dnd_chat_session_owner_all" on public.dnd_chat;
+create policy "dnd_chat_session_owner_all"
+on public.dnd_chat
+for all
+using (
+    exists (
+        select 1 from public.dnd_sessions
+        where dnd_sessions.id = dnd_chat.session_id
+        and dnd_sessions.user_id = auth.uid()
+    )
+)
+with check (
+    exists (
+        select 1 from public.dnd_sessions
+        where dnd_sessions.id = dnd_chat.session_id
+        and dnd_sessions.user_id = auth.uid()
+    )
+);
 
 create index if not exists dnd_sessions_user_id_idx on public.dnd_sessions(user_id);
 create index if not exists user_profiles_user_id_idx on public.user_profiles(user_id);
+create index if not exists user_preferences_user_id_idx on public.user_preferences(user_id);
 create index if not exists dnd_tokens_session_id_idx on public.dnd_tokens(session_id);
 create index if not exists dnd_chat_session_id_created_at_idx on public.dnd_chat(session_id, created_at);
 create index if not exists characters_user_id_system_id_idx on public.characters(user_id, system_id);
@@ -198,33 +170,15 @@ insert into storage.buckets (id, name, public)
 values ('vtt_assets', 'vtt_assets', true)
 on conflict (id) do update set public = true;
 
-do $$
-begin
-    if not exists (
-        select 1 from pg_policies
-        where schemaname = 'storage'
-        and tablename = 'objects'
-        and policyname = 'vtt_assets_owner_read'
-    ) then
-        create policy "vtt_assets_owner_read"
-        on storage.objects
-        for select
-        using (bucket_id = 'vtt_assets');
-    end if;
-end $$;
+drop policy if exists "vtt_assets_public_read" on storage.objects;
+create policy "vtt_assets_public_read"
+on storage.objects
+for select
+using (bucket_id = 'vtt_assets');
 
-do $$
-begin
-    if not exists (
-        select 1 from pg_policies
-        where schemaname = 'storage'
-        and tablename = 'objects'
-        and policyname = 'vtt_assets_owner_write'
-    ) then
-        create policy "vtt_assets_owner_write"
-        on storage.objects
-        for all
-        using (bucket_id = 'vtt_assets' and auth.uid()::text = (storage.foldername(name))[2])
-        with check (bucket_id = 'vtt_assets' and auth.uid()::text = (storage.foldername(name))[2]);
-    end if;
-end $$;
+drop policy if exists "vtt_assets_owner_write" on storage.objects;
+create policy "vtt_assets_owner_write"
+on storage.objects
+for all
+using (bucket_id = 'vtt_assets' and auth.role() = 'authenticated')
+with check (bucket_id = 'vtt_assets' and auth.role() = 'authenticated');

@@ -1,7 +1,9 @@
 // Sidebar.js - Versione Master Integrata (Fiducia Totale)
+import { getPreference, setPreference } from '../../services/userPreferences.js';
+
 let currentSidebarUser = null;
 let currentLogoutFn = null;
-let isMusicOn = localStorage.getItem('taverna_music') !== 'off';
+let isMusicOn = true;
 let currentActiveContext = "lobby";
 
 const escapeHTML = (value = '') => String(value)
@@ -12,11 +14,16 @@ const escapeHTML = (value = '') => String(value)
     .replaceAll("'", '&#039;');
 
 export function initSidebar(container, user, onLogout, context = "home") {
-    const guestData = localStorage.getItem('taverna_guest_user');
-    currentSidebarUser = user || (guestData ? JSON.parse(guestData) : null);
+    currentSidebarUser = user || null;
     currentLogoutFn = onLogout;
     currentActiveContext = context;
     renderSidebarContent(container, context);
+    getPreference('music.enabled', true).then(enabled => {
+        if (isMusicOn !== Boolean(enabled)) {
+            isMusicOn = Boolean(enabled);
+            renderSidebarContent(container, currentActiveContext);
+        }
+    });
 }
 
 function renderSidebarContent(container, context) {
@@ -179,7 +186,7 @@ function setupEventListeners(container, context) {
     };
     musicToggle.onclick = () => {
         isMusicOn = !isMusicOn;
-        localStorage.setItem('taverna_music', isMusicOn ? 'on' : 'off');
+        setPreference('music.enabled', isMusicOn);
         updateMusicToggle();
         window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
     };
