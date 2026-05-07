@@ -1,11 +1,11 @@
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { showLobby } from '../lobby.js';
 import { supabase, SUPABASE_CONFIG } from '../services/supabase.js';
+import { dndLocalStore, getLocalDndUser, isLocalDndUser, isLocalDndUserId } from '../services/dndLocalStore.js';
 
 const TABLES = {
     characters: 'characters',
-    sessions: 'dnd_sessions',
-    legacySessions: SUPABASE_CONFIG?.tables?.sessions || 'session'
+    sessions: SUPABASE_CONFIG?.tables?.sessions || 'dnd_sessions'
 };
 const STORAGE = {
     maps: SUPABASE_CONFIG?.buckets?.zaino || 'vtt_assets'
@@ -17,25 +17,39 @@ const MANUALS = [
         title: 'Manuale del Giocatore',
         tag: 'Creazione personaggi, classi, razze, regole base',
         slug: 'Giocatore',
-        pages: 321
+        pages: 321,
+        filePageOffset: 0
     },
     {
         id: 'master',
         title: 'Guida del Dungeon Master',
         tag: 'Sessioni, incontri, tesori, regole avanzate',
         slug: 'DM',
-        pages: 320
+        pages: 320,
+        filePageOffset: 0
     },
     {
         id: 'monsters',
         title: 'Manuale dei Mostri',
         tag: 'Creature, GS, statistiche e incontri',
         slug: 'Mostri',
-        pages: 353
+        pages: 353,
+        filePageOffset: 0
     }
 ];
 
-const getManualPageUrl = (manual, page = 1) => `/manuals/${manual.slug}/${manual.slug}-${page}.pdf`;
+const MANUAL_PAGE_WINDOW_SIZE = 10;
+const getManualIndexedPages = (manual) => Math.max(1, manual.indexedPages || (manual.pages - Math.max(0, manual.filePageOffset || 0)));
+const clampManualPage = (manual, page = 1) => Math.min(getManualIndexedPages(manual), Math.max(1, Number(page) || 1));
+const getManualFilePage = (manual, page = 1) => Math.min(manual.pages, Math.max(1, clampManualPage(manual, page) + (manual.filePageOffset || 0)));
+const getManualPageUrl = (manual, page = 1) => `/manuals/${manual.slug}/${manual.slug}-${getManualFilePage(manual, page)}.pdf`;
+const getManualEmbedUrl = (manual, page = 1) => `${getManualPageUrl(manual, page)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+const getManualFullUrl = (manual) => `/manuals/${manual.slug}/${manual.slug}.pdf`;
+const getManualIndexNote = (manual, page = 1) => {
+    const manualPage = clampManualPage(manual, page);
+    const filePage = getManualFilePage(manual, manualPage);
+    return filePage === manualPage ? 'Numerazione allineata al manuale' : `Pagina manuale ${manualPage} -> PDF ${filePage}`;
+};
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -60,17 +74,10 @@ const getCurrentUser = async () => {
         console.warn('Login anonimo Supabase non disponibile:', err);
     }
 
-    return null;
+    return getLocalDndUser();
 };
 
 const getUserId = (user) => user?.id || null;
-
-const isMissingTableError = (error) => {
-    const message = String(error?.message || '');
-    return error?.code === 'PGRST205'
-        || message.includes('schema cache')
-        || message.includes('Could not find the table');
-};
 
 const isMissingColumnError = (error) => {
     const message = String(error?.message || '');
@@ -80,18 +87,9 @@ const isMissingColumnError = (error) => {
         || message.includes('schema cache');
 };
 
-async function runSessionQuery(buildQuery) {
-    const primary = await buildQuery(TABLES.sessions);
-    if (!primary.error || !isMissingTableError(primary.error)) return primary;
-    const legacy = await buildQuery(TABLES.legacySessions);
-    return {
-        ...legacy,
-        tableName: legacy.error ? TABLES.sessions : TABLES.legacySessions,
-        usedFallback: !legacy.error
-    };
-}
-
 async function loadCharacterRows(userId) {
+    if (isLocalDndUserId(userId)) return dndLocalStore.characters.list(userId);
+
     const preferred = await supabase
         .from(TABLES.characters)
         .select('*')
@@ -117,6 +115,8 @@ async function loadCharacterRows(userId) {
 }
 
 async function saveCharacterRow(char, fullPayload) {
+    if (isLocalDndUserId(fullPayload.user_id)) return dndLocalStore.characters.save(char, fullPayload);
+
     const attempts = [
         fullPayload,
         omitKeys(fullPayload, ['user_id', 'system_id']),
@@ -148,6 +148,8 @@ async function saveCharacterRow(char, fullPayload) {
 }
 
 async function deleteCharacterRow(id) {
+    const localRows = dndLocalStore.characters.list(localStorage.getItem('taverna_dnd5e_local_user_id')).data || [];
+    if (localRows.some(item => String(item.id) === String(id))) return dndLocalStore.characters.delete(id);
     return supabase.from(TABLES.characters).delete().eq('id', id);
 }
 
@@ -156,6 +158,7 @@ function omitKeys(source, keys) {
 }
 
 const normalizeSession = (session = {}) => {
+    session = session || {};
     const data = session.data || {};
     return {
         ...session,
@@ -164,11 +167,14 @@ const normalizeSession = (session = {}) => {
         next_date: session.next_date || data.next_date || '',
         map_url: session.map_url || data.map_url || data.mapUrl || '',
         description: session.description || data.description || '',
+        party_name: data.party_name || '',
+        location: data.location || '',
+        scene: data.scene || '',
         data
     };
 };
 
-const buildSessionPayload = (form, user, compact = false, mapUrlOverride = null) => {
+const buildSessionPayload = (form, user, mapUrlOverride = null) => {
     const mapUrl = mapUrlOverride ?? form.get('map_url') ?? '';
     const details = {
         status: form.get('status'),
@@ -176,18 +182,24 @@ const buildSessionPayload = (form, user, compact = false, mapUrlOverride = null)
         next_date: form.get('next_date') || '',
         map_url: mapUrl,
         description: form.get('description') || '',
+        party_name: form.get('party_name') || '',
+        location: form.get('location') || '',
+        visibility: form.get('visibility') || 'privata',
+        scene: form.get('scene') || '',
+        map_grid_size: Number(form.get('map_grid_size') || 50),
+        fogEnabled: form.get('fogEnabled') === 'on',
+        gridVisible: form.get('gridVisible') === 'on',
         dm_notes: form.get('dm_notes') || '',
-        objectives: form.get('objectives') || ''
+        objectives: form.get('objectives') || '',
+        recap: form.get('recap') || '',
+        hooks: form.get('hooks') || '',
+        planned_encounters: form.get('planned_encounters') || '',
+        loot: form.get('loot') || '',
+        npcs: form.get('npcs') || '',
+        map_notes: form.get('map_notes') || '',
+        safety_tools: form.get('safety_tools') || ''
     };
     const userId = getUserId(user);
-
-    if (compact) {
-        return {
-            user_id: userId,
-            name: form.get('name'),
-            data: details
-        };
-    }
 
     return {
         user_id: userId,
@@ -198,8 +210,22 @@ const buildSessionPayload = (form, user, compact = false, mapUrlOverride = null)
         map_url: mapUrl,
         description: details.description,
         data: {
+            party_name: details.party_name,
+            location: details.location,
+            visibility: details.visibility,
+            scene: details.scene,
+            map_grid_size: details.map_grid_size,
+            fogEnabled: details.fogEnabled,
+            gridVisible: details.gridVisible,
             dm_notes: details.dm_notes,
-            objectives: details.objectives
+            objectives: details.objectives,
+            recap: details.recap,
+            hooks: details.hooks,
+            planned_encounters: details.planned_encounters,
+            loot: details.loot,
+            npcs: details.npcs,
+            map_notes: details.map_notes,
+            safety_tools: details.safety_tools
         }
     };
 };
@@ -227,50 +253,84 @@ async function uploadSessionMapFile(form, user) {
 
 async function loadSessionRows(user) {
     const userId = getUserId(user);
+    if (isLocalDndUser(user)) return dndLocalStore.sessions.list(userId);
 
-    const result = await runSessionQuery((tableName) => supabase
-        .from(tableName)
+    const result = await supabase
+        .from(TABLES.sessions)
         .select('*')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false }));
+        .order('created_at', { ascending: false });
     return result;
 }
 
 async function saveSessionRow(session, form, user, uploadedMapUrl) {
-    return runSessionQuery((tableName) => {
-        const payload = buildSessionPayload(form, user, tableName === TABLES.legacySessions, uploadedMapUrl);
-        const query = supabase.from(tableName);
-        return session?.id
-            ? query.update(payload).eq('id', session.id)
-            : query.insert([payload]);
-    });
+    const payload = buildSessionPayload(form, user, uploadedMapUrl);
+    if (isLocalDndUser(user)) return dndLocalStore.sessions.save(session, payload);
+    const query = supabase.from(TABLES.sessions);
+    return session?.id
+        ? query.update(payload).eq('id', session.id)
+        : query.insert([payload]);
 }
 
 async function deleteSessionRow(id, user) {
-    return runSessionQuery((tableName) => supabase.from(tableName).delete().eq('id', id));
+    if (isLocalDndUser(user)) return dndLocalStore.sessions.delete(id);
+    return supabase.from(TABLES.sessions).delete().eq('id', id);
 }
 
-const getCharacterData = (char = {}) => ({
-    race: '',
-    background: '',
-    alignment: '',
-    xp: 0,
-    armorClass: 10,
-    initiative: 0,
-    speed: 9,
-    proficiency: 2,
-    hitDice: '',
-    deathSaves: { success: 0, fail: 0 },
-    stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
-    saves: [],
-    skills: [],
-    attacks: [],
-    spells: [],
-    equipment: '',
-    features: '',
-    notes: '',
-    ...(char.data || {})
-});
+const getCharacterData = (char = {}) => {
+    char = char || {};
+    const defaults = {
+        playerName: '',
+        subclass: '',
+        race: '',
+        background: '',
+        alignment: '',
+        portrait: '',
+        age: '',
+        deity: '',
+        xp: 0,
+        tempHp: 0,
+        armorClass: 10,
+        initiative: 0,
+        speed: 9,
+        proficiency: 2,
+        hitDice: '',
+        inspiration: false,
+        passivePerception: 10,
+        senses: '',
+        languages: '',
+        currency: '',
+        deathSaves: { success: 0, fail: 0 },
+        stats: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
+        saves: [],
+        skills: [],
+        attacks: [],
+        spells: [],
+        spellcastingAbility: '',
+        spellSaveDc: '',
+        spellAttackBonus: '',
+        spellSlots: '',
+        equipment: '',
+        features: '',
+        personality: '',
+        ideals: '',
+        bonds: '',
+        flaws: '',
+        allies: '',
+        notes: ''
+    };
+    const data = char.data || {};
+    return {
+        ...defaults,
+        ...data,
+        stats: { ...defaults.stats, ...(data.stats || {}) },
+        deathSaves: { ...defaults.deathSaves, ...(data.deathSaves || {}) },
+        saves: Array.isArray(data.saves) ? data.saves : [],
+        skills: Array.isArray(data.skills) ? data.skills : [],
+        attacks: data.attacks || [],
+        spells: data.spells || []
+    };
+};
 
 function resetDndScroll() {
     document.documentElement.style.overflowX = 'hidden';
@@ -359,12 +419,21 @@ function renderManuals(container) {
     const content = container.querySelector('#dnd-content');
     let selectedManual = MANUALS[0];
     let selectedPage = 1;
-    const selectedManualUrl = () => getManualPageUrl(selectedManual, selectedPage);
+    const pageWindowSize = MANUAL_PAGE_WINDOW_SIZE;
+    let windowStart = 1;
+    const clampPage = (page, manual = selectedManual) => clampManualPage(manual, page);
+    const manualPageTotal = () => getManualIndexedPages(selectedManual);
+    const maxWindowStart = () => Math.max(1, manualPageTotal() - pageWindowSize + 1);
+    const pageWindowEnd = () => Math.min(manualPageTotal(), windowStart + pageWindowSize - 1);
+    const visiblePages = () => Array.from(
+        { length: pageWindowEnd() - windowStart + 1 },
+        (_, index) => windowStart + index
+    );
 
     content.innerHTML = `
         <section class="dnd-section-head">
             <h2>Biblioteca dei Manuali</h2>
-            <p>I manuali sono caricati a pagine separate dalla cartella pubblica.</p>
+            <p>Reader continuo a blocchi da massimo ${pageWindowSize} pagine: scrivi la pagina reale del manuale e l'app apre automaticamente il PDF corretto.</p>
         </section>
 
         <div class="dnd-manual-layout">
@@ -373,47 +442,161 @@ function renderManuals(container) {
                     <button class="dnd-manual-card ${index === 0 ? 'active' : ''}" data-manual="${manual.id}">
                         <strong>${manual.title}</strong>
                         <span>${manual.tag}</span>
-                        <small>${manual.pages} pagine</small>
+                        <small>${getManualIndexedPages(manual)} pagine</small>
                     </button>
                 `).join('')}
             </aside>
             <section class="dnd-manual-viewer glass-box">
                 <div class="dnd-manual-toolbar">
-                    <div>
+                    <div class="dnd-manual-title">
                         <span>Manuale</span>
                         <strong id="manualTitle">${selectedManual.title}</strong>
+                        <small id="manualRange">Pagine 1-${pageWindowEnd()} di ${manualPageTotal()}</small>
+                        <small id="manualIndexNote" class="dnd-manual-index-note">${getManualIndexNote(selectedManual, selectedPage)}</small>
                     </div>
                     <div class="dnd-manual-controls">
-                        <button type="button" id="manualPrev">INDIETRO</button>
+                        <button type="button" id="manualPrevBlock">- ${pageWindowSize}</button>
                         <label>
-                            <span>Pagina</span>
-                            <input id="manualPage" type="number" min="1" max="${selectedManual.pages}" value="${selectedPage}">
+                            <span>Pagina manuale</span>
+                            <input id="manualPage" type="number" min="1" max="${manualPageTotal()}" value="${selectedPage}">
                         </label>
-                        <span id="manualTotal">di ${selectedManual.pages}</span>
-                        <button type="button" id="manualNext">AVANTI</button>
-                        <a id="manualOpen" href="${selectedManualUrl()}" target="_blank" rel="noreferrer">APRILA</a>
+                        <span id="manualTotal">di ${manualPageTotal()}</span>
+                        <button type="button" id="manualGoPage">VAI</button>
+                        <button type="button" id="manualNextBlock">+ ${pageWindowSize}</button>
+                        <a id="manualOpen" href="${getManualPageUrl(selectedManual, selectedPage)}" target="_blank" rel="noreferrer">APRILA PAGINA</a>
+                        <a id="manualOpenFull" href="${getManualFullUrl(selectedManual)}" target="_blank" rel="noreferrer">PDF COMPLETO</a>
                     </div>
                 </div>
-                <iframe id="manualFrame" title="${selectedManual.title}" src="${selectedManualUrl()}"></iframe>
+                <div class="dnd-manual-page-strip" id="manualPageStrip" aria-label="Indice pagine visibili"></div>
+                <div class="dnd-manual-reader" id="manualReader"></div>
+            </section>
+        </div>
+        <div class="dnd-manual-modal" id="manualPageModal" aria-hidden="true">
+            <button type="button" class="dnd-manual-modal-backdrop" data-close-manual-page aria-label="Chiudi pagina"></button>
+            <section class="dnd-manual-modal-panel" role="dialog" aria-modal="true" aria-labelledby="manualModalTitle">
+                <header>
+                    <strong id="manualModalTitle">${selectedManual.title} - Pagina ${selectedPage}</strong>
+                    <div>
+                        <a id="manualModalOpen" href="${getManualPageUrl(selectedManual, selectedPage)}" target="_blank" rel="noreferrer">Apri PDF</a>
+                        <button type="button" data-close-manual-page>Chiudi</button>
+                    </div>
+                </header>
+                <iframe id="manualModalFrame" title="${escapeHTML(selectedManual.title)} - pagina ${selectedPage}" src=""></iframe>
             </section>
         </div>
     `;
 
-    const syncManualViewer = () => {
-        const pageInput = content.querySelector('#manualPage');
-        content.querySelector('#manualTitle').textContent = selectedManual.title;
-        content.querySelector('#manualTotal').textContent = `di ${selectedManual.pages}`;
-        pageInput.max = selectedManual.pages;
-        pageInput.value = selectedPage;
-        content.querySelector('#manualOpen').href = selectedManualUrl();
-        const frame = content.querySelector('#manualFrame');
-        frame.src = selectedManualUrl();
-        frame.title = `${selectedManual.title} - pagina ${selectedPage}`;
+    const renderPageFrame = (page) => {
+        const pageUrl = getManualPageUrl(selectedManual, page);
+        return `
+        <a class="dnd-manual-page ${page === selectedPage ? 'active' : ''}" data-page-card="${page}" href="${escapeHTML(pageUrl)}" target="_blank" rel="noreferrer" aria-label="Apri pagina ${page} di ${escapeHTML(selectedManual.title)}">
+            <span class="dnd-manual-card-head">
+                <span>
+                    <span class="dnd-manual-card-kicker">Pagina</span>
+                    <strong>Pagina ${page}</strong>
+                </span>
+                <span class="dnd-manual-open-badge">Apri</span>
+            </span>
+            <span class="dnd-manual-preview">
+                <span class="dnd-manual-preview-fallback">PDF ${page}</span>
+                <iframe class="dnd-manual-preview-frame" width="100%" height="420" title="${escapeHTML(selectedManual.title)} - anteprima pagina ${page}" src="${escapeHTML(getManualEmbedUrl(selectedManual, page))}"></iframe>
+            </span>
+        </a>
+    `;
     };
 
-    const setManualPage = (page) => {
-        selectedPage = Math.min(selectedManual.pages, Math.max(1, Number(page) || 1));
-        syncManualViewer();
+    const closeManualPageModal = () => {
+        const modal = content.querySelector('#manualPageModal');
+        const frame = content.querySelector('#manualModalFrame');
+        modal?.classList.remove('active');
+        modal?.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('dnd-manual-modal-open');
+        if (frame) frame.src = '';
+    };
+
+    const openManualPageModal = (page) => {
+        selectedPage = clampPage(page);
+        syncSelectedManualPage();
+        const modal = content.querySelector('#manualPageModal');
+        const frame = content.querySelector('#manualModalFrame');
+        const title = content.querySelector('#manualModalTitle');
+        const openLink = content.querySelector('#manualModalOpen');
+        const pageUrl = getManualPageUrl(selectedManual, selectedPage);
+        if (!modal || !frame || !title || !openLink) return;
+        title.textContent = `${selectedManual.title} - Pagina ${selectedPage}`;
+        frame.title = `${selectedManual.title} - pagina ${selectedPage}`;
+        frame.src = getManualEmbedUrl(selectedManual, selectedPage);
+        openLink.href = pageUrl;
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('dnd-manual-modal-open');
+    };
+
+    const syncSelectedManualPage = (scrollToCard = false) => {
+        const pageInput = content.querySelector('#manualPage');
+        const reader = content.querySelector('#manualReader');
+        const strip = content.querySelector('#manualPageStrip');
+        if (!pageInput || !reader || !strip) return;
+        pageInput.value = selectedPage;
+        content.querySelector('#manualOpen').href = getManualPageUrl(selectedManual, selectedPage);
+        content.querySelector('#manualIndexNote').textContent = getManualIndexNote(selectedManual, selectedPage);
+        reader.querySelectorAll('[data-page-card]').forEach(item => {
+            item.classList.toggle('active', Number(item.dataset.pageCard) === selectedPage);
+        });
+        strip.querySelectorAll('[data-page-chip]').forEach(item => {
+            item.classList.toggle('active', Number(item.dataset.pageChip) === selectedPage);
+        });
+        if (scrollToCard) {
+            reader.querySelector(`[data-page-card="${selectedPage}"]`)?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    };
+
+    const syncManualViewer = (resetScroll = false) => {
+        const pageInput = content.querySelector('#manualPage');
+        const pageTotal = manualPageTotal();
+        content.querySelector('#manualTitle').textContent = selectedManual.title;
+        content.querySelector('#manualTotal').textContent = `di ${pageTotal}`;
+        content.querySelector('#manualRange').textContent = `Pagine ${windowStart}-${pageWindowEnd()} di ${pageTotal}`;
+        content.querySelector('#manualIndexNote').textContent = getManualIndexNote(selectedManual, selectedPage);
+        pageInput.max = pageTotal;
+        pageInput.value = selectedPage;
+        content.querySelector('#manualOpen').href = getManualPageUrl(selectedManual, selectedPage);
+        content.querySelector('#manualOpenFull').href = getManualFullUrl(selectedManual);
+        const strip = content.querySelector('#manualPageStrip');
+        strip.innerHTML = visiblePages().map(page => `
+            <button type="button" class="dnd-manual-page-chip ${page === selectedPage ? 'active' : ''}" data-page-chip="${page}">
+                ${page}
+            </button>
+        `).join('');
+        strip.querySelectorAll('[data-page-chip]').forEach(chip => {
+            chip.onclick = () => {
+                selectedPage = clampPage(chip.dataset.pageChip);
+                syncSelectedManualPage(true);
+            };
+        });
+        const reader = content.querySelector('#manualReader');
+        reader.innerHTML = visiblePages().map(page => renderPageFrame(page)).join('');
+        if (resetScroll) reader.scrollTop = 0;
+        reader.querySelectorAll('[data-page-card]').forEach(card => {
+            card.onclick = event => {
+                event.preventDefault();
+                openManualPageModal(card.dataset.pageCard);
+            };
+        });
+    };
+
+    const setManualPage = (page, centerWindow = true) => {
+        selectedPage = clampPage(page);
+        if (centerWindow || selectedPage < windowStart || selectedPage > pageWindowEnd()) {
+            windowStart = Math.min(
+                Math.max(1, selectedPage - Math.floor(pageWindowSize / 2)),
+                maxWindowStart()
+            );
+        }
+        syncManualViewer(centerWindow);
     };
 
     content.querySelectorAll('[data-manual]').forEach(btn => {
@@ -421,25 +604,39 @@ function renderManuals(container) {
             const manual = MANUALS.find(item => item.id === btn.dataset.manual);
             selectedManual = manual;
             selectedPage = 1;
+            windowStart = 1;
             content.querySelectorAll('[data-manual]').forEach(item => item.classList.remove('active'));
             btn.classList.add('active');
-            syncManualViewer();
+            syncManualViewer(true);
         };
     });
 
-    content.querySelector('#manualPrev').onclick = () => setManualPage(selectedPage - 1);
-    content.querySelector('#manualNext').onclick = () => setManualPage(selectedPage + 1);
+    content.querySelector('#manualPrevBlock').onclick = () => {
+        windowStart = Math.max(1, windowStart - pageWindowSize);
+        selectedPage = windowStart;
+        syncManualViewer(true);
+    };
+    content.querySelector('#manualNextBlock').onclick = () => {
+        windowStart = Math.min(maxWindowStart(), windowStart + pageWindowSize);
+        selectedPage = windowStart;
+        syncManualViewer(true);
+    };
     content.querySelector('#manualPage').onchange = event => setManualPage(event.target.value);
+    content.querySelector('#manualPage').onkeydown = event => {
+        if (event.key === 'Enter') setManualPage(event.target.value);
+    };
+    content.querySelector('#manualGoPage').onclick = () => setManualPage(content.querySelector('#manualPage').value);
+    content.querySelectorAll('[data-close-manual-page]').forEach(button => {
+        button.onclick = closeManualPageModal;
+    });
+    syncManualViewer();
 }
 
 async function renderCharacters(container) {
     renderShell(container, 'characters');
     const content = container.querySelector('#dnd-content');
     const user = await getCurrentUser();
-    if (!getUserId(user)) {
-        content.innerHTML = renderSupabaseAuthError();
-        return;
-    }
+    const userId = getUserId(user);
     if (!userId) {
         content.innerHTML = renderSupabaseAuthError();
         return;
@@ -499,10 +696,15 @@ function renderCharacterCard(char) {
     const data = getCharacterData(char);
     return `
         <article class="dnd-list-card glass-box">
+            <div class="dnd-character-card-media">
+                ${data.portrait
+                    ? `<img src="${escapeHTML(data.portrait)}" alt="">`
+                    : `<span>${escapeHTML((char.name || '?').charAt(0).toUpperCase())}</span>`}
+            </div>
             <div>
-                <span>${escapeHTML(data.race || 'Razza non impostata')} • LV ${escapeHTML(char.level || 1)}</span>
+                <span>${escapeHTML(data.race || 'Razza non impostata')} • LV ${escapeHTML(char.level || 1)}${data.subclass ? ` • ${escapeHTML(data.subclass)}` : ''}</span>
                 <strong>${escapeHTML(char.name || 'Senza nome')}</strong>
-                <p>${escapeHTML(char.class || 'Classe non impostata')} • CA ${escapeHTML(data.armorClass)} • PF ${escapeHTML(char.hp || 10)}/${escapeHTML(char.hp_max || 10)}</p>
+                <p>${escapeHTML(char.class || 'Classe non impostata')} • CA ${escapeHTML(data.armorClass)} • PF ${escapeHTML(char.hp || 10)}/${escapeHTML(char.hp_max || 10)} • Passiva ${escapeHTML(data.passivePerception)}</p>
             </div>
             <div class="dnd-inline-actions">
                 <button class="btn-back-glass" data-edit-character="${char.id}">APRIMI</button>
@@ -570,21 +772,43 @@ function renderCharacterEditor(container, user, char) {
                 </div>
             </section>
 
-            <section class="dnd-sheet-grid glass-box">
+            <section class="dnd-form-section glass-box">
+                <h3>Identita</h3>
+                <div class="dnd-sheet-grid">
                 <label>Nome<input name="name" required value="${escapeHTML(char?.name || '')}"></label>
+                <label>Giocatore<input name="playerName" value="${escapeHTML(data.playerName)}"></label>
                 <label>Classe<input name="class" required value="${escapeHTML(char?.class || '')}"></label>
+                <label>Sottoclasse<input name="subclass" value="${escapeHTML(data.subclass)}"></label>
                 <label>Livello<input name="level" type="number" min="1" max="20" value="${escapeHTML(char?.level || 1)}"></label>
                 <label>Razza<input name="race" value="${escapeHTML(data.race)}"></label>
                 <label>Background<input name="background" value="${escapeHTML(data.background)}"></label>
                 <label>Allineamento<input name="alignment" value="${escapeHTML(data.alignment)}"></label>
                 <label>XP<input name="xp" type="number" min="0" value="${escapeHTML(data.xp)}"></label>
+                <label>Ritratto URL<input name="portrait" value="${escapeHTML(data.portrait)}" placeholder="https://..."></label>
+                <label>Eta<input name="age" value="${escapeHTML(data.age)}"></label>
+                <label>Divinita / Patto<input name="deity" value="${escapeHTML(data.deity)}"></label>
+                </div>
+            </section>
+
+            <section class="dnd-form-section glass-box">
+                <h3>Combattimento</h3>
+                <div class="dnd-sheet-grid">
                 <label>PF attuali<input name="hp" type="number" value="${escapeHTML(char?.hp || 10)}"></label>
                 <label>PF max<input name="hp_max" type="number" value="${escapeHTML(char?.hp_max || 10)}"></label>
+                <label>PF temporanei<input name="tempHp" type="number" min="0" value="${escapeHTML(data.tempHp)}"></label>
                 <label>CA<input name="armorClass" type="number" value="${escapeHTML(data.armorClass)}"></label>
                 <label>Iniziativa<input name="initiative" type="number" value="${escapeHTML(data.initiative)}"></label>
                 <label>Velocita<input name="speed" type="number" value="${escapeHTML(data.speed)}"></label>
                 <label>Competenza<input name="proficiency" type="number" value="${escapeHTML(data.proficiency)}"></label>
                 <label>Dadi Vita<input name="hitDice" value="${escapeHTML(data.hitDice)}"></label>
+                <label>Percezione passiva<input name="passivePerception" type="number" value="${escapeHTML(data.passivePerception)}"></label>
+                <label>Tiri morte ok<input name="deathSuccess" type="number" min="0" max="3" value="${escapeHTML(data.deathSaves.success)}"></label>
+                <label>Tiri morte fail<input name="deathFail" type="number" min="0" max="3" value="${escapeHTML(data.deathSaves.fail)}"></label>
+                <label class="dnd-check-inline">Ispirazione<input name="inspiration" type="checkbox" ${data.inspiration ? 'checked' : ''}></label>
+                <label>Sensi<input name="senses" value="${escapeHTML(data.senses)}"></label>
+                <label>Linguaggi<input name="languages" value="${escapeHTML(data.languages)}"></label>
+                <label>Valute<input name="currency" value="${escapeHTML(data.currency)}"></label>
+                </div>
             </section>
 
             <section class="dnd-stat-grid">
@@ -611,11 +835,26 @@ function renderCharacterEditor(container, user, char) {
                 </div>
             </section>
 
+            <section class="dnd-form-section glass-box">
+                <h3>Magia</h3>
+                <div class="dnd-sheet-grid">
+                    <label>Caratteristica<input name="spellcastingAbility" value="${escapeHTML(data.spellcastingAbility)}" placeholder="es. Saggezza"></label>
+                    <label>CD incantesimi<input name="spellSaveDc" type="number" value="${escapeHTML(data.spellSaveDc)}"></label>
+                    <label>Bonus attacco<input name="spellAttackBonus" value="${escapeHTML(data.spellAttackBonus)}" placeholder="+5"></label>
+                    <label>Slot<input name="spellSlots" value="${escapeHTML(data.spellSlots)}" placeholder="1:4, 2:3, 3:2"></label>
+                </div>
+            </section>
+
             <section class="dnd-textareas glass-box">
                 <label>Attacchi e azioni<textarea name="attacks">${escapeHTML(formatRows(data.attacks))}</textarea></label>
                 <label>Incantesimi<textarea name="spells">${escapeHTML(formatRows(data.spells))}</textarea></label>
                 <label>Equipaggiamento<textarea name="equipment">${escapeHTML(data.equipment)}</textarea></label>
                 <label>Privilegi e tratti<textarea name="features">${escapeHTML(data.features)}</textarea></label>
+                <label>Personalita<textarea name="personality">${escapeHTML(data.personality)}</textarea></label>
+                <label>Ideali<textarea name="ideals">${escapeHTML(data.ideals)}</textarea></label>
+                <label>Legami<textarea name="bonds">${escapeHTML(data.bonds)}</textarea></label>
+                <label>Difetti<textarea name="flaws">${escapeHTML(data.flaws)}</textarea></label>
+                <label>Alleati e organizzazioni<textarea name="allies">${escapeHTML(data.allies)}</textarea></label>
                 <label>Note<textarea name="notes">${escapeHTML(data.notes)}</textarea></label>
             </section>
         </form>
@@ -626,22 +865,46 @@ function renderCharacterEditor(container, user, char) {
         e.preventDefault();
         const form = new FormData(e.currentTarget);
         const nextData = {
+            playerName: form.get('playerName') || '',
+            subclass: form.get('subclass') || '',
             race: form.get('race') || '',
             background: form.get('background') || '',
             alignment: form.get('alignment') || '',
+            portrait: form.get('portrait') || '',
+            age: form.get('age') || '',
+            deity: form.get('deity') || '',
             xp: Number(form.get('xp') || 0),
+            tempHp: Number(form.get('tempHp') || 0),
             armorClass: Number(form.get('armorClass') || 10),
             initiative: Number(form.get('initiative') || 0),
             speed: Number(form.get('speed') || 9),
             proficiency: Number(form.get('proficiency') || 2),
             hitDice: form.get('hitDice') || '',
+            inspiration: form.get('inspiration') === 'on',
+            passivePerception: Number(form.get('passivePerception') || 10),
+            senses: form.get('senses') || '',
+            languages: form.get('languages') || '',
+            currency: form.get('currency') || '',
+            deathSaves: {
+                success: Number(form.get('deathSuccess') || 0),
+                fail: Number(form.get('deathFail') || 0)
+            },
             stats: Object.fromEntries(statFields.map(([key]) => [key, Number(form.get(`stat_${key}`) || 10)])),
             saves: saveList.filter(save => form.get(`save_${save}`) === 'on'),
             skills: form.getAll('skill'),
             attacks: parseRows(form.get('attacks')),
             spells: parseRows(form.get('spells')),
+            spellcastingAbility: form.get('spellcastingAbility') || '',
+            spellSaveDc: form.get('spellSaveDc') || '',
+            spellAttackBonus: form.get('spellAttackBonus') || '',
+            spellSlots: form.get('spellSlots') || '',
             equipment: form.get('equipment') || '',
             features: form.get('features') || '',
+            personality: form.get('personality') || '',
+            ideals: form.get('ideals') || '',
+            bonds: form.get('bonds') || '',
+            flaws: form.get('flaws') || '',
+            allies: form.get('allies') || '',
             notes: form.get('notes') || ''
         };
         const payload = {
@@ -675,6 +938,10 @@ async function renderSessions(container) {
     const content = container.querySelector('#dnd-content');
     const user = await getCurrentUser();
     const userId = getUserId(user);
+    if (!userId) {
+        content.innerHTML = renderSupabaseAuthError();
+        return;
+    }
 
     content.innerHTML = `
         <section class="dnd-section-head dnd-section-actions">
@@ -727,12 +994,13 @@ async function renderSessions(container) {
 }
 
 function renderSessionCard(session) {
+    const data = session.data || {};
     return `
         <article class="dnd-list-card glass-box">
             <div>
-                <span>${escapeHTML(session.status || 'attiva')} • LV party ${escapeHTML(session.party_level || 1)}</span>
+                <span>${escapeHTML(session.status || 'attiva')} • LV party ${escapeHTML(session.party_level || 1)}${session.next_date ? ` • ${escapeHTML(session.next_date)}` : ''}</span>
                 <strong>${escapeHTML(session.name || 'Sessione senza nome')}</strong>
-                <p>${escapeHTML(session.description || 'Nessuna descrizione')}</p>
+                <p>${escapeHTML(session.description || data.scene || 'Nessuna descrizione')}${data.location ? ` • ${escapeHTML(data.location)}` : ''}</p>
             </div>
             <div class="dnd-inline-actions">
                 <button class="btn-primary" data-open-session="${session.id}">ENTRA</button>
@@ -762,7 +1030,9 @@ function renderSessionEditor(container, user, session) {
                 </div>
             </section>
 
-            <section class="dnd-sheet-grid glass-box">
+            <section class="dnd-form-section glass-box">
+                <h3>Base sessione</h3>
+                <div class="dnd-sheet-grid">
                 <label>Nome sessione<input name="name" required value="${escapeHTML(normalizedSession?.name || '')}"></label>
                 <label>Stato<select name="status">
                     <option value="attiva" ${normalizedSession?.status === 'attiva' ? 'selected' : ''}>Attiva</option>
@@ -771,18 +1041,42 @@ function renderSessionEditor(container, user, session) {
                 </select></label>
                 <label>Livello party<input name="party_level" type="number" min="1" max="20" value="${escapeHTML(normalizedSession?.party_level || 1)}"></label>
                 <label>Prossima data<input name="next_date" type="text" placeholder="es. venerdi 21:30" value="${escapeHTML(normalizedSession?.next_date || '')}"></label>
+                <label>Nome party<input name="party_name" value="${escapeHTML(data.party_name || '')}"></label>
+                <label>Luogo corrente<input name="location" value="${escapeHTML(data.location || '')}"></label>
+                <label>Visibilita<select name="visibility">
+                    <option value="privata" ${(data.visibility || 'privata') === 'privata' ? 'selected' : ''}>Privata master</option>
+                    <option value="party" ${data.visibility === 'party' ? 'selected' : ''}>Condivisa party</option>
+                </select></label>
+                <label>Scena iniziale<input name="scene" value="${escapeHTML(data.scene || '')}"></label>
+                </div>
+            </section>
+
+            <section class="dnd-form-section glass-box">
+                <h3>Mappa</h3>
+                <div class="dnd-sheet-grid">
                 <label>URL mappa<input name="map_url" placeholder="https://..." value="${escapeHTML(normalizedSession?.map_url || '')}"></label>
+                <label>Griglia px<input name="map_grid_size" type="number" min="20" max="200" value="${escapeHTML(data.map_grid_size || 50)}"></label>
+                <label class="dnd-check-inline">Nebbia attiva<input name="fogEnabled" type="checkbox" ${data.fogEnabled !== false ? 'checked' : ''}></label>
+                <label class="dnd-check-inline">Griglia visibile<input name="gridVisible" type="checkbox" ${data.gridVisible !== false ? 'checked' : ''}></label>
                 <label class="dnd-map-upload">
                     File mappa opzionale
                     <input name="map_file" type="file" accept="image/*,application/pdf,.pdf,.png,.jpg,.jpeg,.webp,.gif">
                     <span>Puoi caricare PDF, JPG, PNG, WEBP o GIF. Se carichi un file, sostituisce l'URL mappa.</span>
                 </label>
+                </div>
             </section>
 
             <section class="dnd-textareas glass-box">
                 <label>Descrizione<textarea name="description">${escapeHTML(normalizedSession?.description || '')}</textarea></label>
+                <label>Recap precedente<textarea name="recap">${escapeHTML(data.recap || '')}</textarea></label>
                 <label>Note master<textarea name="dm_notes">${escapeHTML(data.dm_notes || '')}</textarea></label>
                 <label>Obiettivi sessione<textarea name="objectives">${escapeHTML(data.objectives || '')}</textarea></label>
+                <label>Agganci e indizi<textarea name="hooks">${escapeHTML(data.hooks || '')}</textarea></label>
+                <label>Incontri preparati<textarea name="planned_encounters">${escapeHTML(data.planned_encounters || '')}</textarea></label>
+                <label>PNG importanti<textarea name="npcs">${escapeHTML(data.npcs || '')}</textarea></label>
+                <label>Tesori e ricompense<textarea name="loot">${escapeHTML(data.loot || '')}</textarea></label>
+                <label>Note mappa<textarea name="map_notes">${escapeHTML(data.map_notes || '')}</textarea></label>
+                <label>Linee e veli<textarea name="safety_tools">${escapeHTML(data.safety_tools || '')}</textarea></label>
             </section>
         </form>
     `;
@@ -813,7 +1107,7 @@ function renderSessionSchemaError(err) {
         <div class="dnd-empty glass-box dnd-schema-error">
             <strong>Database sessioni non pronto.</strong>
             <span>${escapeHTML(err.message || 'Tabella sessioni non trovata in Supabase.')}</span>
-            <p>Per usare la sezione D&D completa devi eseguire lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor di Supabase, oppure avere una tabella <code>session</code> compatibile con almeno <code>user_id</code>, <code>name</code> e <code>data</code>.</p>
+            <p>Per usare la sezione D&D completa devi eseguire lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor di Supabase. La tabella richiesta e <code>dnd_sessions</code>.</p>
         </div>
     `;
 }

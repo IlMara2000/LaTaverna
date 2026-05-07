@@ -4,6 +4,7 @@ import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';
 import { showLobby } from './lobby.js';
 import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthInput.js';
+import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
@@ -126,6 +127,7 @@ function checkAccess(user, container) {
 
 function renderDashboard(user) {
     const appContainer = document.getElementById('app');
+    loadAndApplyProfileAppearance(user).catch(err => console.warn('Tema profilo non applicato:', err));
     
     // 1. Inizializza la Navbar (Gestirà anche la Sidebar)
     initNavbar(user, async () => {

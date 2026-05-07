@@ -86,6 +86,41 @@ create table if not exists public.dnd_chat (
     created_at timestamptz not null default now()
 );
 
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+    new.updated_at = now();
+    return new;
+end;
+$$;
+
+drop trigger if exists set_dnd_sessions_updated_at on public.dnd_sessions;
+create trigger set_dnd_sessions_updated_at
+before update on public.dnd_sessions
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_user_profiles_updated_at on public.user_profiles;
+create trigger set_user_profiles_updated_at
+before update on public.user_profiles
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_user_preferences_updated_at on public.user_preferences;
+create trigger set_user_preferences_updated_at
+before update on public.user_preferences
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_characters_updated_at on public.characters;
+create trigger set_characters_updated_at
+before update on public.characters
+for each row execute function public.set_updated_at();
+
+drop trigger if exists set_dnd_tokens_updated_at on public.dnd_tokens;
+create trigger set_dnd_tokens_updated_at
+before update on public.dnd_tokens
+for each row execute function public.set_updated_at();
+
 alter table public.dnd_sessions enable row level security;
 alter table public.user_profiles enable row level security;
 alter table public.user_preferences enable row level security;
@@ -165,6 +200,33 @@ create index if not exists user_preferences_user_id_idx on public.user_preferenc
 create index if not exists dnd_tokens_session_id_idx on public.dnd_tokens(session_id);
 create index if not exists dnd_chat_session_id_created_at_idx on public.dnd_chat(session_id, created_at);
 create index if not exists characters_user_id_system_id_idx on public.characters(user_id, system_id);
+
+do $$
+begin
+    alter publication supabase_realtime add table public.dnd_sessions;
+exception
+    when duplicate_object then null;
+    when undefined_object then null;
+end;
+$$;
+
+do $$
+begin
+    alter publication supabase_realtime add table public.dnd_tokens;
+exception
+    when duplicate_object then null;
+    when undefined_object then null;
+end;
+$$;
+
+do $$
+begin
+    alter publication supabase_realtime add table public.dnd_chat;
+exception
+    when duplicate_object then null;
+    when undefined_object then null;
+end;
+$$;
 
 insert into storage.buckets (id, name, public)
 values ('vtt_assets', 'vtt_assets', true)

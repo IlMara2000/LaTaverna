@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase.js';
+import { applyProfileAppearance } from '../../../services/profileAppearance.js';
 
 const PROFILE_TABLE = 'user_profiles';
 
@@ -89,6 +90,7 @@ async function saveProfileSettings(user, settings) {
 export async function showSettings(container, user = null) {
     const supabaseUser = await getSupabaseUser(user);
     const settings = await loadProfileSettings(supabaseUser);
+    applyProfileAppearance(settings);
 
     container.innerHTML = `
         <div class="fade-in settings-profile-page">
@@ -184,6 +186,7 @@ export async function showSettings(container, user = null) {
         };
 
         const { error } = await saveProfileSettings(supabaseUser, nextSettings);
+        if (!error) applyProfileAppearance(nextSettings);
         saved.textContent = error ? `Errore Supabase: ${error.message}` : 'Profilo aggiornato su Supabase.';
         setTimeout(() => { saved.textContent = ''; }, 2200);
     };

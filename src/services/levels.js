@@ -2,6 +2,7 @@ import { getPreference, setPreference } from './userPreferences.js';
 
 const levelCache = new Map();
 const prefKey = (gameName) => `levels.${gameName}`;
+const LEVEL_DIFFICULTY_STEP = 0.03;
 
 export function getUnlockedLevel(gameName) {
     return levelCache.get(gameName) || 1;
@@ -23,6 +24,13 @@ export function unlockNextLevel(gameName, currentLevel) {
         levelCache.set(gameName, nextLevel);
         setPreference(prefKey(gameName), nextLevel);
     }
+}
+
+export function getLevelDifficultyChance(currentLevel, baseChance = 0, maxChance = 0.95) {
+    const level = Number(currentLevel);
+    const completedLevels = Number.isFinite(level) && level > 1 ? Math.floor(level) - 1 : 0;
+    const chance = baseChance + (completedLevels * LEVEL_DIFFICULTY_STEP);
+    return Math.min(maxChance, Math.max(0, chance));
 }
 
 export function renderLevelLadder(gameName, containerElement, onLevelSelect, hydrated = false) {

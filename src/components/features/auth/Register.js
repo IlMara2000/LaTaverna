@@ -39,15 +39,24 @@ export function showRegister(container) {
         const email = container.querySelector('#reg-email').value.trim();
         const password = container.querySelector('#reg-password').value;
 
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'CREAZIONE...';
+        submitBtn.style.opacity = '0.7';
+        msg.textContent = '';
+
         try {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                options: { data: { full_name: username }, redirectTo: window.location.origin }
+                options: {
+                    data: { full_name: username },
+                    emailRedirectTo: window.location.origin
+                }
             });
             if (error) throw error;
 
             if (data?.session) {
+                localStorage.removeItem('taverna_guest_user');
                 window.location.reload();
             } else {
                 msg.textContent = "📜 Conferma l'email per entrare!";
@@ -56,6 +65,10 @@ export function showRegister(container) {
         } catch (err) {
             msg.textContent = err.message;
             msg.style.color = "var(--error-red)";
+        } finally {
+            submitBtn.disabled = !checkbox.checked;
+            submitBtn.textContent = 'EVOCA IL TUO NOME';
+            submitBtn.style.opacity = checkbox.checked ? '1' : '0.5';
         }
     };
 

@@ -43,6 +43,10 @@ function renderSidebarContent(container, context) {
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
 
+                <button class="btn-glass sidebar-nav-item" id="nav-profile" data-context="profile" style="font-size: 0.8rem; padding: 12px;">
+                    PROFILO
+                </button>
+
                 <button class="btn-glass sidebar-nav-item" id="nav-settings" data-context="settings" style="font-size: 0.8rem; padding: 12px;">
                     IMPOSTAZIONI
                 </button>
@@ -80,6 +84,7 @@ function renderSidebarContent(container, context) {
 }
 
 function resetGlobalScroll() {
+    window.__dndSessionCleanup?.();
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     document.body.style.overflow = '';
@@ -88,6 +93,7 @@ function resetGlobalScroll() {
     document.body.style.width = '';
     document.body.style.touchAction = '';
     document.body.style.backgroundColor = '';
+    document.body.classList.remove('dnd-session-active', 'dnd-session-tools-open', 'dnd-session-chat-open');
 }
 
 function highlightActiveContext() {
@@ -132,7 +138,7 @@ function setupEventListeners(container, context) {
     window.addEventListener('toggleSidebar', window.__tavernaSidebarToggle);
 
     // --- NAVIGAZIONE LINKS ---
-    const attachNav = (id, modulePath, funcName, contextName) => {
+    const attachNav = (id, loadModule, funcName, contextName) => {
         const el = document.getElementById(id);
         if(el) {
             el.onclick = async (e) => {
@@ -141,17 +147,18 @@ function setupEventListeners(container, context) {
                 resetGlobalScroll();
                 currentActiveContext = contextName;
                 try {
-                    const module = await import(modulePath);
+                    const module = await loadModule();
                     if (mainContent) {
                          mainContent.innerHTML = '';
-                         module[funcName](mainContent, currentSidebarUser);
+                         await module[funcName](mainContent, currentSidebarUser);
                     }
-                } catch (err) { console.error(`Errore nav: ${modulePath}`, err); }
+                } catch (err) { console.error(`Errore nav: ${contextName}`, err); }
             };
         }
     };
 
-    attachNav('nav-settings', '../features/user/Settings.js', 'showSettings', 'settings');
+    attachNav('nav-profile', () => import('../features/user/Profile.js'), 'showProfile', 'profile');
+    attachNav('nav-settings', () => import('../features/user/Settings.js'), 'showSettings', 'settings');
 
     // --- TASTO AZIONE (ESCI O TORNA) ---
     const actionBtn = container.querySelector('#sideActionBtn');

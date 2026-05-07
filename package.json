@@ -8,7 +8,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "echo 'Sguardo dell'Oste: Tutto in ordine!'"
+    "lint": "echo \"Sguardo dell'Oste: Tutto in ordine!\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",
