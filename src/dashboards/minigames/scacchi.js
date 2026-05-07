@@ -1,5 +1,5 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { getUnlockedLevel, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { getUnlockedLevel, getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 
 /**
  * GIOCO: SCACCHI - MASTER EDITION
@@ -278,8 +278,8 @@ function aiMove(state, container) {
         return quitGame(container);
     }
 
-    // Accuratezza dell'IA in base al livello (Max 95%)
-    const accuracy = Math.min(0.95, state.currentLevel * 0.025);
+    // Accuratezza dell'IA (max 95%): +3% per ogni livello completato
+    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.95);
     const isSmart = Math.random() <= accuracy;
 
     let chosenMove;

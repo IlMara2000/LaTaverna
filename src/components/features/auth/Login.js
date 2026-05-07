@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase.js';
+import { getLocalDndUser } from '../../../services/dndLocalStore.js';
 
 /**
  * SISTEMA DI AUTENTICAZIONE - LA TAVERNA
@@ -52,6 +53,13 @@ function renderLoginMethods(container) {
                     Accedi per salvare i tuoi progressi o entra come semplice viandante.
                 </p>
 
+                <form id="email-login-form" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+                    <input type="email" id="login-email" class="auth-input" placeholder="Email" autocomplete="email" required>
+                    <input type="password" id="login-password" class="auth-input" placeholder="Password" autocomplete="current-password" required>
+                    <button id="login-email-submit" class="btn-primary" type="submit" style="width: 100%; margin: 0;">ACCEDI</button>
+                    <p id="login-message" aria-live="polite" style="min-height: 16px; margin: 0; font-size: 11px; color: var(--error-red); text-transform: uppercase; letter-spacing: 1px;"></p>
+                </form>
+
                 <button id="login-discord" class="btn-back-glass" style="width: 100%; background: #5865F2; border: none; margin-bottom: 15px; font-size: 0.9rem; font-weight: 800; box-shadow: 0 8px 20px rgba(88, 101, 242, 0.2);">
                     <img src="https://cdn-icons-png.flaticon.com/512/2111/2111370.png" style="width: 20px; margin-right: 10px; filter: brightness(0) invert(1);" alt="">
                     DISCORD LOGIN
@@ -59,6 +67,10 @@ function renderLoginMethods(container) {
 
                 <button id="login-guest" class="btn-back-glass" style="width: 100%; font-size: 0.85rem; opacity: 0.9; border-color: rgba(255,255,255,0.1);">
                     ENTRA COME OSPITE
+                </button>
+
+                <button id="show-register" style="background: none; border: none; color: var(--amethyst-bright); margin-top: 18px; padding: 8px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; font-weight: 800;">
+                    CREA PROFILO
                 </button>
                 
                 <button id="back-to-start" style="background: none; border: none; color: var(--text-secondary); margin-top: 30px; padding: 10px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; opacity: 0.6;">
@@ -68,18 +80,39 @@ function renderLoginMethods(container) {
         </div>
     `;
 
+    const loginMessage = document.getElementById('login-message');
+    const emailSubmit = document.getElementById('login-email-submit');
+
+    document.getElementById('email-login-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        loginMessage.textContent = '';
+        emailSubmit.disabled = true;
+        emailSubmit.innerText = 'ACCESSO...';
+
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            if (!data?.user) throw new Error('Sessione non creata.');
+            localStorage.removeItem('taverna_guest_user');
+            window.location.reload();
+        } catch (err) {
+            loginMessage.textContent = err.message || 'Accesso non riuscito.';
+            emailSubmit.disabled = false;
+            emailSubmit.innerText = 'ACCEDI';
+        }
+    };
+
     // Azione Discord (Redirect intelligente)
     document.getElementById('login-discord').onclick = async () => {
         // Mostra un piccolo feedback di caricamento
         document.getElementById('login-discord').innerText = "COLLEGAMENTO...";
         
-        const siteUrl = window.location.hostname === 'localhost' 
-            ? window.location.origin 
-            : 'https://lataverna.xyz';
-
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'discord',
-            options: { redirectTo: siteUrl }
+            options: { redirectTo: window.location.origin }
         });
 
         if (error) alert("Errore durante l'accesso: " + error.message);
@@ -92,8 +125,14 @@ function renderLoginMethods(container) {
         const { data, error } = await supabase.auth.signInAnonymously();
 
         if (error || !data?.user) {
-            btn.innerText = 'ENTRA COME OSPITE';
-            alert(`Accesso ospite Supabase non disponibile: ${error?.message || 'abilita Anonymous Sign-Ins in Supabase Auth.'}`);
+            const localUser = getLocalDndUser();
+            localStorage.setItem('taverna_guest_user', JSON.stringify({
+                id: localUser.id,
+                name: localUser.user_metadata.full_name,
+                isGuest: true,
+                isLocalDnd: true
+            }));
+            window.location.reload();
             return;
         }
 
@@ -103,4 +142,8 @@ function renderLoginMethods(container) {
 
     // Navigazione interna
     document.getElementById('back-to-start').onclick = () => renderStartScreen(container);
+    document.getElementById('show-register').onclick = async () => {
+        const { showRegister } = await import('./Register.js');
+        showRegister(container);
+    };
 }

@@ -1,7 +1,7 @@
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
+import { dndLocalStore } from '../../../services/dndLocalStore.js';
 
-const TOKEN_TABLE = 'dnd_tokens';
-const LEGACY_TOKEN_TABLE = SUPABASE_CONFIG?.tables?.tokens || 'tokens';
+const TOKEN_TABLE = SUPABASE_CONFIG?.tables?.tokens || 'dnd_tokens';
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -9,13 +9,6 @@ const escapeHTML = (value = '') => String(value)
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
-
-const isMissingTableError = (error) => {
-    const message = String(error?.message || '');
-    return error?.code === 'PGRST205'
-        || message.includes('schema cache')
-        || message.includes('Could not find the table');
-};
 
 const isMissingColumnError = (error) => {
     const message = String(error?.message || '');
@@ -25,12 +18,6 @@ const isMissingColumnError = (error) => {
         || message.includes('schema cache');
 };
 
-async function runTokenQuery(buildQuery) {
-    const primary = await buildQuery(TOKEN_TABLE);
-    if (!primary.error || !isMissingTableError(primary.error)) return primary;
-    return buildQuery(LEGACY_TOKEN_TABLE);
-}
-
 async function insertToken(payload) {
     const attempts = [
         payload,
@@ -39,7 +26,7 @@ async function insertToken(payload) {
 
     let lastResult = null;
     for (const nextPayload of attempts) {
-        lastResult = await runTokenQuery((tableName) => supabase.from(tableName).insert([nextPayload]).select('*').single());
+        lastResult = await supabase.from(TOKEN_TABLE).insert([nextPayload]).select('*').single();
         if (!lastResult.error || !isMissingColumnError(lastResult.error)) return lastResult;
     }
     return lastResult;
@@ -55,7 +42,10 @@ export function showTabletop(container, sessionId, options = {}) {
     let translateX = 0;
     let translateY = 0;
     let fogEnabled = options.fogEnabled !== false;
+    let gridVisible = options.gridVisible !== false;
+    let gridSize = Number(options.gridSize || 50);
     let knownTokens = [];
+    const localMode = Boolean(options.localMode);
 
     container.innerHTML = `
         <div class="tabletop-viewport" id="viewport">
@@ -64,8 +54,8 @@ export function showTabletop(container, sessionId, options = {}) {
                     isPdfMap(options.mapUrl)
                         ? `<iframe class="map-pdf" src="${escapeHTML(options.mapUrl)}" title="Mappa PDF"></iframe>`
                         : `<img class="map-image" src="${escapeHTML(options.mapUrl)}" alt="">`
-                ) : ''}
-                <div class="map-grid"></div>
+                ) : '<div class="map-empty"><strong>Nessuna mappa</strong><span>Carica una mappa nella configurazione sessione o usa la griglia come tavolo libero.</span></div>'}
+                <div class="map-grid ${gridVisible ? '' : 'is-hidden'}" id="map-grid"></div>
                 <div class="map-fog ${fogEnabled ? 'active' : ''}" id="map-fog"></div>
             </div>
         </div>
@@ -74,9 +64,15 @@ export function showTabletop(container, sessionId, options = {}) {
     const viewport = container.querySelector('#viewport');
     const mapLayer = container.querySelector('#map-layer');
     const fog = container.querySelector('#map-fog');
+    const grid = container.querySelector('#map-grid');
 
     const updateTransform = () => {
         mapLayer.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+    };
+
+    const updateGrid = () => {
+        grid.style.backgroundSize = `${gridSize}px ${gridSize}px`;
+        grid.classList.toggle('is-hidden', !gridVisible);
     };
 
     const notifyTokens = () => {
@@ -103,7 +99,36 @@ export function showTabletop(container, sessionId, options = {}) {
         updateTransform();
     };
 
+    const setFog = (nextValue) => {
+        fogEnabled = Boolean(nextValue);
+        fog.classList.toggle('active', fogEnabled);
+        return fogEnabled;
+    };
+
+    const setGridVisible = (nextValue) => {
+        gridVisible = Boolean(nextValue);
+        updateGrid();
+        return gridVisible;
+    };
+
+    const pingAt = (x, y) => {
+        const marker = document.createElement('div');
+        marker.className = 'map-ping';
+        marker.style.left = `${Math.round(x)}px`;
+        marker.style.top = `${Math.round(y)}px`;
+        mapLayer.appendChild(marker);
+        window.setTimeout(() => marker.remove(), 1400);
+    };
+
+    const pingCenter = () => {
+        const rect = viewport.getBoundingClientRect();
+        const x = (rect.width / 2 - translateX) / scale;
+        const y = (rect.height / 2 - translateY) / scale;
+        pingAt(x, y);
+    };
+
     updateTransform();
+    updateGrid();
 
     viewport.addEventListener('pointerdown', (e) => {
         if (e.target.closest('.token')) return;
@@ -137,15 +162,20 @@ export function showTabletop(container, sessionId, options = {}) {
         if (!doc?.id) return;
         upsertKnownToken(doc);
         let el = mapLayer.querySelector(`#token-${CSS.escape(String(doc.id))}`);
+        const hp = Number(doc.data?.hp ?? 0);
+        const hpMax = Number(doc.data?.hp_max ?? 0);
+        const hpPct = hpMax > 0 ? Math.max(0, Math.min(100, Math.round((hp / hpMax) * 100))) : 0;
         if (!el) {
             el = document.createElement('div');
             el.id = `token-${doc.id}`;
             el.className = 'token';
+            el.dataset.tokenId = doc.id;
             el.innerHTML = `
                 <span class="token-name">${escapeHTML(doc.name || 'Token')}</span>
                 <div class="token-img" style="border-color:${escapeHTML(doc.color || '#c77dff')}">
                     ${doc.img ? `<img src="${escapeHTML(doc.img)}" alt="">` : `<span>${escapeHTML((doc.name || '?').charAt(0).toUpperCase())}</span>`}
                 </div>
+                <div class="token-hp ${hpMax > 0 ? '' : 'is-hidden'}"><span style="width:${hpPct}%"></span></div>
             `;
             mapLayer.appendChild(el);
             makeTokenDraggable(el, doc);
@@ -156,6 +186,9 @@ export function showTabletop(container, sessionId, options = {}) {
             img.innerHTML = doc.img
                 ? `<img src="${escapeHTML(doc.img)}" alt="">`
                 : `<span>${escapeHTML((doc.name || '?').charAt(0).toUpperCase())}</span>`;
+            const hpBar = el.querySelector('.token-hp');
+            hpBar.classList.toggle('is-hidden', hpMax <= 0);
+            hpBar.querySelector('span').style.width = `${hpPct}%`;
         }
 
         if (!el.classList.contains('dragging')) {
@@ -187,13 +220,18 @@ export function showTabletop(container, sessionId, options = {}) {
                 el.removeEventListener('pointerup', onUp);
                 el.classList.remove('dragging');
                 try {
-                    await runTokenQuery((tableName) => supabase
-                        .from(tableName)
-                        .update({
-                            x: Math.round(parseFloat(el.style.left)),
-                            y: Math.round(parseFloat(el.style.top))
-                        })
-                        .eq('id', doc.id));
+                    const patch = {
+                        x: Math.round(parseFloat(el.style.left)),
+                        y: Math.round(parseFloat(el.style.top))
+                    };
+                    if (localMode) {
+                        dndLocalStore.tokens.update(doc.id, patch);
+                    } else {
+                        await supabase
+                            .from(TOKEN_TABLE)
+                            .update(patch)
+                            .eq('id', doc.id);
+                    }
                 } catch (err) {
                     console.error('Errore sync token:', err);
                 }
@@ -206,10 +244,12 @@ export function showTabletop(container, sessionId, options = {}) {
 
     const loadTokens = async () => {
         try {
-            const { data, error } = await runTokenQuery((tableName) => supabase
-                    .from(tableName)
-                    .select('*')
-                    .eq('session_id', sessionId));
+            const { data, error } = localMode
+                ? dndLocalStore.tokens.list(sessionId)
+                : await supabase
+                        .from(TOKEN_TABLE)
+                        .select('*')
+                        .eq('session_id', sessionId);
             if (error) throw error;
             (data || []).forEach(renderToken);
         } catch (err) {
@@ -220,27 +260,30 @@ export function showTabletop(container, sessionId, options = {}) {
     loadTokens();
 
     let mapSubscription = null;
-    try {
-        mapSubscription = supabase.channel(`dnd-map-${sessionId}`)
-            .on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: TOKEN_TABLE,
-                filter: `session_id=eq.${sessionId}`
-            }, payload => {
-                if (payload.eventType === 'DELETE') {
-                    mapLayer.querySelector(`#token-${CSS.escape(String(payload.old.id))}`)?.remove();
-                    removeKnownToken(payload.old.id);
-                } else {
-                    renderToken(payload.new);
-                }
-            })
-            .subscribe();
-    } catch (err) {
-        console.warn('Realtime mappa non disponibile:', err);
+    if (!localMode) {
+        try {
+            mapSubscription = supabase.channel(`dnd-map-${sessionId}`)
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: TOKEN_TABLE,
+                    filter: `session_id=eq.${sessionId}`
+                }, payload => {
+                    if (payload.eventType === 'DELETE') {
+                        mapLayer.querySelector(`#token-${CSS.escape(String(payload.old.id))}`)?.remove();
+                        removeKnownToken(payload.old.id);
+                    } else {
+                        renderToken(payload.new);
+                    }
+                })
+                .subscribe();
+        } catch (err) {
+            console.warn('Realtime mappa non disponibile:', err);
+        }
     }
 
     window.__dndMapApi = {
+        getTokens: () => [...knownTokens],
         addToken: async (token) => {
             const payload = {
                 session_id: sessionId,
@@ -252,15 +295,50 @@ export function showTabletop(container, sessionId, options = {}) {
                 character_id: token.character_id || null,
                 data: token.data || {}
             };
-            const { data, error } = await insertToken(payload);
+            const { data, error } = localMode
+                ? dndLocalStore.tokens.insert(payload)
+                : await insertToken(payload);
             if (error) throw error;
             renderToken(data || payload);
         },
+        updateToken: async (id, patch) => {
+            const current = knownTokens.find(token => String(token.id) === String(id)) || {};
+            const payload = {
+                ...patch,
+                data: patch.data ? { ...(current.data || {}), ...patch.data } : current.data
+            };
+            const { data, error } = localMode
+                ? dndLocalStore.tokens.update(id, payload)
+                : await supabase
+                    .from(TOKEN_TABLE)
+                    .update(payload)
+                    .eq('id', id)
+                    .select('*')
+                    .single();
+            if (error) throw error;
+            renderToken(data || { ...current, ...payload });
+            return data;
+        },
         deleteToken: async (id) => {
-            const { error } = await runTokenQuery((tableName) => supabase.from(tableName).delete().eq('id', id));
+            const { error } = localMode
+                ? dndLocalStore.tokens.delete(id)
+                : await supabase.from(TOKEN_TABLE).delete().eq('id', id);
             if (error) throw error;
             mapLayer.querySelector(`#token-${CSS.escape(String(id))}`)?.remove();
             removeKnownToken(id);
+        },
+        focusToken: (id) => {
+            const token = knownTokens.find(item => String(item.id) === String(id));
+            if (!token) return;
+            const rect = viewport.getBoundingClientRect();
+            translateX = rect.width / 2 - Number(token.x || 0) * scale;
+            translateY = rect.height / 2 - Number(token.y || 0) * scale;
+            updateTransform();
+            const tokenEl = mapLayer.querySelector(`#token-${CSS.escape(String(id))}`);
+            if (tokenEl) {
+                tokenEl.classList.add('focused');
+                window.setTimeout(() => tokenEl.classList.remove('focused'), 1200);
+            }
         },
         zoomIn: () => setScale(scale * 1.15),
         zoomOut: () => setScale(scale * 0.85),
@@ -271,10 +349,19 @@ export function showTabletop(container, sessionId, options = {}) {
             updateTransform();
         },
         toggleFog: () => {
-            fogEnabled = !fogEnabled;
-            fog.classList.toggle('active', fogEnabled);
-            return fogEnabled;
+            return setFog(!fogEnabled);
         },
+        toggleGrid: () => {
+            return setGridVisible(!gridVisible);
+        },
+        setFog,
+        setGridVisible,
+        setGridSize: (size) => {
+            gridSize = Math.min(Math.max(Number(size) || 50, 20), 200);
+            updateGrid();
+            return gridSize;
+        },
+        pingCenter,
         cleanup: () => {
             if (mapSubscription && supabase.removeChannel) supabase.removeChannel(mapSubscription);
         }

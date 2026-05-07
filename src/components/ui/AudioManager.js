@@ -150,12 +150,10 @@ export const AudioManager = {
 
                 <div class="music-actions">
                     <button id="playSelectedPlaylist" class="btn-primary" type="button">AVVIA PLAYLIST</button>
+                    <button id="uploadLocalTrack" class="btn-back-glass" type="button">CARICA FILE</button>
                     <button id="stopMusic" class="btn-back-glass" type="button">STOP MUSICA</button>
+                    <input id="localTrackInput" type="file" accept="audio/*" style="display:none;">
                 </div>
-
-                <section class="music-note glass-box">
-                    <p>Le tracce definitive possono essere sostituite aggiungendo URL o file locali nella configurazione playlist. La struttura e la selezione sono gia pronte.</p>
-                </section>
             </div>
         `;
 
@@ -204,6 +202,21 @@ export const AudioManager = {
         };
 
         container.querySelector('#stopMusic').onclick = () => AudioManager.stop();
+        container.querySelector('#uploadLocalTrack').onclick = () => {
+            container.querySelector('#localTrackInput').click();
+        };
+        container.querySelector('#localTrackInput').onchange = (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            currentPlaylistKey = 'tavern';
+            currentTrackName = file.name;
+            AudioManager.play(url, false, {
+                playlistKey: currentPlaylistKey,
+                trackName: currentTrackName
+            });
+            refreshSelectionUI();
+        };
         container.querySelector('#musicBack').onclick = async () => {
             const { showLobby } = await import('../../lobby.js');
             showLobby(container);

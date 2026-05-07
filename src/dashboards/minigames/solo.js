@@ -1,5 +1,5 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { getUnlockedLevel, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { getUnlockedLevel, getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 
 /**
  * GIOCO: SOLO - MASTER EDITION (Responsive & Matte Black)
@@ -16,7 +16,7 @@ const getHex = (color) => {
 
 // Icone ed Emoji per le carte speciali
 const getIcon = (val) => {
-    const symbols = { 'SKIP': '🚫', 'REV': '🔄', '+2': '✌️', 'WILD': '🌈', '+4': '✨' };
+    const symbols = { 'SKIP': '🚫', 'REV': '🔄', 'WILD': '🌈' };
     return symbols[val] || val;
 };
 
@@ -104,10 +104,15 @@ function renderLayout(container, state) {
         </footer>
         
         <div id="picker-wild" class="game-color-picker">
-            <div class="game-color-tile" data-color="red" style="background:#ff4444; box-shadow: 0 0 30px #ff4444;"></div>
-            <div class="game-color-tile" data-color="blue" style="background:#00d2ff; box-shadow: 0 0 30px #00d2ff;"></div>
-            <div class="game-color-tile" data-color="green" style="background:#00ffa3; box-shadow: 0 0 30px #00ffa3;"></div>
-            <div class="game-color-tile" data-color="yellow" style="background:#ffbd39; box-shadow: 0 0 30px #ffbd39;"></div>
+            <div class="game-color-picker-panel">
+                <span>Scegli il colore</span>
+                <div class="game-color-picker-grid">
+                    <button class="game-color-tile" data-color="red" style="--tile-color:#ff4444; background:#ff4444; box-shadow: 0 0 30px #ff4444;" aria-label="Rosso"></button>
+                    <button class="game-color-tile" data-color="blue" style="--tile-color:#00d2ff; background:#00d2ff; box-shadow: 0 0 30px #00d2ff;" aria-label="Blu"></button>
+                    <button class="game-color-tile" data-color="green" style="--tile-color:#00ffa3; background:#00ffa3; box-shadow: 0 0 30px #00ffa3;" aria-label="Verde"></button>
+                    <button class="game-color-tile" data-color="yellow" style="--tile-color:#ffbd39; background:#ffbd39; box-shadow: 0 0 30px #ffbd39;" aria-label="Giallo"></button>
+                </div>
+            </div>
         </div>
     </div>
     `;
@@ -135,6 +140,8 @@ function createCardElement(card, isBack = false) {
 
     const hex = getHex(card.color);
     const icon = getIcon(card.val);
+    const isDrawNumber = card.val === '+2' || card.val === '+4';
+    if (isDrawNumber) el.classList.add('solo-card-draw-number');
 
     el.style.borderColor = hex;
     el.style.color = hex;
@@ -143,7 +150,9 @@ function createCardElement(card, isBack = false) {
     el.innerHTML = `
         <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
             <div style="align-self: flex-start; font-size: 0.9rem; line-height: 1; text-shadow: 0 0 5px ${hex};">${icon}</div>
-            <div style="align-self: center; font-size: 2.4rem; filter: drop-shadow(0 0 10px ${hex});">${icon}</div>
+            <div class="solo-card-symbol" style="align-self: center; filter: drop-shadow(0 0 10px ${hex});">
+                ${isDrawNumber ? `<span class="solo-card-draw-label">${icon}</span>` : icon}
+            </div>
             <div style="align-self: flex-end; font-size: 0.9rem; line-height: 1; transform: rotate(180deg); text-shadow: 0 0 5px ${hex};">${icon}</div>
         </div>
     `;
@@ -330,9 +339,8 @@ async function playCard(pIdx, cardIdx, state, container) {
                 await drawCard(0, state, container);
             }
         } else {
-            // Controllo se il Bot si ricorda di chiamare SOLO!
-            // Accuratezza: Livello 1 = 55%, Livello 10 = 100%
-            const accuracy = Math.min(1.0, state.currentLevel * 0.05 + 0.5);
+            // Controllo se il Bot si ricorda di chiamare SOLO!: base 50%, poi +3% per livello completato.
+            const accuracy = getLevelDifficultyChance(state.currentLevel, 0.5, 1.0);
             if (Math.random() <= accuracy) {
                 logStatus(container, `BOT ${pIdx} grida: SOLO!`);
             } else {
@@ -407,7 +415,7 @@ function botLogic(state, container) {
         }
     });
 
-    const accuracy = Math.min(0.95, state.currentLevel * 0.025);
+    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.95);
     const isSmart = Math.random() <= accuracy;
 
     if (validIdxs.length > 0) {

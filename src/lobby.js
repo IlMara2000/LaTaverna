@@ -12,14 +12,21 @@ export function showLobby(container) {
     
     updateSidebarContext("home");
 
-    const isGuest = localStorage.getItem('taverna_guest_user') !== null;
+    let guestUser = null;
+    try {
+        guestUser = JSON.parse(localStorage.getItem('taverna_guest_user'));
+    } catch {
+        guestUser = null;
+    }
+    const isGuest = guestUser !== null;
+    const isLocalDndGuest = Boolean(guestUser?.isLocalDnd);
     
     container.innerHTML = `
         <div id="lobby-wrapper" style="width: 100%; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;">
             <div class="dashboard-container" style="padding-bottom: calc(120px + env(safe-area-inset-bottom));">
                 
                 <header class="lobby-header" style="margin-bottom: 30px;">
-                    <p class="subtitle" style="opacity: 0.6; font-size: 0.8rem; letter-spacing: 2px;">${isGuest ? '🔴 OSPITE' : '🟢 ONLINE'}</p>
+                    <p class="subtitle" style="opacity: 0.6; font-size: 0.8rem; letter-spacing: 2px;">${isGuest ? (isLocalDndGuest ? '🟣 OSPITE LOCALE' : '🔴 OSPITE') : '🟢 ONLINE'}</p>
                     <h1 class="main-title">LA <span class="text-amethyst">LIBRERIA</span></h1>
                 </header>
                 
@@ -46,7 +53,7 @@ export function showLobby(container) {
     };
 
     container.querySelector('#btn-dnd5e').onclick = async () => {
-        if (isGuest) return alert("Login richiesto!");
+        if (isGuest && !isLocalDndGuest) return alert("Login richiesto!");
         const { initDndDashboard } = await import('./dashboards/dnd5e.js');
         initDndDashboard(container);
     };

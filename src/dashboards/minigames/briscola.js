@@ -1,5 +1,5 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { getUnlockedLevel, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { getUnlockedLevel, getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 
 /**
  * GIOCO: BRISCOLA - MASTER EDITION
@@ -189,13 +189,13 @@ export function initBriscola(container) {
         }
     }
 
-    // INTELIGENZA ARTIFICIALE: Incremento del 2.5% ad ogni livello
+    // INTELIGENZA ARTIFICIALE: +3% per ogni livello completato
     function playBot() {
         const hand = state.players[1];
         let chosenIdx = 0;
         
         // Accuratezza: Max 90% (per non renderlo imbattibile)
-        const accuracy = Math.min(0.90, state.currentLevel * 0.025);
+        const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.90);
 
         if (Math.random() <= accuracy) {
             // Mossa Intelligente

@@ -3,6 +3,28 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+const unavailable = (message) => ({
+    data: null,
+    error: { message }
+});
+
+const createFallbackQuery = (result = { data: [], error: null }) => {
+    const query = {
+        select: () => query,
+        eq: () => query,
+        order: () => query,
+        limit: () => query,
+        insert: () => createFallbackQuery(unavailable("Database non disponibile senza configurazione Supabase.")),
+        update: () => createFallbackQuery(unavailable("Database non disponibile senza configurazione Supabase.")),
+        upsert: () => createFallbackQuery(unavailable("Database non disponibile senza configurazione Supabase.")),
+        delete: () => createFallbackQuery(unavailable("Database non disponibile senza configurazione Supabase.")),
+        maybeSingle: async () => ({ data: null, error: null }),
+        single: async () => result.error ? result : { data: null, error: null },
+        then: (resolve, reject) => Promise.resolve(result).then(resolve, reject)
+    };
+    return query;
+};
+
 const createLocalFallbackClient = () => ({
     auth: {
         getUser: async () => ({ data: { user: null }, error: null }),
@@ -24,14 +46,7 @@ const createLocalFallbackClient = () => ({
             getPublicUrl: () => ({ data: { publicUrl: "" } })
         })
     },
-    from: () => ({
-        select: () => ({
-            eq: () => ({
-                order: async () => ({ data: [], error: null })
-            })
-        }),
-        insert: async () => ({ data: null, error: { message: "Database non disponibile senza configurazione Supabase." } })
-    })
+    from: () => createFallbackQuery()
 });
 
 if (!supabaseUrl || !supabaseAnonKey) {
@@ -44,12 +59,12 @@ export const supabase = supabaseUrl && supabaseAnonKey
 
 export const SUPABASE_CONFIG = {
     tables: {
-        sessions: 'session',      // Le campagne attive
-        tokens: 'tokens',         // Token sulle mappe
-        characters: 'characters', // Personaggi (filtrati per system_id)
-        chat: 'chat_messages',    // Messaggi live
-        assets: 'assets',         // Immagini e PDF
-        systems: 'game_systems'   // Tabella definizioni sistemi (D&D, Pathfinder, etc.)
+        sessions: 'dnd_sessions',
+        tokens: 'dnd_tokens',
+        characters: 'characters',
+        chat: 'dnd_chat',
+        assets: 'assets',
+        systems: 'game_systems'
     },
     buckets: {
         zaino: 'vtt_assets'
