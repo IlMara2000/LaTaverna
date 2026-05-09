@@ -46,6 +46,7 @@ export function showTabletop(container, sessionId, options = {}) {
     let gridSize = Number(options.gridSize || 50);
     let knownTokens = [];
     const localMode = Boolean(options.localMode);
+    const localStore = options.localStore || dndLocalStore;
 
     container.innerHTML = `
         <div class="tabletop-viewport" id="viewport">
@@ -225,7 +226,7 @@ export function showTabletop(container, sessionId, options = {}) {
                         y: Math.round(parseFloat(el.style.top))
                     };
                     if (localMode) {
-                        dndLocalStore.tokens.update(doc.id, patch);
+                        localStore.tokens.update(doc.id, patch);
                     } else {
                         await supabase
                             .from(TOKEN_TABLE)
@@ -245,7 +246,7 @@ export function showTabletop(container, sessionId, options = {}) {
     const loadTokens = async () => {
         try {
             const { data, error } = localMode
-                ? dndLocalStore.tokens.list(sessionId)
+                ? localStore.tokens.list(sessionId)
                 : await supabase
                         .from(TOKEN_TABLE)
                         .select('*')
@@ -296,7 +297,7 @@ export function showTabletop(container, sessionId, options = {}) {
                 data: token.data || {}
             };
             const { data, error } = localMode
-                ? dndLocalStore.tokens.insert(payload)
+                ? localStore.tokens.insert(payload)
                 : await insertToken(payload);
             if (error) throw error;
             renderToken(data || payload);
@@ -308,7 +309,7 @@ export function showTabletop(container, sessionId, options = {}) {
                 data: patch.data ? { ...(current.data || {}), ...patch.data } : current.data
             };
             const { data, error } = localMode
-                ? dndLocalStore.tokens.update(id, payload)
+                ? localStore.tokens.update(id, payload)
                 : await supabase
                     .from(TOKEN_TABLE)
                     .update(payload)
@@ -321,7 +322,7 @@ export function showTabletop(container, sessionId, options = {}) {
         },
         deleteToken: async (id) => {
             const { error } = localMode
-                ? dndLocalStore.tokens.delete(id)
+                ? localStore.tokens.delete(id)
                 : await supabase.from(TOKEN_TABLE).delete().eq('id', id);
             if (error) throw error;
             mapLayer.querySelector(`#token-${CSS.escape(String(id))}`)?.remove();

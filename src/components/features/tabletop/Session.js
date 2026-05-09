@@ -399,6 +399,7 @@ export async function showSession(container, sessionId, options = {}) {
         gridVisible: sessionState.gridVisible,
         gridSize: sessionState.map_grid_size,
         localMode,
+        localStore,
         onTokensChange: (tokens) => renderTokenList(tokens)
     });
 
