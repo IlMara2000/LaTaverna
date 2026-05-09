@@ -41,6 +41,9 @@ export function showLobby(container) {
                     <div class="game-card is-clickable" id="btn-dnd5e" style="outline: none; -webkit-tap-highlight-color: transparent;">
                         <h2 class="card-title-sm">🐉 D&D 5E</h2>
                     </div>
+                    <div class="game-card is-clickable" id="btn-pathfinder2e" style="outline: none; -webkit-tap-highlight-color: transparent; margin-top: 14px;">
+                        <h2 class="card-title-sm">🧭 PATHFINDER 2E</h2>
+                    </div>
                 </section>
                 
             </div>
@@ -56,5 +59,11 @@ export function showLobby(container) {
         if (isGuest && !isLocalDndGuest) return alert("Login richiesto!");
         const { initDndDashboard } = await import('./dashboards/dnd5e.js');
         initDndDashboard(container);
+    };
+
+    container.querySelector('#btn-pathfinder2e').onclick = async () => {
+        if (isGuest && !isLocalDndGuest) return alert("Login richiesto!");
+        const { initPathfinderDashboard } = await import('./dashboards/pathfinder2e.js');
+        initPathfinderDashboard(container);
     };
 }

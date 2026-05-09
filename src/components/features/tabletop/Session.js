@@ -1,5 +1,14 @@
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
-import { dndLocalStore, getLocalDndUser, isLocalDndUser, isLocalDndUserId } from '../../../services/dndLocalStore.js';
+import {
+    dndLocalStore,
+    getLocalDndUser,
+    isLocalDndUser,
+    isLocalDndUserId,
+    pathfinderLocalStore,
+    getLocalPathfinderUser,
+    isLocalPathfinderUser,
+    isLocalPathfinderUserId
+} from '../../../services/dndLocalStore.js';
 import { showTabletop } from './Map.js';
 
 const TABLES = {
@@ -7,6 +16,33 @@ const TABLES = {
     chat: SUPABASE_CONFIG?.tables?.chat || 'dnd_chat',
     characters: SUPABASE_CONFIG?.tables?.characters || 'characters'
 };
+
+const SESSION_SYSTEMS = {
+    dnd5e: {
+        id: 'dnd5e',
+        localStore: dndLocalStore,
+        getLocalUser: getLocalDndUser,
+        isLocalUser: isLocalDndUser,
+        isLocalUserId: isLocalDndUserId,
+        loadDashboard: async () => {
+            const { initDndDashboard } = await import('../../../dashboards/dnd5e.js');
+            return initDndDashboard;
+        }
+    },
+    pathfinder2e: {
+        id: 'pathfinder2e',
+        localStore: pathfinderLocalStore,
+        getLocalUser: getLocalPathfinderUser,
+        isLocalUser: isLocalPathfinderUser,
+        isLocalUserId: isLocalPathfinderUserId,
+        loadDashboard: async () => {
+            const { initPathfinderDashboard } = await import('../../../dashboards/pathfinder2e.js');
+            return initPathfinderDashboard;
+        }
+    }
+};
+
+const getSessionSystem = (systemId = 'dnd5e') => SESSION_SYSTEMS[systemId] || SESSION_SYSTEMS.dnd5e;
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -26,7 +62,8 @@ const abilityMod = (score = 10) => Math.floor((Number(score || 10) - 10) / 2);
 
 const formatMod = (value = 0) => `${value >= 0 ? '+' : ''}${value}`;
 
-async function getSupabaseUser() {
+async function getSupabaseUser(systemId = 'dnd5e') {
+    const system = getSessionSystem(systemId);
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.id && isUuid(user.id)) return user;
 
@@ -40,7 +77,7 @@ async function getSupabaseUser() {
         console.warn('Login anonimo Supabase non disponibile:', err);
     }
 
-    return getLocalDndUser();
+    return system.getLocalUser();
 }
 
 const parseDiceFormula = (formula = '') => {
@@ -62,16 +99,17 @@ const isMissingColumnError = (error) => {
         || message.includes('schema cache');
 };
 
-async function loadSessionCharacters(userId) {
-    if (isLocalDndUserId(userId)) return dndLocalStore.characters.list(userId).data || [];
+async function loadSessionCharacters(userId, systemId = 'dnd5e') {
+    const system = getSessionSystem(systemId);
+    if (system.isLocalUserId(userId)) return system.localStore.characters.list(userId).data || [];
 
     const attempts = isUuid(userId) ? [
-        (query) => query.eq('user_id', userId).eq('system_id', 'dnd5e'),
+        (query) => query.eq('user_id', userId).eq('system_id', system.id),
         (query) => query.eq('user_id', userId),
-        (query) => query.eq('system_id', 'dnd5e'),
+        (query) => query.eq('system_id', system.id),
         (query) => query
     ] : [
-        (query) => query.eq('system_id', 'dnd5e'),
+        (query) => query.eq('system_id', system.id),
         (query) => query
     ];
 
@@ -128,8 +166,9 @@ const getCharacterInitiativeMod = (char = {}) => {
     return abilityMod(char.data?.stats?.dex || 10);
 };
 
-export async function showSession(container, sessionId) {
-    const currentUser = await getSupabaseUser();
+export async function showSession(container, sessionId, options = {}) {
+    const requestedSystem = getSessionSystem(options.systemId || 'dnd5e');
+    const currentUser = await getSupabaseUser(requestedSystem.id);
     if (!currentUser?.id) {
         container.innerHTML = `
             <div class="dnd-empty glass-box dnd-schema-error">
@@ -142,13 +181,12 @@ export async function showSession(container, sessionId) {
     const currentUserId = currentUser.id;
     const dbUserId = currentUserId;
     const currentUserName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Viandante';
-    const localMode = isLocalDndUser(currentUser);
-    const characters = await loadSessionCharacters(currentUserId);
+    const localMode = requestedSystem.isLocalUser(currentUser);
 
     let sessionData = { id: sessionId, name: 'Tavolo Live', data: {} };
     try {
         const { data } = localMode
-            ? dndLocalStore.sessions.get(sessionId)
+            ? requestedSystem.localStore.sessions.get(sessionId)
             : await supabase
                 .from(TABLES.sessions)
                 .select('*')
@@ -158,6 +196,9 @@ export async function showSession(container, sessionId) {
     } catch (err) {
         console.warn('Sessione non recuperata:', err);
     }
+    const sessionSystem = getSessionSystem(sessionData.system_id || sessionData.data?.system_id || requestedSystem.id);
+    const localStore = sessionSystem.localStore;
+    const characters = await loadSessionCharacters(currentUserId, sessionSystem.id);
 
     const sessionState = {
         initiative: sessionData.data?.initiative || [],
@@ -384,7 +425,7 @@ export async function showSession(container, sessionId) {
                 is_roll: isRoll
             };
             const { data, error } = localMode
-                ? dndLocalStore.chat.insert(payload)
+                ? localStore.chat.insert(payload)
                 : await supabase.from(TABLES.chat).insert([payload]).select('*').single();
             if (error) throw error;
             if (data) renderMessage(data);
@@ -396,7 +437,7 @@ export async function showSession(container, sessionId) {
     const loadMessages = async () => {
         try {
             const { data, error } = localMode
-                ? dndLocalStore.chat.list(sessionId)
+                ? localStore.chat.list(sessionId)
                 : await supabase
                         .from(TABLES.chat)
                         .select('*')
@@ -502,7 +543,7 @@ export async function showSession(container, sessionId) {
             const nextData = { ...(sessionData.data || {}), ...getPersistentSessionState() };
             sessionData.data = nextData;
             if (localMode) {
-                dndLocalStore.sessions.updateData(sessionId, nextData);
+                localStore.sessions.updateData(sessionId, nextData);
                 return;
             }
             await supabase.from(TABLES.sessions).update({ data: nextData }).eq('id', sessionId);
@@ -928,7 +969,7 @@ export async function showSession(container, sessionId) {
 
     container.querySelector('#exitSession').onclick = async () => {
         cleanupSessionView();
-        const { initDndDashboard } = await import('../../../dashboards/dnd5e.js');
-        initDndDashboard(container);
+        const initDashboard = await sessionSystem.loadDashboard();
+        initDashboard(container);
     };
 }

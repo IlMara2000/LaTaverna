@@ -203,6 +203,7 @@ const buildSessionPayload = (form, user, mapUrlOverride = null) => {
 
     return {
         user_id: userId,
+        system_id: 'dnd5e',
         name: form.get('name'),
         status: details.status,
         party_level: details.party_level,
@@ -259,17 +260,32 @@ async function loadSessionRows(user) {
         .from(TABLES.sessions)
         .select('*')
         .eq('user_id', userId)
+        .eq('system_id', 'dnd5e')
         .order('created_at', { ascending: false });
-    return result;
+    if (!result.error || !isMissingColumnError(result.error)) return result;
+
+    const userOnly = await supabase
+        .from(TABLES.sessions)
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    return userOnly.error ? userOnly : { ...userOnly, limitedSchema: true };
 }
 
 async function saveSessionRow(session, form, user, uploadedMapUrl) {
     const payload = buildSessionPayload(form, user, uploadedMapUrl);
     if (isLocalDndUser(user)) return dndLocalStore.sessions.save(session, payload);
     const query = supabase.from(TABLES.sessions);
-    return session?.id
+    const result = await (session?.id
         ? query.update(payload).eq('id', session.id)
-        : query.insert([payload]);
+        : query.insert([payload]));
+    if (!result.error || !isMissingColumnError(result.error)) return result;
+
+    const fallbackPayload = omitKeys(payload, ['system_id']);
+    const fallbackQuery = supabase.from(TABLES.sessions);
+    return session?.id
+        ? fallbackQuery.update(fallbackPayload).eq('id', session.id)
+        : fallbackQuery.insert([fallbackPayload]);
 }
 
 async function deleteSessionRow(id, user) {
@@ -970,7 +986,7 @@ async function renderSessions(container) {
             list.querySelectorAll('[data-open-session]').forEach(btn => {
                 btn.onclick = async () => {
                     const { showSession } = await import('../components/features/tabletop/Session.js');
-                    showSession(container, btn.dataset.openSession);
+                    showSession(container, btn.dataset.openSession, { systemId: 'dnd5e' });
                 };
             });
             list.querySelectorAll('[data-edit-session]').forEach(btn => {

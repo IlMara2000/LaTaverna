@@ -1,11 +1,14 @@
-const PREFIX = 'taverna_dnd5e_local_';
-const USER_KEY = `${PREFIX}user_id`;
-
-const STORAGE_KEYS = {
-    characters: `${PREFIX}characters`,
-    sessions: `${PREFIX}sessions`,
-    tokens: `${PREFIX}tokens`,
-    chat: `${PREFIX}chat`
+const SYSTEMS = {
+    dnd5e: {
+        prefix: 'taverna_dnd5e_local_',
+        email: 'ospite-locale@lataverna.local',
+        flag: 'is_local_dnd'
+    },
+    pathfinder2e: {
+        prefix: 'taverna_pathfinder2e_local_',
+        email: 'ospite-pathfinder@lataverna.local',
+        flag: 'is_local_pathfinder'
+    }
 };
 
 const createUuid = () => {
@@ -14,27 +17,6 @@ const createUuid = () => {
         (Number(c) ^ globalThis.crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> Number(c) / 4).toString(16)
     );
 };
-
-export const getLocalDndUser = () => {
-    let id = localStorage.getItem(USER_KEY);
-    if (!id) {
-        id = createUuid();
-        localStorage.setItem(USER_KEY, id);
-    }
-    return {
-        id,
-        email: 'ospite-locale@lataverna.local',
-        is_anonymous: true,
-        is_local_dnd: true,
-        user_metadata: {
-            full_name: 'Ospite Locale'
-        }
-    };
-};
-
-export const isLocalDndUser = (user) => Boolean(user?.is_local_dnd) || isLocalDndUserId(user?.id);
-
-export const isLocalDndUserId = (userId) => Boolean(userId && localStorage.getItem(USER_KEY) === String(userId));
 
 const readList = (key) => {
     try {
@@ -82,56 +64,108 @@ const deleteRow = (key, id) => {
     return result(null);
 };
 
-export const dndLocalStore = {
-    characters: {
-        list: (userId) => result(
-            readList(STORAGE_KEYS.characters)
-                .filter(item => String(item.user_id) === String(userId))
-                .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-        ),
-        save: (char, payload) => result(upsertRow(STORAGE_KEYS.characters, payload, char?.id)),
-        delete: (id) => deleteRow(STORAGE_KEYS.characters, id)
-    },
-    sessions: {
-        list: (userId) => result(
-            readList(STORAGE_KEYS.sessions)
-                .filter(item => String(item.user_id) === String(userId))
-                .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
-        ),
-        get: (id) => result(readList(STORAGE_KEYS.sessions).find(item => String(item.id) === String(id)) || null),
-        save: (session, payload) => result(upsertRow(STORAGE_KEYS.sessions, payload, session?.id)),
-        updateData: (id, data) => {
-            const rows = readList(STORAGE_KEYS.sessions);
-            const timestamp = now();
-            let saved = null;
-            const nextRows = rows.map(item => {
-                if (String(item.id) !== String(id)) return item;
-                saved = { ...item, data, updated_at: timestamp };
-                return saved;
-            });
-            writeList(STORAGE_KEYS.sessions, nextRows);
-            return result(saved);
-        },
-        delete: (id) => {
-            const sessionId = String(id);
-            deleteRow(STORAGE_KEYS.sessions, id);
-            writeList(STORAGE_KEYS.tokens, readList(STORAGE_KEYS.tokens).filter(item => String(item.session_id) !== sessionId));
-            writeList(STORAGE_KEYS.chat, readList(STORAGE_KEYS.chat).filter(item => String(item.session_id) !== sessionId));
-            return result(null);
+const createLocalGameStore = (systemId) => {
+    const config = SYSTEMS[systemId] || SYSTEMS.dnd5e;
+    const userKey = `${config.prefix}user_id`;
+    const storageKeys = {
+        characters: `${config.prefix}characters`,
+        sessions: `${config.prefix}sessions`,
+        tokens: `${config.prefix}tokens`,
+        chat: `${config.prefix}chat`
+    };
+
+    const getLocalUser = () => {
+        let id = localStorage.getItem(userKey);
+        if (!id) {
+            id = createUuid();
+            localStorage.setItem(userKey, id);
         }
-    },
-    tokens: {
-        list: (sessionId) => result(readList(STORAGE_KEYS.tokens).filter(item => String(item.session_id) === String(sessionId))),
-        insert: (payload) => result(upsertRow(STORAGE_KEYS.tokens, payload)),
-        update: (id, patch) => result(upsertRow(STORAGE_KEYS.tokens, patch, id)),
-        delete: (id) => deleteRow(STORAGE_KEYS.tokens, id)
-    },
-    chat: {
-        list: (sessionId) => result(
-            readList(STORAGE_KEYS.chat)
-                .filter(item => String(item.session_id) === String(sessionId))
-                .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
-        ),
-        insert: (payload) => result(upsertRow(STORAGE_KEYS.chat, payload))
-    }
+        return {
+            id,
+            email: config.email,
+            is_anonymous: true,
+            is_local_rpg: true,
+            [config.flag]: true,
+            user_metadata: {
+                full_name: 'Ospite Locale'
+            }
+        };
+    };
+
+    const isLocalUserId = (userId) => Boolean(userId && localStorage.getItem(userKey) === String(userId));
+    const isLocalUser = (user) => Boolean(user?.[config.flag]) || isLocalUserId(user?.id);
+
+    const store = {
+        characters: {
+            list: (userId) => result(
+                readList(storageKeys.characters)
+                    .filter(item => String(item.user_id) === String(userId))
+                    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+            ),
+            save: (char, payload) => result(upsertRow(storageKeys.characters, payload, char?.id)),
+            delete: (id) => deleteRow(storageKeys.characters, id)
+        },
+        sessions: {
+            list: (userId) => result(
+                readList(storageKeys.sessions)
+                    .filter(item => String(item.user_id) === String(userId))
+                    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+            ),
+            get: (id) => result(readList(storageKeys.sessions).find(item => String(item.id) === String(id)) || null),
+            save: (session, payload) => result(upsertRow(storageKeys.sessions, payload, session?.id)),
+            updateData: (id, data) => {
+                const rows = readList(storageKeys.sessions);
+                const timestamp = now();
+                let saved = null;
+                const nextRows = rows.map(item => {
+                    if (String(item.id) !== String(id)) return item;
+                    saved = { ...item, data, updated_at: timestamp };
+                    return saved;
+                });
+                writeList(storageKeys.sessions, nextRows);
+                return result(saved);
+            },
+            delete: (id) => {
+                const sessionId = String(id);
+                deleteRow(storageKeys.sessions, id);
+                writeList(storageKeys.tokens, readList(storageKeys.tokens).filter(item => String(item.session_id) !== sessionId));
+                writeList(storageKeys.chat, readList(storageKeys.chat).filter(item => String(item.session_id) !== sessionId));
+                return result(null);
+            }
+        },
+        tokens: {
+            list: (sessionId) => result(readList(storageKeys.tokens).filter(item => String(item.session_id) === String(sessionId))),
+            insert: (payload) => result(upsertRow(storageKeys.tokens, payload)),
+            update: (id, patch) => result(upsertRow(storageKeys.tokens, patch, id)),
+            delete: (id) => deleteRow(storageKeys.tokens, id)
+        },
+        chat: {
+            list: (sessionId) => result(
+                readList(storageKeys.chat)
+                    .filter(item => String(item.session_id) === String(sessionId))
+                    .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
+            ),
+            insert: (payload) => result(upsertRow(storageKeys.chat, payload))
+        }
+    };
+
+    return {
+        getLocalUser,
+        isLocalUser,
+        isLocalUserId,
+        store
+    };
 };
+
+const dndLocal = createLocalGameStore('dnd5e');
+const pathfinderLocal = createLocalGameStore('pathfinder2e');
+
+export const getLocalDndUser = dndLocal.getLocalUser;
+export const isLocalDndUser = dndLocal.isLocalUser;
+export const isLocalDndUserId = dndLocal.isLocalUserId;
+export const dndLocalStore = dndLocal.store;
+
+export const getLocalPathfinderUser = pathfinderLocal.getLocalUser;
+export const isLocalPathfinderUser = pathfinderLocal.isLocalUser;
+export const isLocalPathfinderUserId = pathfinderLocal.isLocalUserId;
+export const pathfinderLocalStore = pathfinderLocal.store;
