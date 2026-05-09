@@ -4,6 +4,7 @@
 create table if not exists public.dnd_sessions (
     id uuid primary key default gen_random_uuid(),
     user_id uuid not null references auth.users(id) on delete cascade,
+    system_id text not null default 'dnd5e',
     name text not null,
     status text not null default 'attiva',
     party_level integer not null default 1,
@@ -14,6 +15,9 @@ create table if not exists public.dnd_sessions (
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now()
 );
+
+alter table public.dnd_sessions
+    add column if not exists system_id text not null default 'dnd5e';
 
 create table if not exists public.user_profiles (
     user_id uuid primary key references auth.users(id) on delete cascade,
@@ -195,6 +199,7 @@ with check (
 );
 
 create index if not exists dnd_sessions_user_id_idx on public.dnd_sessions(user_id);
+create index if not exists dnd_sessions_user_id_system_id_idx on public.dnd_sessions(user_id, system_id);
 create index if not exists user_profiles_user_id_idx on public.user_profiles(user_id);
 create index if not exists user_preferences_user_id_idx on public.user_preferences(user_id);
 create index if not exists dnd_tokens_session_id_idx on public.dnd_tokens(session_id);

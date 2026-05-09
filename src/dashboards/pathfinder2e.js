@@ -1,7 +1,7 @@
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { showLobby } from '../lobby.js';
 import { supabase, SUPABASE_CONFIG } from '../services/supabase.js';
-import { dndLocalStore, getLocalDndUser, isLocalDndUser, isLocalDndUserId } from '../services/dndLocalStore.js';
+import { pathfinderLocalStore, getLocalPathfinderUser, isLocalPathfinderUser, isLocalPathfinderUserId } from '../services/dndLocalStore.js';
 
 const TABLES = {
     characters: 'characters',
@@ -13,27 +13,27 @@ const STORAGE = {
 
 const MANUALS = [
     {
-        id: 'player',
-        title: 'Manuale del Giocatore',
-        tag: 'Creazione personaggi, classi, razze, regole base',
-        slug: 'Giocatore',
-        pages: 321,
+        id: 'base',
+        title: 'Manuale Base Pathfinder',
+        tag: 'Creazione personaggi, prove, combattimento e progressione',
+        slug: 'PathfinderBase',
+        pages: 10,
         filePageOffset: 0
     },
     {
-        id: 'master',
-        title: 'Guida del Dungeon Master',
-        tag: 'Sessioni, incontri, tesori, regole avanzate',
-        slug: 'DM',
-        pages: 320,
+        id: 'gm',
+        title: 'Guida del Game Master',
+        tag: 'Sessioni, difficolta, ricompense, esplorazione e gestione tavolo',
+        slug: 'PathfinderGM',
+        pages: 10,
         filePageOffset: 0
     },
     {
-        id: 'monsters',
-        title: 'Manuale dei Mostri',
-        tag: 'Creature, GS, statistiche e incontri',
-        slug: 'Mostri',
-        pages: 353,
+        id: 'bestiary',
+        title: 'Bestiario Pathfinder',
+        tag: 'Creature, pericoli, incontri e note rapide per i token',
+        slug: 'PathfinderBestiario',
+        pages: 10,
         filePageOffset: 0
     }
 ];
@@ -74,7 +74,7 @@ const getCurrentUser = async () => {
         console.warn('Login anonimo Supabase non disponibile:', err);
     }
 
-    return getLocalDndUser();
+    return getLocalPathfinderUser();
 };
 
 const getUserId = (user) => user?.id || null;
@@ -88,13 +88,13 @@ const isMissingColumnError = (error) => {
 };
 
 async function loadCharacterRows(userId) {
-    if (isLocalDndUserId(userId)) return dndLocalStore.characters.list(userId);
+    if (isLocalPathfinderUserId(userId)) return pathfinderLocalStore.characters.list(userId);
 
     const preferred = await supabase
         .from(TABLES.characters)
         .select('*')
         .eq('user_id', userId)
-        .eq('system_id', 'dnd5e')
+        .eq('system_id', 'pathfinder2e')
         .order('created_at', { ascending: false });
     if (!preferred.error) return preferred;
     if (!isMissingColumnError(preferred.error)) return preferred;
@@ -115,7 +115,7 @@ async function loadCharacterRows(userId) {
 }
 
 async function saveCharacterRow(char, fullPayload) {
-    if (isLocalDndUserId(fullPayload.user_id)) return dndLocalStore.characters.save(char, fullPayload);
+    if (isLocalPathfinderUserId(fullPayload.user_id)) return pathfinderLocalStore.characters.save(char, fullPayload);
 
     const attempts = [
         fullPayload,
@@ -148,8 +148,8 @@ async function saveCharacterRow(char, fullPayload) {
 }
 
 async function deleteCharacterRow(id) {
-    const localRows = dndLocalStore.characters.list(localStorage.getItem('taverna_dnd5e_local_user_id')).data || [];
-    if (localRows.some(item => String(item.id) === String(id))) return dndLocalStore.characters.delete(id);
+    const localRows = pathfinderLocalStore.characters.list(localStorage.getItem('taverna_pathfinder2e_local_user_id')).data || [];
+    if (localRows.some(item => String(item.id) === String(id))) return pathfinderLocalStore.characters.delete(id);
     return supabase.from(TABLES.characters).delete().eq('id', id);
 }
 
@@ -203,7 +203,7 @@ const buildSessionPayload = (form, user, mapUrlOverride = null) => {
 
     return {
         user_id: userId,
-        system_id: 'dnd5e',
+        system_id: 'pathfinder2e',
         name: form.get('name'),
         status: details.status,
         party_level: details.party_level,
@@ -239,7 +239,7 @@ async function uploadSessionMapFile(form, user) {
         .normalize('NFKD')
         .replace(/[^\w.\-]+/g, '_')
         .replace(/^_+|_+$/g, '') || 'mappa';
-    const filePath = `dnd-maps/${getUserId(user)}/${Date.now()}_${safeName}`;
+    const filePath = `pathfinder-maps/${getUserId(user)}/${Date.now()}_${safeName}`;
     const { error } = await supabase.storage
         .from(STORAGE.maps)
         .upload(filePath, file, {
@@ -254,13 +254,13 @@ async function uploadSessionMapFile(form, user) {
 
 async function loadSessionRows(user) {
     const userId = getUserId(user);
-    if (isLocalDndUser(user)) return dndLocalStore.sessions.list(userId);
+    if (isLocalPathfinderUser(user)) return pathfinderLocalStore.sessions.list(userId);
 
     const result = await supabase
         .from(TABLES.sessions)
         .select('*')
         .eq('user_id', userId)
-        .eq('system_id', 'dnd5e')
+        .eq('system_id', 'pathfinder2e')
         .order('created_at', { ascending: false });
     if (!result.error || !isMissingColumnError(result.error)) return result;
 
@@ -274,7 +274,7 @@ async function loadSessionRows(user) {
 
 async function saveSessionRow(session, form, user, uploadedMapUrl) {
     const payload = buildSessionPayload(form, user, uploadedMapUrl);
-    if (isLocalDndUser(user)) return dndLocalStore.sessions.save(session, payload);
+    if (isLocalPathfinderUser(user)) return pathfinderLocalStore.sessions.save(session, payload);
     const query = supabase.from(TABLES.sessions);
     const result = await (session?.id
         ? query.update(payload).eq('id', session.id)
@@ -289,7 +289,7 @@ async function saveSessionRow(session, form, user, uploadedMapUrl) {
 }
 
 async function deleteSessionRow(id, user) {
-    if (isLocalDndUser(user)) return dndLocalStore.sessions.delete(id);
+    if (isLocalPathfinderUser(user)) return pathfinderLocalStore.sessions.delete(id);
     return supabase.from(TABLES.sessions).delete().eq('id', id);
 }
 
@@ -358,9 +358,9 @@ function resetDndScroll() {
     window.scrollTo(0, 0);
 }
 
-export function initDndDashboard(container) {
+export function initPathfinderDashboard(container) {
     if (!container) return;
-    try { updateSidebarContext('dnd5e'); } catch { /* sidebar can be unavailable during boot */ }
+    try { updateSidebarContext('pathfinder2e'); } catch { /* sidebar can be unavailable during boot */ }
     resetDndScroll();
     renderDashboard(container);
 }
@@ -372,14 +372,14 @@ function renderShell(container, activeView = 'overview') {
 
             <header class="dnd-hero">
                 <div>
-                    <p class="dnd-kicker">Sistema D&D 5e</p>
-                    <h1>DUNGEONS <span>& DRAGONS</span></h1>
+                    <p class="dnd-kicker">Sistema Pathfinder 2e</p>
+                    <h1>PATHFINDER <span>2E</span></h1>
                     <p>Manuali, personaggi completi, sessioni attive, mappa, dadi e chat di gioco.</p>
                 </div>
                 <div class="dnd-hero-die">20</div>
             </header>
 
-            <nav class="dnd-tabs" aria-label="Sezioni D&D">
+            <nav class="dnd-tabs" aria-label="Sezioni Pathfinder">
                 <button class="${activeView === 'overview' ? 'active' : ''}" data-dnd-view="overview">Dashboard</button>
                 <button class="${activeView === 'sessions' ? 'active' : ''}" data-dnd-view="sessions">Sessioni</button>
                 <button class="${activeView === 'manuals' ? 'active' : ''}" data-dnd-view="manuals">Manuali</button>
@@ -415,7 +415,7 @@ function renderDashboard(container) {
             <button class="dnd-panel" data-open="manuals">
                 <span>Biblioteca</span>
                 <strong>Manuali PDF</strong>
-                <p>I tre manuali principali in formato consultabile.</p>
+                <p>I riferimenti Pathfinder in formato consultabile.</p>
             </button>
             <button class="dnd-panel" data-open="characters">
                 <span>Schede</span>
@@ -449,7 +449,7 @@ function renderManuals(container) {
     content.innerHTML = `
         <section class="dnd-section-head">
             <h2>Biblioteca dei Manuali</h2>
-            <p>Reader continuo a blocchi da massimo ${pageWindowSize} pagine: scrivi la pagina reale del manuale e l'app apre automaticamente il PDF corretto.</p>
+            <p>Reader a card da massimo ${pageWindowSize} pagine: scrivi la pagina reale del manuale e l'app apre automaticamente il PDF corretto.</p>
         </section>
 
         <div class="dnd-manual-layout">
@@ -662,7 +662,7 @@ async function renderCharacters(container) {
         <section class="dnd-section-head dnd-section-actions">
             <div>
                 <h2>Personaggi</h2>
-                <p>Schede complete D&D 5e con salvataggio Supabase.</p>
+                <p>Schede complete Pathfinder 2e con salvataggio Supabase.</p>
             </div>
             <button id="newCharacter" class="btn-primary">NUOVO PERSONAGGIO</button>
         </section>
@@ -718,7 +718,7 @@ function renderCharacterCard(char) {
                     : `<span>${escapeHTML((char.name || '?').charAt(0).toUpperCase())}</span>`}
             </div>
             <div>
-                <span>${escapeHTML(data.race || 'Razza non impostata')} • LV ${escapeHTML(char.level || 1)}${data.subclass ? ` • ${escapeHTML(data.subclass)}` : ''}</span>
+                <span>${escapeHTML(data.race || 'Stirpe non impostata')} • LV ${escapeHTML(char.level || 1)}${data.subclass ? ` • ${escapeHTML(data.subclass)}` : ''}</span>
                 <strong>${escapeHTML(char.name || 'Senza nome')}</strong>
                 <p>${escapeHTML(char.class || 'Classe non impostata')} • CA ${escapeHTML(data.armorClass)} • PF ${escapeHTML(char.hp || 10)}/${escapeHTML(char.hp_max || 10)} • Passiva ${escapeHTML(data.passivePerception)}</p>
             </div>
@@ -734,7 +734,7 @@ function renderCharacterSchemaNotice() {
     return `
         <div class="dnd-empty glass-box dnd-schema-error">
             <strong>Schema personaggi limitato.</strong>
-            <span>La tabella Supabase non espone ancora tutte le colonne D&D. Puoi vedere e creare personaggi base, ma per salvare la scheda completa serve aggiornare lo schema.</span>
+            <span>La tabella Supabase non espone ancora tutte le colonne Pathfinder. Puoi vedere e creare personaggi base, ma per salvare la scheda completa serve aggiornare lo schema.</span>
         </div>
     `;
 }
@@ -744,7 +744,7 @@ function renderCharacterSchemaError(err) {
         <div class="dnd-empty glass-box dnd-schema-error">
             <strong>Database personaggi non pronto.</strong>
             <span>${escapeHTML(err.message || 'Tabella personaggi non leggibile.')}</span>
-            <p>Esegui lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor Supabase per abilitare salvataggio completo, ownership utente, HP, sistema e dati JSON della scheda.</p>
+            <p>Esegui lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor Supabase per abilitare salvataggio completo, ownership utente, PF, sistema e dati JSON della scheda.</p>
         </div>
     `;
 }
@@ -780,7 +780,7 @@ function renderCharacterEditor(container, user, char) {
             <section class="dnd-section-head dnd-section-actions">
                 <div>
                     <h2>${char ? 'Modifica Personaggio' : 'Nuovo Personaggio'}</h2>
-                    <p>Scheda completa D&D 5e.</p>
+                    <p>Scheda completa Pathfinder 2e.</p>
                 </div>
                 <div class="dnd-inline-actions">
                     <button type="button" id="cancelCharacter" class="btn-back-glass">ANNULLA</button>
@@ -794,15 +794,15 @@ function renderCharacterEditor(container, user, char) {
                 <label>Nome<input name="name" required value="${escapeHTML(char?.name || '')}"></label>
                 <label>Giocatore<input name="playerName" value="${escapeHTML(data.playerName)}"></label>
                 <label>Classe<input name="class" required value="${escapeHTML(char?.class || '')}"></label>
-                <label>Sottoclasse<input name="subclass" value="${escapeHTML(data.subclass)}"></label>
+                <label>Archetipo<input name="subclass" value="${escapeHTML(data.subclass)}"></label>
                 <label>Livello<input name="level" type="number" min="1" max="20" value="${escapeHTML(char?.level || 1)}"></label>
-                <label>Razza<input name="race" value="${escapeHTML(data.race)}"></label>
+                <label>Stirpe<input name="race" value="${escapeHTML(data.race)}"></label>
                 <label>Background<input name="background" value="${escapeHTML(data.background)}"></label>
                 <label>Allineamento<input name="alignment" value="${escapeHTML(data.alignment)}"></label>
                 <label>XP<input name="xp" type="number" min="0" value="${escapeHTML(data.xp)}"></label>
                 <label>Ritratto URL<input name="portrait" value="${escapeHTML(data.portrait)}" placeholder="https://..."></label>
                 <label>Eta<input name="age" value="${escapeHTML(data.age)}"></label>
-                <label>Divinita / Patto<input name="deity" value="${escapeHTML(data.deity)}"></label>
+                <label>Divinita / credo<input name="deity" value="${escapeHTML(data.deity)}"></label>
                 </div>
             </section>
 
@@ -815,12 +815,12 @@ function renderCharacterEditor(container, user, char) {
                 <label>CA<input name="armorClass" type="number" value="${escapeHTML(data.armorClass)}"></label>
                 <label>Iniziativa<input name="initiative" type="number" value="${escapeHTML(data.initiative)}"></label>
                 <label>Velocita<input name="speed" type="number" value="${escapeHTML(data.speed)}"></label>
-                <label>Competenza<input name="proficiency" type="number" value="${escapeHTML(data.proficiency)}"></label>
-                <label>Dadi Vita<input name="hitDice" value="${escapeHTML(data.hitDice)}"></label>
+                <label>Bonus competenza<input name="proficiency" type="number" value="${escapeHTML(data.proficiency)}"></label>
+                <label>Dadi vita / recupero<input name="hitDice" value="${escapeHTML(data.hitDice)}"></label>
                 <label>Percezione passiva<input name="passivePerception" type="number" value="${escapeHTML(data.passivePerception)}"></label>
                 <label>Tiri morte ok<input name="deathSuccess" type="number" min="0" max="3" value="${escapeHTML(data.deathSaves.success)}"></label>
                 <label>Tiri morte fail<input name="deathFail" type="number" min="0" max="3" value="${escapeHTML(data.deathSaves.fail)}"></label>
-                <label class="dnd-check-inline">Ispirazione<input name="inspiration" type="checkbox" ${data.inspiration ? 'checked' : ''}></label>
+                <label class="dnd-check-inline">Punto Eroe<input name="inspiration" type="checkbox" ${data.inspiration ? 'checked' : ''}></label>
                 <label>Sensi<input name="senses" value="${escapeHTML(data.senses)}"></label>
                 <label>Linguaggi<input name="languages" value="${escapeHTML(data.languages)}"></label>
                 <label>Valute<input name="currency" value="${escapeHTML(data.currency)}"></label>
@@ -925,7 +925,7 @@ function renderCharacterEditor(container, user, char) {
         };
         const payload = {
             user_id: getUserId(user),
-            system_id: 'dnd5e',
+            system_id: 'pathfinder2e',
             name: form.get('name'),
             class: form.get('class'),
             level: Number(form.get('level') || 1),
@@ -963,7 +963,7 @@ async function renderSessions(container) {
         <section class="dnd-section-head dnd-section-actions">
             <div>
                 <h2>Sessioni</h2>
-                <p>Crea, modifica, entra e gestisci i tavoli D&D.</p>
+                <p>Crea, modifica, entra e gestisci i tavoli Pathfinder.</p>
             </div>
             <button id="newSession" class="btn-primary">NUOVA SESSIONE</button>
         </section>
@@ -986,7 +986,7 @@ async function renderSessions(container) {
             list.querySelectorAll('[data-open-session]').forEach(btn => {
                 btn.onclick = async () => {
                     const { showSession } = await import('../components/features/tabletop/Session.js');
-                    showSession(container, btn.dataset.openSession, { systemId: 'dnd5e' });
+                    showSession(container, btn.dataset.openSession, { systemId: 'pathfinder2e' });
                 };
             });
             list.querySelectorAll('[data-edit-session]').forEach(btn => {
@@ -1123,7 +1123,7 @@ function renderSessionSchemaError(err) {
         <div class="dnd-empty glass-box dnd-schema-error">
             <strong>Database sessioni non pronto.</strong>
             <span>${escapeHTML(err.message || 'Tabella sessioni non trovata in Supabase.')}</span>
-            <p>Per usare la sezione D&D completa devi eseguire lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor di Supabase. La tabella richiesta e <code>dnd_sessions</code>.</p>
+            <p>Per usare la sezione Pathfinder completa devi eseguire lo script <code>supabase/dnd5e_schema.sql</code> nel SQL editor di Supabase. La tabella condivisa richiesta e <code>dnd_sessions</code>.</p>
         </div>
     `;
 }
