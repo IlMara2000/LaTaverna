@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",
+    "chess.js": "^1.4.0",
     "howler": "^2.2.4"
   },
   "devDependencies": {

@@ -449,7 +449,7 @@ function renderManuals(container) {
     content.innerHTML = `
         <section class="dnd-section-head">
             <h2>Biblioteca dei Manuali</h2>
-            <p>Reader continuo a blocchi da massimo ${pageWindowSize} pagine: scrivi la pagina reale del manuale e l'app apre automaticamente il PDF corretto.</p>
+            <p>Sfoglia il manuale come un libro: i numeri qui sotto corrispondono alle pagine reali del manuale e ogni blocco mostra massimo ${pageWindowSize} pagine.</p>
         </section>
 
         <div class="dnd-manual-layout">
@@ -467,18 +467,18 @@ function renderManuals(container) {
                     <div class="dnd-manual-title">
                         <span>Manuale</span>
                         <strong id="manualTitle">${selectedManual.title}</strong>
-                        <small id="manualRange">Pagine 1-${pageWindowEnd()} di ${manualPageTotal()}</small>
-                        <small id="manualIndexNote" class="dnd-manual-index-note">${getManualIndexNote(selectedManual, selectedPage)}</small>
+                        <small id="manualRange">Pagine reali 1-${pageWindowEnd()} di ${manualPageTotal()}</small>
+                        <small id="manualIndexNote" class="dnd-manual-index-note" hidden>${getManualIndexNote(selectedManual, selectedPage)}</small>
                     </div>
                     <div class="dnd-manual-controls">
-                        <button type="button" id="manualPrevBlock">- ${pageWindowSize}</button>
+                        <button type="button" id="manualPrevBlock">Indietro ${pageWindowSize}</button>
                         <label>
-                            <span>Pagina manuale</span>
+                            <span>Vai a pagina</span>
                             <input id="manualPage" type="number" min="1" max="${manualPageTotal()}" value="${selectedPage}">
                         </label>
                         <span id="manualTotal">di ${manualPageTotal()}</span>
                         <button type="button" id="manualGoPage">VAI</button>
-                        <button type="button" id="manualNextBlock">+ ${pageWindowSize}</button>
+                        <button type="button" id="manualNextBlock">Avanti ${pageWindowSize}</button>
                         <a id="manualOpen" href="${getManualPageUrl(selectedManual, selectedPage)}" target="_blank" rel="noreferrer">APRILA PAGINA</a>
                         <a id="manualOpenFull" href="${getManualFullUrl(selectedManual)}" target="_blank" rel="noreferrer">PDF COMPLETO</a>
                     </div>
@@ -508,13 +508,13 @@ function renderManuals(container) {
         <a class="dnd-manual-page ${page === selectedPage ? 'active' : ''}" data-page-card="${page}" href="${escapeHTML(pageUrl)}" target="_blank" rel="noreferrer" aria-label="Apri pagina ${page} di ${escapeHTML(selectedManual.title)}">
             <span class="dnd-manual-card-head">
                 <span>
-                    <span class="dnd-manual-card-kicker">Pagina</span>
+                    <span class="dnd-manual-card-kicker">Pagina reale</span>
                     <strong>Pagina ${page}</strong>
                 </span>
-                <span class="dnd-manual-open-badge">Apri</span>
+                <span class="dnd-manual-open-badge">Leggi</span>
             </span>
             <span class="dnd-manual-preview">
-                <span class="dnd-manual-preview-fallback">PDF ${page}</span>
+                <span class="dnd-manual-preview-fallback">Pagina ${page}</span>
                 <iframe class="dnd-manual-preview-frame" width="100%" height="420" title="${escapeHTML(selectedManual.title)} - anteprima pagina ${page}" src="${escapeHTML(getManualEmbedUrl(selectedManual, page))}"></iframe>
             </span>
         </a>
@@ -548,6 +548,15 @@ function renderManuals(container) {
         document.body.classList.add('dnd-manual-modal-open');
     };
 
+    const animateReaderTurn = () => {
+        const reader = content.querySelector('#manualReader');
+        if (!reader) return;
+        reader.classList.remove('is-turning');
+        void reader.offsetWidth;
+        reader.classList.add('is-turning');
+        window.setTimeout(() => reader.classList.remove('is-turning'), 520);
+    };
+
     const syncSelectedManualPage = (scrollToCard = false) => {
         const pageInput = content.querySelector('#manualPage');
         const reader = content.querySelector('#manualReader');
@@ -565,8 +574,10 @@ function renderManuals(container) {
         if (scrollToCard) {
             reader.querySelector(`[data-page-card="${selectedPage}"]`)?.scrollIntoView({
                 behavior: 'smooth',
-                block: 'start'
+                block: 'nearest',
+                inline: 'center'
             });
+            animateReaderTurn();
         }
     };
 
@@ -575,7 +586,7 @@ function renderManuals(container) {
         const pageTotal = manualPageTotal();
         content.querySelector('#manualTitle').textContent = selectedManual.title;
         content.querySelector('#manualTotal').textContent = `di ${pageTotal}`;
-        content.querySelector('#manualRange').textContent = `Pagine ${windowStart}-${pageWindowEnd()} di ${pageTotal}`;
+        content.querySelector('#manualRange').textContent = `Pagine reali ${windowStart}-${pageWindowEnd()} di ${pageTotal}`;
         content.querySelector('#manualIndexNote').textContent = getManualIndexNote(selectedManual, selectedPage);
         pageInput.max = pageTotal;
         pageInput.value = selectedPage;
@@ -595,13 +606,25 @@ function renderManuals(container) {
         });
         const reader = content.querySelector('#manualReader');
         reader.innerHTML = visiblePages().map(page => renderPageFrame(page)).join('');
-        if (resetScroll) reader.scrollTop = 0;
+        if (resetScroll) {
+            reader.scrollTop = 0;
+            reader.scrollLeft = 0;
+        } else {
+            requestAnimationFrame(() => {
+                reader.querySelector(`[data-page-card="${selectedPage}"]`)?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'nearest',
+                    inline: 'center'
+                });
+            });
+        }
         reader.querySelectorAll('[data-page-card]').forEach(card => {
             card.onclick = event => {
                 event.preventDefault();
                 openManualPageModal(card.dataset.pageCard);
             };
         });
+        animateReaderTurn();
     };
 
     const setManualPage = (page, centerWindow = true) => {

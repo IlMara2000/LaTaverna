@@ -1,5 +1,5 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { getUnlockedLevel, getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 
 /**
  * GIOCO: BRISCOLA - MASTER EDITION
@@ -85,8 +85,9 @@ export function initBriscola(container) {
     });
 
     const quit = async () => {
+        document.documentElement.style.overflow = '';
         document.body.style.touchAction = '';
-        document.body.style.overflow = 'auto';
+        document.body.style.overflow = '';
         try {
             const { showMinigamesList } = await import('../../minigamelist.js');
             showMinigamesList(document.getElementById('app') || container);
