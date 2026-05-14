@@ -1,5 +1,5 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { getUnlockedLevel, getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 
 /**
  * GIOCO: BURRACO - MASTER EDITION
@@ -30,7 +30,8 @@ export function initBurraco(container) {
 }
 
 const quitGame = async (container) => {
-    document.body.style.overflowY = 'auto';
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
     document.body.style.touchAction = '';
     document.body.style.position = '';
     try {
@@ -66,22 +67,22 @@ function renderLayout(container, state) {
             <span id="tutor-text"></span>
         </div>
         
-        <div style="flex: 1; display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 500px; padding: 15px 0; box-sizing: border-box; overflow: hidden; margin-top: 30px;">
-            <div id="bot-table" style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 20px; padding: 15px; position: relative; display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch;"></div>
-            <div id="player-table" style="flex: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 20px; padding: 15px; position: relative; display: flex; gap: 12px; overflow-x: auto; overflow-y: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.3); -webkit-overflow-scrolling: touch;"></div>
+        <div class="burraco-playfield">
+            <div id="bot-table" class="burraco-meld-zone"></div>
+            <div id="player-table" class="burraco-meld-zone"></div>
         </div>
         
-        <div style="display: flex; justify-content: center; align-items: center; gap: 50px; padding: 15px; background: rgba(0,0,0,0.3); border-top: 1px solid var(--glass-border); border-bottom: 1px solid var(--glass-border); width: 100%;">
+        <div class="burraco-draw-zone">
             <div id="main-deck" class="game-card-unit back" style="width: clamp(60px, 15vw, 85px); height: clamp(90px, 22vw, 125px); cursor: pointer;"></div>
             <div id="discard-pile-ui" style="display:flex; min-width:60px; min-height:90px; position:relative;"></div>
         </div>
         
-        <div style="width:100%; max-width: 500px; display:flex; flex-direction:column; align-items:center; margin-top: 15px;">
-            <div style="display:flex; gap:15px; width:100%; padding: 0 15px; box-sizing: border-box;">
+        <div class="burraco-player-zone">
+            <div class="burraco-actions">
                 <button class="game-btn-action" id="btn-meld" style="flex:1; background: #00ffa3; color: #000; border: none;">CALA COMBO</button>
                 <button class="game-btn-action" id="btn-discard" style="flex:1; background: #ff416c; border: none;">SCARTA</button>
             </div>
-            <div id="player-hand" class="game-player-hand" style="overflow-x: auto; padding-bottom: 5px; height: 125px; align-items: flex-end;"></div>
+            <div id="player-hand" class="game-player-hand" style="min-height: 170px; height: auto; align-items: flex-end; padding-top: 34px; padding-bottom: 22px;"></div>
         </div>
     </div>
     `;

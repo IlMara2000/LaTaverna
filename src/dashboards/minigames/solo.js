@@ -1,5 +1,5 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
-import { getUnlockedLevel, getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 
 /**
  * GIOCO: SOLO - MASTER EDITION (Responsive & Matte Black)
@@ -45,8 +45,9 @@ export function initSoloGame(container) {
 }
 
 const quitGame = async (container) => {
+    document.documentElement.style.overflow = '';
     document.body.style.touchAction = '';
-    document.body.style.overflowY = 'auto';
+    document.body.style.overflow = '';
     try {
         const { showMinigamesList } = await import('../../minigamelist.js');
         showMinigamesList(document.getElementById('app') || container);
@@ -100,7 +101,7 @@ function renderLayout(container, state) {
                 <button class="game-btn-action" id="btn-solo" style="display:none; background: #ffbd39; border: none; padding: 12px 30px; color: black; box-shadow: 0 0 15px #ffbd39;">SOLO!</button>
                 <button class="game-btn-action" id="btn-pass" style="display:none; background: #ff416c; border: none; padding: 12px 30px;">PASSA IL TURNO</button>
             </div>
-            <div id="player-hand" class="game-player-hand" style="height: 175px; align-items: flex-end; padding-top: 30px; padding-bottom: 15px;"></div>
+            <div id="player-hand" class="game-player-hand" style="min-height: 205px; height: auto; align-items: flex-end; padding-top: 42px; padding-bottom: 28px;"></div>
         </footer>
         
         <div id="picker-wild" class="game-color-picker">
