@@ -1109,9 +1109,15 @@
        top: 88px;
        max-height: calc(100dvh - 120px);
        overflow-y: auto;
+       overflow-x: clip;
+       min-width: 0;
+       z-index: 1;
    }
 
    .dnd-manual-card {
+       width: 100%;
+       min-width: 0;
+       box-sizing: border-box;
        padding: 16px;
        border-radius: 16px;
        border: 1px solid var(--glass-border);
@@ -1126,7 +1132,7 @@
    }
 
    .dnd-manual-card:hover {
-       transform: translateX(4px);
+       transform: translateY(-2px);
        border-color: rgba(199, 125, 255, 0.46);
        background: rgba(157, 78, 222, 0.09);
        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
@@ -1135,6 +1141,7 @@
    .dnd-manual-card.active {
        border-color: var(--amethyst-light);
        background: rgba(157, 78, 222, 0.14);
+       transform: none;
    }
 
    .dnd-manual-card strong {
