@@ -231,7 +231,7 @@ function aiDamaMove(state, container) {
         return quitGame(container);
     }
 
-    // Accuratezza dell'IA (max 95%): +3% per ogni livello completato
+    // Accuratezza dell'IA (max 95%): +2.5% per ogni livello completato
     const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.95);
     const isSmart = Math.random() <= accuracy;
 

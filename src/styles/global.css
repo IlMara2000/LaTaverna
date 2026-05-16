@@ -3119,6 +3119,45 @@
        color: var(--amethyst-bright);
        font-size: 16px;
    }
+
+   .solo-game-wrapper {
+       gap: 12px;
+   }
+
+   .solo-opponents-row {
+       flex: 0 0 auto;
+       gap: 14px;
+       max-width: 760px;
+       margin-top: 4px;
+   }
+
+   .solo-table {
+       flex: 1 1 auto;
+       min-height: 0;
+       gap: 8px;
+   }
+
+   .solo-table #status-log {
+       position: static !important;
+       top: auto !important;
+       margin-bottom: 2px;
+       line-height: 1.1;
+   }
+
+   .solo-player-area {
+       flex: 0 0 auto;
+       width: 100%;
+       overflow: visible;
+   }
+
+   .solo-player-hand {
+       min-height: 190px;
+       height: auto;
+       align-items: flex-end;
+       overflow: hidden;
+       padding-top: 36px;
+       padding-bottom: 26px;
+   }
    
    .game-master-table {
        flex: 1;
@@ -3380,6 +3419,131 @@
        .burraco-actions {
            gap: 8px;
            padding: 0 8px;
+       }
+
+       .solo-game-wrapper {
+           justify-content: flex-start;
+           gap: clamp(8px, 1.35dvh, 13px);
+           padding: env(safe-area-inset-top, 12px) 10px env(safe-area-inset-bottom, 12px) 10px;
+       }
+
+       .solo-game-wrapper .solo-game-header {
+           min-height: 44px;
+           height: auto;
+           align-items: center;
+           gap: 8px;
+       }
+
+       .solo-game-wrapper #btn-exit-ingame {
+           flex: 0 0 auto;
+           padding: 9px 13px !important;
+           border-radius: 16px;
+           font-size: 0.72rem;
+       }
+
+       .solo-game-wrapper #turn-indicator {
+           min-width: 0;
+           padding: 10px 12px;
+           font-size: 0.72rem !important;
+           letter-spacing: 0;
+       }
+
+       .solo-game-wrapper .solo-opponents-row {
+           width: 100%;
+           max-width: 100%;
+           margin-top: 0;
+           padding: 2px 0;
+           justify-content: center;
+           gap: 8px;
+       }
+
+       .solo-game-wrapper .game-bot-pill {
+           flex: 1 1 0;
+           min-width: 0;
+           max-width: 112px;
+           padding: 8px 5px;
+           border-radius: 17px;
+       }
+
+       .solo-game-wrapper .game-bot-count {
+           font-size: 1rem;
+       }
+
+       .solo-game-wrapper .solo-table {
+           flex: 0 0 auto;
+           width: 100%;
+           justify-content: flex-start;
+           padding: 0;
+           gap: 5px;
+       }
+
+       .solo-game-wrapper #status-log {
+           margin: -2px 0 1px;
+           font-size: 0.66rem !important;
+           opacity: 0.72 !important;
+       }
+
+       .solo-game-wrapper .game-card-center {
+           gap: 18px;
+           margin-bottom: 8px;
+       }
+
+       .solo-game-wrapper .game-card-unit {
+           width: clamp(52px, 14.8vw, 58px);
+           height: clamp(78px, 22vw, 88px);
+           border-radius: 10px;
+           padding: 6px;
+           font-size: 1.08rem;
+       }
+
+       .solo-game-wrapper #discard-pile .game-card-unit {
+           transform: scale(1.04) !important;
+       }
+
+       .solo-game-wrapper .solo-card-symbol {
+           min-height: 34px;
+           font-size: 1.75rem;
+       }
+
+       .solo-game-wrapper .solo-card-draw-label {
+           font-size: 1.78rem;
+       }
+
+       .solo-game-wrapper .game-color-line {
+           width: 96px;
+           height: 5px;
+       }
+
+       .solo-game-wrapper .solo-player-area {
+           min-height: 116px;
+           margin-top: clamp(8px, 1.8dvh, 16px);
+           padding: 0 0 calc(8px + env(safe-area-inset-bottom)) 0 !important;
+           border-radius: 18px 18px 0 0;
+           background: linear-gradient(180deg, rgba(11, 4, 20, 0.12), rgba(11, 4, 20, 0.58)) !important;
+       }
+
+       .solo-game-wrapper .game-action-buttons {
+           margin-bottom: 0;
+           justify-content: center;
+           flex-wrap: wrap;
+       }
+
+       .solo-game-wrapper .solo-player-hand {
+           min-height: 118px;
+           justify-content: center;
+           align-items: flex-end;
+           gap: 8px;
+           overflow: hidden;
+           padding: 22px 3px 16px 5px !important;
+           scrollbar-width: none;
+       }
+
+       .solo-game-wrapper .solo-player-hand::-webkit-scrollbar {
+           display: none;
+       }
+
+       .solo-game-wrapper .solo-player-hand .game-card-unit {
+           flex: 0 0 auto;
        }
    
        .sidebar-glass {
