@@ -380,7 +380,7 @@ function botAction(state) {
     if (state.turn !== 'bot') return;
     state.isAnimating = true;
 
-    // IA Accurancy (max 95%): +3% per ogni livello completato
+    // IA Accurancy (max 95%): +2.5% per ogni livello completato
     const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.95);
     const isSmart = Math.random() <= accuracy;
 

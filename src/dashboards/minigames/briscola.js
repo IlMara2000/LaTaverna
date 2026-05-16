@@ -190,7 +190,7 @@ export function initBriscola(container) {
         }
     }
 
-    // INTELIGENZA ARTIFICIALE: +3% per ogni livello completato
+    // INTELIGENZA ARTIFICIALE: +2.5% per ogni livello completato
     function playBot() {
         const hand = state.players[1];
         let chosenIdx = 0;

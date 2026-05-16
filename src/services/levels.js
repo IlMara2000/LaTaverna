@@ -2,7 +2,7 @@ import { getPreference, setPreference } from './userPreferences.js';
 
 const levelCache = new Map();
 const prefKey = (gameName) => `levels.${gameName}`;
-const LEVEL_DIFFICULTY_STEP = 0.03;
+const LEVEL_DIFFICULTY_STEP = 0.025;
 
 export function getUnlockedLevel(gameName) {
     return levelCache.get(gameName) || 1;

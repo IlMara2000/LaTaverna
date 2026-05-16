@@ -57,7 +57,7 @@ const quitGame = async (container) => {
 // --- 1. LAYOUT PRINCIPALE ---
 function renderLayout(container, state) {
     container.innerHTML = `
-    <div class="game-master-wrapper fade-in">
+    <div class="game-master-wrapper solo-game-wrapper fade-in">
         
         <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
@@ -70,18 +70,18 @@ function renderLayout(container, state) {
             <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; margin-top: 15px; opacity: 0.6;">TORNA ALLA TAVERNA</button>
         </div>
 
-        <header class="game-master-header">
+        <header class="game-master-header solo-game-header">
             <button class="game-btn-action" id="btn-exit-ingame" style="padding: 10px 20px;">← ESCI</button>
             <div id="turn-indicator" class="game-turn-indicator white-turn" style="font-size: 13px; text-transform: uppercase;">CARICAMENTO...</div>
         </header>
         
-        <div class="game-opponents-row" style="margin-top: 10px;">
+        <div class="game-opponents-row solo-opponents-row">
             <div id="bot-1" class="game-bot-pill"><span>BOT 1</span><br><span class="game-bot-count" id="cnt-1">7</span><span style="font-size:9px; opacity:0.5;"> CARTE</span></div>
             <div id="bot-2" class="game-bot-pill"><span>BOT 2</span><br><span class="game-bot-count" id="cnt-2">7</span><span style="font-size:9px; opacity:0.5;"> CARTE</span></div>
             <div id="bot-3" class="game-bot-pill"><span>BOT 3</span><br><span class="game-bot-count" id="cnt-3">7</span><span style="font-size:9px; opacity:0.5;"> CARTE</span></div>
         </div>
         
-        <main class="game-master-table">
+        <main class="game-master-table solo-table">
             <div id="status-log" style="position: absolute; top: -10px; font-size: 11px; font-weight: 800; opacity: 0.7;">INIZIO PARTITA</div>
             
             <div class="game-card-center">
@@ -95,13 +95,13 @@ function renderLayout(container, state) {
             <div id="color-indicator" class="game-color-line"></div>
         </main>
         
-        <footer class="game-player-area" style="padding: 10px 0 0 0; background: transparent;">
+        <footer class="game-player-area solo-player-area" style="padding: 10px 0 0 0; background: transparent;">
             <div class="game-action-buttons">
                 <button class="game-btn-action" id="btn-catch" style="display:none; background: #c77dff; border: none; padding: 12px 20px; color: black; box-shadow: 0 0 15px #c77dff;">SGAMA BOT!</button>
                 <button class="game-btn-action" id="btn-solo" style="display:none; background: #ffbd39; border: none; padding: 12px 30px; color: black; box-shadow: 0 0 15px #ffbd39;">SOLO!</button>
                 <button class="game-btn-action" id="btn-pass" style="display:none; background: #ff416c; border: none; padding: 12px 30px;">PASSA IL TURNO</button>
             </div>
-            <div id="player-hand" class="game-player-hand" style="min-height: 205px; height: auto; align-items: flex-end; padding-top: 42px; padding-bottom: 28px;"></div>
+            <div id="player-hand" class="game-player-hand solo-player-hand"></div>
         </footer>
         
         <div id="picker-wild" class="game-color-picker">
@@ -340,7 +340,7 @@ async function playCard(pIdx, cardIdx, state, container) {
                 await drawCard(0, state, container);
             }
         } else {
-            // Controllo se il Bot si ricorda di chiamare SOLO!: base 50%, poi +3% per livello completato.
+            // Controllo se il Bot si ricorda di chiamare SOLO!: base 50%, poi +2.5% per livello completato.
             const accuracy = getLevelDifficultyChance(state.currentLevel, 0.5, 1.0);
             if (Math.random() <= accuracy) {
                 logStatus(container, `BOT ${pIdx} grida: SOLO!`);
@@ -487,7 +487,17 @@ function updateUI(state, container) {
     // Aggiorna Mano Giocatore
     const pArea = container.querySelector('#player-hand');
     pArea.innerHTML = '';
-    const overlap = state.players[0].length > 8 ? "-30px" : "-15px";
+    const handCount = state.players[0].length;
+    const isCompact = window.matchMedia('(max-width: 768px)').matches;
+    const availableWidth = Math.max(220, pArea.clientWidth || window.innerWidth || 360) - (isCompact ? 20 : 40);
+    const cardWidth = isCompact ? 58 : 86;
+    const cardGap = isCompact ? 8 : 10;
+    const naturalWidth = (handCount * cardWidth) + (Math.max(0, handCount - 1) * cardGap);
+    const neededOverlap = handCount > 1 && naturalWidth > availableWidth
+        ? Math.ceil((naturalWidth - availableWidth) / (handCount - 1))
+        : (isCompact ? 8 : 15);
+    const maxOverlap = isCompact ? 28 : 34;
+    const overlap = `-${Math.min(maxOverlap, Math.max(isCompact ? 10 : 15, neededOverlap))}px`;
 
     state.players[0].forEach((c, i) => {
         const el = createCardElement(c);
