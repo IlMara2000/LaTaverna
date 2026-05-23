@@ -115,7 +115,17 @@ function setupRoles(names, nImp, nUnd) {
     gameData.wordObj = WORDS_DATABASE[Math.floor(Math.random() * WORDS_DATABASE.length)];
 }
 
+function rotateStartingPlayer() {
+    if (gameData.players.length <= 1) return;
+    const startIndex = Math.floor(Math.random() * gameData.players.length);
+    gameData.players = [
+        ...gameData.players.slice(startIndex),
+        ...gameData.players.slice(0, startIndex)
+    ];
+}
+
 function startNewRound(container) {
+    rotateStartingPlayer();
     gameData.currentIndex = 0;
     renderReveal(container);
 }
