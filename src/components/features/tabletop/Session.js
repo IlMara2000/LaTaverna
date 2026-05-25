@@ -204,7 +204,7 @@ export async function showSession(container, sessionId, options = {}) {
         initiative: sessionData.data?.initiative || [],
         round: Number(sessionData.data?.round || 1),
         turnCount: Number(sessionData.data?.turnCount || 0),
-        fogEnabled: sessionData.data?.fogEnabled !== false,
+        fogEnabled: sessionData.data?.fogEnabled === true,
         gridVisible: sessionData.data?.gridVisible !== false,
         map_grid_size: Number(sessionData.data?.map_grid_size || 50),
         live_notes: sessionData.data?.live_notes || '',
@@ -299,7 +299,7 @@ export async function showSession(container, sessionId, options = {}) {
                 <div id="tabletop-container"></div>
                 <div class="dnd-table-topbar">
                     <div class="dnd-session-primary-controls">
-                        <button id="toggleSessionMenu" class="btn-back-glass dnd-panel-toggle" type="button" aria-controls="sessionToolsPanel" aria-expanded="false">MENU</button>
+                        <button id="toggleSessionMenu" class="btn-back-glass dnd-panel-toggle" type="button" aria-controls="sessionToolsPanel" aria-expanded="false">STRUMENTI</button>
                         <button id="exitSession" class="btn-back-glass">ESCI</button>
                     </div>
                     <strong>${escapeHTML((sessionData.name || 'Tavolo Live').toUpperCase())}</strong>
@@ -308,8 +308,8 @@ export async function showSession(container, sessionId, options = {}) {
                         <button id="resetMap" class="btn-back-glass">CENTRA</button>
                         <button id="zoomIn" class="btn-back-glass">+</button>
                         <button id="pingMap" class="btn-back-glass">PING</button>
-                        <button id="toggleGrid" class="btn-back-glass">${sessionState.gridVisible ? 'GRID ON' : 'GRID OFF'}</button>
-                        <button id="toggleFog" class="btn-back-glass">${sessionState.fogEnabled ? 'FOG ON' : 'FOG OFF'}</button>
+                        <button id="toggleGrid" class="btn-back-glass">${sessionState.gridVisible ? 'GRIGLIA ON' : 'GRIGLIA OFF'}</button>
+                        <button id="toggleFog" class="btn-back-glass">${sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF'}</button>
                         <button id="toggleSessionChat" class="btn-back-glass dnd-panel-toggle" type="button" aria-controls="sessionChatPanel" aria-expanded="false">CHAT</button>
                     </div>
                 </div>
@@ -318,6 +318,17 @@ export async function showSession(container, sessionId, options = {}) {
                     <span id="sessionHudRound">Round ${sessionState.round}</span>
                     <strong id="sessionHudTurn">Turno: libero</strong>
                     <small id="sessionHudScene">${escapeHTML(sessionState.scene || sessionData.data?.objectives || 'Nessuna scena attiva')}</small>
+                </div>
+
+                <div class="dnd-roll-display" id="rollDisplay" aria-live="polite" aria-hidden="true">
+                    <div class="dnd-roll-cube" id="rollCube">
+                        <span id="rollCubeValue">20</span>
+                    </div>
+                    <div class="dnd-roll-copy">
+                        <span id="rollLabel">Tiro dadi</span>
+                        <strong id="rollTotal">--</strong>
+                        <small id="rollBreakdown">Premi un dado</small>
+                    </div>
                 </div>
 
                 <div class="dnd-dice-bar">
@@ -435,6 +446,35 @@ export async function showSession(container, sessionId, options = {}) {
         }
     };
 
+    const showRollResult = ({ label = 'Tiro dadi', result, mod = 0, mode = 'normal' } = {}) => {
+        if (!result) return;
+        const rollDisplay = container.querySelector('#rollDisplay');
+        const cubeValue = container.querySelector('#rollCubeValue');
+        const rollLabel = container.querySelector('#rollLabel');
+        const rollTotal = container.querySelector('#rollTotal');
+        const rollBreakdown = container.querySelector('#rollBreakdown');
+        if (!rollDisplay || !cubeValue || !rollLabel || !rollTotal || !rollBreakdown) return;
+
+        const modeText = mode === 'adv' ? 'vantaggio' : mode === 'dis' ? 'svantaggio' : '';
+        const modText = mod ? ` ${formatMod(mod)}` : '';
+        const rollsText = Array.isArray(result.rolls) ? result.rolls.join(', ') : '';
+
+        rollDisplay.setAttribute('aria-hidden', 'false');
+        rollDisplay.classList.remove('is-rolling');
+        void rollDisplay.offsetWidth;
+        cubeValue.textContent = String(result.total);
+        const labelText = String(label);
+        rollLabel.textContent = modeText && !labelText.toLowerCase().includes(modeText) ? `${labelText} (${modeText})` : labelText;
+        rollTotal.textContent = String(result.total);
+        rollBreakdown.textContent = rollsText ? `${rollsText}${modText}` : modText.trim();
+        rollDisplay.classList.add('is-visible', 'is-rolling');
+
+        window.clearTimeout(rollDisplay._rollTimer);
+        rollDisplay._rollTimer = window.setTimeout(() => {
+            rollDisplay.classList.remove('is-rolling');
+        }, 760);
+    };
+
     const loadMessages = async () => {
         try {
             const { data, error } = localMode
@@ -517,8 +557,8 @@ export async function showSession(container, sessionId, options = {}) {
         if (objective && activeId !== 'objectiveDone') objective.checked = Boolean(sessionState.objective_done);
         const fogButton = container.querySelector('#toggleFog');
         const gridButton = container.querySelector('#toggleGrid');
-        if (fogButton) fogButton.textContent = sessionState.fogEnabled ? 'FOG ON' : 'FOG OFF';
-        if (gridButton) gridButton.textContent = sessionState.gridVisible ? 'GRID ON' : 'GRID OFF';
+        if (fogButton) fogButton.textContent = sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF';
+        if (gridButton) gridButton.textContent = sessionState.gridVisible ? 'GRIGLIA ON' : 'GRIGLIA OFF';
         window.__dndMapApi?.setFog?.(sessionState.fogEnabled);
         window.__dndMapApi?.setGridVisible?.(sessionState.gridVisible);
         window.__dndMapApi?.setGridSize?.(sessionState.map_grid_size);
@@ -568,7 +608,7 @@ export async function showSession(container, sessionId, options = {}) {
                     sessionState.initiative = Array.isArray(nextData.initiative) ? nextData.initiative : [];
                     sessionState.round = Number(nextData.round || 1);
                     sessionState.turnCount = Number(nextData.turnCount || 0);
-                    sessionState.fogEnabled = nextData.fogEnabled !== false;
+                    sessionState.fogEnabled = nextData.fogEnabled === true;
                     sessionState.gridVisible = nextData.gridVisible !== false;
                     sessionState.map_grid_size = Number(nextData.map_grid_size || sessionState.map_grid_size || 50);
                     sessionState.live_notes = nextData.live_notes || '';
@@ -740,6 +780,10 @@ export async function showSession(container, sessionId, options = {}) {
         };
         inspector.querySelector('#tokenToInitiative').onclick = () => {
             const result = rollDice(20);
+            showRollResult({
+                label: `Iniziativa ${selectedToken.name || 'Token'}`,
+                result
+            });
             addInitiativeEntry({
                 token_id: selectedToken.id,
                 name: selectedToken.name || 'Token',
@@ -748,7 +792,6 @@ export async function showSession(container, sessionId, options = {}) {
                 hp_max: selectedToken.data?.hp_max,
                 ac: selectedToken.data?.armorClass
             });
-            sendMsg(`Iniziativa ${selectedToken.name || 'Token'}: ${result.total} (${result.rolls[0]})`, true);
         };
         inspector.querySelector('#duplicateToken').onclick = async () => {
             try {
@@ -836,6 +879,11 @@ export async function showSession(container, sessionId, options = {}) {
         if (!selectedCharacter) return;
         const initiativeMod = getCharacterInitiativeMod(selectedCharacter);
         const result = rollDice(20, 1, initiativeMod);
+        showRollResult({
+            label: `Iniziativa ${getCharacterName(selectedCharacter)}`,
+            result,
+            mod: initiativeMod
+        });
         addInitiativeEntry({
             id: selectedCharacter.id,
             name: getCharacterName(selectedCharacter),
@@ -844,7 +892,6 @@ export async function showSession(container, sessionId, options = {}) {
             hp_max: selectedCharacter.hp_max,
             ac: selectedCharacter.data?.armorClass
         });
-        sendMsg(`Iniziativa ${getCharacterName(selectedCharacter)}: ${result.total} (${result.rolls[0]} ${formatMod(initiativeMod)})`, true);
         renderInitiative();
     };
 
@@ -897,12 +944,12 @@ export async function showSession(container, sessionId, options = {}) {
 
     container.querySelector('#toggleFog').onclick = () => {
         sessionState.fogEnabled = window.__dndMapApi?.toggleFog() ?? !sessionState.fogEnabled;
-        container.querySelector('#toggleFog').textContent = sessionState.fogEnabled ? 'FOG ON' : 'FOG OFF';
+        container.querySelector('#toggleFog').textContent = sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF';
         saveSessionData();
     };
     container.querySelector('#toggleGrid').onclick = () => {
         sessionState.gridVisible = window.__dndMapApi?.toggleGrid() ?? !sessionState.gridVisible;
-        container.querySelector('#toggleGrid').textContent = sessionState.gridVisible ? 'GRID ON' : 'GRID OFF';
+        container.querySelector('#toggleGrid').textContent = sessionState.gridVisible ? 'GRIGLIA ON' : 'GRIGLIA OFF';
         saveSessionData();
     };
     container.querySelector('#zoomIn').onclick = () => window.__dndMapApi?.zoomIn();
@@ -924,7 +971,7 @@ export async function showSession(container, sessionId, options = {}) {
             result = { rolls: [first, second], total: chosen + mod };
             prefix = `${prefix} ${mode === 'adv' ? 'con vantaggio' : 'con svantaggio'}`;
         }
-        sendMsg(`${prefix}: ${result.total} (${result.rolls.join(', ')}${mod ? ` ${formatMod(mod)}` : ''})`, true);
+        showRollResult({ label: prefix, result, mod, mode });
     };
 
     container.querySelectorAll('.roll-btn').forEach(btn => {

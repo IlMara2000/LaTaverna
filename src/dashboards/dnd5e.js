@@ -1095,7 +1095,7 @@ function renderSessionEditor(container, user, session) {
                 <div class="dnd-sheet-grid">
                 <label>URL mappa<input name="map_url" placeholder="https://..." value="${escapeHTML(normalizedSession?.map_url || '')}"></label>
                 <label>Griglia px<input name="map_grid_size" type="number" min="20" max="200" value="${escapeHTML(data.map_grid_size || 50)}"></label>
-                <label class="dnd-check-inline">Nebbia attiva<input name="fogEnabled" type="checkbox" ${data.fogEnabled !== false ? 'checked' : ''}></label>
+                <label class="dnd-check-inline">Nebbia attiva<input name="fogEnabled" type="checkbox" ${data.fogEnabled === true ? 'checked' : ''}></label>
                 <label class="dnd-check-inline">Griglia visibile<input name="gridVisible" type="checkbox" ${data.gridVisible !== false ? 'checked' : ''}></label>
                 <label class="dnd-map-upload">
                     File mappa opzionale

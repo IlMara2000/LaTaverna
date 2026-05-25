@@ -207,6 +207,21 @@
        }
    }
 
+   @keyframes diceTumble {
+       0% {
+           transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) translateY(0);
+       }
+       42% {
+           transform: rotateX(360deg) rotateY(250deg) rotateZ(-18deg) translateY(-12px);
+       }
+       74% {
+           transform: rotateX(620deg) rotateY(500deg) rotateZ(12deg) translateY(3px);
+       }
+       100% {
+           transform: rotateX(720deg) rotateY(720deg) rotateZ(0deg) translateY(0);
+       }
+   }
+
    @keyframes chatPop {
        from {
            opacity: 0;
@@ -1695,7 +1710,7 @@
        inset: 0;
        z-index: 1200;
        display: block;
-       background: #05010a;
+       background: #f8fafc;
        color: white;
        font-family: 'Poppins', sans-serif;
        overflow: hidden;
@@ -2133,7 +2148,7 @@
        width: 100%;
        height: 100%;
        overflow: hidden;
-       background: #08040d;
+       background: #f8fafc;
    }
 
    #tabletop-container, .tabletop-viewport {
@@ -2145,13 +2160,14 @@
    .tabletop-viewport {
        cursor: grab;
        touch-action: none;
-       background: #05020a;
+       background: #ffffff;
    }
 
    .map-layer {
        position: absolute;
        width: 4200px;
        height: 4200px;
+       background: #ffffff;
        transform-origin: 0 0;
        will-change: transform;
    }
@@ -2161,19 +2177,19 @@
        left: 420px;
        top: 360px;
        width: min(560px, 70vw);
-       border: 1px solid rgba(199, 125, 255, 0.26);
+       border: 1px solid rgba(75, 85, 99, 0.2);
        border-radius: 18px;
        padding: 24px;
-       background: rgba(5, 2, 10, 0.72);
-       color: rgba(255, 255, 255, 0.74);
-       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+       background: rgba(255, 255, 255, 0.92);
+       color: rgba(31, 41, 55, 0.76);
+       box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
        pointer-events: none;
    }
 
    .map-empty strong {
        display: block;
        margin-bottom: 8px;
-       color: white;
+       color: #111827;
        font-size: 1rem;
        text-transform: uppercase;
    }
@@ -2186,7 +2202,7 @@
    .map-grid {
        position: absolute;
        inset: 0;
-       background-image: linear-gradient(rgba(157, 78, 222, 0.13) 1px, transparent 1px), linear-gradient(90deg, rgba(157, 78, 222, 0.13) 1px, transparent 1px);
+       background-image: linear-gradient(rgba(75, 85, 99, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(75, 85, 99, 0.22) 1px, transparent 1px);
        background-size: 50px 50px;
        pointer-events: none;
    }
@@ -2201,7 +2217,7 @@
        left: 0;
        width: 2200px;
        max-width: none;
-       opacity: 0.92;
+       opacity: 0.98;
    }
 
    .map-pdf {
@@ -2211,7 +2227,7 @@
        width: 2200px;
        height: 1600px;
        border: 0;
-       background: rgba(0, 0, 0, 0.35);
+       background: #ffffff;
        pointer-events: none;
    }
 
@@ -2224,7 +2240,7 @@
    }
 
    .map-fog.active {
-       background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.12), rgba(0,0,0,0.68));
+       background: radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 0.04), rgba(17, 24, 39, 0.56));
    }
 
    .token {
@@ -2355,6 +2371,28 @@
        flex: 0 0 auto;
    }
 
+   .dnd-table-area .btn-back-glass,
+   .dnd-table-topbar strong,
+   .dnd-session-hud,
+   .dnd-dice-bar {
+       border-color: rgba(75, 85, 99, 0.16);
+       background: rgba(255, 255, 255, 0.88);
+       color: #1f2937;
+       box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+   }
+
+   .dnd-table-area .btn-back-glass {
+       color: #1f2937;
+       font-weight: 900;
+       box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+   }
+
+   .dnd-table-area .btn-back-glass:hover {
+       border-color: rgba(124, 58, 237, 0.35);
+       background: rgba(255, 255, 255, 0.96);
+       color: #4c1d95;
+   }
+
    .dnd-session-primary-controls {
        display: flex;
        align-items: center;
@@ -2364,10 +2402,10 @@
 
    .dnd-panel-toggle.active,
    .dnd-panel-toggle[aria-expanded="true"] {
-       border-color: rgba(0, 255, 163, 0.52);
-       background: rgba(0, 255, 163, 0.13);
-       color: #00ffa3;
-       box-shadow: 0 0 18px rgba(0, 255, 163, 0.12);
+       border-color: rgba(16, 185, 129, 0.44);
+       background: rgba(209, 250, 229, 0.88);
+       color: #047857;
+       box-shadow: 0 0 18px rgba(16, 185, 129, 0.18);
    }
 
    .map-control-row {
@@ -2379,9 +2417,8 @@
    }
 
    .dnd-table-topbar strong {
-       border: 1px solid var(--glass-border);
+       border: 1px solid rgba(75, 85, 99, 0.16);
        border-radius: 999px;
-       background: rgba(5, 2, 10, 0.78);
        padding: 11px 18px;
        backdrop-filter: blur(14px);
        text-align: center;
@@ -2394,21 +2431,19 @@
        transform: translateX(-50%);
        z-index: 55;
        max-width: min(560px, calc(100% - 40px));
-       border: 1px solid var(--glass-border);
+       border: 1px solid rgba(75, 85, 99, 0.16);
        border-radius: 16px;
-       background: rgba(5, 2, 10, 0.72);
        backdrop-filter: blur(14px);
        -webkit-backdrop-filter: blur(14px);
        padding: 12px 16px;
        text-align: center;
-       box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
        pointer-events: none;
    }
 
    .dnd-session-hud span,
    .dnd-session-hud small {
        display: block;
-       color: rgba(255, 255, 255, 0.58);
+       color: rgba(55, 65, 81, 0.68);
        font-size: 0.68rem;
        font-weight: 900;
        text-transform: uppercase;
@@ -2420,6 +2455,7 @@
        margin: 4px 0;
        font-size: 0.94rem;
        text-transform: uppercase;
+       color: #111827;
    }
 
    .dnd-session-hud small {
@@ -2442,12 +2478,115 @@
        gap: 8px;
        align-items: center;
        overflow-x: auto;
-       border: 1px solid var(--glass-border);
+       border: 1px solid rgba(75, 85, 99, 0.16);
        border-radius: 18px;
-       background: rgba(5, 2, 10, 0.78);
        backdrop-filter: blur(14px);
        padding: 10px;
-       box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36);
+   }
+
+   .dnd-roll-display {
+       position: absolute;
+       right: 24px;
+       bottom: 104px;
+       z-index: 64;
+       display: flex;
+       align-items: center;
+       gap: 12px;
+       min-width: 240px;
+       max-width: min(340px, calc(100vw - 48px));
+       border: 1px solid rgba(124, 58, 237, 0.22);
+       border-radius: 22px;
+       padding: 12px 14px;
+       background: rgba(255, 255, 255, 0.92);
+       color: #111827;
+       box-shadow: 0 22px 46px rgba(15, 23, 42, 0.16);
+       opacity: 0;
+       pointer-events: none;
+       perspective: 620px;
+       transform: translate3d(0, 14px, 0) scale(0.96);
+       transform-origin: right bottom;
+       transition: opacity var(--motion-med) ease,
+                   transform var(--motion-med) var(--ease-out);
+   }
+
+   .dnd-roll-display.is-visible {
+       opacity: 1;
+       transform: translate3d(0, 0, 0) scale(1);
+   }
+
+   .dnd-roll-cube {
+       position: relative;
+       flex: 0 0 68px;
+       width: 68px;
+       height: 68px;
+       display: grid;
+       place-items: center;
+       border-radius: 18px;
+       background: linear-gradient(145deg, #ffffff 0%, #ede9fe 48%, #c4b5fd 100%);
+       color: #4c1d95;
+       font-size: 1.65rem;
+       font-weight: 950;
+       transform-style: preserve-3d;
+       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92),
+                   inset -10px -14px 22px rgba(76, 29, 149, 0.16),
+                   0 14px 28px rgba(76, 29, 149, 0.22);
+   }
+
+   .dnd-roll-cube::before,
+   .dnd-roll-cube::after {
+       content: "";
+       position: absolute;
+       inset: 10px;
+       border-radius: 12px;
+       border: 1px solid rgba(76, 29, 149, 0.18);
+       transform: translateZ(-10px);
+       pointer-events: none;
+   }
+
+   .dnd-roll-cube::after {
+       inset: auto 12px 9px;
+       height: 7px;
+       background: rgba(76, 29, 149, 0.18);
+       filter: blur(6px);
+       transform: translateY(18px) rotateX(72deg);
+   }
+
+   .dnd-roll-display.is-rolling .dnd-roll-cube {
+       animation: diceTumble 720ms cubic-bezier(0.2, 0.78, 0.25, 1) both;
+   }
+
+   .dnd-roll-copy {
+       min-width: 0;
+       display: grid;
+       gap: 2px;
+   }
+
+   .dnd-roll-copy span,
+   .dnd-roll-copy small {
+       overflow: hidden;
+       text-overflow: ellipsis;
+       white-space: nowrap;
+   }
+
+   .dnd-roll-copy span {
+       color: rgba(76, 29, 149, 0.72);
+       font-size: 0.68rem;
+       font-weight: 900;
+       text-transform: uppercase;
+       letter-spacing: 1.4px;
+   }
+
+   .dnd-roll-copy strong {
+       color: #111827;
+       font-size: 2rem;
+       line-height: 1;
+       font-weight: 950;
+   }
+
+   .dnd-roll-copy small {
+       color: rgba(31, 41, 55, 0.62);
+       font-size: 0.78rem;
+       font-weight: 800;
    }
 
    .roll-btn {
@@ -2478,20 +2617,20 @@
    #rollMod {
        width: 70px;
        flex: 0 0 auto;
-       border: 1px solid var(--glass-border);
+       border: 1px solid rgba(75, 85, 99, 0.18);
        border-radius: 12px;
-       background: rgba(255, 255, 255, 0.06);
-       color: white;
+       background: rgba(255, 255, 255, 0.82);
+       color: #111827;
        padding: 10px;
    }
 
    #diceFormula {
        width: 92px;
        flex: 0 0 auto;
-       border: 1px solid var(--glass-border);
+       border: 1px solid rgba(75, 85, 99, 0.18);
        border-radius: 12px;
-       background: rgba(255, 255, 255, 0.06);
-       color: white;
+       background: rgba(255, 255, 255, 0.82);
+       color: #111827;
        padding: 10px;
        font-weight: 900;
    }
@@ -2499,10 +2638,10 @@
    #rollMode {
        width: 104px;
        flex: 0 0 auto;
-       border: 1px solid var(--glass-border);
+       border: 1px solid rgba(75, 85, 99, 0.18);
        border-radius: 12px;
-       background: rgba(255, 255, 255, 0.06);
-       color: white;
+       background: rgba(255, 255, 255, 0.82);
+       color: #111827;
        padding: 10px;
        font-weight: 900;
    }
@@ -3755,6 +3894,29 @@
 
        .dnd-session-hud strong {
            font-size: 0.82rem;
+       }
+
+       .dnd-roll-display {
+           left: 12px;
+           right: 12px;
+           bottom: calc(154px + env(safe-area-inset-bottom));
+           min-width: 0;
+           max-width: none;
+           padding: 10px 12px;
+           border-radius: 18px;
+           transform-origin: center bottom;
+       }
+
+       .dnd-roll-cube {
+           flex-basis: 58px;
+           width: 58px;
+           height: 58px;
+           border-radius: 15px;
+           font-size: 1.35rem;
+       }
+
+       .dnd-roll-copy strong {
+           font-size: 1.6rem;
        }
 
        .dnd-dice-bar {
