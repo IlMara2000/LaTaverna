@@ -41,7 +41,7 @@ export function showTabletop(container, sessionId, options = {}) {
     let scale = 1;
     let translateX = 0;
     let translateY = 0;
-    let fogEnabled = options.fogEnabled !== false;
+    let fogEnabled = options.fogEnabled === true;
     let gridVisible = options.gridVisible !== false;
     let gridSize = Number(options.gridSize || 50);
     let knownTokens = [];
