@@ -233,14 +233,21 @@ export async function showSession(container, sessionId, options = {}) {
                     <button type="button" class="dnd-panel-close" id="closeSessionMenu" aria-label="Chiudi menu sessione">X</button>
                 </header>
 
-                <section class="dnd-session-block session-brief">
+                <nav class="session-tool-switcher" aria-label="Strumenti sessione">
+                    <button type="button" class="active" data-session-tool="brief">Brief</button>
+                    <button type="button" data-session-tool="tokens">Token</button>
+                    <button type="button" data-session-tool="initiative">Iniziativa</button>
+                    <button type="button" data-session-tool="notes">Note</button>
+                </nav>
+
+                <section class="dnd-session-block session-brief" data-session-tool-panel="brief">
                     <h3>Brief</h3>
                     ${sessionData.party_name ? `<p><strong>Party:</strong> ${escapeHTML(sessionData.party_name)}</p>` : ''}
                     ${sessionData.location ? `<p><strong>Luogo:</strong> ${escapeHTML(sessionData.location)}</p>` : ''}
                     ${sessionData.description ? `<p>${escapeHTML(sessionData.description)}</p>` : '<p class="dnd-muted">Nessuna descrizione sessione.</p>'}
                 </section>
 
-                <section class="dnd-session-block">
+                <section class="dnd-session-block" data-session-tool-panel="tokens" hidden>
                     <h3>Token</h3>
                     <select id="tokenCharacter">
                         <option value="">Token libero</option>
@@ -260,7 +267,7 @@ export async function showSession(container, sessionId, options = {}) {
                     <div id="tokenInspector" class="token-inspector"></div>
                 </section>
 
-                <section class="dnd-session-block">
+                <section class="dnd-session-block" data-session-tool-panel="initiative" hidden>
                     <h3>Iniziativa</h3>
                     <div class="initiative-round">Round <strong id="roundValue">${sessionState.round}</strong></div>
                     <div id="initiativeList" class="initiative-list"></div>
@@ -282,7 +289,7 @@ export async function showSession(container, sessionId, options = {}) {
                     </div>
                 </section>
 
-                <section class="dnd-session-block">
+                <section class="dnd-session-block" data-session-tool-panel="notes" hidden>
                     <h3>Note Live</h3>
                     <input id="sceneInput" type="text" placeholder="Scena corrente" value="${escapeHTML(sessionState.scene)}">
                     <textarea id="publicSummary" placeholder="Riepilogo condiviso">${escapeHTML(sessionState.public_summary)}</textarea>
@@ -332,23 +339,27 @@ export async function showSession(container, sessionId, options = {}) {
                 </div>
 
                 <div class="dnd-dice-bar">
-                    <select id="rollMode" aria-label="Modalita tiro">
+                    <input id="diceFormula" type="text" value="1d20" aria-label="Formula dado">
+                    ${[20, 12, 10, 8, 6, 4, 100].map(die => `<button class="roll-btn" data-dice="${die}">d${die === 100 ? '%' : die}</button>`).join('')}
+                    <select id="rollMode" aria-label="Azione del tiro">
                         <option value="normal">Normale</option>
                         <option value="adv">Vantaggio</option>
                         <option value="dis">Svantaggio</option>
                     </select>
-                    <input id="diceFormula" type="text" value="1d20" aria-label="Formula dado">
-                    ${[20, 12, 10, 8, 6, 4, 100].map(die => `<button class="roll-btn" data-dice="${die}">d${die === 100 ? '%' : die}</button>`).join('')}
-                    <input id="rollMod" type="number" value="0" aria-label="Modificatore">
+                    <div class="dice-mod-control" aria-label="Modificatore tiro">
+                        <button type="button" class="dice-mod-step" data-roll-mod-step="-1" aria-label="Diminuisci modificatore">-</button>
+                        <input id="rollMod" type="text" inputmode="numeric" value="+0" aria-label="Modificatore tiro">
+                        <button type="button" class="dice-mod-step" data-roll-mod-step="1" aria-label="Aumenta modificatore">+</button>
+                    </div>
                     <button id="rollFormula" class="roll-btn">TIRA</button>
                 </div>
             </main>
 
             <aside class="dnd-session-panel dnd-chat-panel" id="sessionChatPanel" aria-hidden="true" aria-label="Chat sessione">
-                <header class="dnd-panel-head">
+                <header class="dnd-panel-head dnd-chat-head">
                     <div>
-                        <span>Party</span>
-                        <strong>Chat & Log</strong>
+                        <span>Party live</span>
+                        <strong>Chat di sessione</strong>
                     </div>
                     <button type="button" class="dnd-panel-close" id="closeSessionChat" aria-label="Chiudi chat">X</button>
                 </header>
@@ -398,6 +409,24 @@ export async function showSession(container, sessionId, options = {}) {
     container.querySelector('#closeSessionMenu').onclick = closeSessionDrawers;
     container.querySelector('#closeSessionChat').onclick = closeSessionDrawers;
     container.querySelector('[data-close-session-drawer]').onclick = closeSessionDrawers;
+
+    const toolButtons = [...container.querySelectorAll('[data-session-tool]')];
+    const toolPanels = [...container.querySelectorAll('[data-session-tool-panel]')];
+    const setActiveSessionTool = (toolId = 'brief') => {
+        toolButtons.forEach(btn => {
+            const active = btn.dataset.sessionTool === toolId;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        toolPanels.forEach(panel => {
+            panel.hidden = panel.dataset.sessionToolPanel !== toolId;
+        });
+    };
+    toolButtons.forEach(btn => {
+        btn.onclick = () => setActiveSessionTool(btn.dataset.sessionTool);
+    });
+    setActiveSessionTool('brief');
+
     const handleSessionEscape = (event) => {
         if (event.key === 'Escape') closeSessionDrawers();
     };
@@ -960,6 +989,18 @@ export async function showSession(container, sessionId, options = {}) {
         sendMsg(`${currentUserName} segnala un punto sulla mappa.`);
     };
 
+    const readRollMod = () => {
+        const raw = String(container.querySelector('#rollMod')?.value || '0').replace(/\s+/g, '');
+        const parsed = Number(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const writeRollMod = (value) => {
+        const input = container.querySelector('#rollMod');
+        if (!input) return;
+        input.value = formatMod(Math.max(-99, Math.min(99, Math.round(Number(value) || 0))));
+    };
+
     const rollAndLog = (faces, count = 1, mod = 0, label = '') => {
         const mode = container.querySelector('#rollMode')?.value || 'normal';
         let result = rollDice(faces, count, mod);
@@ -978,10 +1019,16 @@ export async function showSession(container, sessionId, options = {}) {
         btn.onclick = () => {
             if (btn.id === 'rollFormula') return;
             const faces = Number(btn.dataset.dice);
-            const mod = Number(container.querySelector('#rollMod').value || 0);
+            const mod = readRollMod();
             rollAndLog(faces, 1, mod, `Tira d${faces === 100 ? '%' : faces}`);
         };
     });
+
+    container.querySelectorAll('[data-roll-mod-step]').forEach(btn => {
+        btn.onclick = () => writeRollMod(readRollMod() + Number(btn.dataset.rollModStep || 0));
+    });
+
+    container.querySelector('#rollMod').onblur = () => writeRollMod(readRollMod());
 
     container.querySelector('#rollFormula').onclick = () => {
         const formula = container.querySelector('#diceFormula').value;
@@ -990,11 +1037,12 @@ export async function showSession(container, sessionId, options = {}) {
             alert('Formula non valida. Usa esempi come 1d20, 2d6+3, d%.');
             return;
         }
+        const totalMod = parsed.mod + readRollMod();
         rollAndLog(
             parsed.faces,
             parsed.count,
-            parsed.mod,
-            `Tira ${parsed.count}d${parsed.faces === 100 ? '%' : parsed.faces}${parsed.mod ? formatMod(parsed.mod) : ''}`
+            totalMod,
+            `Tira ${parsed.count}d${parsed.faces === 100 ? '%' : parsed.faces}${totalMod ? formatMod(totalMod) : ''}`
         );
     };
 
