@@ -47,9 +47,12 @@ export function showTabletop(container, sessionId, options = {}) {
     let knownTokens = [];
     const localMode = Boolean(options.localMode);
     const localStore = options.localStore || dndLocalStore;
+    const activePointers = new Map();
+    let panState = null;
+    let pinchState = null;
 
     container.innerHTML = `
-        <div class="tabletop-viewport" id="viewport">
+        <div class="tabletop-viewport" id="viewport" tabindex="0" aria-label="Mappa di gioco interattiva">
             <div class="map-layer" id="map-layer">
                 ${options.mapUrl ? (
                     isPdfMap(options.mapUrl)
@@ -95,8 +98,27 @@ export function showTabletop(container, sessionId, options = {}) {
         notifyTokens();
     };
 
-    const setScale = (nextScale) => {
-        scale = Math.min(Math.max(0.35, nextScale), 3);
+    const clampScale = (nextScale) => Math.min(Math.max(0.2, nextScale), 5);
+
+    const setScale = (nextScale, anchorClientX, anchorClientY) => {
+        const next = clampScale(nextScale);
+        const rect = viewport.getBoundingClientRect();
+        const anchorX = Number.isFinite(anchorClientX) ? anchorClientX - rect.left : rect.width / 2;
+        const anchorY = Number.isFinite(anchorClientY) ? anchorClientY - rect.top : rect.height / 2;
+        const mapX = (anchorX - translateX) / scale;
+        const mapY = (anchorY - translateY) / scale;
+
+        scale = next;
+        translateX = anchorX - mapX * scale;
+        translateY = anchorY - mapY * scale;
+        updateTransform();
+    };
+
+    const zoomBy = (factor, clientX, clientY) => setScale(scale * factor, clientX, clientY);
+
+    const panBy = (deltaX = 0, deltaY = 0) => {
+        translateX += deltaX;
+        translateY += deltaY;
         updateTransform();
     };
 
@@ -130,34 +152,143 @@ export function showTabletop(container, sessionId, options = {}) {
 
     updateTransform();
     updateGrid();
+    requestAnimationFrame(() => viewport.focus({ preventScroll: true }));
+
+    const getPinchInfo = () => {
+        const points = [...activePointers.values()];
+        if (points.length < 2) return null;
+        const [a, b] = points;
+        const dx = b.clientX - a.clientX;
+        const dy = b.clientY - a.clientY;
+        return {
+            distance: Math.hypot(dx, dy) || 1,
+            centerX: (a.clientX + b.clientX) / 2,
+            centerY: (a.clientY + b.clientY) / 2
+        };
+    };
+
+    const beginPanFromPointer = (pointer) => {
+        if (!pointer) {
+            panState = null;
+            return;
+        }
+        panState = {
+            pointerId: pointer.pointerId,
+            startX: pointer.clientX - translateX,
+            startY: pointer.clientY - translateY
+        };
+    };
+
+    const beginPinch = () => {
+        const pinch = getPinchInfo();
+        if (!pinch) return;
+        const rect = viewport.getBoundingClientRect();
+        const anchorX = pinch.centerX - rect.left;
+        const anchorY = pinch.centerY - rect.top;
+        pinchState = {
+            startDistance: pinch.distance,
+            startScale: scale,
+            mapX: (anchorX - translateX) / scale,
+            mapY: (anchorY - translateY) / scale
+        };
+        panState = null;
+    };
 
     viewport.addEventListener('pointerdown', (e) => {
         if (e.target.closest('.token')) return;
+        viewport.focus({ preventScroll: true });
         viewport.setPointerCapture(e.pointerId);
-        const startX = e.clientX - translateX;
-        const startY = e.clientY - translateY;
+        activePointers.set(e.pointerId, {
+            pointerId: e.pointerId,
+            clientX: e.clientX,
+            clientY: e.clientY
+        });
 
-        const onMove = (ev) => {
-            translateX = ev.clientX - startX;
-            translateY = ev.clientY - startY;
-            updateTransform();
-        };
-
-        const onUp = (ev) => {
-            viewport.releasePointerCapture(ev.pointerId);
-            viewport.removeEventListener('pointermove', onMove);
-            viewport.removeEventListener('pointerup', onUp);
-        };
-
-        viewport.addEventListener('pointermove', onMove);
-        viewport.addEventListener('pointerup', onUp);
+        if (activePointers.size === 1) {
+            beginPanFromPointer(activePointers.get(e.pointerId));
+        } else {
+            beginPinch();
+        }
     });
+
+    const onViewportPointerMove = (e) => {
+        if (!activePointers.has(e.pointerId)) return;
+        activePointers.set(e.pointerId, {
+            pointerId: e.pointerId,
+            clientX: e.clientX,
+            clientY: e.clientY
+        });
+
+        if (activePointers.size >= 2 && pinchState) {
+            const pinch = getPinchInfo();
+            if (!pinch) return;
+            const nextScale = clampScale(pinchState.startScale * (pinch.distance / pinchState.startDistance));
+            const rect = viewport.getBoundingClientRect();
+            const anchorX = pinch.centerX - rect.left;
+            const anchorY = pinch.centerY - rect.top;
+
+            scale = nextScale;
+            translateX = anchorX - pinchState.mapX * scale;
+            translateY = anchorY - pinchState.mapY * scale;
+            updateTransform();
+            return;
+        }
+
+        if (panState && panState.pointerId === e.pointerId) {
+            translateX = e.clientX - panState.startX;
+            translateY = e.clientY - panState.startY;
+            updateTransform();
+        }
+    };
+
+    const endViewportPointer = (e) => {
+        if (activePointers.has(e.pointerId)) activePointers.delete(e.pointerId);
+        try {
+            viewport.releasePointerCapture(e.pointerId);
+        } catch {
+            // Pointer capture may already be released by the browser.
+        }
+
+        if (activePointers.size >= 2) {
+            beginPinch();
+        } else if (activePointers.size === 1) {
+            pinchState = null;
+            beginPanFromPointer([...activePointers.values()][0]);
+        } else {
+            panState = null;
+            pinchState = null;
+        }
+    };
+
+    viewport.addEventListener('pointermove', onViewportPointerMove);
+    viewport.addEventListener('pointerup', endViewportPointer);
+    viewport.addEventListener('pointercancel', endViewportPointer);
 
     viewport.addEventListener('wheel', (e) => {
         e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        setScale(scale * delta);
+        zoomBy(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
     }, { passive: false });
+
+    viewport.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        const zoomKey = key === '+' || key === '=' || key === '-' || key === '_' || key === '0';
+        const panKey = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key);
+        if (!zoomKey && !panKey) return;
+
+        e.preventDefault();
+        if (key === '+' || key === '=') zoomBy(1.15);
+        if (key === '-' || key === '_') zoomBy(0.85);
+        if (key === '0') {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
+            updateTransform();
+        }
+        if (key === 'arrowup') panBy(0, 48);
+        if (key === 'arrowdown') panBy(0, -48);
+        if (key === 'arrowleft') panBy(48, 0);
+        if (key === 'arrowright') panBy(-48, 0);
+    });
 
     const renderToken = (doc) => {
         if (!doc?.id) return;
@@ -341,8 +472,8 @@ export function showTabletop(container, sessionId, options = {}) {
                 window.setTimeout(() => tokenEl.classList.remove('focused'), 1200);
             }
         },
-        zoomIn: () => setScale(scale * 1.15),
-        zoomOut: () => setScale(scale * 0.85),
+        zoomIn: () => zoomBy(1.15),
+        zoomOut: () => zoomBy(0.85),
         resetView: () => {
             scale = 1;
             translateX = 0;

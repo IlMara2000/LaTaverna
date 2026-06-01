@@ -346,6 +346,66 @@
        background: rgba(157, 78, 221, 0.1);
        border-color: var(--amethyst-light);
    }
+
+   .login-auth-card {
+       width: min(100%, 370px);
+       max-height: calc(100dvh - 40px);
+       padding: clamp(30px, 5vw, 40px) clamp(22px, 4vw, 30px);
+       border-radius: 32px 32px 24px 24px;
+       background:
+           radial-gradient(circle at 50% -12%, rgba(199, 125, 255, 0.22), transparent 44%),
+           linear-gradient(180deg, rgba(18, 9, 32, 0.94) 0%, rgba(11, 4, 22, 0.9) 58%, rgba(5, 1, 10, 0.86) 100%);
+       border: 1px solid rgba(199, 125, 255, 0.28);
+       box-shadow:
+           0 24px 68px rgba(0, 0, 0, 0.46),
+           0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+           0 0 34px rgba(157, 78, 221, 0.14);
+       cursor: default;
+       isolation: isolate;
+       overflow: hidden auto;
+       scrollbar-width: none;
+   }
+
+   .login-auth-card::-webkit-scrollbar {
+       width: 0;
+       height: 0;
+   }
+
+   .login-auth-card::before {
+       display: none;
+   }
+
+   .login-auth-card::after {
+       content: "";
+       position: absolute;
+       inset: 10px;
+       border: 1px solid rgba(255, 255, 255, 0.055);
+       border-radius: 24px 24px 18px 18px;
+       pointer-events: none;
+       z-index: 0;
+   }
+
+   .login-auth-card > * {
+       position: relative;
+       z-index: 1;
+   }
+
+   .login-auth-card:hover,
+   .login-auth-card:active {
+       transform: translateZ(0);
+       background:
+           radial-gradient(circle at 50% -12%, rgba(199, 125, 255, 0.24), transparent 44%),
+           linear-gradient(180deg, rgba(18, 9, 32, 0.94) 0%, rgba(11, 4, 22, 0.9) 58%, rgba(5, 1, 10, 0.86) 100%);
+       border-color: rgba(199, 125, 255, 0.34);
+       box-shadow:
+           0 24px 68px rgba(0, 0, 0, 0.46),
+           0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+           0 0 34px rgba(157, 78, 221, 0.14);
+   }
+
+   body.taverna-compact-cards .login-auth-card {
+       border-radius: 28px 28px 22px 22px !important;
+   }
    
    .game-card:nth-child(1) { animation-delay: 0.1s; }
    .game-card:nth-child(2) { animation-delay: 0.15s; }
@@ -1844,6 +1904,79 @@
        text-transform: uppercase;
    }
 
+   .dnd-chat-panel .dnd-panel-head {
+       align-items: center;
+       padding: 18px;
+       border-bottom-color: rgba(199, 125, 255, 0.18);
+       background:
+           radial-gradient(circle at 0% 0%, rgba(199, 125, 255, 0.18), transparent 42%),
+           linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0));
+   }
+
+   .dnd-chat-panel .dnd-panel-head span {
+       width: fit-content;
+       opacity: 1;
+       color: #05010a;
+       font-size: 0.68rem;
+       text-transform: none;
+       letter-spacing: 0.02em;
+       border-radius: 999px;
+       padding: 4px 9px;
+       background: rgba(199, 125, 255, 0.95);
+       box-shadow: 0 0 18px rgba(157, 78, 222, 0.22);
+   }
+
+   .dnd-chat-panel .dnd-panel-head strong {
+       color: rgba(255, 255, 255, 0.94);
+       font-size: 1.14rem;
+       line-height: 1.15;
+       text-transform: none;
+       letter-spacing: 0;
+   }
+
+   .session-tool-switcher {
+       display: grid;
+       grid-template-columns: repeat(2, minmax(0, 1fr));
+       gap: 8px;
+       flex: 0 0 auto;
+   }
+
+   .session-tool-switcher button {
+       border: 1px solid rgba(255, 255, 255, 0.1);
+       border-radius: 14px;
+       background: rgba(255, 255, 255, 0.055);
+       color: rgba(255, 255, 255, 0.72);
+       padding: 11px 10px;
+       font-size: 0.68rem;
+       font-weight: 900;
+       text-transform: uppercase;
+       letter-spacing: 0.08em;
+       cursor: pointer;
+       transition: transform var(--motion-fast) var(--ease-spring),
+                   border-color var(--motion-fast) ease,
+                   background var(--motion-fast) ease,
+                   color var(--motion-fast) ease;
+   }
+
+   .session-tool-switcher button:hover {
+       transform: translateY(-1px);
+       border-color: rgba(199, 125, 255, 0.42);
+       background: rgba(157, 78, 222, 0.12);
+       color: white;
+   }
+
+   .session-tool-switcher button.active,
+   .session-tool-switcher button[aria-pressed="true"] {
+       border-color: rgba(199, 125, 255, 0.72);
+       background: linear-gradient(135deg, rgba(157, 78, 222, 0.34), rgba(72, 12, 168, 0.2));
+       color: white;
+       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22), 0 0 20px rgba(157, 78, 222, 0.16);
+   }
+
+   .dnd-session-block[hidden] {
+       display: none !important;
+   }
+
    .dnd-session-panel header small {
        color: rgba(255, 255, 255, 0.52);
        font-size: 0.68rem;
@@ -2161,6 +2294,12 @@
        cursor: grab;
        touch-action: none;
        background: #ffffff;
+       outline: none;
+       overscroll-behavior: none;
+   }
+
+   .tabletop-viewport:focus-visible {
+       box-shadow: inset 0 0 0 2px rgba(124, 58, 237, 0.32);
    }
 
    .map-layer {
@@ -2170,6 +2309,7 @@
        background: #ffffff;
        transform-origin: 0 0;
        will-change: transform;
+       overflow: visible;
    }
 
    .map-empty {
@@ -2201,8 +2341,11 @@
 
    .map-grid {
        position: absolute;
-       inset: 0;
-       background-image: linear-gradient(rgba(75, 85, 99, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(75, 85, 99, 0.22) 1px, transparent 1px);
+       left: -50000px;
+       top: -50000px;
+       width: 100000px;
+       height: 100000px;
+       background-image: linear-gradient(rgba(75, 85, 99, 0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(75, 85, 99, 0.18) 1px, transparent 1px);
        background-size: 50px 50px;
        pointer-events: none;
    }
@@ -2614,14 +2757,49 @@
        transform: scale(0.96);
    }
 
-   #rollMod {
-       width: 70px;
+   .dice-mod-control {
        flex: 0 0 auto;
+       display: inline-flex;
+       align-items: center;
+       height: 42px;
        border: 1px solid rgba(75, 85, 99, 0.18);
        border-radius: 12px;
        background: rgba(255, 255, 255, 0.82);
+       overflow: hidden;
+   }
+
+   .dice-mod-step {
+       width: 34px;
+       height: 100%;
+       border: 0;
+       background: rgba(124, 58, 237, 0.08);
+       color: #4c1d95;
+       font-size: 1rem;
+       font-weight: 950;
+       cursor: pointer;
+       transition: background var(--motion-fast) ease,
+                   transform var(--motion-fast) var(--ease-spring);
+   }
+
+   .dice-mod-step:hover {
+       background: rgba(124, 58, 237, 0.16);
+   }
+
+   .dice-mod-step:active {
+       transform: scale(0.92);
+   }
+
+   #rollMod {
+       width: 44px;
+       flex: 0 0 auto;
+       border: 0;
+       border-left: 1px solid rgba(75, 85, 99, 0.12);
+       border-right: 1px solid rgba(75, 85, 99, 0.12);
+       background: transparent;
        color: #111827;
-       padding: 10px;
+       padding: 10px 4px;
+       text-align: center;
+       font-weight: 950;
    }
 
    #diceFormula {
@@ -2636,7 +2814,7 @@
    }
 
    #rollMode {
-       width: 104px;
+       width: 118px;
        flex: 0 0 auto;
        border: 1px solid rgba(75, 85, 99, 0.18);
        border-radius: 12px;
@@ -2669,12 +2847,20 @@
    }
 
    .dnd-chat-message strong {
-       display: block;
+       display: inline-flex;
+       align-items: center;
+       max-width: 100%;
        color: var(--amethyst-light);
-       font-size: 0.68rem;
-       text-transform: uppercase;
-       letter-spacing: 1px;
-       margin-bottom: 4px;
+       font-size: 0.76rem;
+       text-transform: none;
+       letter-spacing: 0.02em;
+       margin-bottom: 7px;
+       padding: 4px 8px;
+       border-radius: 999px;
+       background: rgba(157, 78, 222, 0.12);
+       overflow: hidden;
+       text-overflow: ellipsis;
+       white-space: nowrap;
    }
 
    .dnd-chat-message p {
@@ -2819,6 +3005,59 @@
        padding: env(safe-area-inset-top, 20px) 15px env(safe-area-inset-bottom, 20px) 15px;
        background: radial-gradient(circle at 50% 50%, #1a0b2e 0%, #05010a 100%);
        animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+   }
+
+   #start-screen.game-master-wrapper {
+       position: fixed !important;
+       inset: 0 !important;
+       z-index: 10000 !important;
+       width: 100vw !important;
+       height: 100dvh !important;
+       min-height: 100dvh !important;
+       margin: 0 !important;
+       padding: max(22px, env(safe-area-inset-top)) clamp(18px, 4vw, 42px) max(26px, env(safe-area-inset-bottom)) !important;
+       justify-content: center !important;
+       align-items: center !important;
+       overflow: hidden auto !important;
+       background:
+           radial-gradient(circle at 50% 42%, rgba(157, 78, 221, 0.2), transparent 34%),
+           radial-gradient(circle at 50% 50%, #15102a 0%, #05010a 72%) !important;
+       border: 0 !important;
+       box-shadow: none !important;
+       box-sizing: border-box;
+       animation: fadeInUp 0.45s var(--ease-out) forwards;
+       scrollbar-width: none;
+   }
+
+   #start-screen.game-master-wrapper::-webkit-scrollbar {
+       width: 0;
+       height: 0;
+   }
+
+   #start-screen .pulse-logo {
+       width: clamp(72px, 12vmin, 100px) !important;
+       margin-bottom: clamp(18px, 4vmin, 25px) !important;
+   }
+
+   #start-screen .main-title {
+       max-width: min(92vw, 720px);
+       font-size: clamp(2.35rem, 8vw, 3.5rem) !important;
+       line-height: 1;
+       text-align: center;
+       text-wrap: balance;
+   }
+
+   #start-screen > p {
+       margin-bottom: clamp(22px, 4vmin, 30px) !important;
+       text-align: center;
+   }
+
+   #start-screen #levels-container {
+       width: min(100%, 320px) !important;
+       max-width: min(320px, calc(100vw - 48px)) !important;
+       max-height: min(250px, 36dvh) !important;
+       padding: 8px !important;
+       margin-bottom: clamp(16px, 3vmin, 20px) !important;
    }
    
    .game-master-header {
@@ -3470,23 +3709,67 @@
        .game-master-wrapper {
            padding: env(safe-area-inset-top, 15px) 12px env(safe-area-inset-bottom, 15px) 12px;
        }
+
+       .game-master-wrapper.fade-in:not(#start-screen) {
+           position: fixed;
+           inset: 0;
+           width: 100vw;
+           height: 100dvh;
+           min-height: 100dvh;
+           padding: calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)) 10px;
+           box-sizing: border-box;
+           border: 0;
+           overflow: hidden;
+       }
+
+       #start-screen.game-master-wrapper {
+           padding: max(18px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom)) !important;
+       }
+
+       #start-screen .main-title {
+           font-size: clamp(2.35rem, 14vw, 3.15rem) !important;
+       }
+
+       #start-screen #levels-container {
+           max-height: min(280px, 34dvh) !important;
+       }
    
        .game-card-unit {
-           width: clamp(60px, 12vw, 85px);
-           height: clamp(90px, 20vw, 125px);
+           width: clamp(54px, 18vw, 76px);
+           height: clamp(80px, 26vw, 112px);
+           min-width: clamp(54px, 18vw, 76px);
+           border-radius: 10px;
+           padding: 6px;
+           font-size: 1.05rem;
        }
 
        .game-master-header {
            height: auto;
            min-height: 48px;
            align-items: flex-start;
+           flex: 0 0 auto;
+           gap: 8px;
+       }
+
+       .game-master-header .game-btn-action,
+       .game-master-header .btn-back-glass {
+           min-height: 38px;
+           padding: 8px 13px !important;
+           border-radius: 14px;
+           font-size: 0.68rem;
        }
 
        .game-score-widget {
-           margin-right: 60px;
-           max-width: calc(100vw - 156px);
+           margin-right: 50px;
+           max-width: calc(100vw - 148px);
            gap: 4px;
            padding: 4px;
+           overflow-x: auto;
+           scrollbar-width: none;
+       }
+
+       .game-score-widget::-webkit-scrollbar {
+           display: none;
        }
 
        .game-score-widget span {
@@ -3495,16 +3778,101 @@
            font-size: 0.64rem;
        }
 
+       .game-master-table {
+           flex: 1 1 auto;
+           min-height: 0;
+           width: 100%;
+           padding: 4px 0;
+       }
+
+       .game-card-center {
+           gap: 18px;
+           margin-bottom: 12px;
+       }
+
+       .game-opponents-row {
+           flex: 0 0 auto;
+           justify-content: flex-start;
+           gap: 8px;
+           width: 100%;
+           padding: 6px 0;
+           overflow-x: auto;
+           scrollbar-width: none;
+       }
+
+       .game-opponents-row::-webkit-scrollbar {
+           display: none;
+       }
+
+       .game-bot-pill {
+           min-width: 72px;
+           padding: 8px 12px;
+           border-radius: 16px;
+           font-size: 0.64rem;
+       }
+
+       .game-action-buttons {
+           width: 100%;
+           justify-content: center;
+           flex-wrap: wrap;
+           gap: 8px;
+       }
+
+       @media (max-height: 680px) {
+           #start-screen .pulse-logo {
+               width: 60px !important;
+               margin-bottom: 12px !important;
+           }
+
+           #start-screen .main-title {
+               font-size: clamp(2rem, 12vw, 2.7rem) !important;
+               margin-bottom: 8px !important;
+           }
+
+           #start-screen > p {
+               margin-bottom: 14px !important;
+           }
+
+           #start-screen #levels-container {
+               max-height: 30dvh !important;
+               margin-bottom: 12px !important;
+           }
+       }
+
        .game-player-area {
            padding: 8px 0 0;
            border-radius: 18px 18px 0 0;
+           max-height: 34dvh;
+           min-height: 118px;
+           overflow: visible;
        }
 
        .game-player-hand {
            justify-content: flex-start;
-           min-height: 150px;
-           padding-top: 32px;
-           padding-bottom: calc(24px + env(safe-area-inset-bottom));
+           min-height: clamp(118px, 30dvh, 160px);
+           padding: 24px 12px calc(16px + env(safe-area-inset-bottom));
+           gap: 8px;
+           overflow-x: auto;
+           overflow-y: visible;
+           scrollbar-width: none;
+       }
+
+       .game-player-hand::-webkit-scrollbar {
+           display: none;
+       }
+
+       .solo-game-wrapper {
+           gap: 8px;
+       }
+
+       .solo-opponents-row {
+           justify-content: space-between;
+       }
+
+       .solo-player-hand {
+           overflow-x: auto;
+           overflow-y: visible;
+           min-height: clamp(126px, 31dvh, 168px);
        }
    
        .game-chess-board {

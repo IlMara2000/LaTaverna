@@ -11,12 +11,22 @@ export function initLogin(container) {
     
     // Pulizia scroll per la schermata di login
     document.body.style.overflow = 'hidden';
+    resetAuthScroll(container);
     
     // Stato iniziale: Mostra la schermata di benvenuto
     renderStartScreen(container);
 }
 
 export const showLogin = initLogin;
+
+function resetAuthScroll(container) {
+    container.scrollTop = 0;
+    container.scrollLeft = 0;
+    requestAnimationFrame(() => {
+        container.scrollTop = 0;
+        container.scrollLeft = 0;
+    });
+}
 
 // --- 1. SCHERMATA DI BENVENUTO (START) ---
 function renderStartScreen(container) {
@@ -35,6 +45,7 @@ function renderStartScreen(container) {
             <p style="margin-top: 30px; font-size: 10px; opacity: 0.4; letter-spacing: 1px;">VERSIONE ALPHA 5.2 - AMETHYST UI</p>
         </div>
     `;
+    resetAuthScroll(container);
 
     document.getElementById('btn-enter-tavern').onclick = () => renderLoginMethods(container);
 }
@@ -45,7 +56,7 @@ function renderLoginMethods(container) {
     container.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; padding: 20px; animation: fadeInUp 0.6s ease-out forwards;">
             
-            <div class="action-card" style="width: 100%; max-width: 350px; padding: 40px 25px; background: rgba(10, 5, 20, 0.8); border: 1px solid var(--glass-border);">
+            <div class="action-card login-auth-card">
                 <img src="/assets/logo.png" style="width: 60px; margin-bottom: 20px; filter: drop-shadow(0 0 10px var(--amethyst-glow));" alt="Logo">
                 
                 <h2 class="main-title" style="font-size: 1.8rem; margin-bottom: 10px;">IDENTIFICATI</h2>
@@ -79,6 +90,7 @@ function renderLoginMethods(container) {
             </div>
         </div>
     `;
+    resetAuthScroll(container);
 
     const loginMessage = document.getElementById('login-message');
     const emailSubmit = document.getElementById('login-email-submit');
