@@ -43,7 +43,7 @@ const getManualIndexedPages = (manual) => Math.max(1, manual.indexedPages || (ma
 const clampManualPage = (manual, page = 1) => Math.min(getManualIndexedPages(manual), Math.max(1, Number(page) || 1));
 const getManualFilePage = (manual, page = 1) => Math.min(manual.pages, Math.max(1, clampManualPage(manual, page) + (manual.filePageOffset || 0)));
 const getManualPageUrl = (manual, page = 1) => `/manuals/${manual.slug}/${manual.slug}-${getManualFilePage(manual, page)}.pdf`;
-const getManualEmbedUrl = (manual, page = 1) => `${getManualPageUrl(manual, page)}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`;
+const getManualEmbedUrl = (manual, page = 1) => `${getManualPageUrl(manual, page)}#toolbar=0&navpanes=0&scrollbar=0&view=Fit&zoom=page-fit`;
 const getManualFullUrl = (manual) => `/manuals/${manual.slug}/${manual.slug}.pdf`;
 const getManualIndexNote = (manual, page = 1) => {
     const manualPage = clampManualPage(manual, page);
@@ -502,6 +502,10 @@ function renderManuals(container) {
         </div>
     `;
 
+    document.querySelectorAll('body > .dnd-manual-modal').forEach(modal => modal.remove());
+    const manualModalRoot = content.querySelector('#manualPageModal');
+    if (manualModalRoot) document.body.appendChild(manualModalRoot);
+
     const renderPageFrame = (page) => {
         const pageUrl = getManualPageUrl(selectedManual, page);
         return `
@@ -522,8 +526,8 @@ function renderManuals(container) {
     };
 
     const closeManualPageModal = () => {
-        const modal = content.querySelector('#manualPageModal');
-        const frame = content.querySelector('#manualModalFrame');
+        const modal = document.querySelector('#manualPageModal');
+        const frame = document.querySelector('#manualModalFrame');
         modal?.classList.remove('active');
         modal?.setAttribute('aria-hidden', 'true');
         document.body.classList.remove('dnd-manual-modal-open');
@@ -533,10 +537,10 @@ function renderManuals(container) {
     const openManualPageModal = (page) => {
         selectedPage = clampPage(page);
         syncSelectedManualPage();
-        const modal = content.querySelector('#manualPageModal');
-        const frame = content.querySelector('#manualModalFrame');
-        const title = content.querySelector('#manualModalTitle');
-        const openLink = content.querySelector('#manualModalOpen');
+        const modal = document.querySelector('#manualPageModal');
+        const frame = document.querySelector('#manualModalFrame');
+        const title = document.querySelector('#manualModalTitle');
+        const openLink = document.querySelector('#manualModalOpen');
         const pageUrl = getManualPageUrl(selectedManual, selectedPage);
         if (!modal || !frame || !title || !openLink) return;
         title.textContent = `${selectedManual.title} - Pagina ${selectedPage}`;
@@ -665,7 +669,7 @@ function renderManuals(container) {
         if (event.key === 'Enter') setManualPage(event.target.value);
     };
     content.querySelector('#manualGoPage').onclick = () => setManualPage(content.querySelector('#manualPage').value);
-    content.querySelectorAll('[data-close-manual-page]').forEach(button => {
+    document.querySelectorAll('#manualPageModal [data-close-manual-page]').forEach(button => {
         button.onclick = closeManualPageModal;
     });
     syncManualViewer();

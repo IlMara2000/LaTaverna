@@ -24,11 +24,36 @@
        --motion-slow: 620ms;
        --focus-ring: 0 0 0 3px rgba(199, 125, 255, 0.18), 0 0 0 1px rgba(199, 125, 255, 0.65);
        --surface-elevated: rgba(255, 255, 255, 0.065);
+       --safe-top: env(safe-area-inset-top, 0px);
+       --safe-right: env(safe-area-inset-right, 0px);
+       --safe-bottom: env(safe-area-inset-bottom, 0px);
+       --safe-left: env(safe-area-inset-left, 0px);
+       --viewport-height: 100vh;
+       --viewport-stable-height: 100vh;
+       --visual-viewport-height: 100vh;
+       --visual-viewport-top: 0px;
+       --manual-modal-top: clamp(10px, 3dvh, 26px);
+       --manual-modal-right: clamp(10px, 3vw, 26px);
+       --manual-modal-bottom: clamp(10px, 3dvh, 26px);
+       --manual-modal-left: clamp(10px, 3vw, 26px);
        
        /* CARTE DARK OPACHE MATTE BLACK */
        --card-dark-bg: #121212;
        --card-dark-border: rgba(255, 255, 255, 0.08);
        --card-dark-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+   }
+
+   @supports (height: 100svh) {
+       :root {
+           --viewport-stable-height: 100svh;
+       }
+   }
+
+   @supports (height: 100dvh) {
+       :root {
+           --viewport-height: 100dvh;
+           --visual-viewport-height: 100dvh;
+       }
    }
    
    /* ============================================
@@ -101,12 +126,17 @@
       ============================================ */
    
    #app {
-       height: 100dvh;
+       height: var(--viewport-height);
+       min-height: var(--viewport-stable-height);
        width: 100vw;
        overflow-y: auto !important;
        overflow-x: hidden !important;
        -webkit-overflow-scrolling: touch;
-       padding: env(safe-area-inset-top, 20px) 20px calc(100px + env(safe-area-inset-bottom)) 20px;
+       padding:
+           max(16px, var(--safe-top))
+           max(16px, var(--safe-right))
+           calc(96px + max(16px, var(--safe-bottom)))
+           max(16px, var(--safe-left));
        box-sizing: border-box;
        display: flex;
        flex-direction: column;
@@ -345,6 +375,158 @@
        transform: scale(0.965);
        background: rgba(157, 78, 221, 0.1);
        border-color: var(--amethyst-light);
+   }
+
+   .minigames-lobby-wrapper {
+       width: min(100%, 640px);
+       margin: 0 auto;
+       padding: clamp(14px, 3vw, 22px);
+       padding-bottom: calc(128px + var(--safe-bottom));
+       box-sizing: border-box;
+       color: white;
+   }
+
+   .minigame-multiplayer-panel {
+       display: grid;
+       width: 100%;
+       min-width: 0;
+       gap: 12px;
+       margin: 0 0 22px;
+       padding: 16px;
+       box-sizing: border-box;
+       border: 1px solid rgba(199, 125, 255, 0.24);
+       border-radius: 22px;
+       overflow: hidden;
+       background:
+           radial-gradient(circle at 18% 0%, rgba(199, 125, 255, 0.16), transparent 42%),
+           linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+       box-shadow: 0 16px 38px rgba(0, 0, 0, 0.26);
+   }
+
+   .minigame-multiplayer-panel.is-connected {
+       border-color: rgba(0, 255, 163, 0.36);
+       box-shadow: 0 16px 38px rgba(0, 0, 0, 0.26), 0 0 28px rgba(0, 255, 163, 0.08);
+   }
+
+   .minigame-multiplayer-join {
+       display: grid;
+       grid-template-columns: minmax(0, 1fr) auto;
+       gap: 10px;
+       align-items: center;
+       min-width: 0;
+   }
+
+   .minigame-multiplayer-join input {
+       min-width: 0;
+       min-height: 44px;
+       border: 1px solid rgba(255, 255, 255, 0.13);
+       border-radius: 14px;
+       background: rgba(0, 0, 0, 0.2);
+       color: white;
+       padding: 0 14px;
+       font-family: 'Montserrat', sans-serif;
+       font-size: clamp(0.72rem, 2.7vw, 0.78rem);
+       font-weight: 900;
+       letter-spacing: 1.6px;
+       text-transform: uppercase;
+   }
+
+   .minigame-multiplayer-join input::placeholder {
+       color: rgba(255, 255, 255, 0.45);
+   }
+
+   .minigame-multiplayer-join button,
+   .minigame-multiplayer-main {
+       min-height: 44px;
+       border: 1px solid rgba(199, 125, 255, 0.28);
+       border-radius: 14px;
+       background: rgba(157, 78, 222, 0.16);
+       color: white;
+       cursor: pointer;
+       font-family: 'Montserrat', sans-serif;
+       font-size: clamp(0.68rem, 2.5vw, 0.72rem);
+       font-weight: 900;
+       letter-spacing: 1.2px;
+       text-transform: uppercase;
+       white-space: nowrap;
+   }
+
+   .minigame-multiplayer-join button {
+       padding: 0 16px;
+   }
+
+   .minigame-multiplayer-main {
+       width: 100%;
+       display: inline-flex;
+       align-items: center;
+       justify-content: center;
+       gap: 10px;
+       min-width: 0;
+       background: linear-gradient(135deg, rgba(157, 78, 222, 0.32), rgba(90, 24, 154, 0.42));
+       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+   }
+
+   .minigame-multiplayer-main span:last-child {
+       min-width: 0;
+       overflow: hidden;
+       text-overflow: ellipsis;
+       text-align: center;
+   }
+
+   .minigame-multiplayer-join button:disabled,
+   .minigame-multiplayer-main:disabled {
+       cursor: wait;
+       opacity: 0.66;
+   }
+
+   .minigame-multiplayer-dot {
+       width: 11px;
+       height: 11px;
+       flex: 0 0 11px;
+       border-radius: 999px;
+       background: #ff4444;
+       box-shadow: 0 0 0 4px rgba(255, 68, 68, 0.12), 0 0 16px rgba(255, 68, 68, 0.52);
+   }
+
+   .minigame-multiplayer-dot.is-connected {
+       background: #00ffa3;
+       box-shadow: 0 0 0 4px rgba(0, 255, 163, 0.12), 0 0 18px rgba(0, 255, 163, 0.55);
+   }
+
+   .minigame-multiplayer-code {
+       display: grid;
+       place-items: center;
+       gap: 3px;
+       min-height: 62px;
+       border: 1px dashed rgba(255, 255, 255, 0.15);
+       border-radius: 16px;
+       background: rgba(0, 0, 0, 0.18);
+   }
+
+   .minigame-multiplayer-code[hidden] {
+       display: none !important;
+   }
+
+   .minigame-multiplayer-code small,
+   .minigame-multiplayer-status {
+       margin: 0;
+       color: rgba(255, 255, 255, 0.58);
+       font-size: 0.66rem;
+       font-weight: 800;
+       letter-spacing: 1.3px;
+       text-transform: uppercase;
+       text-align: center;
+       line-height: 1.35;
+       overflow-wrap: anywhere;
+   }
+
+   .minigame-multiplayer-code strong {
+       color: white;
+       font-family: 'Montserrat', sans-serif;
+       font-size: clamp(1.25rem, 6.4vw, 1.5rem);
+       font-weight: 900;
+       letter-spacing: clamp(2px, 1vw, 4px);
+       overflow-wrap: anywhere;
    }
 
    .login-auth-card {
@@ -1543,7 +1725,8 @@
        inset: 0;
        z-index: 9800;
        display: none;
-       padding: clamp(10px, 3dvh, 26px) clamp(10px, 3vw, 26px);
+       padding: var(--manual-modal-top) var(--manual-modal-right) var(--manual-modal-bottom) var(--manual-modal-left);
+       box-sizing: border-box;
    }
 
    body.dnd-manual-modal-open .floating-trigger {
@@ -1568,7 +1751,8 @@
        position: relative;
        z-index: 1;
        width: min(1080px, 100%);
-       height: min(92dvh, 920px);
+       height: min(92dvh, calc(var(--viewport-height) - var(--manual-modal-top) - var(--manual-modal-bottom)), 920px);
+       max-height: calc(var(--viewport-height) - var(--manual-modal-top) - var(--manual-modal-bottom));
        margin: 0 auto;
        display: flex;
        flex-direction: column;
@@ -1624,6 +1808,7 @@
        min-height: 0;
        border: 0;
        background: white;
+       color-scheme: light;
    }
 
    .dnd-sheet {
@@ -3692,6 +3877,13 @@
       ============================================ */
    
    @media (max-width: 768px) {
+       :root {
+           --manual-modal-top: calc(max(18px, var(--safe-top)) + 10px);
+           --manual-modal-right: max(8px, var(--safe-right));
+           --manual-modal-bottom: calc(max(14px, var(--safe-bottom)) + 10px);
+           --manual-modal-left: max(8px, var(--safe-left));
+       }
+
        .main-title {
            font-size: clamp(1.7rem, 8vw, 2.2rem) !important;
            line-height: 1.08;
@@ -3700,6 +3892,36 @@
        .game-card, .action-card {
            padding: 18px 10px;
            gap: 8px;
+       }
+
+       .minigames-lobby-wrapper {
+           width: 100%;
+           padding: calc(14px + var(--safe-top)) 14px calc(132px + var(--safe-bottom));
+       }
+
+       .minigame-multiplayer-panel {
+           margin-bottom: 18px;
+           padding: 14px;
+           border-radius: 18px;
+       }
+
+       .minigame-multiplayer-join {
+           gap: 8px;
+       }
+
+       .minigame-multiplayer-join input,
+       .minigame-multiplayer-join button,
+       .minigame-multiplayer-main {
+           min-height: 42px;
+           border-radius: 13px;
+       }
+
+       .minigame-multiplayer-code {
+           min-height: 58px;
+       }
+
+       .minigame-multiplayer-code strong {
+           font-size: 1.35rem;
        }
    
        .grid-layout {
@@ -3714,16 +3936,16 @@
            position: fixed;
            inset: 0;
            width: 100vw;
-           height: 100dvh;
-           min-height: 100dvh;
-           padding: calc(8px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)) 10px;
+           height: var(--visual-viewport-height);
+           min-height: var(--viewport-stable-height);
+           padding: calc(8px + var(--safe-top)) 10px calc(10px + var(--safe-bottom)) 10px;
            box-sizing: border-box;
            border: 0;
            overflow: hidden;
        }
 
        #start-screen.game-master-wrapper {
-           padding: max(18px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom)) !important;
+           padding: max(18px, var(--safe-top)) 18px max(22px, var(--safe-bottom)) !important;
        }
 
        #start-screen .main-title {
@@ -4135,8 +4357,9 @@
        }
 
        .dnd-manual-reader {
-           height: calc(100dvh - 300px);
-           min-height: 430px;
+           height: clamp(220px, calc(var(--visual-viewport-height) - 310px), 54dvh);
+           min-height: 0;
+           max-height: max(240px, calc(var(--visual-viewport-height) - 250px));
            padding: 16px 18px;
            gap: 16px;
        }
@@ -4163,17 +4386,28 @@
        }
 
        .dnd-manual-modal {
-           padding: 8px;
+           top: var(--visual-viewport-top);
+           bottom: auto;
+           min-height: var(--visual-viewport-height);
+           height: var(--visual-viewport-height);
+           padding: var(--manual-modal-top) var(--manual-modal-right) var(--manual-modal-bottom) var(--manual-modal-left);
        }
 
        .dnd-manual-modal-panel {
-           height: calc(100dvh - 16px);
-           border-radius: 14px;
+           height: calc(var(--visual-viewport-height) - var(--manual-modal-top) - var(--manual-modal-bottom));
+           max-height: calc(var(--visual-viewport-height) - var(--manual-modal-top) - var(--manual-modal-bottom));
+           border-radius: 18px 18px 16px 16px;
        }
 
        .dnd-manual-modal-panel header {
            align-items: flex-start;
            flex-direction: column;
+           flex: 0 0 auto;
+           padding: 10px;
+       }
+
+       .dnd-manual-modal-panel iframe {
+           min-height: 220px;
        }
 
        .dnd-manual-modal-panel header div {
@@ -4183,6 +4417,73 @@
        .dnd-manual-modal-panel a,
        .dnd-manual-modal-panel button {
            flex: 1 1 120px;
+       }
+
+       @media (max-width: 380px) {
+           :root {
+               --manual-modal-top: calc(max(14px, var(--safe-top)) + 8px);
+               --manual-modal-right: max(6px, var(--safe-right));
+               --manual-modal-bottom: calc(max(10px, var(--safe-bottom)) + 8px);
+               --manual-modal-left: max(6px, var(--safe-left));
+           }
+
+           .dnd-manual-modal-panel {
+               border-radius: 15px;
+           }
+
+           .dnd-manual-modal-panel header {
+               gap: 8px;
+               padding: 8px;
+           }
+
+           .dnd-manual-modal-panel header strong {
+               font-size: 0.78rem;
+           }
+
+           .dnd-manual-modal-panel a,
+           .dnd-manual-modal-panel button {
+               min-height: 34px;
+               padding: 7px 9px;
+               font-size: 0.62rem;
+           }
+       }
+
+       @media (max-height: 620px) {
+           :root {
+               --manual-modal-top: calc(max(10px, var(--safe-top)) + 6px);
+               --manual-modal-bottom: calc(max(8px, var(--safe-bottom)) + 6px);
+           }
+
+           .dnd-manual-reader {
+               height: clamp(190px, calc(var(--visual-viewport-height) - 260px), 50dvh);
+           }
+
+           .dnd-manual-modal-panel header {
+               flex-direction: row;
+               align-items: center;
+               gap: 8px;
+           }
+
+           .dnd-manual-modal-panel header strong {
+               flex: 1 1 auto;
+               min-width: 0;
+               font-size: 0.76rem;
+           }
+
+           .dnd-manual-modal-panel header div {
+               width: auto;
+               flex: 0 0 auto;
+           }
+
+           .dnd-manual-modal-panel a,
+           .dnd-manual-modal-panel button {
+               min-height: 34px;
+               padding: 7px 10px;
+           }
+
+           .dnd-manual-modal-panel iframe {
+               min-height: 180px;
+           }
        }
 
        .dnd-sheet-grid {
@@ -4313,6 +4614,21 @@
 
        .token-inspector-damage {
            grid-template-columns: 68px 1fr 1fr;
+       }
+   }
+
+   @media (max-width: 430px) {
+       .minigames-lobby-wrapper {
+           padding-left: 12px;
+           padding-right: 12px;
+       }
+
+       .minigame-multiplayer-join {
+           grid-template-columns: 1fr;
+       }
+
+       .minigame-multiplayer-join button {
+           width: 100%;
        }
    }
 

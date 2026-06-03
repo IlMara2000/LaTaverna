@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
 const unavailable = (message) => ({
     data: null,
@@ -12,6 +13,7 @@ const createFallbackQuery = (result = { data: [], error: null }) => {
     const query = {
         select: () => query,
         eq: () => query,
+        neq: () => query,
         order: () => query,
         limit: () => query,
         insert: () => createFallbackQuery(unavailable("Database non disponibile senza configurazione Supabase.")),
@@ -53,7 +55,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("Supabase non configurato: avvio in modalità locale limitata.");
 }
 
-export const supabase = supabaseUrl && supabaseAnonKey
+export const supabase = isSupabaseConfigured
     ? createClient(supabaseUrl, supabaseAnonKey)
     : createLocalFallbackClient();
 
@@ -64,7 +66,8 @@ export const SUPABASE_CONFIG = {
         characters: 'characters',
         chat: 'dnd_chat',
         assets: 'assets',
-        systems: 'game_systems'
+        systems: 'game_systems',
+        minigameRooms: 'minigame_rooms'
     },
     buckets: {
         zaino: 'vtt_assets'
