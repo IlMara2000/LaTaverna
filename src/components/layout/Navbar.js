@@ -1,4 +1,5 @@
 import { initSidebar } from './Sidebar.js'; 
+import { navigateTo } from '../../services/appNavigation.js';
 
 export function initNavbar(user, onLogout) {
     const navbarContainer = document.getElementById('navbar-container');
@@ -44,15 +45,17 @@ export function initNavbar(user, onLogout) {
         }
     });
 
-    // Ricarica l'app cliccando il logo, con un micro-feedback di pressione
+    // Il logo riporta alla Taverna senza ricaricare tutta l'app.
     const logoBtn = document.getElementById('nav-home-btn');
     logoBtn.onclick = (e) => {
         e.preventDefault();
         logoBtn.style.transform = 'scale(0.8)';
         logoBtn.style.filter = 'brightness(1.5)';
         
-        setTimeout(() => {
-            window.location.reload();
+        setTimeout(async () => {
+            logoBtn.style.transform = '';
+            logoBtn.style.filter = '';
+            await navigateTo('home', document.getElementById('app'));
         }, 150); // Piccolo ritardo per far vedere l'animazione di tocco
     };
 }

@@ -1,5 +1,7 @@
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { showLobby } from './lobby.js';
+import { MINIGAMES, MINIGAME_CATEGORIES, getGamesByCategory } from './services/experienceCatalog.js';
+import { rememberDestination } from './services/appNavigation.js';
 import {
     createMinigameRoom,
     getMinigameRoomByCode,
@@ -9,7 +11,7 @@ import {
     watchMinigameRoom
 } from './services/minigameMultiplayer.js';
 
-export function showMinigamesList(container) {
+export function showMinigamesList(container, options = {}) {
     if (window.__minigameMultiplayerCleanup) {
         window.__minigameMultiplayerCleanup();
         window.__minigameMultiplayerCleanup = null;
@@ -27,15 +29,8 @@ export function showMinigamesList(container) {
         updateSidebarContext("minigames");
     }
 
-    // LISTA GIOCHI (Scopa e Solitario rimossi)
-    const games = [
-        { id: 'briscola', name: 'BRISCOLA', color: 'linear-gradient(135deg, #2a0a4a, #4a1a6a)', icon: '⚔️', initFn: 'initBriscola' },
-        { id: 'solo', name: 'SOLO', color: 'linear-gradient(135deg, #ff4444, #ffcc00)', icon: '🃏', initFn: 'initSoloGame' },
-        { id: 'impostore', name: 'IMPOSTORE', color: 'linear-gradient(135deg, #ff3366, #330011)', icon: '🕵️‍♂️', initFn: 'initImpostore' },
-        { id: 'burraco', name: 'BURRACO', color: 'linear-gradient(135deg, #004d40, #00241a)', icon: '♣️', initFn: 'initBurraco' },
-        { id: 'scacchi', name: 'SCACCHI', color: 'linear-gradient(135deg, #333333, #000000)', icon: '♟️', initFn: 'initScacchi' },
-        { id: 'numeri', name: 'NUMERI', color: 'linear-gradient(135deg, #0f766e, #134e4a)', icon: '🔢', initFn: 'initNumeri' }
-    ];
+    let activeFilter = ['cards', 'party', 'strategy'].includes(options.filter) ? options.filter : 'all';
+    rememberDestination('minigames', { filter: activeFilter });
 
     // RIMOSSA la classe .dashboard-container che creava il bordo invisibile!
     // Ora è un layout puro e piatto.
@@ -44,14 +39,22 @@ export function showMinigamesList(container) {
             
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 30px;">
                 <button id="btn-back-main" class="btn-back-glass" style="width: auto; margin-bottom: 0;">
-                    ← TORNA ALLA LIBRERIA
+                    ← TORNA ALLA TAVERNA
                 </button>
             </div>
             
-            <header style="margin: 10px 0 40px 0; text-align: center;">
-                <p style="font-size: 0.8rem; letter-spacing: 3px; opacity: 0.6; margin-bottom: 5px; text-transform: uppercase;">Divertimento Veloce</p>
-                <h1 class="main-title" style="margin: 0; font-size: 3rem; filter: drop-shadow(0 0 15px rgba(157,78,221,0.4));">MINI GIOCHI</h1>
+            <header style="margin: 10px 0 28px 0; text-align: center;">
+                <p style="font-size: 0.8rem; letter-spacing: 3px; opacity: 0.6; margin-bottom: 5px; text-transform: uppercase;">Scegli il tavolo</p>
+                <h1 class="main-title" style="margin: 0; font-size: 3rem; filter: drop-shadow(0 0 15px rgba(157,78,221,0.4));">SALA GIOCHI</h1>
+                <p style="margin: 12px auto 0; max-width: 470px; opacity: 0.62; line-height: 1.5;">Trova subito il gioco giusto per una partita veloce, una serata in compagnia o una sfida ragionata.</p>
             </header>
+
+            <nav class="session-tool-switcher" id="minigame-filters" aria-label="Categorie minigiochi" style="margin-bottom: 18px;">
+                <button type="button" data-game-filter="all">Tutti</button>
+                <button type="button" data-game-filter="cards">Carte</button>
+                <button type="button" data-game-filter="party">Con amici</button>
+                <button type="button" data-game-filter="strategy">Strategia</button>
+            </nav>
 
             <section class="minigame-multiplayer-panel" aria-label="Multiplayer minigiochi">
                 <form id="minigame-multiplayer-join" class="minigame-multiplayer-join">
@@ -72,14 +75,7 @@ export function showMinigamesList(container) {
                 <p id="minigame-multiplayer-status" class="minigame-multiplayer-status">Non connesso</p>
             </section>
 
-            <div class="grid-layout">
-                ${games.map(game => `
-                    <div class="game-card" id="btn-${game.id}" style="background: ${game.color}; min-height: 140px; justify-content: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
-                        <div style="font-size: 2.8rem; margin-bottom: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));">${game.icon}</div>
-                        <h2 style="margin: 0; font-size: 0.9rem; font-weight: 900; color: white; letter-spacing: 1px;">${game.name}</h2>
-                    </div>
-                `).join('')}
-            </div>
+            <div id="minigame-catalog"></div>
             
         </div>
     `;
@@ -179,6 +175,67 @@ export function showMinigamesList(container) {
         stopWatchingRoom();
     };
 
+    const launchGame = async (game) => {
+        try {
+            stopWatchingRoom();
+            const module = await import(`./dashboards/minigames/${game.id}.js`);
+            if (module && module[game.initFn]) {
+                module[game.initFn](container);
+            }
+        } catch (err) {
+            console.error(`Errore nel caricamento del gioco ${game.id}:`, err);
+        }
+    };
+
+    const renderGameCatalog = () => {
+        const catalog = container.querySelector('#minigame-catalog');
+        const visibleCategories = activeFilter === 'all'
+            ? MINIGAME_CATEGORIES
+            : MINIGAME_CATEGORIES.filter(category => category.id === activeFilter);
+
+        catalog.innerHTML = visibleCategories.map(category => {
+            const games = getGamesByCategory(category.id);
+            return `
+                <section class="lobby-section" data-game-category="${category.id}" style="margin-top: 26px;">
+                    <h2 class="subtitle" style="opacity: 0.72; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 6px;">${category.name.toUpperCase()}</h2>
+                    <p style="margin: 0 0 14px; opacity: 0.55; line-height: 1.45;">${category.description}</p>
+                    <div class="grid-layout">
+                        ${games.map(game => `
+                            <button type="button" class="game-card" data-launch-game="${game.id}" style="background: ${game.color}; min-height: 176px; align-items: flex-start; justify-content: space-between; text-align: left; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+                                <div style="font-size: 2.4rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));">${game.icon}</div>
+                                <div>
+                                    <h3 style="margin: 0; font-size: 1rem; font-weight: 900; color: white; letter-spacing: 1px; text-transform: uppercase;">${game.name}</h3>
+                                    <p style="margin: 7px 0 10px; color: rgba(255,255,255,0.72); font-size: 0.76rem; line-height: 1.4;">${game.description}</p>
+                                    <small style="color: rgba(255,255,255,0.58); font-weight: 800;">${game.players} · ${game.duration}</small>
+                                </div>
+                            </button>
+                        `).join('')}
+                    </div>
+                </section>
+            `;
+        }).join('');
+
+        container.querySelectorAll('[data-launch-game]').forEach(button => {
+            const game = MINIGAMES.find(item => item.id === button.dataset.launchGame);
+            if (game) button.onclick = () => launchGame(game);
+        });
+
+        container.querySelectorAll('[data-game-filter]').forEach(button => {
+            const active = button.dataset.gameFilter === activeFilter;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+    };
+
+    container.querySelectorAll('[data-game-filter]').forEach(button => {
+        button.onclick = () => {
+            activeFilter = button.dataset.gameFilter || 'all';
+            rememberDestination('minigames', { filter: activeFilter });
+            renderGameCatalog();
+        };
+    });
+    renderGameCatalog();
+
     document.getElementById('minigame-multiplayer-code-input').oninput = (event) => {
         event.target.value = String(event.target.value || '')
             .toUpperCase()
@@ -232,25 +289,6 @@ export function showMinigamesList(container) {
             : (error?.message || 'Connessione non riuscita.'));
     };
 
-    // Assegna il caricamento dinamico per ogni bottone
-    games.forEach(game => {
-        const btn = document.getElementById(`btn-${game.id}`);
-        if (btn) {
-            btn.onclick = async (e) => {
-                e.preventDefault();
-                try {
-                    stopWatchingRoom();
-                    // Percorso relativo esatto per i minigiochi
-                    const module = await import(`./dashboards/minigames/${game.id}.js`);
-                    if (module && module[game.initFn]) {
-                        module[game.initFn](container);
-                    }
-                } catch (err) {
-                    console.error(`Errore nel caricamento del gioco ${game.id}:`, err);
-                }
-            };
-        }
-    });
 }
 
 export const showMinigamesLobby = showMinigamesList;

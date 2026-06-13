@@ -1,5 +1,6 @@
 // Sidebar.js - Versione Master Integrata (Fiducia Totale)
 import { getPreference, setPreference } from '../../services/userPreferences.js';
+import { navigateTo, resetAppSurface } from '../../services/appNavigation.js';
 
 let currentSidebarUser = null;
 let currentLogoutFn = null;
@@ -30,18 +31,37 @@ function renderSidebarContent(container, context) {
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = escapeHTML(isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante"));
 
-    // Testo dinamico per il tasto in fondo
     let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI DALLA TAVERNA') : "⬅ TORNA ALLA HOME";
 
     container.innerHTML = `
         <nav id="sidebar-menu" class="sidebar-glass">
-            <div class="sidebar-header" style="margin-bottom: 30px;">
+            <div class="sidebar-header" style="margin-bottom: 24px;">
                 <h2 class="text-amethyst" style="font-size: 1.6rem; letter-spacing: -1px; margin-bottom: 5px;">${userName.toUpperCase()}</h2>
-                <span class="subtitle" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 2px;">MODALITÀ ${context.toUpperCase()}</span>
+                <span class="subtitle" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 2px;">SEZIONE ${context.toUpperCase()}</span>
             </div>
 
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
+                <span class="subtitle" style="opacity: 0.48; font-size: 0.62rem; letter-spacing: 2px;">GIOCA</span>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-home" data-context="home" style="font-size: 0.8rem; padding: 12px;">
+                    TAVERNA
+                </button>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" style="font-size: 0.8rem; padding: 12px;">
+                    SALA GIOCHI
+                </button>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-dnd5e" data-context="dnd5e" style="font-size: 0.8rem; padding: 12px;">
+                    D&D 5E
+                </button>
+
+                <button class="btn-glass sidebar-nav-item" id="nav-pathfinder2e" data-context="pathfinder2e" style="font-size: 0.8rem; padding: 12px;">
+                    PATHFINDER 2E
+                </button>
+
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
+
+                <span class="subtitle" style="opacity: 0.48; font-size: 0.62rem; letter-spacing: 2px;">ACCOUNT E ATMOSFERA</span>
 
                 <button class="btn-glass sidebar-nav-item" id="nav-profile" data-context="profile" style="font-size: 0.8rem; padding: 12px;">
                     PROFILO
@@ -84,16 +104,7 @@ function renderSidebarContent(container, context) {
 }
 
 function resetGlobalScroll() {
-    window.__dndSessionCleanup?.();
-    document.documentElement.style.overflow = '';
-    document.documentElement.style.overscrollBehavior = '';
-    document.body.style.overflow = '';
-    document.body.style.overscrollBehavior = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.touchAction = '';
-    document.body.style.backgroundColor = '';
-    document.body.classList.remove('dnd-session-active', 'dnd-session-tools-open', 'dnd-session-chat-open');
+    resetAppSurface();
 }
 
 function highlightActiveContext() {
@@ -137,28 +148,27 @@ function setupEventListeners(container, context) {
     window.__tavernaSidebarToggle = toggle;
     window.addEventListener('toggleSidebar', window.__tavernaSidebarToggle);
 
-    // --- NAVIGAZIONE LINKS ---
-    const attachNav = (id, loadModule, funcName, contextName) => {
+    const attachNav = (id, destination) => {
         const el = document.getElementById(id);
         if(el) {
             el.onclick = async (e) => {
                 e.preventDefault();
                 toggle();
-                resetGlobalScroll();
-                currentActiveContext = contextName;
-                try {
-                    const module = await loadModule();
-                    if (mainContent) {
-                         mainContent.innerHTML = '';
-                         await module[funcName](mainContent, currentSidebarUser);
-                    }
-                } catch (err) { console.error(`Errore nav: ${contextName}`, err); }
+                const navigated = await navigateTo(destination, mainContent, { user: currentSidebarUser });
+                if (navigated) {
+                    currentActiveContext = destination;
+                    renderSidebarContent(container, destination);
+                }
             };
         }
     };
 
-    attachNav('nav-profile', () => import('../features/user/Profile.js'), 'showProfile', 'profile');
-    attachNav('nav-settings', () => import('../features/user/Settings.js'), 'showSettings', 'settings');
+    attachNav('nav-home', 'home');
+    attachNav('nav-minigames', 'minigames');
+    attachNav('nav-dnd5e', 'dnd5e');
+    attachNav('nav-pathfinder2e', 'pathfinder2e');
+    attachNav('nav-profile', 'profile');
+    attachNav('nav-settings', 'settings');
 
     // --- TASTO AZIONE (ESCI O TORNA) ---
     const actionBtn = container.querySelector('#sideActionBtn');
@@ -169,8 +179,7 @@ function setupEventListeners(container, context) {
         if (context === "home") {
             if (currentLogoutFn) currentLogoutFn();
         } else {
-            const { showLobby } = await import('../../lobby.js');
-            showLobby(mainContent);
+            await navigateTo('home', mainContent);
         }
     };
 
@@ -201,10 +210,10 @@ function setupEventListeners(container, context) {
     const musicCenterBtn = container.querySelector('#sideMusicCenterBtn');
     musicCenterBtn.onclick = async () => {
         toggle();
-        resetGlobalScroll();
         try {
-            const { AudioManager } = await import('../ui/AudioManager.js');
-            AudioManager.showMusicCenter(mainContent);
+            currentActiveContext = 'music';
+            await navigateTo('music', mainContent, { user: currentSidebarUser });
+            renderSidebarContent(container, 'music');
         } catch (err) { console.error("Errore Music Center", err); }
     };
 
