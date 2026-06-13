@@ -44,9 +44,7 @@ export function showMinigamesList(container, options = {}) {
             </div>
             
             <header style="margin: 10px 0 28px 0; text-align: center;">
-                <p style="font-size: 0.8rem; letter-spacing: 3px; opacity: 0.6; margin-bottom: 5px; text-transform: uppercase;">Scegli il tavolo</p>
                 <h1 class="main-title" style="margin: 0; font-size: 3rem; filter: drop-shadow(0 0 15px rgba(157,78,221,0.4));">SALA GIOCHI</h1>
-                <p style="margin: 12px auto 0; max-width: 470px; opacity: 0.62; line-height: 1.5;">Trova subito il gioco giusto per una partita veloce, una serata in compagnia o una sfida ragionata.</p>
             </header>
 
             <nav class="session-tool-switcher" id="minigame-filters" aria-label="Categorie minigiochi" style="margin-bottom: 18px;">
@@ -198,14 +196,12 @@ export function showMinigamesList(container, options = {}) {
             return `
                 <section class="lobby-section" data-game-category="${category.id}" style="margin-top: 26px;">
                     <h2 class="subtitle" style="opacity: 0.72; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 6px;">${category.name.toUpperCase()}</h2>
-                    <p style="margin: 0 0 14px; opacity: 0.55; line-height: 1.45;">${category.description}</p>
                     <div class="grid-layout">
                         ${games.map(game => `
-                            <button type="button" class="game-card" data-launch-game="${game.id}" style="background: ${game.color}; min-height: 176px; align-items: flex-start; justify-content: space-between; text-align: left; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
+                            <button type="button" class="game-card" data-launch-game="${game.id}" style="background: ${game.color}; min-height: 176px; align-items: center; justify-content: space-between; text-align: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
                                 <div style="font-size: 2.4rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));">${game.icon}</div>
                                 <div>
                                     <h3 style="margin: 0; font-size: 1rem; font-weight: 900; color: white; letter-spacing: 1px; text-transform: uppercase;">${game.name}</h3>
-                                    <p style="margin: 7px 0 10px; color: rgba(255,255,255,0.72); font-size: 0.76rem; line-height: 1.4;">${game.description}</p>
                                     <small style="color: rgba(255,255,255,0.58); font-weight: 800;">${game.players} · ${game.duration}</small>
                                 </div>
                             </button>

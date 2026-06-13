@@ -55,7 +55,7 @@ export async function setupDiscordRedirect(container) {
             text-align: center;
             padding: 20px;
             box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Montserrat', sans-serif;
             transition: opacity 0.6s ease;
         `;
 
@@ -109,7 +109,7 @@ export async function setupDiscordRedirect(container) {
                 <div style="color: #ff4444; font-weight: 900; font-family: 'Montserrat';">
                     <div style="font-size: 40px; margin-bottom: 20px;">💀</div>
                     RITO FALLITO
-                    <p style="color: white; font-size: 12px; margin-top: 10px; opacity: 0.6; font-family: 'Poppins';">
+                    <p style="color: white; font-size: 12px; margin-top: 10px; opacity: 0.6; font-family: 'Montserrat';">
                         ${err.message}
                     </p>
                     <button onclick="window.location.href='/'" style="background: white; border: none; padding: 10px 20px; border-radius: 50px; margin-top: 20px; font-weight: 800; cursor: pointer;">RIPROVA</button>

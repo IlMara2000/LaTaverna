@@ -29,7 +29,7 @@ export async function initCharacters(container) {
 
     // 2. RENDER STRUTTURA BASE (PREMIUM UI)
     container.innerHTML = `
-        <div class="fade-in" style="display: flex; flex-direction: column; align-items: center; width: 100%; min-height: 100vh; padding-top: 40px; box-sizing: border-box; font-family: 'Poppins', sans-serif; color: white;">
+        <div class="fade-in" style="display: flex; flex-direction: column; align-items: center; width: 100%; min-height: 100vh; padding-top: 40px; box-sizing: border-box; font-family: 'Montserrat', sans-serif; color: white;">
             <div style="width: 100%; max-width: 500px; padding: 0 20px; display: flex; flex-direction: column; gap: 25px; padding-bottom: 80px; box-sizing: border-box;">
                 
                 <header style="display:flex; justify-content:space-between; align-items:center; background: var(--glass-surface); padding: 20px; border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
@@ -55,8 +55,8 @@ export async function initCharacters(container) {
                 <p style="text-align:center; opacity:0.6; font-size:12px; margin-bottom:25px; letter-spacing: 1px;">Evoca un nuovo compagno d'avventure.</p>
                 
                 <form id="createCharForm" style="display: flex; flex-direction: column; gap: 15px;">
-                    <input type="text" id="charName" placeholder="Nome dell'Eroe" required style="width:100%; padding:15px; border-radius:14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 14px; font-family: 'Poppins', sans-serif; box-sizing: border-box;">
-                    <input type="text" id="charClass" placeholder="Classe (es. Guerriero, Mago...)" required style="width:100%; padding:15px; border-radius:14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 14px; font-family: 'Poppins', sans-serif; box-sizing: border-box;">
+                    <input type="text" id="charName" placeholder="Nome dell'Eroe" required style="width:100%; padding:15px; border-radius:14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 14px; font-family: 'Montserrat', sans-serif; box-sizing: border-box;">
+                    <input type="text" id="charClass" placeholder="Classe (es. Guerriero, Mago...)" required style="width:100%; padding:15px; border-radius:14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: white; outline: none; font-size: 14px; font-family: 'Montserrat', sans-serif; box-sizing: border-box;">
                     
                     <button type="submit" id="submitCharBtn" class="btn-primary" style="width:100%; padding:16px; border-radius:14px; font-size: 1rem; margin-top: 10px; margin-bottom: 0;">EVOCA NELLA TAVERNA</button>
                     <button type="button" id="closeChar" class="btn-back-glass" style="width:100%; border: none; background: transparent; box-shadow: none; color: rgba(255,255,255,0.5); padding: 10px;">ANNULLA</button>
