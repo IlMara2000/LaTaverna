@@ -36,13 +36,11 @@ function renderStartScreen(container) {
             <img src="/assets/logo.png" class="pulse-logo" style="width: 120px; margin-bottom: 30px;" alt="Logo">
             
             <h1 class="main-title" style="font-size: 3rem; margin-bottom: 10px;">LA TAVERNA</h1>
-            <p style="opacity: 0.6; letter-spacing: 2px; font-size: 12px; margin-bottom: 40px; text-transform: uppercase;">Dove le leggende si incontrano</p>
 
             <button id="btn-enter-tavern" class="game-card" style="width: 100%; max-width: 280px; padding: 20px; cursor: pointer; border: 1.5px solid var(--amethyst-bright); background: rgba(157, 78, 221, 0.1);">
                 <span style="font-size: 1rem; font-weight: 900; letter-spacing: 2px; color: white;">ENTRA NELLA SALA</span>
             </button>
             
-            <p style="margin-top: 30px; font-size: 10px; opacity: 0.4; letter-spacing: 1px;">VERSIONE ALPHA 5.2 - AMETHYST UI</p>
         </div>
     `;
     resetAuthScroll(container);

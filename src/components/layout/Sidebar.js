@@ -37,12 +37,9 @@ function renderSidebarContent(container, context) {
         <nav id="sidebar-menu" class="sidebar-glass">
             <div class="sidebar-header" style="margin-bottom: 24px;">
                 <h2 class="text-amethyst" style="font-size: 1.6rem; letter-spacing: -1px; margin-bottom: 5px;">${userName.toUpperCase()}</h2>
-                <span class="subtitle" style="opacity: 0.6; font-size: 0.7rem; letter-spacing: 2px;">SEZIONE ${context.toUpperCase()}</span>
             </div>
 
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
-                <span class="subtitle" style="opacity: 0.48; font-size: 0.62rem; letter-spacing: 2px;">GIOCA</span>
-
                 <button class="btn-glass sidebar-nav-item" id="nav-home" data-context="home" style="font-size: 0.8rem; padding: 12px;">
                     TAVERNA
                 </button>
@@ -60,8 +57,6 @@ function renderSidebarContent(container, context) {
                 </button>
 
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
-
-                <span class="subtitle" style="opacity: 0.48; font-size: 0.62rem; letter-spacing: 2px;">ACCOUNT E ATMOSFERA</span>
 
                 <button class="btn-glass sidebar-nav-item" id="nav-profile" data-context="profile" style="font-size: 0.8rem; padding: 12px;">
                     PROFILO

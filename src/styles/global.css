@@ -3,8 +3,6 @@
    Gestione TOTALE di UI + Giochi da un unico file
    ========================================= */
 
-   @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Montserrat:wght@700;800;900&display=swap');
-
    :root {
        --bg-dark: radial-gradient(circle at 50% -20%, #2a124d 0%, #05010a 80%);
        --amethyst-glow: rgba(157, 78, 221, 0.5);
@@ -68,7 +66,7 @@
        background: #05010a;
        background: var(--bg-dark) no-repeat fixed;
        color: var(--text-primary);
-       font-family: 'Poppins', sans-serif;
+       font-family: 'Montserrat', Arial, sans-serif;
        
        /* LOCK CRITICO */
        overflow: hidden !important;
@@ -83,6 +81,32 @@
    * {
        -webkit-tap-highlight-color: transparent !important;
        box-sizing: border-box;
+   }
+
+   html,
+   body,
+   #ui *,
+   button,
+   input,
+   select,
+   textarea,
+   option,
+   h1,
+   h2,
+   h3,
+   h4,
+   h5,
+   h6,
+   p,
+   span,
+   small,
+   strong,
+   b,
+   label,
+   a,
+   li {
+       font-family: 'Montserrat', Arial, sans-serif !important;
+       text-align: center !important;
    }
    
    button, a, .game-card, .action-card, .nav-logo-right {
@@ -767,7 +791,7 @@
        padding: 14px;
        color: white;
        font-size: 16px;
-       font-family: 'Poppins', sans-serif;
+       font-family: 'Montserrat', sans-serif;
        outline: none;
        transition: border-color var(--motion-fast) ease,
                    background var(--motion-fast) ease,
@@ -1957,7 +1981,7 @@
        display: block;
        background: #f8fafc;
        color: white;
-       font-family: 'Poppins', sans-serif;
+       font-family: 'Montserrat', sans-serif;
        overflow: hidden;
        animation: fadeInUp var(--motion-slow) var(--ease-out) forwards;
    }
