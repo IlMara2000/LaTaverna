@@ -1,8 +1,10 @@
 const LAST_DESTINATION_KEY = 'taverna_last_destination';
 
 export const resetAppSurface = () => {
+    window.__homeCleanup?.();
     window.__dndSessionCleanup?.();
     window.__minigameMultiplayerCleanup?.();
+    window.__homeCleanup = null;
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     document.body.style.overflow = '';
