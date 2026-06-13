@@ -63,6 +63,9 @@ Per Vercel o hosting statico:
 
 - Build command: `npm run build`
 - Output directory: `dist`
-- Variabili ambiente: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- Variabili ambiente frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- Variabili ambiente server/function: `GROQ_LLM_API_KEY`, opzionali `GROQ_LLM_MODEL`, `GROQ_LLM_TEMPERATURE`, `GROQ_LLM_MAX_TOKENS`
 
 Se usi Discord OAuth in produzione, aggiungi anche il dominio finale tra gli URL autorizzati in Supabase Auth e nella Discord Developer Console.
+
+Le function AI vivono in `/api/rpg/*` e vengono servite da Vercel. In locale con solo `npm run dev` Vite non esegue le function: per provarle end-to-end usa Vercel o `vercel dev`.

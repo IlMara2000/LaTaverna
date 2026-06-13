@@ -2194,6 +2194,20 @@
        line-height: 1.45;
    }
 
+   .session-ai-panel textarea {
+       min-height: 118px;
+       resize: vertical;
+   }
+
+   .session-ai-status {
+       min-height: 18px;
+       margin: 0;
+       color: rgba(255, 255, 255, 0.56);
+       font-size: 0.72rem;
+       font-weight: 800;
+       line-height: 1.35;
+   }
+
    .token-form-grid {
        display: grid;
        grid-template-columns: 48px repeat(3, minmax(0, 1fr));
@@ -3029,6 +3043,18 @@
    .dnd-chat-message.roll {
        border-color: rgba(199, 125, 255, 0.5);
        background: rgba(157, 78, 222, 0.12);
+   }
+
+   .dnd-chat-message.ai {
+       border-color: rgba(0, 255, 163, 0.28);
+       background:
+           radial-gradient(circle at 8% 0%, rgba(0, 255, 163, 0.11), transparent 34%),
+           rgba(255, 255, 255, 0.045);
+   }
+
+   .dnd-chat-message.ai strong {
+       color: #00ffa3;
+       background: rgba(0, 255, 163, 0.1);
    }
 
    .dnd-chat-message strong {
