@@ -1,77 +1,59 @@
-/**
- * Servizio di Intelligenza Artificiale (Powered by Groq)
- * Configurato per l'Oste della Taverna.
- */
+const AI_CHAT_ENDPOINT = '/api/rpg/ai-chat';
+const AI_EVENT_ENDPOINT = '/api/rpg/session-event';
 
-const aiConfig = {
-    apiKey: import.meta.env.VITE_GROQ_LLM_API_KEY,
-    model: import.meta.env.VITE_GROQ_LLM_MODEL || "llama-3.3-70b-versatile",
-    temperature: parseFloat(import.meta.env.VITE_GROQ_LLM_TEMPERATURE) || 0.8,
-    maxTokens: parseInt(import.meta.env.VITE_GROQ_LLM_MAX_TOKENS) || 250, // Accorciato per risposte fulminee
+const safeJson = async (response) => {
+    try {
+        return await response.json();
+    } catch {
+        return {};
+    }
 };
 
-const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+const postAI = async (url, payload) => {
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const data = await safeJson(response);
+    if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `AI non disponibile (${response.status}).`);
+    }
+    return data;
+};
 
-/**
- * Interroga l'Oste della Taverna
- * @param {string} prompt - La domanda del viandante
- * @returns {Promise<string>} - La risposta epica dell'AI
- */
-export async function getAIResponse(prompt) {
-    // 1. Validazione Input e Configurazione
-    if (!prompt || prompt.trim().length === 0) return "L'oste ti osserva in silenzio, pulendo un boccale con uno straccio sporco...";
-    
-    if (!aiConfig.apiKey) {
-        console.error("⚠️ [Taverna AI]: Manca la chiave API VITE_GROQ_LLM_API_KEY.");
-        return "L'oste ha perso la voce... (Problemi magici alla sorgente)";
+export async function getAIResponse(prompt, options = {}) {
+    if (!String(prompt || '').trim()) {
+        return "L'Oste resta in silenzio, in attesa di una domanda chiara.";
     }
 
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${aiConfig.apiKey}`
-            },
-            body: JSON.stringify({
-                model: aiConfig.model,
-                messages: [
-                    {
-                        role: "system",
-                        content: `Sei l'Oste della Taverna, un leggendario Dungeon Master in pensione. 
-                        Rispondi in modo epico, immersivo e conciso. 
-                        Usa termini come 'viandante', 'idromele', 'pergamena', 'sortilegio'. 
-                        Se ti chiedono aiuto per la sessione, dai consigli criptici ma utili. 
-                        Non uscire mai dal personaggio. Limita la risposta a un massimo di 60 parole.`
-                    },
-                    {
-                        role: "user",
-                        content: prompt
-                    }
-                ],
-                temperature: aiConfig.temperature,
-                max_tokens: aiConfig.maxTokens,
-                top_p: 1,
-                stream: false
-            })
+        const data = await postAI(AI_CHAT_ENDPOINT, {
+            prompt,
+            mode: options.mode || 'master',
+            systemId: options.systemId || 'dnd5e',
+            context: options.context || {},
+            history: options.history || []
         });
+        return data.reply || "L'Oste annuisce, ma non aggiunge altro.";
+    } catch (error) {
+        console.error('[Taverna AI]', error);
+        return `AI non disponibile: ${error.message}`;
+    }
+}
 
-        if (!response.ok) {
-            const errorBody = await response.json();
-            throw new Error(errorBody.error?.message || `Errore Portale: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content;
-
-        if (content) {
-            return content.trim();
-        } else {
-            throw new Error("Risposta vuota dal Grande Oltre");
-        }
-
-    } catch (err) {
-        console.error("🔥 [Errore AI]:", err);
-        return "L'oste sta sedando una rissa tra un nano e un mezzelfo. Torna quando le acque si saranno calmate, viandante!";
+export async function getAISessionEventResponse(eventType, options = {}) {
+    try {
+        const data = await postAI(AI_EVENT_ENDPOINT, {
+            eventType,
+            mode: options.mode || 'master',
+            systemId: options.systemId || 'dnd5e',
+            context: options.context || {},
+            history: options.history || []
+        });
+        return data.reply || '';
+    } catch (error) {
+        console.warn('[Taverna AI evento]', error);
+        return '';
     }
 }

@@ -9,6 +9,7 @@ import {
     isLocalPathfinderUser,
     isLocalPathfinderUserId
 } from '../../../services/dndLocalStore.js';
+import { getAIResponse } from '../../../services/ai.js';
 import { showTabletop } from './Map.js';
 
 const TABLES = {
@@ -211,6 +212,8 @@ export async function showSession(container, sessionId, options = {}) {
         scene: sessionData.data?.scene || '',
         public_summary: sessionData.data?.public_summary || '',
         objective_done: Boolean(sessionData.data?.objective_done),
+        aiMode: sessionData.data?.ai?.mode || 'master',
+        aiAutoReply: Boolean(sessionData.data?.ai?.autoReply),
         selectedTokenId: null
     };
 
@@ -238,6 +241,7 @@ export async function showSession(container, sessionId, options = {}) {
                     <button type="button" data-session-tool="tokens">Token</button>
                     <button type="button" data-session-tool="initiative">Iniziativa</button>
                     <button type="button" data-session-tool="notes">Note</button>
+                    <button type="button" data-session-tool="ai">AI</button>
                 </nav>
 
                 <section class="dnd-session-block session-brief" data-session-tool-panel="brief">
@@ -299,6 +303,25 @@ export async function showSession(container, sessionId, options = {}) {
                         Obiettivo sessione completato
                     </label>
                     <button id="saveLiveNotes" class="btn-back-glass">SALVA NOTE</button>
+                </section>
+
+                <section class="dnd-session-block session-ai-panel" data-session-tool-panel="ai" hidden>
+                    <h3>AI di sessione</h3>
+                    <p class="dnd-muted">Usa @oste nella chat oppure chiedi direttamente qui.</p>
+                    <label>Ruolo AI
+                        <select id="aiMode">
+                            <option value="master" ${sessionState.aiMode === 'master' ? 'selected' : ''}>Master</option>
+                            <option value="player" ${sessionState.aiMode === 'player' ? 'selected' : ''}>Giocatore extra</option>
+                            <option value="rules" ${sessionState.aiMode === 'rules' ? 'selected' : ''}>Regole</option>
+                        </select>
+                    </label>
+                    <label class="session-check">
+                        <input id="aiAutoReply" type="checkbox" ${sessionState.aiAutoReply ? 'checked' : ''}>
+                        Rispondi a ogni messaggio chat
+                    </label>
+                    <textarea id="aiPrompt" placeholder="Chiedi all'AI cosa succede, come interpreta un PNG o quale regola applicare."></textarea>
+                    <button id="askSessionAI" class="btn-primary" type="button">CHIEDI ALL'AI</button>
+                    <p id="aiStatus" class="session-ai-status" aria-live="polite"></p>
                 </section>
             </aside>
 
@@ -372,7 +395,7 @@ export async function showSession(container, sessionId, options = {}) {
                 </section>
                 <div id="chat-msgs" class="dnd-chat-messages"></div>
                 <form id="chatForm" class="dnd-chat-form">
-                    <input id="chat-input" type="text" placeholder="Scrivi al party...">
+                    <input id="chat-input" type="text" placeholder="Scrivi al party... usa @oste per chiamare l'AI">
                     <button id="chatSubmit" class="btn-primary" type="button">INVIA</button>
                 </form>
             </aside>
@@ -444,24 +467,34 @@ export async function showSession(container, sessionId, options = {}) {
     });
 
     const chatMsgs = container.querySelector('#chat-msgs');
+    const recentChatDocs = [];
     const renderMessage = (doc) => {
         const div = document.createElement('div');
-        div.className = `dnd-chat-message ${doc.is_roll ? 'roll' : ''}`;
+        const senderName = doc.sender_name || 'Sistema';
+        const isAiMessage = /(^|\s)(AI|Oste AI|Master AI|Compagno AI)/i.test(senderName);
+        div.className = `dnd-chat-message ${doc.is_roll ? 'roll' : ''} ${isAiMessage ? 'ai' : ''}`;
         div.innerHTML = `
-            <strong>${escapeHTML(doc.sender_name || 'Sistema')}</strong>
+            <strong>${escapeHTML(senderName)}</strong>
             <p>${escapeHTML(doc.message || '')}</p>
         `;
         chatMsgs.appendChild(div);
+        recentChatDocs.push({
+            name: senderName,
+            sender: isAiMessage ? 'ai' : 'user',
+            message: doc.message || '',
+            isRoll: Boolean(doc.is_roll)
+        });
+        if (recentChatDocs.length > 24) recentChatDocs.splice(0, recentChatDocs.length - 24);
         chatMsgs.scrollTo({ top: chatMsgs.scrollHeight, behavior: 'smooth' });
     };
 
-    const sendMsg = async (message, isRoll = false) => {
+    const sendMsg = async (message, isRoll = false, overrides = {}) => {
         if (!String(message).trim()) return;
         try {
             const payload = {
                 session_id: sessionId,
-                sender_id: dbUserId,
-                sender_name: currentUserName,
+                sender_id: overrides.sender_id === undefined ? dbUserId : overrides.sender_id,
+                sender_name: overrides.sender_name || currentUserName,
                 message,
                 is_roll: isRoll
             };
@@ -584,6 +617,10 @@ export async function showSession(container, sessionId, options = {}) {
         setField('liveNotes', sessionState.live_notes);
         const objective = container.querySelector('#objectiveDone');
         if (objective && activeId !== 'objectiveDone') objective.checked = Boolean(sessionState.objective_done);
+        const aiMode = container.querySelector('#aiMode');
+        if (aiMode && activeId !== 'aiMode') aiMode.value = sessionState.aiMode || 'master';
+        const aiAutoReply = container.querySelector('#aiAutoReply');
+        if (aiAutoReply && activeId !== 'aiAutoReply') aiAutoReply.checked = Boolean(sessionState.aiAutoReply);
         const fogButton = container.querySelector('#toggleFog');
         const gridButton = container.querySelector('#toggleGrid');
         if (fogButton) fogButton.textContent = sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF';
@@ -605,7 +642,11 @@ export async function showSession(container, sessionId, options = {}) {
         live_notes: sessionState.live_notes,
         scene: sessionState.scene,
         public_summary: sessionState.public_summary,
-        objective_done: sessionState.objective_done
+        objective_done: sessionState.objective_done,
+        ai: {
+            mode: sessionState.aiMode,
+            autoReply: sessionState.aiAutoReply
+        }
     });
 
     const saveSessionData = async () => {
@@ -644,6 +685,8 @@ export async function showSession(container, sessionId, options = {}) {
                     sessionState.scene = nextData.scene || '';
                     sessionState.public_summary = nextData.public_summary || '';
                     sessionState.objective_done = Boolean(nextData.objective_done);
+                    sessionState.aiMode = nextData.ai?.mode || sessionState.aiMode || 'master';
+                    sessionState.aiAutoReply = Boolean(nextData.ai?.autoReply);
                     syncSessionControls();
                 })
                 .subscribe();
@@ -971,6 +1014,98 @@ export async function showSession(container, sessionId, options = {}) {
         sendMsg(`Aggiornamento sessione: ${sessionState.scene || 'note live salvate'}`);
     };
 
+    const getAIBotName = () => {
+        if (sessionState.aiMode === 'player') return 'Compagno AI';
+        if (sessionState.aiMode === 'rules') return 'Regole AI';
+        return 'Oste AI';
+    };
+
+    const setAIStatus = (message = '') => {
+        const status = container.querySelector('#aiStatus');
+        if (status) status.textContent = message;
+    };
+
+    const buildAIContext = (trigger = 'manual') => ({
+        trigger,
+        session: {
+            id: sessionId,
+            systemId: sessionSystem.id,
+            name: sessionData.name || 'Tavolo Live',
+            status: sessionData.status || 'attiva',
+            partyLevel: sessionData.party_level || 1,
+            partyName: sessionData.party_name || '',
+            location: sessionData.location || '',
+            description: sessionData.description || '',
+            scene: sessionState.scene,
+            publicSummary: sessionState.public_summary,
+            objectives: sessionData.data?.objectives || '',
+            round: sessionState.round,
+            activeTurn: activeInitiativeName() || 'libero'
+        },
+        user: {
+            id: currentUserId,
+            name: currentUserName
+        },
+        initiative: sessionState.initiative.slice(0, 20).map(item => ({
+            name: item.name,
+            value: item.value,
+            hp: item.hp,
+            hpMax: item.hp_max,
+            ac: item.ac
+        })),
+        tokens: (window.__dndMapApi?.getTokens?.() || []).slice(0, 30).map(token => ({
+            name: token.name,
+            x: token.x,
+            y: token.y,
+            hp: token.data?.hp,
+            hpMax: token.data?.hp_max,
+            ac: token.data?.armorClass,
+            conditions: token.data?.conditions || [],
+            notes: token.data?.notes || ''
+        }))
+    });
+
+    const askSessionAI = async (prompt, trigger = 'manual') => {
+        const cleanPrompt = String(prompt || '').trim();
+        if (!cleanPrompt) return;
+
+        const aiButton = container.querySelector('#askSessionAI');
+        if (aiButton) aiButton.disabled = true;
+        setAIStatus("L'AI sta pensando...");
+
+        const reply = await getAIResponse(cleanPrompt, {
+            mode: sessionState.aiMode,
+            systemId: sessionSystem.id,
+            context: buildAIContext(trigger),
+            history: recentChatDocs.slice(-12)
+        });
+
+        await sendMsg(reply, false, {
+            sender_id: null,
+            sender_name: getAIBotName()
+        });
+
+        if (aiButton) aiButton.disabled = false;
+        setAIStatus('Risposta inviata in chat.');
+    };
+
+    container.querySelector('#aiMode').onchange = (event) => {
+        sessionState.aiMode = event.target.value || 'master';
+        saveSessionData();
+    };
+
+    container.querySelector('#aiAutoReply').onchange = (event) => {
+        sessionState.aiAutoReply = event.target.checked;
+        saveSessionData();
+    };
+
+    container.querySelector('#askSessionAI').onclick = () => {
+        const input = container.querySelector('#aiPrompt');
+        const prompt = input.value.trim() || 'Suggerisci il prossimo passo utile per questa sessione.';
+        input.value = '';
+        askSessionAI(prompt, 'panel');
+    };
+
     container.querySelector('#toggleFog').onclick = () => {
         sessionState.fogEnabled = window.__dndMapApi?.toggleFog() ?? !sessionState.fogEnabled;
         container.querySelector('#toggleFog').textContent = sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF';
@@ -1046,10 +1181,16 @@ export async function showSession(container, sessionId, options = {}) {
         );
     };
 
-    const submitChatMessage = () => {
+    const submitChatMessage = async () => {
         const input = container.querySelector('#chat-input');
-        sendMsg(input.value);
+        const message = input.value;
         input.value = '';
+        await sendMsg(message);
+
+        const callsAI = /@(?:oste|master|ai|ia)\b/i.test(message) || sessionState.aiAutoReply;
+        if (callsAI) {
+            askSessionAI(message.replace(/@(?:oste|master|ai|ia)\b/ig, '').trim() || message, 'chat');
+        }
     };
 
     container.querySelector('#chatSubmit').onclick = submitChatMessage;

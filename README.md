@@ -22,6 +22,7 @@ npm install
 ```bash
 VITE_SUPABASE_URL=https://tuo-progetto.supabase.co
 VITE_SUPABASE_ANON_KEY=la-tua-anon-key
+GROQ_LLM_API_KEY=la-tua-key-groq-server
 ```
 
 3. Esegui lo schema Supabase:
@@ -43,7 +44,21 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - Impostazioni profilo con tema accento, glow e card compatte.
 - Minigiochi: Briscola, Solo, Impostore, Burraco, Scacchi e Numeri.
 - D&D 5e: manuali PDF, personaggi completi, sessioni, upload mappa, token drag-and-drop, iniziativa, dadi, note live e chat.
+- AI di sessione: bot testuale in chat, attivabile con `@oste` o dal pannello AI del tavolo, servito da function Vercel e Groq.
 - Libreria musicale con playlist tematiche e upload file audio locale.
+
+## Variabili Vercel
+
+Per le function AI configura su Vercel Project Settings:
+
+```bash
+GROQ_LLM_API_KEY=...
+GROQ_LLM_MODEL=llama-3.3-70b-versatile
+GROQ_LLM_TEMPERATURE=0.75
+GROQ_LLM_MAX_TOKENS=420
+```
+
+Non usare chiavi Groq con prefisso `VITE_` in produzione: le variabili `VITE_*` vengono incluse nel bundle browser.
 
 ## Comandi
 
