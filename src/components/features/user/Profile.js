@@ -80,7 +80,7 @@ export async function showProfile(container, user) {
 
     container.innerHTML = `
         <div class="fade-in" style="padding: 20px; max-width: 600px; margin: 0 auto;">
-            <button id="profileBack" class="btn-back-glass" style="width:auto; margin-bottom:20px;">TORNA ALLA LIBRERIA</button>
+            <button id="profileBack" class="btn-back-glass" style="width:auto; margin-bottom:20px;">TORNA ALLA TAVERNA</button>
             
             <h1 style="font-weight: 900; letter-spacing: -1px; margin-bottom: 30px;">IL MIO <span style="color:var(--amethyst-bright);">PROFILO</span></h1>
             

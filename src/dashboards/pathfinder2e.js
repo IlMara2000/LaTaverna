@@ -368,7 +368,7 @@ export function initPathfinderDashboard(container) {
 function renderShell(container, activeView = 'overview') {
     container.innerHTML = `
         <div class="dnd-app fade-in">
-            <button id="back-to-lobby" class="btn-back-glass dnd-back">TORNA ALLA LIBRERIA</button>
+            <button id="back-to-lobby" class="btn-back-glass dnd-back">TORNA ALLA TAVERNA</button>
 
             <header class="dnd-hero">
                 <div>

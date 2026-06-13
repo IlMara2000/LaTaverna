@@ -112,7 +112,7 @@ export const AudioManager = {
         const selectedPlaylist = getPlaylist();
         container.innerHTML = `
             <div class="music-center fade-in">
-                <button id="musicBack" class="btn-back-glass music-back">TORNA ALLA LIBRERIA</button>
+                <button id="musicBack" class="btn-back-glass music-back">TORNA ALLA TAVERNA</button>
 
                 <header class="music-header">
                     <p class="settings-kicker">Audio ambiente</p>

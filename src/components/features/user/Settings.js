@@ -94,7 +94,7 @@ export async function showSettings(container, user = null) {
 
     container.innerHTML = `
         <div class="fade-in settings-profile-page">
-            <button id="settingsBack" class="btn-back-glass settings-back">TORNA ALLA LIBRERIA</button>
+            <button id="settingsBack" class="btn-back-glass settings-back">TORNA ALLA TAVERNA</button>
 
             <header class="settings-profile-header">
                 <p class="settings-kicker">Profilo utente</p>
