@@ -39,7 +39,7 @@
        --card-dark-bg: #121212;
        --card-dark-border: rgba(255, 255, 255, 0.08);
        --card-dark-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
-   }
+}
 
    @supports (height: 100svh) {
        :root {
@@ -399,6 +399,273 @@
        transform: scale(0.965);
        background: rgba(157, 78, 221, 0.1);
        border-color: var(--amethyst-light);
+   }
+
+   /* ============================================
+      HOME IMMERSIVA
+      ============================================ */
+
+   #app:has(.taverna-home) {
+       scroll-behavior: smooth;
+       scroll-snap-type: y proximity;
+   }
+
+   body:has(.taverna-home) .nav-logo-right {
+       opacity: 0;
+       pointer-events: none;
+   }
+
+   .taverna-home {
+       width: 100%;
+       min-height: 100%;
+       padding: max(22px, env(safe-area-inset-top)) clamp(18px, 3vw, 44px) calc(112px + env(safe-area-inset-bottom));
+       color: white;
+       background:
+           radial-gradient(circle at 50% -20%, rgba(110, 46, 165, 0.2), transparent 42%),
+           #05010a;
+   }
+
+   .taverna-home-header {
+       position: relative;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       gap: 13px;
+       min-height: 68px;
+       margin: 0 auto 22px;
+       animation: homeHeaderReveal 700ms var(--ease-out) both;
+   }
+
+   .taverna-home-header::after {
+       content: '';
+       position: absolute;
+       left: 50%;
+       bottom: 0;
+       width: min(180px, 34vw);
+       height: 1px;
+       background: linear-gradient(90deg, transparent, rgba(220, 181, 118, 0.72), transparent);
+       transform: translateX(-50%);
+   }
+
+   .taverna-home-header img {
+       width: 38px;
+       height: 38px;
+       object-fit: contain;
+       filter: drop-shadow(0 0 16px rgba(199, 125, 255, 0.5));
+   }
+
+   .taverna-home-header h1 {
+       margin: 0;
+       color: #fff;
+       font-size: clamp(1.55rem, 3vw, 2.5rem);
+       font-weight: 900;
+       line-height: 1;
+       letter-spacing: 0;
+       text-transform: uppercase;
+   }
+
+   .taverna-home-main {
+       width: min(100%, 1380px);
+       margin: 0 auto;
+   }
+
+   .taverna-scene-stage {
+       --pointer-x: 0px;
+       --pointer-y: 0px;
+       display: flex;
+       align-items: stretch;
+       gap: 0;
+       width: 100%;
+       height: clamp(470px, 67dvh, 650px);
+       min-height: 0;
+       overflow: hidden;
+       border: 1px solid rgba(220, 181, 118, 0.34);
+       border-radius: 8px;
+       perspective: 1400px;
+       box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+   }
+
+   .taverna-scene {
+       flex: 1 1 0;
+       min-width: 0;
+       position: relative;
+       isolation: isolate;
+       overflow: hidden;
+       padding: 0;
+       border: 0;
+       border-right: 1px solid rgba(255, 255, 255, 0.1);
+       border-radius: 0;
+       background: #120b18;
+       color: #fff;
+       cursor: pointer;
+       opacity: 0;
+       transform: translateY(26px) rotateX(2deg);
+       box-shadow: none;
+       transition:
+           flex 620ms var(--ease-out),
+           opacity 500ms ease,
+           transform 620ms var(--ease-spring),
+           border-color 300ms ease,
+           filter 420ms ease,
+           box-shadow 420ms ease;
+   }
+
+   .taverna-scene:nth-child(2) { transition-delay: 70ms; }
+   .taverna-scene:nth-child(3) { transition-delay: 140ms; }
+   .taverna-scene:last-child { border-right: 0; }
+
+   .taverna-scene.is-in-view {
+       opacity: 1;
+       transform: translateY(0) rotateX(0);
+   }
+
+   .taverna-scene img {
+       position: absolute;
+       z-index: -2;
+       inset: -18px;
+       width: calc(100% + 36px);
+       height: calc(100% + 36px);
+       object-fit: cover;
+       transform: translate3d(var(--pointer-x), var(--pointer-y), 0) scale(1.075);
+       transition: transform 750ms var(--ease-out), filter 480ms ease;
+   }
+
+   .scene-cards img { object-position: 36% 50%; }
+   .scene-party img { object-position: 50% 50%; }
+   .scene-gdr img { object-position: 64% 50%; }
+
+   .taverna-scene-scrim {
+       position: absolute;
+       z-index: -1;
+       inset: 0;
+       background:
+           linear-gradient(180deg, rgba(5, 1, 10, 0.04) 28%, rgba(5, 1, 10, 0.74) 100%),
+           linear-gradient(90deg, rgba(5, 1, 10, 0.3), transparent 42%, rgba(5, 1, 10, 0.18));
+   }
+
+   .taverna-scene-title {
+       position: absolute;
+       left: 24px;
+       right: 24px;
+       bottom: clamp(24px, 4vw, 48px);
+       color: white;
+       font-size: clamp(1.45rem, 3.8vw, 3.5rem);
+       font-weight: 900;
+       line-height: 0.95;
+       letter-spacing: 0;
+       text-transform: uppercase;
+       text-shadow: 0 4px 24px rgba(0, 0, 0, 0.72);
+       transform: translateY(8px);
+       transition: transform 500ms var(--ease-out);
+   }
+
+   .taverna-scene-title::after {
+       content: '';
+       display: block;
+       width: 54px;
+       height: 1px;
+       margin: 14px auto 0;
+       background: linear-gradient(90deg, transparent, rgba(220, 181, 118, 0.92), transparent);
+       box-shadow: 0 0 14px rgba(199, 125, 255, 0.5);
+   }
+
+   .taverna-scene:hover,
+   .taverna-scene:focus-visible {
+       flex: 1.55 1 0;
+       transform: translateY(-5px);
+       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+   }
+
+   .taverna-scene:hover img,
+   .taverna-scene:focus-visible img {
+       transform: translate3d(calc(var(--pointer-x) * 0.45), calc(var(--pointer-y) * 0.45), 0) scale(1.025);
+   }
+
+   .taverna-scene:hover .taverna-scene-title,
+   .taverna-scene:focus-visible .taverna-scene-title {
+       transform: translateY(0);
+   }
+
+   .taverna-scene-stage:has(.taverna-scene:hover) .taverna-scene:not(:hover),
+   .taverna-scene-stage:has(.taverna-scene:focus-visible) .taverna-scene:not(:focus-visible) {
+       filter: brightness(0.62) saturate(0.72);
+   }
+
+   .taverna-scene.is-opening {
+       z-index: 5;
+       flex: 2.4 1 0;
+       transform: scale(0.99);
+       filter: brightness(1.12) saturate(1.08);
+   }
+
+   .taverna-home-dock {
+       display: grid;
+       grid-template-columns: repeat(4, minmax(0, 1fr));
+       gap: 8px;
+       width: 100%;
+       margin-top: 10px;
+       animation: homeDockReveal 760ms 240ms var(--ease-out) both;
+   }
+
+   .taverna-home-dock:has(.is-resume) {
+       grid-template-columns: minmax(190px, 1.55fr) repeat(4, minmax(110px, 1fr));
+   }
+
+   .taverna-home-dock button {
+       min-width: 0;
+       min-height: 62px;
+       padding: 10px 14px;
+       border: 1px solid rgba(220, 181, 118, 0.17);
+       border-radius: 8px;
+       background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025));
+       color: rgba(255, 255, 255, 0.82);
+       font-size: clamp(0.68rem, 1vw, 0.78rem);
+       font-weight: 800;
+       letter-spacing: 0;
+       cursor: pointer;
+       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+       transition: transform 240ms var(--ease-spring), background 240ms ease, color 240ms ease, border-color 240ms ease;
+   }
+
+   .taverna-home-dock button:hover,
+   .taverna-home-dock button:focus-visible {
+       transform: translateY(-2px);
+       background: rgba(255, 255, 255, 0.09);
+       border-color: rgba(199, 125, 255, 0.4);
+       color: #fff;
+   }
+
+   .taverna-home-dock .is-resume {
+       display: grid;
+       align-content: center;
+       gap: 2px;
+       background: linear-gradient(135deg, rgba(157, 78, 222, 0.2), rgba(91, 33, 182, 0.1));
+       border-color: rgba(199, 125, 255, 0.26);
+   }
+
+   .taverna-home-dock .is-resume small {
+       color: rgba(255, 255, 255, 0.5);
+       font-size: 0.58rem;
+       font-weight: 700;
+       letter-spacing: 0;
+   }
+
+   .taverna-home-dock .is-resume strong {
+       overflow: hidden;
+       color: #fff;
+       font-size: 0.86rem;
+       text-overflow: ellipsis;
+       white-space: nowrap;
+   }
+
+   @keyframes homeHeaderReveal {
+       from { opacity: 0; transform: translateY(-12px); }
+       to { opacity: 1; transform: translateY(0); }
+   }
+
+   @keyframes homeDockReveal {
+       from { opacity: 0; transform: translateY(16px); }
+       to { opacity: 1; transform: translateY(0); }
    }
 
    .minigames-lobby-wrapper {
@@ -4736,5 +5003,142 @@
            animation-iteration-count: 1 !important;
            scroll-behavior: auto !important;
            transition-duration: 0.001ms !important;
+       }
+   }
+
+   @media (max-width: 760px) {
+       .taverna-home {
+           padding: max(14px, env(safe-area-inset-top)) 14px calc(106px + env(safe-area-inset-bottom));
+       }
+
+       .taverna-home-header {
+           min-height: 54px;
+           margin-bottom: 10px;
+       }
+
+       .taverna-home-header img {
+           display: none;
+       }
+
+       .taverna-home-header h1 {
+           font-size: clamp(1.5rem, 8vw, 2rem);
+       }
+
+       .taverna-scene-stage {
+           display: grid;
+           grid-template-columns: 1fr;
+           gap: 10px;
+           height: auto;
+           overflow: visible;
+           border: 0;
+           border-radius: 0;
+           perspective: none;
+           box-shadow: none;
+       }
+
+       .taverna-scene {
+           width: 100%;
+           min-height: clamp(224px, 32svh, 286px);
+           border: 1px solid rgba(220, 181, 118, 0.24);
+           border-radius: 8px;
+           scroll-snap-align: center;
+           transform: translateY(20px) scale(0.985);
+       }
+
+       .taverna-scene:last-child {
+           border-right: 1px solid rgba(220, 181, 118, 0.24);
+       }
+
+       .taverna-scene.is-in-view {
+           transform: translateY(0) scale(1);
+       }
+
+       .taverna-scene:hover,
+       .taverna-scene:focus-visible,
+       .taverna-scene.is-opening {
+           transform: scale(0.985);
+       }
+
+       .taverna-scene-stage:has(.taverna-scene:hover) .taverna-scene:not(:hover),
+       .taverna-scene-stage:has(.taverna-scene:focus-visible) .taverna-scene:not(:focus-visible) {
+           filter: none;
+       }
+
+       .taverna-scene img,
+       .taverna-scene:hover img,
+       .taverna-scene:focus-visible img {
+           transform: scale(1.04);
+       }
+
+       .scene-cards img { object-position: 38% 52%; }
+       .scene-party img { object-position: 50% 50%; }
+       .scene-gdr img { object-position: 64% 50%; }
+
+       .taverna-scene-title {
+           bottom: 24px;
+           font-size: clamp(1.7rem, 9vw, 2.35rem);
+       }
+
+       .taverna-home-dock,
+       .taverna-home-dock:has(.is-resume) {
+           grid-template-columns: repeat(2, minmax(0, 1fr));
+           margin-top: 10px;
+       }
+
+       .taverna-home-dock .is-resume {
+           grid-column: 1 / -1;
+       }
+
+       .taverna-home-dock button {
+           min-height: 58px;
+           padding: 9px 8px;
+           font-size: 0.68rem;
+       }
+
+       body:has(.taverna-home) .floating-trigger {
+           top: calc(17px + env(safe-area-inset-top));
+           right: 12px;
+           bottom: auto;
+           width: 48px;
+           height: 48px;
+           border-radius: 8px;
+       }
+   }
+
+   @media (max-width: 350px) {
+       .taverna-home {
+           padding-inline: 10px;
+       }
+
+       #app:has(.taverna-home) {
+           padding-inline: 0;
+       }
+
+       .taverna-scene {
+           min-height: 210px;
+       }
+
+       .taverna-scene-title {
+           font-size: 1.55rem;
+       }
+   }
+
+   @media (max-width: 900px) and (orientation: landscape) {
+       .taverna-scene-stage {
+           display: flex;
+           height: min(66dvh, 440px);
+       }
+
+       .taverna-scene {
+           min-height: 0;
+       }
+
+       .taverna-home-dock,
+       .taverna-home-dock:has(.is-resume) {
+           grid-template-columns: repeat(5, minmax(0, 1fr));
+       }
+
+       .taverna-home-dock .is-resume {
+           grid-column: auto;
        }
    }

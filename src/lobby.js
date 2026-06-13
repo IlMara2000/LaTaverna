@@ -36,68 +36,48 @@ export function showLobby(container) {
     const guest = getGuestState();
     const lastDestination = getLastDestination();
     const lastDestinationInfo = APP_DESTINATIONS[lastDestination?.destination] || null;
+
     container.innerHTML = `
-        <div id="lobby-wrapper" style="width: 100%; animation: cardEntrance 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;">
-            <div class="dashboard-container" style="padding-bottom: calc(120px + env(safe-area-inset-bottom));">
-                <header class="lobby-header" style="margin-bottom: 24px;">
-                    <h1 class="main-title">LA <span class="text-amethyst">TAVERNA</span></h1>
-                </header>
+        <div id="lobby-wrapper" class="taverna-home">
+            <header class="taverna-home-header">
+                <img src="/assets/logo2.png" alt="" aria-hidden="true">
+                <h1>LA TAVERNA</h1>
+            </header>
 
-                ${lastDestinationInfo ? `
-                    <button type="button" id="resume-last-destination" class="game-card portal-card is-clickable" style="width: 100%; color: white; text-align: center; outline: none; -webkit-tap-highlight-color: transparent;">
-                        <div class="card-content">
-                            <p class="subtitle" style="margin: 0 0 8px; opacity: 0.56; font-size: 0.68rem; letter-spacing: 2px;">RIPRENDI</p>
-                            <h2 class="card-title" style="margin-bottom: 6px;">${escapeHTML(lastDestinationInfo.name)}</h2>
-                        </div>
+            <main class="taverna-home-main">
+                <section class="taverna-scene-stage" aria-label="Scegli come giocare">
+                    <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
+                        <img src="/assets/home/portal-cards.jpg" alt="Carte italiane su un tavolo da gioco" fetchpriority="high">
+                        <span class="taverna-scene-scrim" aria-hidden="true"></span>
+                        <span class="taverna-scene-title">CARTE</span>
                     </button>
-                ` : ''}
 
-                <section class="lobby-section" style="margin-top: 28px;">
-                    <div class="grid-layout">
-                        <button type="button" class="game-card is-clickable" id="hub-card-games" style="color: white; text-align: center; outline: none;">
-                            <span style="font-size: 2rem;" aria-hidden="true">🃏</span>
-                            <div class="card-content">
-                                <h2 class="card-title-sm">CARTE</h2>
-                            </div>
-                        </button>
-
-                        <button type="button" class="game-card is-clickable" id="hub-party-games" style="color: white; text-align: center; outline: none;">
-                            <span style="font-size: 2rem;" aria-hidden="true">🎉</span>
-                            <div class="card-content">
-                                <h2 class="card-title-sm">CON AMICI</h2>
-                            </div>
-                        </button>
-
-                        <button type="button" class="game-card is-clickable" id="hub-strategy-games" style="color: white; text-align: center; outline: none;">
-                            <span style="font-size: 2rem;" aria-hidden="true">♟️</span>
-                            <div class="card-content">
-                                <h2 class="card-title-sm">STRATEGIA</h2>
-                            </div>
-                        </button>
-
-                        <button type="button" class="game-card is-clickable" id="hub-all-games" style="color: white; text-align: center; outline: none;">
-                            <span style="font-size: 2rem;" aria-hidden="true">🎮</span>
-                            <div class="card-content">
-                                <h2 class="card-title-sm">SALA GIOCHI</h2>
-                            </div>
-                        </button>
-                    </div>
-                </section>
-
-                <section class="lobby-section" style="margin-top: 30px;">
-                    <h2 class="subtitle" style="opacity: 0.62; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 12px;">GDR</h2>
-                    <button type="button" class="game-card is-clickable" id="btn-dnd5e" style="width: 100%; color: white; text-align: center; outline: none; -webkit-tap-highlight-color: transparent;">
-                        <div class="card-content">
-                            <h2 class="card-title-sm">🐉 DUNGEONS & DRAGONS 5E</h2>
-                        </div>
+                    <button type="button" class="taverna-scene scene-party" id="hub-party-games">
+                        <img src="/assets/home/portal-party.jpg" alt="Gioco da tavolo con pedine colorate" loading="lazy">
+                        <span class="taverna-scene-scrim" aria-hidden="true"></span>
+                        <span class="taverna-scene-title">CON AMICI</span>
                     </button>
-                    <button type="button" class="game-card is-clickable" id="btn-pathfinder2e" style="width: 100%; color: white; text-align: center; outline: none; margin-top: 14px; -webkit-tap-highlight-color: transparent;">
-                        <div class="card-content">
-                            <h2 class="card-title-sm">🧭 PATHFINDER 2E</h2>
-                        </div>
+
+                    <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
+                        <img src="/assets/home/portal-gdr.jpg" alt="Mappa fantasy, dadi e miniatura da gioco di ruolo" loading="lazy">
+                        <span class="taverna-scene-scrim" aria-hidden="true"></span>
+                        <span class="taverna-scene-title">GDR</span>
                     </button>
                 </section>
-            </div>
+
+                <nav class="taverna-home-dock" aria-label="Destinazioni rapide">
+                    ${lastDestinationInfo ? `
+                        <button type="button" id="resume-last-destination" class="is-resume">
+                            <small>RIPRENDI</small>
+                            <strong>${escapeHTML(lastDestinationInfo.name)}</strong>
+                        </button>
+                    ` : ''}
+                    <button type="button" id="hub-all-games">SALA GIOCHI</button>
+                    <button type="button" id="hub-strategy-games">STRATEGIA</button>
+                    <button type="button" id="btn-dnd5e">D&amp;D 5E</button>
+                    <button type="button" id="btn-pathfinder2e">PATHFINDER 2E</button>
+                </nav>
+            </main>
         </div>
     `;
 
@@ -110,13 +90,51 @@ export function showLobby(container) {
         navigateTo(destination, container, options);
     };
 
-    container.querySelector('#resume-last-destination')?.addEventListener('click', () => {
-        openDestination(lastDestination.destination, lastDestination.options || {});
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const openWithTransition = (button, destination, options = {}) => {
+        if (!button || reducedMotion) {
+            openDestination(destination, options);
+            return;
+        }
+        button.classList.add('is-opening');
+        window.setTimeout(() => openDestination(destination, options), 340);
+    };
+
+    const scenes = [...container.querySelectorAll('.taverna-scene')];
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => entry.target.classList.toggle('is-in-view', entry.isIntersecting));
+    }, { threshold: 0.46 });
+    scenes.forEach(scene => observer.observe(scene));
+
+    const stage = container.querySelector('.taverna-scene-stage');
+    const handlePointerMove = event => {
+        const bounds = stage.getBoundingClientRect();
+        stage.style.setProperty('--pointer-x', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 16}px`);
+        stage.style.setProperty('--pointer-y', `${((event.clientY - bounds.top) / bounds.height - 0.5) * 12}px`);
+    };
+    const resetPointer = () => {
+        stage.style.setProperty('--pointer-x', '0px');
+        stage.style.setProperty('--pointer-y', '0px');
+    };
+    stage?.addEventListener('pointermove', handlePointerMove);
+    stage?.addEventListener('pointerleave', resetPointer);
+    window.__homeCleanup = () => {
+        observer.disconnect();
+        stage?.removeEventListener('pointermove', handlePointerMove);
+        stage?.removeEventListener('pointerleave', resetPointer);
+    };
+
+    const cardScene = container.querySelector('#hub-card-games');
+    const partyScene = container.querySelector('#hub-party-games');
+    const gdrScene = container.querySelector('#hub-gdr-games');
+    container.querySelector('#resume-last-destination')?.addEventListener('click', event => {
+        openWithTransition(event.currentTarget, lastDestination.destination, lastDestination.options || {});
     });
-    container.querySelector('#hub-card-games').onclick = () => openDestination('minigames', { filter: 'cards' });
-    container.querySelector('#hub-party-games').onclick = () => openDestination('minigames', { filter: 'party' });
-    container.querySelector('#hub-strategy-games').onclick = () => openDestination('minigames', { filter: 'strategy' });
-    container.querySelector('#hub-all-games').onclick = () => openDestination('minigames', { filter: 'all' });
-    container.querySelector('#btn-dnd5e').onclick = () => openDestination('dnd5e');
-    container.querySelector('#btn-pathfinder2e').onclick = () => openDestination('pathfinder2e');
+    cardScene.onclick = () => openWithTransition(cardScene, 'minigames', { filter: 'cards' });
+    partyScene.onclick = () => openWithTransition(partyScene, 'minigames', { filter: 'party' });
+    gdrScene.onclick = () => openWithTransition(gdrScene, 'dnd5e');
+    container.querySelector('#hub-strategy-games').onclick = event => openWithTransition(event.currentTarget, 'minigames', { filter: 'strategy' });
+    container.querySelector('#hub-all-games').onclick = event => openWithTransition(event.currentTarget, 'minigames', { filter: 'all' });
+    container.querySelector('#btn-dnd5e').onclick = event => openWithTransition(event.currentTarget, 'dnd5e');
+    container.querySelector('#btn-pathfinder2e').onclick = event => openWithTransition(event.currentTarget, 'pathfinder2e');
 }
