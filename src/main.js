@@ -5,9 +5,12 @@ import { initNavbar } from './components/layout/Navbar.js';
 import { showLobby } from './lobby.js';
 import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthInput.js';
 import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
+import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './services/appPreferences.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
+
+applyCachedAppPreferences();
 
 const uiContainer = document.getElementById('ui');
 const SERVER_INVITE = "https://discord.gg/9BqNgdqC";
@@ -128,6 +131,7 @@ function checkAccess(user, container) {
 function renderDashboard(user) {
     const appContainer = document.getElementById('app');
     loadAndApplyProfileAppearance(user).catch(err => console.warn('Tema profilo non applicato:', err));
+    loadAndApplyAppPreferences().catch(err => console.warn('Preferenze app non sincronizzate:', err));
     
     // 1. Inizializza la Navbar (Gestirà anche la Sidebar)
     initNavbar(user, async () => {

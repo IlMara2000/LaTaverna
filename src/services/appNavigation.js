@@ -4,7 +4,9 @@ export const resetAppSurface = () => {
     window.__homeCleanup?.();
     window.__dndSessionCleanup?.();
     window.__minigameMultiplayerCleanup?.();
+    window.__settingsCleanup?.();
     window.__homeCleanup = null;
+    window.__settingsCleanup = null;
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     document.body.style.overflow = '';
