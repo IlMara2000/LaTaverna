@@ -1,5 +1,6 @@
 import { Howl, Howler } from 'howler';
 import { getPreference, setPreference } from '../../services/userPreferences.js';
+import { getCachedAppPreference } from '../../services/appPreferences.js';
 
 // Configurazione Playlist Tematiche Unificata
 const PLAYLISTS = {
@@ -36,6 +37,7 @@ let currentTrackIndex = 0;
 let currentPlaylistKey = 'tavern';
 let currentTrackName = 'Nessuna traccia';
 let isMusicEnabled = true;
+let currentVolume = Number(getCachedAppPreference('music.volume', 0.5));
 let isPlaylistActive = false;
 let preferencesHydrated = false;
 
@@ -47,6 +49,8 @@ async function hydrateAudioPreferences() {
     currentPlaylistKey = await getPreference('music.playlist', currentPlaylistKey);
     currentTrackName = await getPreference('music.track', currentTrackName);
     isMusicEnabled = await getPreference('music.enabled', true);
+    currentVolume = Number(await getPreference('music.volume', currentVolume));
+    Howler.volume(currentVolume);
 }
 
 function persistAudioPreferences() {
@@ -68,7 +72,7 @@ export const AudioManager = {
         currentSound = new Howl({
             src: [url],
             html5: true,
-            volume: 0.5,
+            volume: currentVolume,
             loop: !isPlaylist,
             onplay: () => window.dispatchEvent(new CustomEvent('musicStarted', {
                 detail: { playlistKey: currentPlaylistKey, trackName: currentTrackName }
@@ -105,6 +109,13 @@ export const AudioManager = {
     setMusicEnabled: (enabled) => {
         isMusicEnabled = Boolean(enabled);
         setPreference('music.enabled', isMusicEnabled);
+    },
+
+    setVolume: (volume) => {
+        currentVolume = Math.min(Math.max(Number(volume) || 0, 0), 1);
+        Howler.volume(currentVolume);
+        if (currentSound) currentSound.volume(currentVolume);
+        setPreference('music.volume', currentVolume);
     },
 
     showMusicCenter: async (container) => {
@@ -235,6 +246,24 @@ window.addEventListener('musicToggled', (e) => {
     } else {
         if (currentSound) currentSound.pause();
         else Howler.stop();
+    }
+});
+
+window.addEventListener('musicVolumeChanged', (e) => {
+    AudioManager.setVolume(e.detail);
+});
+
+window.addEventListener('appPreferencesChanged', (e) => {
+    const values = e.detail?.values || {};
+    if ('music.enabled' in values) {
+        isMusicEnabled = Boolean(values['music.enabled']);
+        if (isMusicEnabled) currentSound?.play();
+        else currentSound?.pause();
+    }
+    if ('music.volume' in values) {
+        currentVolume = Math.min(Math.max(Number(values['music.volume']) || 0, 0), 1);
+        Howler.volume(currentVolume);
+        currentSound?.volume(currentVolume);
     }
 });
 

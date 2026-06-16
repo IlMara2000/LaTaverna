@@ -1,5 +1,7 @@
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 import { dndLocalStore } from '../../../services/dndLocalStore.js';
+import { clientToMapPoint, snapTokenToGrid } from './gridMath.js';
+import { getCachedAppPreference } from '../../../services/appPreferences.js';
 
 const TOKEN_TABLE = SUPABASE_CONFIG?.tables?.tokens || 'dnd_tokens';
 
@@ -37,13 +39,37 @@ const isPdfMap = (url = '') => {
     return cleanUrl.endsWith('.pdf') || String(url).toLowerCase().includes('application/pdf');
 };
 
+const WEATHER_TYPES = new Set(['clear', 'rain', 'storm', 'snow', 'mist']);
+
+const weatherParticles = (weather) => {
+    if (weather === 'rain' || weather === 'storm') {
+        return Array.from({ length: weather === 'storm' ? 44 : 32 }, (_, index) => `
+            <i style="--x:${(index * 37) % 103}%;--delay:${-(index % 13) * 0.17}s;--speed:${0.72 + (index % 7) * 0.055}s"></i>
+        `).join('');
+    }
+    if (weather === 'snow') {
+        return Array.from({ length: 30 }, (_, index) => `
+            <i style="--x:${(index * 43) % 101}%;--delay:${-(index % 15) * 0.32}s;--speed:${3.6 + (index % 8) * 0.38}s;--size:${4 + (index % 4) * 2}px"></i>
+        `).join('');
+    }
+    if (weather === 'mist') {
+        return Array.from({ length: 7 }, (_, index) => `
+            <i style="--y:${8 + index * 14}%;--delay:${-index * 1.3}s;--speed:${12 + index * 1.2}s"></i>
+        `).join('');
+    }
+    return '';
+};
+
 export function showTabletop(container, sessionId, options = {}) {
     let scale = 1;
     let translateX = 0;
     let translateY = 0;
-    let fogEnabled = options.fogEnabled === true;
+    let timeOfDay = options.timeOfDay === 'night' || options.fogEnabled === true ? 'night' : 'day';
+    let weather = WEATHER_TYPES.has(options.weather) ? options.weather : 'clear';
     let gridVisible = options.gridVisible !== false;
     let gridSize = Number(options.gridSize || 50);
+    const snapToGrid = getCachedAppPreference('tabletop.snap_to_grid', true) !== false;
+    const weatherEffectsEnabled = getCachedAppPreference('tabletop.weather_effects', true) !== false;
     let knownTokens = [];
     const localMode = Boolean(options.localMode);
     const localStore = options.localStore || dndLocalStore;
@@ -60,14 +86,16 @@ export function showTabletop(container, sessionId, options = {}) {
                         : `<img class="map-image" src="${escapeHTML(options.mapUrl)}" alt="">`
                 ) : '<div class="map-empty"><strong>Nessuna mappa</strong><span>Carica una mappa nella configurazione sessione o usa la griglia come tavolo libero.</span></div>'}
                 <div class="map-grid ${gridVisible ? '' : 'is-hidden'}" id="map-grid"></div>
-                <div class="map-fog ${fogEnabled ? 'active' : ''}" id="map-fog"></div>
             </div>
+            <div class="map-day-night" id="map-day-night" data-time="${timeOfDay}" aria-hidden="true"></div>
+            <div class="map-weather" id="map-weather" data-weather="${weather}" aria-hidden="true">${weatherEffectsEnabled ? weatherParticles(weather) : ''}</div>
         </div>
     `;
 
     const viewport = container.querySelector('#viewport');
     const mapLayer = container.querySelector('#map-layer');
-    const fog = container.querySelector('#map-fog');
+    const dayNightLayer = container.querySelector('#map-day-night');
+    const weatherLayer = container.querySelector('#map-weather');
     const grid = container.querySelector('#map-grid');
 
     const updateTransform = () => {
@@ -77,6 +105,17 @@ export function showTabletop(container, sessionId, options = {}) {
     const updateGrid = () => {
         grid.style.backgroundSize = `${gridSize}px ${gridSize}px`;
         grid.classList.toggle('is-hidden', !gridVisible);
+    };
+
+    const snapTokenPosition = (x, y, tokenElement) => {
+        if (!snapToGrid) return { x: Number(x) || 0, y: Number(y) || 0 };
+        return snapTokenToGrid({
+            x,
+            y,
+            gridSize,
+            tokenWidth: tokenElement?.offsetWidth || 62,
+            tokenHeight: tokenElement?.offsetHeight || 62
+        });
     };
 
     const notifyTokens = () => {
@@ -122,10 +161,17 @@ export function showTabletop(container, sessionId, options = {}) {
         updateTransform();
     };
 
-    const setFog = (nextValue) => {
-        fogEnabled = Boolean(nextValue);
-        fog.classList.toggle('active', fogEnabled);
-        return fogEnabled;
+    const setTimeOfDay = (nextValue) => {
+        timeOfDay = nextValue === 'night' ? 'night' : 'day';
+        dayNightLayer.dataset.time = timeOfDay;
+        return timeOfDay;
+    };
+
+    const setWeather = (nextValue) => {
+        weather = WEATHER_TYPES.has(nextValue) ? nextValue : 'clear';
+        weatherLayer.dataset.weather = weather;
+        weatherLayer.innerHTML = weatherEffectsEnabled ? weatherParticles(weather) : '';
+        return weather;
     };
 
     const setGridVisible = (nextValue) => {
@@ -292,7 +338,6 @@ export function showTabletop(container, sessionId, options = {}) {
 
     const renderToken = (doc) => {
         if (!doc?.id) return;
-        upsertKnownToken(doc);
         let el = mapLayer.querySelector(`#token-${CSS.escape(String(doc.id))}`);
         const hp = Number(doc.data?.hp ?? 0);
         const hpMax = Number(doc.data?.hp_max ?? 0);
@@ -324,9 +369,12 @@ export function showTabletop(container, sessionId, options = {}) {
         }
 
         if (!el.classList.contains('dragging')) {
-            el.style.left = `${doc.x || 300}px`;
-            el.style.top = `${doc.y || 300}px`;
+            const snapped = snapTokenPosition(doc.x ?? 300, doc.y ?? 300, el);
+            Object.assign(doc, snapped);
+            el.style.left = `${snapped.x}px`;
+            el.style.top = `${snapped.y}px`;
         }
+        upsertKnownToken(doc);
     };
 
     const makeTokenDraggable = (el, doc) => {
@@ -334,28 +382,63 @@ export function showTabletop(container, sessionId, options = {}) {
             e.stopPropagation();
             el.setPointerCapture(e.pointerId);
             el.classList.add('dragging');
-            const rect = el.getBoundingClientRect();
-            const offsetX = e.clientX - rect.left;
-            const offsetY = e.clientY - rect.top;
+            const mapRect = mapLayer.getBoundingClientRect();
+            const startX = Number.parseFloat(el.style.left) || 0;
+            const startY = Number.parseFloat(el.style.top) || 0;
+            const pointerStart = clientToMapPoint({
+                clientX: e.clientX,
+                clientY: e.clientY,
+                mapLeft: mapRect.left,
+                mapTop: mapRect.top,
+                scale
+            });
+            const offsetX = pointerStart.x - startX;
+            const offsetY = pointerStart.y - startY;
 
             const onMove = (ev) => {
-                const mapRect = mapLayer.getBoundingClientRect();
-                const x = (ev.clientX - mapRect.left - offsetX) / scale;
-                const y = (ev.clientY - mapRect.top - offsetY) / scale;
-                el.style.left = `${x}px`;
-                el.style.top = `${y}px`;
+                const currentMapRect = mapLayer.getBoundingClientRect();
+                const nextPoint = clientToMapPoint({
+                    clientX: ev.clientX,
+                    clientY: ev.clientY,
+                    mapLeft: currentMapRect.left,
+                    mapTop: currentMapRect.top,
+                    scale,
+                    offsetX,
+                    offsetY
+                });
+                el.style.left = `${nextPoint.x}px`;
+                el.style.top = `${nextPoint.y}px`;
             };
 
-            const onUp = async (ev) => {
-                el.releasePointerCapture(ev.pointerId);
+            let dragFinished = false;
+            const finishDrag = async (ev) => {
+                if (dragFinished) return;
+                dragFinished = true;
                 el.removeEventListener('pointermove', onMove);
-                el.removeEventListener('pointerup', onUp);
-                el.classList.remove('dragging');
+                el.removeEventListener('pointerup', finishDrag);
+                el.removeEventListener('pointercancel', finishDrag);
+                el.removeEventListener('lostpointercapture', finishDrag);
                 try {
-                    const patch = {
-                        x: Math.round(parseFloat(el.style.left)),
-                        y: Math.round(parseFloat(el.style.top))
-                    };
+                    if (el.hasPointerCapture(ev.pointerId)) el.releasePointerCapture(ev.pointerId);
+                } catch {
+                    // Pointer capture may already be released on touch cancellation.
+                }
+                el.classList.remove('dragging');
+
+                const patch = snapTokenPosition(
+                    Number.parseFloat(el.style.left),
+                    Number.parseFloat(el.style.top),
+                    el
+                );
+                el.classList.add('snapping');
+                el.style.left = `${patch.x}px`;
+                el.style.top = `${patch.y}px`;
+                window.setTimeout(() => el.classList.remove('snapping'), 180);
+
+                Object.assign(doc, patch);
+                const currentToken = knownTokens.find(token => String(token.id) === String(doc.id));
+                upsertKnownToken({ ...(currentToken || doc), ...patch });
+                try {
                     if (localMode) {
                         localStore.tokens.update(doc.id, patch);
                     } else {
@@ -370,7 +453,9 @@ export function showTabletop(container, sessionId, options = {}) {
             };
 
             el.addEventListener('pointermove', onMove);
-            el.addEventListener('pointerup', onUp);
+            el.addEventListener('pointerup', finishDrag);
+            el.addEventListener('pointercancel', finishDrag);
+            el.addEventListener('lostpointercapture', finishDrag);
         });
     };
 
@@ -417,13 +502,14 @@ export function showTabletop(container, sessionId, options = {}) {
     window.__dndMapApi = {
         getTokens: () => [...knownTokens],
         addToken: async (token) => {
+            const initialPosition = snapTokenPosition(420, 420);
             const payload = {
                 session_id: sessionId,
                 name: token.name || 'Token',
                 img: token.img || '',
                 color: token.color || '#c77dff',
-                x: 420,
-                y: 420,
+                x: initialPosition.x,
+                y: initialPosition.y,
                 character_id: token.character_id || null,
                 data: token.data || {}
             };
@@ -480,13 +566,12 @@ export function showTabletop(container, sessionId, options = {}) {
             translateY = 0;
             updateTransform();
         },
-        toggleFog: () => {
-            return setFog(!fogEnabled);
-        },
+        toggleDayNight: () => setTimeOfDay(timeOfDay === 'day' ? 'night' : 'day'),
         toggleGrid: () => {
             return setGridVisible(!gridVisible);
         },
-        setFog,
+        setTimeOfDay,
+        setWeather,
         setGridVisible,
         setGridSize: (size) => {
             gridSize = Math.min(Math.max(Number(size) || 50, 20), 200);

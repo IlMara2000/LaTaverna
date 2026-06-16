@@ -39,6 +39,28 @@ export async function getPreference(key, fallbackValue = null) {
     return data?.value ?? fallbackValue;
 }
 
+export async function getPreferences(defaultValues = {}) {
+    const keys = Object.keys(defaultValues);
+    if (!keys.length) return {};
+
+    const user = await getPreferenceUser();
+    if (!user?.id) return { ...defaultValues };
+
+    const { data, error } = await supabase
+        .from(PREFERENCES_TABLE)
+        .select('key,value')
+        .eq('user_id', user.id)
+        .in('key', keys);
+
+    if (error) {
+        console.warn('Preferenze utente non caricate:', error);
+        return { ...defaultValues };
+    }
+
+    const storedValues = Object.fromEntries((data || []).map(row => [row.key, row.value]));
+    return { ...defaultValues, ...storedValues };
+}
+
 export async function setPreference(key, value) {
     const user = await getPreferenceUser();
     if (!user?.id) return { error: { message: 'Utente Supabase non disponibile.' } };
@@ -51,4 +73,22 @@ export async function setPreference(key, value) {
             value,
             updated_at: new Date().toISOString()
         }, { onConflict: 'user_id,key' });
+}
+
+export async function setPreferences(values = {}) {
+    const entries = Object.entries(values);
+    if (!entries.length) return { error: null };
+
+    const user = await getPreferenceUser();
+    if (!user?.id) return { error: { message: 'Utente Supabase non disponibile.' } };
+
+    const updatedAt = new Date().toISOString();
+    return supabase
+        .from(PREFERENCES_TABLE)
+        .upsert(entries.map(([key, value]) => ({
+            user_id: user.id,
+            key,
+            value,
+            updated_at: updatedAt
+        })), { onConflict: 'user_id,key' });
 }

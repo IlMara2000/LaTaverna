@@ -11,6 +11,8 @@ import {
 } from '../../../services/dndLocalStore.js';
 import { getAIResponse } from '../../../services/ai.js';
 import { showTabletop } from './Map.js';
+import { animateDiceRoll } from './diceAnimation.js';
+import { getCachedAppPreference } from '../../../services/appPreferences.js';
 
 const TABLES = {
     sessions: SUPABASE_CONFIG?.tables?.sessions || 'dnd_sessions',
@@ -41,6 +43,14 @@ const SESSION_SYSTEMS = {
             return initPathfinderDashboard;
         }
     }
+};
+
+const WEATHER_LABELS = {
+    clear: 'Sereno',
+    rain: 'Pioggia',
+    storm: 'Temporale',
+    snow: 'Neve',
+    mist: 'Foschia'
 };
 
 const getSessionSystem = (systemId = 'dnd5e') => SESSION_SYSTEMS[systemId] || SESSION_SYSTEMS.dnd5e;
@@ -159,6 +169,46 @@ const splitConditions = (value = '') => String(value)
 
 const joinConditions = (conditions = []) => Array.isArray(conditions) ? conditions.join(', ') : String(conditions || '');
 
+const TOKEN_IMAGE_MAX_FILE_SIZE = 12 * 1024 * 1024;
+const TOKEN_IMAGE_MAX_DIMENSION = 512;
+
+const readFileAsDataUrl = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Impossibile leggere la foto selezionata.'));
+    reader.readAsDataURL(file);
+});
+
+const loadImageSource = (source) => new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Formato immagine non supportato.'));
+    image.src = source;
+});
+
+const prepareTokenImageFile = async (file) => {
+    if (!(file instanceof File) || !file.type.startsWith('image/')) {
+        throw new Error('Seleziona un file immagine valido.');
+    }
+    if (file.size > TOKEN_IMAGE_MAX_FILE_SIZE) {
+        throw new Error('La foto supera il limite di 12 MB.');
+    }
+
+    const source = await readFileAsDataUrl(file);
+    const image = await loadImageSource(source);
+    const sourceWidth = Math.max(image.naturalWidth || image.width || 1, 1);
+    const sourceHeight = Math.max(image.naturalHeight || image.height || 1, 1);
+    const scale = Math.min(1, TOKEN_IMAGE_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Impossibile elaborare la foto selezionata.');
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/webp', 0.82);
+};
+
 const getCharacterName = (char = {}) => char.name || char.data?.name || 'Personaggio';
 
 const getCharacterInitiativeMod = (char = {}) => {
@@ -205,7 +255,8 @@ export async function showSession(container, sessionId, options = {}) {
         initiative: sessionData.data?.initiative || [],
         round: Number(sessionData.data?.round || 1),
         turnCount: Number(sessionData.data?.turnCount || 0),
-        fogEnabled: sessionData.data?.fogEnabled === true,
+        timeOfDay: sessionData.data?.timeOfDay === 'night' || sessionData.data?.fogEnabled === true ? 'night' : 'day',
+        weather: ['clear', 'rain', 'storm', 'snow', 'mist'].includes(sessionData.data?.weather) ? sessionData.data.weather : 'clear',
         gridVisible: sessionData.data?.gridVisible !== false,
         map_grid_size: Number(sessionData.data?.map_grid_size || 50),
         live_notes: sessionData.data?.live_notes || '',
@@ -240,6 +291,7 @@ export async function showSession(container, sessionId, options = {}) {
                     <button type="button" class="active" data-session-tool="brief">Brief</button>
                     <button type="button" data-session-tool="tokens">Token</button>
                     <button type="button" data-session-tool="initiative">Iniziativa</button>
+                    <button type="button" data-session-tool="environment">Ambiente</button>
                     <button type="button" data-session-tool="notes">Note</button>
                     <button type="button" data-session-tool="ai">AI</button>
                 </nav>
@@ -258,7 +310,25 @@ export async function showSession(container, sessionId, options = {}) {
                         ${characters.map(char => `<option value="${escapeHTML(char.id)}">${escapeHTML(getCharacterName(char))}</option>`).join('')}
                     </select>
                     <input id="tokenName" type="text" placeholder="Nome token">
-                    <input id="tokenImg" type="text" placeholder="URL immagine">
+                    <div class="token-image-source-grid">
+                        <label class="token-image-url-field">
+                            <span>Link immagine</span>
+                            <input id="tokenImg" type="url" inputmode="url" placeholder="https://...">
+                        </label>
+                        <label class="token-image-file-field" for="tokenImgFile">
+                            <span>Foto dal dispositivo</span>
+                            <input id="tokenImgFile" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif">
+                            <strong id="tokenImgFileLabel">CARICA FOTO</strong>
+                        </label>
+                    </div>
+                    <div class="token-image-preview" id="tokenImagePreview" hidden>
+                        <img id="tokenImagePreviewImg" alt="Anteprima token">
+                        <div>
+                            <strong id="tokenImageName">Immagine token</strong>
+                            <button id="clearTokenImage" type="button">RIMUOVI</button>
+                        </div>
+                    </div>
+                    <p class="token-image-status" id="tokenImageStatus" role="status" aria-live="polite"></p>
                     <div class="token-form-grid">
                         <input id="tokenColor" type="color" value="#c77dff" aria-label="Colore token">
                         <input id="tokenHp" type="number" placeholder="PF">
@@ -291,6 +361,26 @@ export async function showSession(container, sessionId, options = {}) {
                         <button id="nextTurn" class="btn-primary">PROSSIMO</button>
                         <button id="clearInitiative" class="btn-back-glass">SVUOTA</button>
                     </div>
+                </section>
+
+                <section class="dnd-session-block session-environment" data-session-tool-panel="environment" hidden>
+                    <h3>Ambiente</h3>
+                    <div class="environment-time-control">
+                        <span>Illuminazione</span>
+                        <div>
+                            <button type="button" data-time-of-day="day">Giorno</button>
+                            <button type="button" data-time-of-day="night">Notte</button>
+                        </div>
+                    </div>
+                    <span class="environment-label">Meteo</span>
+                    <div class="weather-options">
+                        <button type="button" data-weather="clear"><span aria-hidden="true">☀</span>Sereno</button>
+                        <button type="button" data-weather="rain"><span aria-hidden="true">◌</span>Pioggia</button>
+                        <button type="button" data-weather="storm"><span aria-hidden="true">ϟ</span>Temporale</button>
+                        <button type="button" data-weather="snow"><span aria-hidden="true">❄</span>Neve</button>
+                        <button type="button" data-weather="mist"><span aria-hidden="true">≋</span>Foschia</button>
+                    </div>
+                    <p id="environmentStatus" class="environment-status" aria-live="polite"></p>
                 </section>
 
                 <section class="dnd-session-block" data-session-tool-panel="notes" hidden>
@@ -339,7 +429,7 @@ export async function showSession(container, sessionId, options = {}) {
                         <button id="zoomIn" class="btn-back-glass">+</button>
                         <button id="pingMap" class="btn-back-glass">PING</button>
                         <button id="toggleGrid" class="btn-back-glass">${sessionState.gridVisible ? 'GRIGLIA ON' : 'GRIGLIA OFF'}</button>
-                        <button id="toggleFog" class="btn-back-glass">${sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF'}</button>
+                        <button id="toggleDayNight" class="btn-back-glass">${sessionState.timeOfDay === 'night' ? 'NOTTE' : 'GIORNO'}</button>
                         <button id="toggleSessionChat" class="btn-back-glass dnd-panel-toggle" type="button" aria-controls="sessionChatPanel" aria-expanded="false">CHAT</button>
                     </div>
                 </div>
@@ -351,8 +441,15 @@ export async function showSession(container, sessionId, options = {}) {
                 </div>
 
                 <div class="dnd-roll-display" id="rollDisplay" aria-live="polite" aria-hidden="true">
-                    <div class="dnd-roll-cube" id="rollCube">
-                        <span id="rollCubeValue">20</span>
+                    <div class="dnd-roll-stage" aria-hidden="true">
+                        <div class="dnd-roll-cube" id="rollCube" data-die="20">
+                            <span class="dnd-die-facet facet-a"></span>
+                            <span class="dnd-die-facet facet-b"></span>
+                            <span class="dnd-die-facet facet-c"></span>
+                            <span class="dnd-die-facet facet-d"></span>
+                            <strong id="rollCubeValue">20</strong>
+                        </div>
+                        <span class="dnd-roll-shadow"></span>
                     </div>
                     <div class="dnd-roll-copy">
                         <span id="rollLabel">Tiro dadi</span>
@@ -458,7 +555,8 @@ export async function showSession(container, sessionId, options = {}) {
     const tabletopDiv = container.querySelector('#tabletop-container');
     showTabletop(tabletopDiv, sessionId, {
         mapUrl: sessionData.map_url || sessionData.data?.mapUrl || '',
-        fogEnabled: sessionState.fogEnabled,
+        timeOfDay: sessionState.timeOfDay,
+        weather: sessionState.weather,
         gridVisible: sessionState.gridVisible,
         gridSize: sessionState.map_grid_size,
         localMode,
@@ -508,33 +606,36 @@ export async function showSession(container, sessionId, options = {}) {
         }
     };
 
-    const showRollResult = ({ label = 'Tiro dadi', result, mod = 0, mode = 'normal' } = {}) => {
+    const showRollResult = ({ label = 'Tiro dadi', result, mod = 0, mode = 'normal', faces = 20, count = 1 } = {}) => {
         if (!result) return;
         const rollDisplay = container.querySelector('#rollDisplay');
         const cubeValue = container.querySelector('#rollCubeValue');
+        const rollCube = container.querySelector('#rollCube');
         const rollLabel = container.querySelector('#rollLabel');
         const rollTotal = container.querySelector('#rollTotal');
         const rollBreakdown = container.querySelector('#rollBreakdown');
-        if (!rollDisplay || !cubeValue || !rollLabel || !rollTotal || !rollBreakdown) return;
+        if (!rollDisplay || !rollCube || !cubeValue || !rollLabel || !rollTotal || !rollBreakdown) return;
 
         const modeText = mode === 'adv' ? 'vantaggio' : mode === 'dis' ? 'svantaggio' : '';
         const modText = mod ? ` ${formatMod(mod)}` : '';
         const rollsText = Array.isArray(result.rolls) ? result.rolls.join(', ') : '';
-
-        rollDisplay.setAttribute('aria-hidden', 'false');
-        rollDisplay.classList.remove('is-rolling');
-        void rollDisplay.offsetWidth;
-        cubeValue.textContent = String(result.total);
         const labelText = String(label);
         rollLabel.textContent = modeText && !labelText.toLowerCase().includes(modeText) ? `${labelText} (${modeText})` : labelText;
-        rollTotal.textContent = String(result.total);
-        rollBreakdown.textContent = rollsText ? `${rollsText}${modText}` : modText.trim();
-        rollDisplay.classList.add('is-visible', 'is-rolling');
-
-        window.clearTimeout(rollDisplay._rollTimer);
-        rollDisplay._rollTimer = window.setTimeout(() => {
-            rollDisplay.classList.remove('is-rolling');
-        }, 760);
+        animateDiceRoll({
+            display: rollDisplay,
+            die: rollCube,
+            faceValue: cubeValue,
+            totalElement: rollTotal,
+            breakdownElement: rollBreakdown,
+            faces,
+            count,
+            rolls: result.rolls,
+            total: result.total,
+            mode,
+            breakdown: rollsText ? `${rollsText}${modText}` : modText.trim(),
+            reducedMotion: getCachedAppPreference('tabletop.dice_animation', true) === false
+                || document.documentElement.classList.contains('app-reduced-motion')
+        });
     };
 
     const loadMessages = async () => {
@@ -621,11 +722,24 @@ export async function showSession(container, sessionId, options = {}) {
         if (aiMode && activeId !== 'aiMode') aiMode.value = sessionState.aiMode || 'master';
         const aiAutoReply = container.querySelector('#aiAutoReply');
         if (aiAutoReply && activeId !== 'aiAutoReply') aiAutoReply.checked = Boolean(sessionState.aiAutoReply);
-        const fogButton = container.querySelector('#toggleFog');
+        const timeButton = container.querySelector('#toggleDayNight');
         const gridButton = container.querySelector('#toggleGrid');
-        if (fogButton) fogButton.textContent = sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF';
+        if (timeButton) timeButton.textContent = sessionState.timeOfDay === 'night' ? 'NOTTE' : 'GIORNO';
         if (gridButton) gridButton.textContent = sessionState.gridVisible ? 'GRIGLIA ON' : 'GRIGLIA OFF';
-        window.__dndMapApi?.setFog?.(sessionState.fogEnabled);
+        container.querySelectorAll('[data-time-of-day]').forEach(btn => {
+            const active = btn.dataset.timeOfDay === sessionState.timeOfDay;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        container.querySelectorAll('[data-weather]').forEach(btn => {
+            const active = btn.dataset.weather === sessionState.weather;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        const environmentStatus = container.querySelector('#environmentStatus');
+        if (environmentStatus) environmentStatus.textContent = `${sessionState.timeOfDay === 'night' ? 'Notte' : 'Giorno'} · ${WEATHER_LABELS[sessionState.weather]}`;
+        window.__dndMapApi?.setTimeOfDay?.(sessionState.timeOfDay);
+        window.__dndMapApi?.setWeather?.(sessionState.weather);
         window.__dndMapApi?.setGridVisible?.(sessionState.gridVisible);
         window.__dndMapApi?.setGridSize?.(sessionState.map_grid_size);
         renderInitiative();
@@ -636,7 +750,9 @@ export async function showSession(container, sessionId, options = {}) {
         initiative: sessionState.initiative,
         round: sessionState.round,
         turnCount: sessionState.turnCount,
-        fogEnabled: sessionState.fogEnabled,
+        timeOfDay: sessionState.timeOfDay,
+        weather: sessionState.weather,
+        fogEnabled: sessionState.timeOfDay === 'night',
         gridVisible: sessionState.gridVisible,
         map_grid_size: sessionState.map_grid_size,
         live_notes: sessionState.live_notes,
@@ -678,7 +794,8 @@ export async function showSession(container, sessionId, options = {}) {
                     sessionState.initiative = Array.isArray(nextData.initiative) ? nextData.initiative : [];
                     sessionState.round = Number(nextData.round || 1);
                     sessionState.turnCount = Number(nextData.turnCount || 0);
-                    sessionState.fogEnabled = nextData.fogEnabled === true;
+                    sessionState.timeOfDay = nextData.timeOfDay === 'night' || nextData.fogEnabled === true ? 'night' : 'day';
+                    sessionState.weather = ['clear', 'rain', 'storm', 'snow', 'mist'].includes(nextData.weather) ? nextData.weather : 'clear';
                     sessionState.gridVisible = nextData.gridVisible !== false;
                     sessionState.map_grid_size = Number(nextData.map_grid_size || sessionState.map_grid_size || 50);
                     sessionState.live_notes = nextData.live_notes || '';
@@ -854,7 +971,8 @@ export async function showSession(container, sessionId, options = {}) {
             const result = rollDice(20);
             showRollResult({
                 label: `Iniziativa ${selectedToken.name || 'Token'}`,
-                result
+                result,
+                faces: 20
             });
             addInitiativeEntry({
                 token_id: selectedToken.id,
@@ -880,11 +998,89 @@ export async function showSession(container, sessionId, options = {}) {
         };
     }
 
-    container.querySelector('#addToken').onclick = async () => {
+    const addTokenButton = container.querySelector('#addToken');
+    const tokenImgInput = container.querySelector('#tokenImg');
+    const tokenImgFileInput = container.querySelector('#tokenImgFile');
+    const tokenImgFileLabel = container.querySelector('#tokenImgFileLabel');
+    const tokenImagePreview = container.querySelector('#tokenImagePreview');
+    const tokenImagePreviewImg = container.querySelector('#tokenImagePreviewImg');
+    const tokenImageName = container.querySelector('#tokenImageName');
+    const tokenImageStatus = container.querySelector('#tokenImageStatus');
+    let tokenImageFileData = '';
+
+    const hideTokenImagePreview = () => {
+        tokenImagePreview.hidden = true;
+        tokenImagePreviewImg.removeAttribute('src');
+        tokenImageName.textContent = 'Immagine token';
+    };
+
+    const showTokenImagePreview = (source, name = 'Immagine token') => {
+        if (!source) {
+            hideTokenImagePreview();
+            return;
+        }
+        tokenImagePreviewImg.src = source;
+        tokenImageName.textContent = name;
+        tokenImagePreview.hidden = false;
+    };
+
+    const resetTokenImageFields = () => {
+        tokenImageFileData = '';
+        tokenImgInput.value = '';
+        tokenImgFileInput.value = '';
+        tokenImgFileLabel.textContent = 'CARICA FOTO';
+        tokenImageStatus.textContent = '';
+        tokenImageStatus.classList.remove('is-error');
+        hideTokenImagePreview();
+    };
+
+    tokenImgFileInput.onchange = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        addTokenButton.disabled = true;
+        tokenImgFileLabel.textContent = 'ELABORO...';
+        tokenImageStatus.textContent = 'Preparazione foto...';
+        tokenImageStatus.classList.remove('is-error');
+        try {
+            tokenImageFileData = await prepareTokenImageFile(file);
+            tokenImgInput.value = '';
+            tokenImgFileLabel.textContent = 'CAMBIA FOTO';
+            tokenImageStatus.textContent = 'Foto pronta';
+            showTokenImagePreview(tokenImageFileData, file.name);
+        } catch (err) {
+            tokenImageFileData = '';
+            tokenImgFileInput.value = '';
+            tokenImgFileLabel.textContent = 'CARICA FOTO';
+            tokenImageStatus.textContent = err.message;
+            tokenImageStatus.classList.add('is-error');
+            hideTokenImagePreview();
+        } finally {
+            addTokenButton.disabled = false;
+        }
+    };
+
+    tokenImgInput.oninput = () => {
+        if (!tokenImgInput.value.trim()) {
+            tokenImageStatus.textContent = '';
+            tokenImageStatus.classList.remove('is-error');
+            return;
+        }
+        tokenImageFileData = '';
+        tokenImgFileInput.value = '';
+        tokenImgFileLabel.textContent = 'CARICA FOTO';
+        tokenImageStatus.textContent = 'Link pronto';
+        tokenImageStatus.classList.remove('is-error');
+        hideTokenImagePreview();
+    };
+
+    container.querySelector('#clearTokenImage').onclick = resetTokenImageFields;
+
+    addTokenButton.onclick = async () => {
         const selectedCharacterId = container.querySelector('#tokenCharacter').value;
         const selectedCharacter = characters.find(char => String(char.id) === String(selectedCharacterId));
         const name = container.querySelector('#tokenName').value.trim() || (selectedCharacter ? getCharacterName(selectedCharacter) : '');
-        const img = container.querySelector('#tokenImg').value.trim() || selectedCharacter?.data?.portrait || selectedCharacter?.avatar_url || '';
+        const img = tokenImageFileData || tokenImgInput.value.trim() || selectedCharacter?.data?.portrait || selectedCharacter?.avatar_url || '';
         const color = container.querySelector('#tokenColor').value || '#c77dff';
         const hp = toNumber(container.querySelector('#tokenHp').value || selectedCharacter?.hp, 10);
         const hpMax = toNumber(container.querySelector('#tokenHpMax').value || selectedCharacter?.hp_max, hp);
@@ -901,7 +1097,7 @@ export async function showSession(container, sessionId, options = {}) {
             });
             container.querySelector('#tokenCharacter').value = '';
             container.querySelector('#tokenName').value = '';
-            container.querySelector('#tokenImg').value = '';
+            resetTokenImageFields();
             container.querySelector('#tokenHp').value = '';
             container.querySelector('#tokenHpMax').value = '';
             container.querySelector('#tokenAc').value = '';
@@ -914,8 +1110,11 @@ export async function showSession(container, sessionId, options = {}) {
     container.querySelector('#tokenCharacter').onchange = (event) => {
         const selectedCharacter = characters.find(char => String(char.id) === String(event.target.value));
         if (!selectedCharacter) return;
+        resetTokenImageFields();
         container.querySelector('#tokenName').value = getCharacterName(selectedCharacter);
-        container.querySelector('#tokenImg').value = selectedCharacter.data?.portrait || selectedCharacter.avatar_url || '';
+        const characterImage = selectedCharacter.data?.portrait || selectedCharacter.avatar_url || '';
+        tokenImgInput.value = characterImage;
+        showTokenImagePreview(characterImage, 'Immagine personaggio');
         container.querySelector('#tokenHp').value = selectedCharacter.hp || 10;
         container.querySelector('#tokenHpMax').value = selectedCharacter.hp_max || selectedCharacter.hp || 10;
         container.querySelector('#tokenAc').value = selectedCharacter.data?.armorClass || 10;
@@ -954,7 +1153,8 @@ export async function showSession(container, sessionId, options = {}) {
         showRollResult({
             label: `Iniziativa ${getCharacterName(selectedCharacter)}`,
             result,
-            mod: initiativeMod
+            mod: initiativeMod,
+            faces: 20
         });
         addInitiativeEntry({
             id: selectedCharacter.id,
@@ -1106,11 +1306,25 @@ export async function showSession(container, sessionId, options = {}) {
         askSessionAI(prompt, 'panel');
     };
 
-    container.querySelector('#toggleFog').onclick = () => {
-        sessionState.fogEnabled = window.__dndMapApi?.toggleFog() ?? !sessionState.fogEnabled;
-        container.querySelector('#toggleFog').textContent = sessionState.fogEnabled ? 'NEBBIA ON' : 'NEBBIA OFF';
+    container.querySelector('#toggleDayNight').onclick = () => {
+        sessionState.timeOfDay = window.__dndMapApi?.toggleDayNight() || (sessionState.timeOfDay === 'day' ? 'night' : 'day');
+        syncSessionControls();
         saveSessionData();
     };
+    container.querySelectorAll('[data-time-of-day]').forEach(btn => {
+        btn.onclick = () => {
+            sessionState.timeOfDay = window.__dndMapApi?.setTimeOfDay?.(btn.dataset.timeOfDay) || btn.dataset.timeOfDay;
+            syncSessionControls();
+            saveSessionData();
+        };
+    });
+    container.querySelectorAll('[data-weather]').forEach(btn => {
+        btn.onclick = () => {
+            sessionState.weather = window.__dndMapApi?.setWeather?.(btn.dataset.weather) || btn.dataset.weather;
+            syncSessionControls();
+            saveSessionData();
+        };
+    });
     container.querySelector('#toggleGrid').onclick = () => {
         sessionState.gridVisible = window.__dndMapApi?.toggleGrid() ?? !sessionState.gridVisible;
         container.querySelector('#toggleGrid').textContent = sessionState.gridVisible ? 'GRIGLIA ON' : 'GRIGLIA OFF';
@@ -1147,7 +1361,7 @@ export async function showSession(container, sessionId, options = {}) {
             result = { rolls: [first, second], total: chosen + mod };
             prefix = `${prefix} ${mode === 'adv' ? 'con vantaggio' : 'con svantaggio'}`;
         }
-        showRollResult({ label: prefix, result, mod, mode });
+        showRollResult({ label: prefix, result, mod, mode, faces, count });
     };
 
     container.querySelectorAll('.roll-btn').forEach(btn => {

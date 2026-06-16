@@ -70,8 +70,8 @@ function renderSidebarContent(container, context) {
                     LIBRERIA MUSICALE
                 </button>
                 
-                <button id="btn-fix-games" class="btn-glass" style="font-size: 0.8rem; padding: 12px;">
-                    SBLOCCA SCHERMO
+                <button id="btn-fix-games" class="btn-glass" type="button" title="Aggiorna la vista corrente senza perdere i dati" style="font-size: 0.8rem; padding: 12px;">
+                    AGGIORNA PAGINA
                 </button>
 
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin: 5px 0 10px;"></div>
@@ -178,12 +178,44 @@ function setupEventListeners(container, context) {
         }
     };
 
-    // --- PANIC BUTTON (SBLOCCO) ---
+    // Aggiorna solo la vista corrente, senza distruggere lo stato della pagina.
     const btnFix = container.querySelector('#btn-fix-games');
     btnFix.onclick = () => {
-        resetGlobalScroll();
-        sessionStorage.setItem('taverna_soft_recovery_context', currentActiveContext);
-        window.location.reload(); 
+        const appScrollTop = mainContent?.scrollTop || 0;
+        const isSessionView = document.body.classList.contains('dnd-session-active');
+        toggle();
+
+        btnFix.disabled = true;
+        btnFix.textContent = 'AGGIORNAMENTO...';
+
+        window.requestAnimationFrame(() => {
+            if (!isSessionView) {
+                document.documentElement.style.overflow = '';
+                document.documentElement.style.overscrollBehavior = '';
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+                document.body.style.touchAction = '';
+            }
+
+            if (mainContent) {
+                mainContent.style.removeProperty('pointer-events');
+                mainContent.style.removeProperty('transform');
+                mainContent.style.removeProperty('opacity');
+                void mainContent.offsetHeight;
+                mainContent.scrollTop = appScrollTop;
+            }
+
+            window.dispatchEvent(new Event('resize'));
+            window.dispatchEvent(new CustomEvent('tavernaViewRefresh', {
+                detail: { context: currentActiveContext }
+            }));
+
+            window.setTimeout(() => {
+                btnFix.disabled = false;
+                btnFix.textContent = 'AGGIORNA PAGINA';
+            }, 350);
+        });
     };
 
     // --- MUSICA ---
