@@ -45,8 +45,7 @@ export function initBriscola(container) {
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">BRISCOLA</h1>
             <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
             
-            <div id="levels-container" style="display: flex; flex-direction: column; width: 100%; max-width: 280px; max-height: 250px; overflow-y: auto; padding: 10px; margin-bottom: 20px;">
-                </div>
+            <div id="levels-container"></div>
 
             <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; opacity: 0.6;">TORNA ALLA TAVERNA</button>
         </div>
@@ -190,13 +189,12 @@ export function initBriscola(container) {
         }
     }
 
-    // INTELIGENZA ARTIFICIALE: +2.5% per ogni livello completato
+    // Intelligenza artificiale: +0,5% per ogni livello completato.
     function playBot() {
         const hand = state.players[1];
         let chosenIdx = 0;
         
-        // Accuratezza: Max 90% (per non renderlo imbattibile)
-        const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.90);
+        const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 1);
 
         if (Math.random() <= accuracy) {
             // Mossa Intelligente

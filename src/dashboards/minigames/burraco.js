@@ -50,8 +50,7 @@ function renderLayout(container, state) {
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">BURRACO</h1>
             <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
             
-            <div id="levels-container" style="display: flex; flex-direction: column; width: 100%; max-width: 280px; max-height: 250px; overflow-y: auto; padding: 10px; margin-bottom: 20px;">
-                </div>
+            <div id="levels-container"></div>
 
             <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; opacity: 0.6;">TORNA ALLA TAVERNA</button>
         </div>
@@ -380,8 +379,8 @@ function botAction(state) {
     if (state.turn !== 'bot') return;
     state.isAnimating = true;
 
-    // IA Accurancy (max 95%): +2.5% per ogni livello completato
-    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.95);
+    // Accuratezza IA: +0,5% per ogni livello completato, fino al 100%.
+    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 1);
     const isSmart = Math.random() <= accuracy;
 
     setTimeout(async () => {
