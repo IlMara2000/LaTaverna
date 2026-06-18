@@ -8,6 +8,9 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "index:manuals": "node scripts/build-manual-index.mjs all",
+    "index:manuals:dnd": "node scripts/build-manual-index.mjs dnd5e",
+    "index:manuals:pathfinder": "node scripts/build-manual-index.mjs pathfinder2e",
     "lint": "echo \"Sguardo dell'Oste: Tutto in ordine!\""
   },
   "dependencies": {
