@@ -64,8 +64,7 @@ function renderLayout(container, state) {
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">SOLO</h1>
             <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
             
-            <div id="levels-container" style="display: flex; flex-direction: column; width: 100%; max-width: 280px; max-height: 250px; overflow-y: auto; padding: 10px; margin-bottom: 20px;">
-                </div>
+            <div id="levels-container"></div>
 
             <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; margin-top: 15px; opacity: 0.6;">TORNA ALLA TAVERNA</button>
         </div>
@@ -340,7 +339,7 @@ async function playCard(pIdx, cardIdx, state, container) {
                 await drawCard(0, state, container);
             }
         } else {
-            // Controllo se il Bot si ricorda di chiamare SOLO!: base 50%, poi +2.5% per livello completato.
+            // Il bot parte dal 50% e migliora dello 0,5% per livello completato.
             const accuracy = getLevelDifficultyChance(state.currentLevel, 0.5, 1.0);
             if (Math.random() <= accuracy) {
                 logStatus(container, `BOT ${pIdx} grida: SOLO!`);
@@ -416,7 +415,7 @@ function botLogic(state, container) {
         }
     });
 
-    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.95);
+    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 1);
     const isSmart = Math.random() <= accuracy;
 
     if (validIdxs.length > 0) {

@@ -9,8 +9,16 @@ import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '..
 
 const FILES = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const PIECE_SYMBOLS = {
-    wp: '♙', wr: '♖', wn: '♘', wb: '♗', wq: '♕', wk: '♔',
+    wp: '♟', wr: '♜', wn: '♞', wb: '♝', wq: '♛', wk: '♚',
     bp: '♟', br: '♜', bn: '♞', bb: '♝', bq: '♛', bk: '♚'
+};
+const PIECE_NAMES = {
+    p: 'pedone',
+    r: 'torre',
+    n: 'cavallo',
+    b: 'alfiere',
+    q: 'regina',
+    k: 're'
 };
 const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
 
@@ -53,19 +61,22 @@ function renderLayout(container, state) {
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">SCACCHI</h1>
             <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
-            <div id="levels-container" style="display: flex; flex-direction: column; width: 100%; max-width: 280px; max-height: 250px; overflow-y: auto; padding: 10px; margin-bottom: 20px;"></div>
+            <div id="levels-container"></div>
             <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; opacity: 0.6;">TORNA ALLA TAVERNA</button>
         </div>
 
         <section class="game-chess-stage">
             <div class="game-chess-topbar">
                 <button id="back-menu" class="game-btn-action" style="padding: 10px 20px;">← ESCI</button>
-                <div id="turn-indicator" class="game-turn-indicator white-turn">IL TUO TURNO</div>
+                <div id="turn-indicator" class="game-turn-indicator white-turn" aria-live="polite">IL TUO TURNO</div>
             </div>
-            <div class="game-chess-board" id="board-ui" aria-label="Scacchiera"></div>
+            <div class="game-chess-board-frame">
+                <div class="game-chess-board" id="board-ui" aria-label="Scacchiera, giochi con i bianchi"></div>
+            </div>
             <div class="game-chess-meta">
-                <span id="bot-label">BOT LV.1</span>
-                <span id="chess-status" class="game-chess-status">Muovi i bianchi. Scacco matto per vincere.</span>
+                <span class="game-chess-side"><i aria-hidden="true"></i><span>TU · BIANCHI</span></span>
+                <span id="bot-label" class="game-chess-bot">BOT LV.1 · NERI</span>
+                <span id="chess-status" class="game-chess-status" aria-live="polite">Muovi i bianchi. Scacco matto per vincere.</span>
             </div>
         </section>
     </div>
@@ -78,7 +89,7 @@ function renderLayout(container, state) {
         state.lastMove = null;
         state.isAnimating = false;
         container.querySelector('#start-screen').remove();
-        container.querySelector('#bot-label').textContent = `BOT LV.${state.currentLevel}`;
+        container.querySelector('#bot-label').textContent = `BOT LV.${state.currentLevel} · NERI`;
         updateUI(container, state);
     });
 
@@ -131,7 +142,6 @@ function updateUI(container, state) {
             const cell = document.createElement('button');
             cell.type = 'button';
             cell.className = `game-chess-square ${(row + col) % 2 === 0 ? 'light' : 'dark'}`;
-            cell.setAttribute('aria-label', square);
             cell.dataset.square = square;
 
             if (state.selectedSquare === square) cell.classList.add('selected');
@@ -142,14 +152,19 @@ function updateUI(container, state) {
 
             if (piece) {
                 const symbol = PIECE_SYMBOLS[`${piece.color}${piece.type}`];
-                const colorStyle = piece.color === 'w'
-                    ? 'color: #fff7e2; text-shadow: 0 2px 3px rgba(0,0,0,0.72);'
-                    : 'color: #1b0f0b; text-shadow: 0 1px 2px rgba(255,255,255,0.34);';
-                cell.innerHTML = `<span class="game-chess-piece" style="${colorStyle}">${symbol}</span>`;
+                const colorName = piece.color === 'w' ? 'bianco' : 'nero';
+                cell.dataset.piece = `${piece.color}${piece.type}`;
+                cell.setAttribute('aria-label', `${square}, ${PIECE_NAMES[piece.type]} ${colorName}`);
+                cell.innerHTML = `<span class="game-chess-piece ${piece.color === 'w' ? 'white-piece' : 'black-piece'}">${symbol}</span>`;
+            } else {
+                cell.setAttribute('aria-label', `${square}, casella vuota`);
             }
 
             if (col === 0) {
-                cell.insertAdjacentHTML('beforeend', `<span class="game-chess-coord">${8 - row}</span>`);
+                cell.insertAdjacentHTML('beforeend', `<span class="game-chess-coord rank">${8 - row}</span>`);
+            }
+            if (row === 7) {
+                cell.insertAdjacentHTML('beforeend', `<span class="game-chess-coord file">${FILES[col]}</span>`);
             }
 
             cell.onclick = () => handleSquareClick(square, state, container);
@@ -219,7 +234,7 @@ function botMove(state, container) {
         return;
     }
 
-    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 0.95);
+    const accuracy = getLevelDifficultyChance(state.currentLevel, 0, 1);
     const smartMove = Math.random() <= accuracy;
     const chosen = smartMove ? chooseBestBotMove(state, moves) : moves[Math.floor(Math.random() * moves.length)];
     const played = state.game.move(normalizeMove(chosen));
