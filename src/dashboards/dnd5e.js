@@ -1,4 +1,5 @@
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
+import { renderManualLibrary } from '../components/features/manuals/ManualLibrary.js';
 import { showLobby } from '../lobby.js';
 import { supabase, SUPABASE_CONFIG } from '../services/supabase.js';
 import { dndLocalStore, getLocalDndUser, isLocalDndUser, isLocalDndUserId } from '../services/dndLocalStore.js';
@@ -414,8 +415,8 @@ function renderDashboard(container) {
             </button>
             <button class="dnd-panel" data-open="manuals">
                 <span>Biblioteca</span>
-                <strong>Manuali PDF</strong>
-                <p>I tre manuali principali in formato consultabile.</p>
+                <strong>Biblioteca dei Manuali</strong>
+                <p>Cerca regole e paragrafi nei tre manuali, oppure consulta ogni pagina.</p>
             </button>
             <button class="dnd-panel" data-open="characters">
                 <span>Schede</span>
@@ -431,6 +432,15 @@ function renderDashboard(container) {
 }
 
 function renderManuals(container) {
+    renderShell(container, 'manuals');
+    renderManualLibrary({
+        container: container.querySelector('#dnd-content'),
+        manuals: MANUALS,
+        systemId: 'dnd5e'
+    });
+}
+
+function renderLegacyManuals(container) {
     renderShell(container, 'manuals');
     const content = container.querySelector('#dnd-content');
     let selectedManual = MANUALS[0];
