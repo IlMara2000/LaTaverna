@@ -228,6 +228,52 @@ export const getMinigameRoomByCode = async (rawCode = '') => {
     return { room, error: null, unavailable: false };
 };
 
+export const updateMinigameRoomData = async (rawCode = '', updater = {}) => {
+    const code = String(rawCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) {
+        return { room: null, error: new Error('Codice non valido.'), unavailable: false };
+    }
+
+    const session = await ensureRoomAccess();
+    if (!session.ready) return { room: null, error: session.error, unavailable: true };
+
+    const lookup = await supabase
+        .from(ROOM_TABLE)
+        .select('*')
+        .eq('code', code)
+        .neq('status', 'closed')
+        .maybeSingle();
+
+    if (lookup.error) {
+        return { room: null, error: lookup.error, unavailable: isSchemaError(lookup.error) };
+    }
+
+    if (!lookup.data) {
+        return { room: null, error: new Error('Codice non trovato o scaduto.'), unavailable: false };
+    }
+
+    const currentRoom = normalizeRoom(lookup.data);
+    const currentData = lookup.data.data || {};
+    const nextData = typeof updater === 'function'
+        ? updater(currentData, currentRoom)
+        : { ...currentData, ...updater };
+
+    const { data, error } = await supabase
+        .from(ROOM_TABLE)
+        .update({ data: nextData })
+        .eq('code', code)
+        .select('*')
+        .single();
+
+    if (error) {
+        return { room: null, error, unavailable: isSchemaError(error) };
+    }
+
+    const room = normalizeRoom(data);
+    if (room) saveRoom(room);
+    return { room, error: null, unavailable: false };
+};
+
 export const isMinigameRoomConnected = (room = null) => (
     room?.status === 'connected'
     && Boolean(room.hostClientId)

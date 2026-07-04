@@ -249,6 +249,11 @@ export async function showSession(container, sessionId, options = {}) {
     }
     const sessionSystem = getSessionSystem(sessionData.system_id || sessionData.data?.system_id || requestedSystem.id);
     const localStore = sessionSystem.localStore;
+    const sessionOwnerId = sessionData.user_id || sessionData.data?.user_id || '';
+    const forcedReadOnly = Boolean(options.readOnly || options.sharedInvite);
+    const isSessionOwner = localMode || !sessionOwnerId || String(sessionOwnerId) === String(dbUserId);
+    const readOnlyMode = !localMode && (forcedReadOnly || !isSessionOwner);
+    const participantRole = readOnlyMode ? 'Giocatore' : 'Master';
     const characters = await loadSessionCharacters(currentUserId, sessionSystem.id);
 
     const sessionState = {
@@ -274,7 +279,7 @@ export async function showSession(container, sessionId, options = {}) {
     document.body.classList.add('dnd-session-active');
 
     container.innerHTML = `
-        <div class="dnd-session fade-in" data-left-open="false" data-chat-open="false">
+        <div class="dnd-session fade-in" data-left-open="false" data-chat-open="false" data-read-only="${readOnlyMode ? 'true' : 'false'}">
             <div class="dnd-session-scrim" data-close-session-drawer aria-hidden="true"></div>
 
             <aside class="dnd-session-panel dnd-left-panel" id="sessionToolsPanel" aria-hidden="true" aria-label="Menu sessione">
@@ -282,10 +287,16 @@ export async function showSession(container, sessionId, options = {}) {
                     <div>
                         <span>Sessione</span>
                         <strong>${escapeHTML(sessionData.name || 'Tavolo Live')}</strong>
-                        <small>${escapeHTML(sessionData.status || 'attiva')} • LV ${escapeHTML(sessionData.party_level || 1)}${sessionData.next_date ? ` • ${escapeHTML(sessionData.next_date)}` : ''}</small>
+                        <small>${escapeHTML(sessionData.status || 'attiva')} • LV ${escapeHTML(sessionData.party_level || 1)}${sessionData.next_date ? ` • ${escapeHTML(sessionData.next_date)}` : ''} • ${escapeHTML(participantRole)}</small>
                     </div>
                     <button type="button" class="dnd-panel-close" id="closeSessionMenu" aria-label="Chiudi menu sessione">X</button>
                 </header>
+
+                ${readOnlyMode ? `
+                    <div class="dnd-readonly-banner" id="sessionReadonlyStatus">
+                        Modalita sola lettura: vedi la sessione in realtime, ma solo il Master modifica tavolo, token, note, AI e ambiente.
+                    </div>
+                ` : ''}
 
                 <nav class="session-tool-switcher" aria-label="Strumenti sessione">
                     <button type="button" class="active" data-session-tool="brief">Brief</button>
@@ -438,6 +449,7 @@ export async function showSession(container, sessionId, options = {}) {
                     <span id="sessionHudRound">Round ${sessionState.round}</span>
                     <strong id="sessionHudTurn">Turno: libero</strong>
                     <small id="sessionHudScene">${escapeHTML(sessionState.scene || sessionData.data?.objectives || 'Nessuna scena attiva')}</small>
+                    <em id="sessionPresence" class="dnd-session-presence">Online: ${escapeHTML(currentUserName)} (${escapeHTML(participantRole)})</em>
                 </div>
 
                 <div class="dnd-roll-display" id="rollDisplay" aria-live="polite" aria-hidden="true">
@@ -504,6 +516,77 @@ export async function showSession(container, sessionId, options = {}) {
     const sessionChatPanel = container.querySelector('#sessionChatPanel');
     const sessionMenuToggle = container.querySelector('#toggleSessionMenu');
     const sessionChatToggle = container.querySelector('#toggleSessionChat');
+    const readonlyStatus = container.querySelector('#sessionReadonlyStatus');
+    const readOnlyControlSelector = [
+        '#tokenCharacter',
+        '#tokenName',
+        '#tokenImg',
+        '#tokenImgFile',
+        '#clearTokenImage',
+        '#tokenColor',
+        '#tokenHp',
+        '#tokenHpMax',
+        '#tokenAc',
+        '#tokenConditions',
+        '#addToken',
+        '#initiativeCharacter',
+        '#initiativeName',
+        '#initiativeValue',
+        '#rollCharacterInitiative',
+        '#addInitiative',
+        '#sortInitiative',
+        '#prevTurn',
+        '#nextTurn',
+        '#clearInitiative',
+        '[data-remove-initiative]',
+        '[data-damage-token]',
+        '[data-heal-token]',
+        '[data-delete-token]',
+        '#inspectTokenName',
+        '#inspectTokenImg',
+        '#inspectTokenColor',
+        '#inspectTokenHp',
+        '#inspectTokenHpMax',
+        '#inspectTokenAc',
+        '#inspectTokenConditions',
+        '#inspectTokenNotes',
+        '#inspectHpDelta',
+        '#inspectDamage',
+        '#inspectHeal',
+        '#saveTokenInspector',
+        '#tokenToInitiative',
+        '#duplicateToken',
+        '[data-time-of-day]',
+        '[data-weather]',
+        '#sceneInput',
+        '#publicSummary',
+        '#liveNotes',
+        '#objectiveDone',
+        '#saveLiveNotes',
+        '#aiMode',
+        '#aiAutoReply',
+        '#aiPrompt',
+        '#askSessionAI',
+        '#toggleGrid',
+        '#toggleDayNight',
+        '#chat-input',
+        '#chatSubmit'
+    ].join(',');
+    const applyReadOnlyLocks = () => {
+        if (!readOnlyMode) return;
+        container.querySelectorAll(readOnlyControlSelector).forEach(control => {
+            control.disabled = true;
+            control.setAttribute('aria-disabled', 'true');
+        });
+        const chatInput = container.querySelector('#chat-input');
+        if (chatInput) chatInput.placeholder = 'Sessione in sola lettura: chat disattivata per gli ospiti.';
+    };
+    const blockReadOnly = (message = 'Solo il Master puo modificare questa sessione.') => {
+        if (!readOnlyMode) return false;
+        if (readonlyStatus) readonlyStatus.textContent = message;
+        return true;
+    };
+    applyReadOnlyLocks();
 
     const setSessionDrawer = (drawer, open) => {
         if (!sessionShell) return;
@@ -560,6 +643,7 @@ export async function showSession(container, sessionId, options = {}) {
         gridVisible: sessionState.gridVisible,
         gridSize: sessionState.map_grid_size,
         localMode,
+        readOnly: readOnlyMode,
         localStore,
         onTokensChange: (tokens) => renderTokenList(tokens)
     });
@@ -588,6 +672,10 @@ export async function showSession(container, sessionId, options = {}) {
 
     const sendMsg = async (message, isRoll = false, overrides = {}) => {
         if (!String(message).trim()) return;
+        if (readOnlyMode && !overrides.allowReadOnly) {
+            blockReadOnly('Chat disattivata per gli ospiti: il Master resta l’unico a modificare il tavolo.');
+            return;
+        }
         try {
             const payload = {
                 session_id: sessionId,
@@ -699,12 +787,14 @@ export async function showSession(container, sessionId, options = {}) {
         `).join('') : `<p class="dnd-muted">Nessun turno.</p>`;
         list.querySelectorAll('[data-remove-initiative]').forEach(btn => {
             btn.onclick = () => {
+                if (blockReadOnly()) return;
                 sessionState.initiative.splice(Number(btn.dataset.removeInitiative), 1);
                 renderInitiative();
                 saveSessionData();
             };
         });
         updateSessionHud();
+        applyReadOnlyLocks();
     };
 
     const syncSessionControls = () => {
@@ -744,6 +834,7 @@ export async function showSession(container, sessionId, options = {}) {
         window.__dndMapApi?.setGridSize?.(sessionState.map_grid_size);
         renderInitiative();
         updateSessionHud();
+        applyReadOnlyLocks();
     };
 
     const getPersistentSessionState = () => ({
@@ -766,6 +857,7 @@ export async function showSession(container, sessionId, options = {}) {
     });
 
     const saveSessionData = async () => {
+        if (readOnlyMode) return;
         try {
             const nextData = { ...(sessionData.data || {}), ...getPersistentSessionState() };
             sessionData.data = nextData;
@@ -812,10 +904,59 @@ export async function showSession(container, sessionId, options = {}) {
         }
     }
 
+    let presenceChannel = null;
+    const renderPresence = () => {
+        const presenceEl = container.querySelector('#sessionPresence');
+        if (!presenceEl) return;
+        const state = presenceChannel?.presenceState?.() || {};
+        const people = Object.values(state).flat();
+        const uniquePeople = new Map();
+        people.forEach((person, index) => {
+            const key = person.user_id || person.userId || person.name || `${person.joined_at || 'guest'}-${index}`;
+            uniquePeople.set(key, person);
+        });
+        if (!uniquePeople.size) {
+            uniquePeople.set(dbUserId, {
+                name: currentUserName,
+                role: participantRole
+            });
+        }
+        const labels = [...uniquePeople.values()]
+            .slice(0, 6)
+            .map(person => `${person.name || 'Giocatore'}${person.role ? ` (${person.role})` : ''}`);
+        const extra = uniquePeople.size > labels.length ? ` +${uniquePeople.size - labels.length}` : '';
+        presenceEl.textContent = `Online: ${labels.join(', ')}${extra}`;
+    };
+    if (!localMode) {
+        try {
+            presenceChannel = supabase.channel(`dnd-presence-${sessionId}`, {
+                config: { presence: { key: dbUserId } }
+            })
+                .on('presence', { event: 'sync' }, renderPresence)
+                .on('presence', { event: 'join' }, renderPresence)
+                .on('presence', { event: 'leave' }, renderPresence)
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await presenceChannel.track({
+                            user_id: dbUserId,
+                            name: currentUserName,
+                            role: participantRole,
+                            joined_at: new Date().toISOString()
+                        });
+                        renderPresence();
+                    }
+                });
+        } catch (err) {
+            console.warn('Presence sessione non disponibile:', err);
+        }
+    }
+    renderPresence();
+
     const cleanupSessionView = () => {
         window.__dndMapApi?.cleanup();
         if (chatSubscription && supabase.removeChannel) supabase.removeChannel(chatSubscription);
         if (sessionSubscription && supabase.removeChannel) supabase.removeChannel(sessionSubscription);
+        if (presenceChannel && supabase.removeChannel) supabase.removeChannel(presenceChannel);
         window.removeEventListener('keydown', handleSessionEscape);
         document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
@@ -870,6 +1011,7 @@ export async function showSession(container, sessionId, options = {}) {
             };
         });
         const updateTokenHp = async (id, delta) => {
+            if (blockReadOnly()) return;
             const token = window.__dndMapApi?.getTokens().find(item => String(item.id) === String(id));
             if (!token) return;
             const currentHp = toNumber(token.data?.hp ?? token.data?.hp_max, 0);
@@ -893,6 +1035,7 @@ export async function showSession(container, sessionId, options = {}) {
         list.querySelectorAll('[data-delete-token]').forEach(btn => {
             btn.onclick = async (event) => {
                 event.stopPropagation();
+                if (blockReadOnly()) return;
                 try {
                     await window.__dndMapApi?.deleteToken(btn.dataset.deleteToken);
                 } catch (err) {
@@ -901,10 +1044,14 @@ export async function showSession(container, sessionId, options = {}) {
             };
         });
 
-        if (!inspector) return;
+        if (!inspector) {
+            applyReadOnlyLocks();
+            return;
+        }
         const selectedToken = tokens.find(token => String(token.id) === String(sessionState.selectedTokenId));
         if (!selectedToken) {
             inspector.innerHTML = `<p class="dnd-muted">Seleziona un token per modificare PF, CA, condizioni e note.</p>`;
+            applyReadOnlyLocks();
             return;
         }
         const selectedConditions = joinConditions(selectedToken.data?.conditions || []);
@@ -939,6 +1086,7 @@ export async function showSession(container, sessionId, options = {}) {
 
         inspector.querySelector('#tokenInspectorForm').onsubmit = event => event.preventDefault();
         inspector.querySelector('#saveTokenInspector').onclick = async () => {
+            if (blockReadOnly()) return;
             const hpMax = toNumber(inspector.querySelector('#inspectTokenHpMax').value, toNumber(selectedToken.data?.hp_max, 0));
             const hp = clampNumber(inspector.querySelector('#inspectTokenHp').value, 0, hpMax || 999);
             const armorClass = toNumber(inspector.querySelector('#inspectTokenAc').value, toNumber(selectedToken.data?.armorClass, 10));
@@ -960,14 +1108,17 @@ export async function showSession(container, sessionId, options = {}) {
             }
         };
         inspector.querySelector('#inspectDamage').onclick = () => {
+            if (blockReadOnly()) return;
             const delta = Math.max(1, toNumber(inspector.querySelector('#inspectHpDelta').value, 5));
             updateTokenHp(selectedToken.id, -delta);
         };
         inspector.querySelector('#inspectHeal').onclick = () => {
+            if (blockReadOnly()) return;
             const delta = Math.max(1, toNumber(inspector.querySelector('#inspectHpDelta').value, 5));
             updateTokenHp(selectedToken.id, delta);
         };
         inspector.querySelector('#tokenToInitiative').onclick = () => {
+            if (blockReadOnly()) return;
             const result = rollDice(20);
             showRollResult({
                 label: `Iniziativa ${selectedToken.name || 'Token'}`,
@@ -984,6 +1135,7 @@ export async function showSession(container, sessionId, options = {}) {
             });
         };
         inspector.querySelector('#duplicateToken').onclick = async () => {
+            if (blockReadOnly()) return;
             try {
                 await window.__dndMapApi?.addToken({
                     name: `${selectedToken.name || 'Token'} copia`,
@@ -996,6 +1148,7 @@ export async function showSession(container, sessionId, options = {}) {
                 alert(`Errore duplicazione token: ${err.message}`);
             }
         };
+        applyReadOnlyLocks();
     }
 
     const addTokenButton = container.querySelector('#addToken');
@@ -1035,6 +1188,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     tokenImgFileInput.onchange = async (event) => {
+        if (blockReadOnly()) return;
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -1074,9 +1228,13 @@ export async function showSession(container, sessionId, options = {}) {
         hideTokenImagePreview();
     };
 
-    container.querySelector('#clearTokenImage').onclick = resetTokenImageFields;
+    container.querySelector('#clearTokenImage').onclick = () => {
+        if (blockReadOnly()) return;
+        resetTokenImageFields();
+    };
 
     addTokenButton.onclick = async () => {
+        if (blockReadOnly()) return;
         const selectedCharacterId = container.querySelector('#tokenCharacter').value;
         const selectedCharacter = characters.find(char => String(char.id) === String(selectedCharacterId));
         const name = container.querySelector('#tokenName').value.trim() || (selectedCharacter ? getCharacterName(selectedCharacter) : '');
@@ -1129,6 +1287,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     const addInitiativeEntry = (entry) => {
+        if (blockReadOnly()) return;
         sessionState.initiative.push(entry);
         sessionState.initiative.sort((a, b) => b.value - a.value);
         renderInitiative();
@@ -1136,6 +1295,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#addInitiative').onclick = () => {
+        if (blockReadOnly()) return;
         const name = container.querySelector('#initiativeName').value.trim();
         const value = Number(container.querySelector('#initiativeValue').value || 0);
         if (!name) return;
@@ -1145,6 +1305,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#rollCharacterInitiative').onclick = () => {
+        if (blockReadOnly()) return;
         const selectedCharacterId = container.querySelector('#initiativeCharacter').value;
         const selectedCharacter = characters.find(char => String(char.id) === String(selectedCharacterId));
         if (!selectedCharacter) return;
@@ -1168,12 +1329,14 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#sortInitiative').onclick = () => {
+        if (blockReadOnly()) return;
         sessionState.initiative.sort((a, b) => b.value - a.value);
         renderInitiative();
         saveSessionData();
     };
 
     container.querySelector('#nextTurn').onclick = () => {
+        if (blockReadOnly()) return;
         if (sessionState.initiative.length > 1) {
             sessionState.initiative.push(sessionState.initiative.shift());
             sessionState.turnCount += 1;
@@ -1185,6 +1348,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#prevTurn').onclick = () => {
+        if (blockReadOnly()) return;
         if (sessionState.initiative.length > 1) {
             sessionState.initiative.unshift(sessionState.initiative.pop());
             sessionState.turnCount = Math.max(0, sessionState.turnCount - 1);
@@ -1196,6 +1360,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#clearInitiative').onclick = () => {
+        if (blockReadOnly()) return;
         if (!sessionState.initiative.length) return;
         if (!confirm('Svuotare tutta la lista iniziativa?')) return;
         sessionState.initiative = [];
@@ -1206,6 +1371,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#saveLiveNotes').onclick = () => {
+        if (blockReadOnly()) return;
         sessionState.scene = container.querySelector('#sceneInput').value.trim();
         sessionState.public_summary = container.querySelector('#publicSummary').value;
         sessionState.live_notes = container.querySelector('#liveNotes').value;
@@ -1266,6 +1432,7 @@ export async function showSession(container, sessionId, options = {}) {
     });
 
     const askSessionAI = async (prompt, trigger = 'manual') => {
+        if (blockReadOnly('AI di sessione controllata dal Master.')) return;
         const cleanPrompt = String(prompt || '').trim();
         if (!cleanPrompt) return;
 
@@ -1290,16 +1457,19 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#aiMode').onchange = (event) => {
+        if (blockReadOnly()) return;
         sessionState.aiMode = event.target.value || 'master';
         saveSessionData();
     };
 
     container.querySelector('#aiAutoReply').onchange = (event) => {
+        if (blockReadOnly()) return;
         sessionState.aiAutoReply = event.target.checked;
         saveSessionData();
     };
 
     container.querySelector('#askSessionAI').onclick = () => {
+        if (blockReadOnly('AI di sessione controllata dal Master.')) return;
         const input = container.querySelector('#aiPrompt');
         const prompt = input.value.trim() || 'Suggerisci il prossimo passo utile per questa sessione.';
         input.value = '';
@@ -1307,12 +1477,14 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     container.querySelector('#toggleDayNight').onclick = () => {
+        if (blockReadOnly()) return;
         sessionState.timeOfDay = window.__dndMapApi?.toggleDayNight() || (sessionState.timeOfDay === 'day' ? 'night' : 'day');
         syncSessionControls();
         saveSessionData();
     };
     container.querySelectorAll('[data-time-of-day]').forEach(btn => {
         btn.onclick = () => {
+            if (blockReadOnly()) return;
             sessionState.timeOfDay = window.__dndMapApi?.setTimeOfDay?.(btn.dataset.timeOfDay) || btn.dataset.timeOfDay;
             syncSessionControls();
             saveSessionData();
@@ -1320,12 +1492,14 @@ export async function showSession(container, sessionId, options = {}) {
     });
     container.querySelectorAll('[data-weather]').forEach(btn => {
         btn.onclick = () => {
+            if (blockReadOnly()) return;
             sessionState.weather = window.__dndMapApi?.setWeather?.(btn.dataset.weather) || btn.dataset.weather;
             syncSessionControls();
             saveSessionData();
         };
     });
     container.querySelector('#toggleGrid').onclick = () => {
+        if (blockReadOnly()) return;
         sessionState.gridVisible = window.__dndMapApi?.toggleGrid() ?? !sessionState.gridVisible;
         container.querySelector('#toggleGrid').textContent = sessionState.gridVisible ? 'GRIGLIA ON' : 'GRIGLIA OFF';
         saveSessionData();
@@ -1335,7 +1509,7 @@ export async function showSession(container, sessionId, options = {}) {
     container.querySelector('#resetMap').onclick = () => window.__dndMapApi?.resetView();
     container.querySelector('#pingMap').onclick = () => {
         window.__dndMapApi?.pingCenter();
-        sendMsg(`${currentUserName} segnala un punto sulla mappa.`);
+        if (!readOnlyMode) sendMsg(`${currentUserName} segnala un punto sulla mappa.`);
     };
 
     const readRollMod = () => {
@@ -1396,6 +1570,7 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     const submitChatMessage = async () => {
+        if (blockReadOnly('Chat disattivata per gli ospiti: il Master resta l’unico a modificare il tavolo.')) return;
         const input = container.querySelector('#chat-input');
         const message = input.value;
         input.value = '';

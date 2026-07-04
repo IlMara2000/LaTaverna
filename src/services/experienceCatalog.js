@@ -73,6 +73,17 @@ export const MINIGAMES = [
         initFn: 'initNumeri'
     },
     {
+        id: 'tictactoe',
+        name: 'Tic Tac Toe',
+        category: 'party',
+        icon: '❌',
+        players: '1-2 giocatori',
+        duration: '2-8 min',
+        description: 'Tris espandibile con bot, locale e online.',
+        color: 'linear-gradient(135deg, #2b1055, #0f766e)',
+        initFn: 'initTicTacToe'
+    },
+    {
         id: 'scacchi',
         name: 'Scacchi',
         category: 'strategy',

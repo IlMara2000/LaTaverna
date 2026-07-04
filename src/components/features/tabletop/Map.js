@@ -72,13 +72,14 @@ export function showTabletop(container, sessionId, options = {}) {
     const weatherEffectsEnabled = getCachedAppPreference('tabletop.weather_effects', true) !== false;
     let knownTokens = [];
     const localMode = Boolean(options.localMode);
+    const readOnly = Boolean(options.readOnly);
     const localStore = options.localStore || dndLocalStore;
     const activePointers = new Map();
     let panState = null;
     let pinchState = null;
 
     container.innerHTML = `
-        <div class="tabletop-viewport" id="viewport" tabindex="0" aria-label="Mappa di gioco interattiva">
+        <div class="tabletop-viewport ${readOnly ? 'is-readonly' : ''}" id="viewport" tabindex="0" aria-label="Mappa di gioco interattiva" data-read-only="${readOnly ? 'true' : 'false'}">
             <div class="map-layer" id="map-layer">
                 ${options.mapUrl ? (
                     isPdfMap(options.mapUrl)
@@ -138,6 +139,10 @@ export function showTabletop(container, sessionId, options = {}) {
     };
 
     const clampScale = (nextScale) => Math.min(Math.max(0.2, nextScale), 5);
+
+    const assertWritable = () => {
+        if (readOnly) throw new Error('Sessione in sola lettura.');
+    };
 
     const setScale = (nextScale, anchorClientX, anchorClientY) => {
         const next = clampScale(nextScale);
@@ -378,6 +383,10 @@ export function showTabletop(container, sessionId, options = {}) {
     };
 
     const makeTokenDraggable = (el, doc) => {
+        if (readOnly) {
+            el.classList.add('readonly');
+            return;
+        }
         el.addEventListener('pointerdown', (e) => {
             e.stopPropagation();
             el.setPointerCapture(e.pointerId);
@@ -502,6 +511,7 @@ export function showTabletop(container, sessionId, options = {}) {
     window.__dndMapApi = {
         getTokens: () => [...knownTokens],
         addToken: async (token) => {
+            assertWritable();
             const initialPosition = snapTokenPosition(420, 420);
             const payload = {
                 session_id: sessionId,
@@ -520,6 +530,7 @@ export function showTabletop(container, sessionId, options = {}) {
             renderToken(data || payload);
         },
         updateToken: async (id, patch) => {
+            assertWritable();
             const current = knownTokens.find(token => String(token.id) === String(id)) || {};
             const payload = {
                 ...patch,
@@ -538,6 +549,7 @@ export function showTabletop(container, sessionId, options = {}) {
             return data;
         },
         deleteToken: async (id) => {
+            assertWritable();
             const { error } = localMode
                 ? localStore.tokens.delete(id)
                 : await supabase.from(TOKEN_TABLE).delete().eq('id', id);
