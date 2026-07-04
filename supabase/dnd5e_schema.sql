@@ -17,7 +17,9 @@ create table if not exists public.dnd_sessions (
 );
 
 alter table public.dnd_sessions
-    add column if not exists system_id text not null default 'dnd5e';
+    add column if not exists system_id text not null default 'dnd5e',
+    add column if not exists share_code text unique,
+    add column if not exists share_enabled boolean not null default false;
 
 create table if not exists public.user_profiles (
     user_id uuid primary key references auth.users(id) on delete cascade,
@@ -90,6 +92,21 @@ create table if not exists public.dnd_chat (
     created_at timestamptz not null default now()
 );
 
+create table if not exists public.dnd_session_guests (
+    id uuid primary key default gen_random_uuid(),
+    session_id uuid not null references public.dnd_sessions(id) on delete cascade,
+    user_id uuid not null references auth.users(id) on delete cascade,
+    display_name text not null default 'Giocatore',
+    role text not null default 'viewer' check (role in ('viewer', 'player')),
+    joined_at timestamptz not null default now(),
+    last_seen timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    unique (session_id, user_id)
+);
+
+alter table public.dnd_session_guests
+    add column if not exists updated_at timestamptz not null default now();
+
 create table if not exists public.minigame_rooms (
     id uuid primary key default gen_random_uuid(),
     code text not null unique check (code ~ '^[A-Z0-9]{6}$'),
@@ -105,12 +122,52 @@ create table if not exists public.minigame_rooms (
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 begin
     new.updated_at = now();
     return new;
 end;
 $$;
+
+create or replace function public.owns_dnd_session(p_session_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select exists (
+        select 1
+        from public.dnd_sessions
+        where id = p_session_id
+          and user_id = auth.uid()
+    );
+$$;
+
+create or replace function public.is_dnd_session_guest(p_session_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select exists (
+        select 1
+        from public.dnd_session_guests
+        join public.dnd_sessions on dnd_sessions.id = dnd_session_guests.session_id
+        where dnd_session_guests.session_id = p_session_id
+          and dnd_session_guests.user_id = auth.uid()
+          and dnd_sessions.share_enabled = true
+    );
+$$;
+
+revoke all on function public.owns_dnd_session(uuid) from public;
+revoke all on function public.is_dnd_session_guest(uuid) from public;
+revoke all on function public.owns_dnd_session(uuid) from anon;
+revoke all on function public.is_dnd_session_guest(uuid) from anon;
+grant execute on function public.owns_dnd_session(uuid) to authenticated;
+grant execute on function public.is_dnd_session_guest(uuid) to authenticated;
 
 drop trigger if exists set_dnd_sessions_updated_at on public.dnd_sessions;
 create trigger set_dnd_sessions_updated_at
@@ -142,14 +199,24 @@ create trigger set_minigame_rooms_updated_at
 before update on public.minigame_rooms
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_dnd_session_guests_updated_at on public.dnd_session_guests;
+create trigger set_dnd_session_guests_updated_at
+before update on public.dnd_session_guests
+for each row execute function public.set_updated_at();
+
 alter table public.dnd_sessions enable row level security;
 alter table public.user_profiles enable row level security;
 alter table public.user_preferences enable row level security;
 alter table public.characters enable row level security;
 alter table public.dnd_tokens enable row level security;
 alter table public.dnd_chat enable row level security;
+alter table public.dnd_session_guests enable row level security;
 alter table public.minigame_rooms enable row level security;
 
+grant select, insert, update on public.dnd_sessions to authenticated;
+grant select on public.dnd_tokens to authenticated;
+grant select on public.dnd_chat to authenticated;
+grant select on public.dnd_session_guests to authenticated;
 grant select, insert, update on public.minigame_rooms to anon, authenticated;
 
 drop policy if exists "characters_owner_all" on public.characters;
@@ -180,42 +247,49 @@ for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "dnd_sessions_guest_read" on public.dnd_sessions;
+create policy "dnd_sessions_guest_read"
+on public.dnd_sessions
+for select
+to authenticated
+using (public.is_dnd_session_guest(dnd_sessions.id));
+
 drop policy if exists "dnd_tokens_session_owner_all" on public.dnd_tokens;
 create policy "dnd_tokens_session_owner_all"
 on public.dnd_tokens
 for all
-using (
-    exists (
-        select 1 from public.dnd_sessions
-        where dnd_sessions.id = dnd_tokens.session_id
-        and dnd_sessions.user_id = auth.uid()
-    )
-)
-with check (
-    exists (
-        select 1 from public.dnd_sessions
-        where dnd_sessions.id = dnd_tokens.session_id
-        and dnd_sessions.user_id = auth.uid()
-    )
-);
+using (public.owns_dnd_session(dnd_tokens.session_id))
+with check (public.owns_dnd_session(dnd_tokens.session_id));
+
+drop policy if exists "dnd_tokens_guest_read" on public.dnd_tokens;
+create policy "dnd_tokens_guest_read"
+on public.dnd_tokens
+for select
+to authenticated
+using (public.is_dnd_session_guest(dnd_tokens.session_id));
 
 drop policy if exists "dnd_chat_session_owner_all" on public.dnd_chat;
 create policy "dnd_chat_session_owner_all"
 on public.dnd_chat
 for all
+using (public.owns_dnd_session(dnd_chat.session_id))
+with check (public.owns_dnd_session(dnd_chat.session_id));
+
+drop policy if exists "dnd_chat_guest_read" on public.dnd_chat;
+create policy "dnd_chat_guest_read"
+on public.dnd_chat
+for select
+to authenticated
+using (public.is_dnd_session_guest(dnd_chat.session_id));
+
+drop policy if exists "dnd_session_guests_self_or_owner_read" on public.dnd_session_guests;
+create policy "dnd_session_guests_self_or_owner_read"
+on public.dnd_session_guests
+for select
+to authenticated
 using (
-    exists (
-        select 1 from public.dnd_sessions
-        where dnd_sessions.id = dnd_chat.session_id
-        and dnd_sessions.user_id = auth.uid()
-    )
-)
-with check (
-    exists (
-        select 1 from public.dnd_sessions
-        where dnd_sessions.id = dnd_chat.session_id
-        and dnd_sessions.user_id = auth.uid()
-    )
+    user_id = auth.uid()
+    or public.owns_dnd_session(dnd_session_guests.session_id)
 );
 
 drop policy if exists "minigame_rooms_active_read" on public.minigame_rooms;
@@ -255,9 +329,60 @@ create index if not exists user_profiles_user_id_idx on public.user_profiles(use
 create index if not exists user_preferences_user_id_idx on public.user_preferences(user_id);
 create index if not exists dnd_tokens_session_id_idx on public.dnd_tokens(session_id);
 create index if not exists dnd_chat_session_id_created_at_idx on public.dnd_chat(session_id, created_at);
+create index if not exists dnd_session_guests_session_user_idx on public.dnd_session_guests(session_id, user_id);
 create index if not exists characters_user_id_system_id_idx on public.characters(user_id, system_id);
 create index if not exists minigame_rooms_code_idx on public.minigame_rooms(code);
 create index if not exists minigame_rooms_expires_at_idx on public.minigame_rooms(expires_at);
+
+create or replace function public.join_dnd_session(
+    p_session_id uuid,
+    p_share_code text,
+    p_display_name text default 'Giocatore'
+)
+returns table(session_id uuid, system_id text, role text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_user_id uuid := auth.uid();
+    v_session public.dnd_sessions%rowtype;
+begin
+    if v_user_id is null then
+        raise exception 'Utente Supabase non autenticato.';
+    end if;
+
+    select *
+    into v_session
+    from public.dnd_sessions
+    where id = p_session_id
+      and share_enabled = true
+      and share_code = p_share_code;
+
+    if not found then
+        raise exception 'Invito sessione non valido o disattivato.';
+    end if;
+
+    insert into public.dnd_session_guests(session_id, user_id, display_name, role, last_seen)
+    values (
+        v_session.id,
+        v_user_id,
+        coalesce(nullif(trim(p_display_name), ''), 'Giocatore'),
+        'viewer',
+        now()
+    )
+    on conflict on constraint dnd_session_guests_session_id_user_id_key
+    do update set
+        display_name = excluded.display_name,
+        last_seen = now();
+
+    return query select v_session.id, v_session.system_id, 'viewer'::text;
+end;
+$$;
+
+revoke all on function public.join_dnd_session(uuid, text, text) from public;
+revoke all on function public.join_dnd_session(uuid, text, text) from anon;
+grant execute on function public.join_dnd_session(uuid, text, text) to authenticated;
 
 do $$
 begin

@@ -20,11 +20,11 @@ export function getUnlockedLevel(gameName) {
     return levelCache.get(gameName) || 1;
 }
 
-async function hydrateLevel(gameName, containerElement, onLevelSelect) {
+async function hydrateLevel(gameName, containerElement, onLevelSelect, options = {}) {
     const nextLevel = normalizeLevel(await getPreference(prefKey(gameName), 1));
     if (nextLevel !== getUnlockedLevel(gameName)) {
         levelCache.set(gameName, nextLevel);
-        renderLevelLadder(gameName, containerElement, onLevelSelect, true);
+        renderLevelLadder(gameName, containerElement, onLevelSelect, true, options);
     }
 }
 
@@ -38,10 +38,10 @@ export function unlockNextLevel(gameName, currentLevel) {
     }
 }
 
-export function renderLevelLadder(gameName, containerElement, onLevelSelect, hydrated = false) {
+export function renderLevelLadder(gameName, containerElement, onLevelSelect, hydrated = false, options = {}) {
     containerElement.innerHTML = '';
     const maxLevel = getUnlockedLevel(gameName);
-    const visibleLevels = getLevelWindow(maxLevel);
+    const visibleLevels = getLevelWindow(maxLevel, options.windowSize || undefined);
     containerElement.classList.add('game-level-ladder');
     containerElement.setAttribute(
         'aria-label',
@@ -70,5 +70,5 @@ export function renderLevelLadder(gameName, containerElement, onLevelSelect, hyd
         containerElement.appendChild(btn);
     });
 
-    if (!hydrated) hydrateLevel(gameName, containerElement, onLevelSelect);
+    if (!hydrated) hydrateLevel(gameName, containerElement, onLevelSelect, options);
 }

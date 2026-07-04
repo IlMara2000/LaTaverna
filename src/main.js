@@ -6,6 +6,7 @@ import { showLobby } from './lobby.js';
 import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthInput.js';
 import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
 import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './services/appPreferences.js';
+import { getSessionInviteFromUrl, joinSessionInvite } from './services/sessionInvites.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
@@ -42,6 +43,12 @@ async function initApp() {
         // 2. Recupera sessione Discord e sessione Guest
         const { data: { user }, error } = await supabase.auth.getUser();
         if (error) console.warn("Avviso Supabase:", error.message); // Non blocca l'app se fallisce
+
+        const sessionInvite = getSessionInviteFromUrl();
+        if (sessionInvite) {
+            await renderSharedSessionInvite(sessionInvite);
+            return;
+        }
 
         const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user'));
         
@@ -153,6 +160,43 @@ function renderDashboard(user) {
     if (recoveryContext) {
         sessionStorage.removeItem('taverna_soft_recovery_context');
         restoreRecoveredContext(appContainer, recoveryContext, user);
+    }
+}
+
+async function renderSharedSessionInvite(invite) {
+    const appContainer = document.getElementById('app');
+    if (!appContainer) return;
+
+    appContainer.innerHTML = `
+        <div class="dnd-empty glass-box dnd-session-invite-loading">
+            <strong>Connessione alla sessione...</strong>
+            <span>Sto validando il link e agganciando il tavolo realtime.</span>
+        </div>
+    `;
+
+    try {
+        const { system_id: joinedSystemId } = await joinSessionInvite({
+            sessionId: invite.sessionId,
+            code: invite.code,
+            displayName: localStorage.getItem('taverna_display_name') || 'Giocatore'
+        });
+        const { showSession } = await import('./components/features/tabletop/Session.js');
+        await showSession(appContainer, invite.sessionId, {
+            systemId: joinedSystemId || invite.systemId,
+            sharedInvite: true,
+            readOnly: true
+        });
+    } catch (err) {
+        appContainer.innerHTML = `
+            <div class="dnd-empty glass-box dnd-schema-error dnd-session-invite-loading">
+                <strong>Link sessione non valido.</strong>
+                <span>${String(err?.message || 'Invito scaduto, disattivato o non disponibile.')}</span>
+                <button id="returnFromInvite" class="btn-primary" type="button">TORNA ALLA TAVERNA</button>
+            </div>
+        `;
+        appContainer.querySelector('#returnFromInvite')?.addEventListener('click', () => {
+            window.location.href = window.location.origin;
+        });
     }
 }
 

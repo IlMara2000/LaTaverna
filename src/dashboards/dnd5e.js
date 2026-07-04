@@ -3,6 +3,7 @@ import { renderManualLibrary } from '../components/features/manuals/ManualLibrar
 import { showLobby } from '../lobby.js';
 import { supabase, SUPABASE_CONFIG } from '../services/supabase.js';
 import { dndLocalStore, getLocalDndUser, isLocalDndUser, isLocalDndUserId } from '../services/dndLocalStore.js';
+import { ensureSessionInvite } from '../services/sessionInvites.js';
 
 const TABLES = {
     characters: 'characters',
@@ -1013,8 +1014,9 @@ async function renderSessions(container) {
             const { data, error } = await loadSessionRows(user);
             if (error) throw error;
             const sessions = (data || []).map(normalizeSession);
+            const canShareSessions = !isLocalDndUser(user);
             list.innerHTML = `
-                ${sessions.length ? sessions.map(renderSessionCard).join('') : `
+                ${sessions.length ? sessions.map(session => renderSessionCard(session, canShareSessions)).join('') : `
                 <div class="dnd-empty glass-box">
                     <strong>Nessuna sessione attiva.</strong>
                     <span>Crea il primo tavolo per mappa, chat, token e dadi.</span>
@@ -1028,6 +1030,27 @@ async function renderSessions(container) {
             });
             list.querySelectorAll('[data-edit-session]').forEach(btn => {
                 btn.onclick = () => renderSessionEditor(container, user, sessions.find(item => String(item.id) === btn.dataset.editSession));
+            });
+            list.querySelectorAll('[data-share-session]').forEach(btn => {
+                btn.onclick = async () => {
+                    const session = sessions.find(item => String(item.id) === btn.dataset.shareSession);
+                    if (!session) return;
+                    const previousText = btn.textContent;
+                    btn.disabled = true;
+                    btn.textContent = 'CREO LINK...';
+                    try {
+                        const { url } = await ensureSessionInvite(session, 'dnd5e');
+                        await navigator.clipboard?.writeText(url).catch(() => {});
+                        btn.textContent = 'LINK COPIATO';
+                        alert(`Link sessione copiato:\n${url}`);
+                        loadSessions();
+                    } catch (err) {
+                        alert(`Errore creazione invito: ${err.message}`);
+                        btn.textContent = previousText;
+                    } finally {
+                        btn.disabled = false;
+                    }
+                };
             });
             list.querySelectorAll('[data-delete-session]').forEach(btn => {
                 btn.onclick = async () => {
@@ -1046,17 +1069,19 @@ async function renderSessions(container) {
     loadSessions();
 }
 
-function renderSessionCard(session) {
+function renderSessionCard(session, canShare = true) {
     const data = session.data || {};
+    const shareLabel = session.share_enabled ? ' • LINK ATTIVO' : '';
     return `
         <article class="dnd-list-card glass-box">
             <div>
-                <span>${escapeHTML(session.status || 'attiva')} • LV party ${escapeHTML(session.party_level || 1)}${session.next_date ? ` • ${escapeHTML(session.next_date)}` : ''}</span>
+                <span>${escapeHTML(session.status || 'attiva')} • LV party ${escapeHTML(session.party_level || 1)}${session.next_date ? ` • ${escapeHTML(session.next_date)}` : ''}${shareLabel}</span>
                 <strong>${escapeHTML(session.name || 'Sessione senza nome')}</strong>
                 <p>${escapeHTML(session.description || data.scene || 'Nessuna descrizione')}${data.location ? ` • ${escapeHTML(data.location)}` : ''}</p>
             </div>
             <div class="dnd-inline-actions">
                 <button class="btn-primary" data-open-session="${session.id}">ENTRA</button>
+                ${canShare ? `<button class="btn-back-glass" data-share-session="${session.id}">${session.share_enabled ? 'COPIA LINK' : 'INVITA'}</button>` : ''}
                 <button class="btn-back-glass" data-edit-session="${session.id}">MODIFICA</button>
                 <button class="btn-back-glass" data-delete-session="${session.id}">ELIMINA</button>
             </div>
