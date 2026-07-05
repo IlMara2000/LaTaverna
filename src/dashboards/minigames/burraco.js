@@ -1,5 +1,6 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
 
 /**
  * GIOCO: BURRACO - MASTER EDITION
@@ -48,7 +49,8 @@ function renderLayout(container, state) {
         <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">BURRACO</h1>
-            <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
+            ${renderOnlineModeButton('burraco')}
+            <p class="minigame-bot-level-title" style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 12px;">CONTRO IL BOT</p>
             
             <div id="levels-container"></div>
 
@@ -86,15 +88,39 @@ function renderLayout(container, state) {
     </div>
     `;
 
+    const cleanupOnlineMode = bindOnlineModeButton(container, {
+        gameId: 'burraco',
+        gameName: 'Burraco',
+        onConnected: (room) => {
+            state.onlineMode = true;
+            state.onlineRoom = room;
+            state.currentLevel = 1;
+            state.tutorMsg = 'Avversario online collegato.';
+            container.querySelector('#start-screen')?.remove();
+            initLogic(state, container);
+        }
+    });
+
     // Render della Scala
     renderLevelLadder('burraco', container.querySelector('#levels-container'), (selectedLevel) => {
+        cleanupOnlineMode();
+        state.onlineMode = false;
+        state.onlineRoom = null;
         state.currentLevel = selectedLevel;
         container.querySelector('#start-screen').remove();
         initLogic(state, container);
     });
 
-    container.querySelector('#exit-btn').onclick = (e) => { e.preventDefault(); quitGame(container); };
-    container.querySelector('#btn-exit-ingame').onclick = (e) => { e.preventDefault(); quitGame(container); };
+    container.querySelector('#exit-btn').onclick = (e) => {
+        e.preventDefault();
+        cleanupOnlineMode();
+        quitGame(container);
+    };
+    container.querySelector('#btn-exit-ingame').onclick = (e) => {
+        e.preventDefault();
+        cleanupOnlineMode();
+        quitGame(container);
+    };
 }
 
 // --- 2. LOGICA E AGGIORNAMENTO UI ---

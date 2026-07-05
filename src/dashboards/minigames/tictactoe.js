@@ -91,7 +91,6 @@ function renderLayout(container, state) {
             <div id="start-screen" class="game-master-wrapper tictactoe-start-screen">
                 <img src="/assets/logo.png" class="pulse-logo" alt="">
                 <h1 class="main-title">TIC TAC TOE</h1>
-                <p>GRIGLIA, SFIDA LOCALE O ONLINE</p>
 
                 <section class="tictactoe-mode-panel" aria-label="Modalità Tic Tac Toe">
                     <button type="button" id="ttt-size-cycle" class="tictactoe-mode-button is-size">

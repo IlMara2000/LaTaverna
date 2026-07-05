@@ -5101,6 +5101,29 @@
        text-transform: uppercase;
    }
 
+   .minigame-online-mode-panel {
+       width: min(100%, 430px);
+       margin: 4px 0 10px !important;
+   }
+
+   .minigame-online-mode-button:disabled {
+       cursor: wait;
+       opacity: 0.72;
+       transform: none !important;
+   }
+
+   .minigame-online-status {
+       width: min(100%, 430px);
+       min-height: 18px;
+       margin: 0 0 10px !important;
+   }
+
+   .minigame-bot-level-title {
+       margin-top: 2px !important;
+       text-align: center;
+       text-transform: uppercase;
+   }
+
    .tictactoe-bot-levels {
        width: min(100%, 380px);
        display: grid;

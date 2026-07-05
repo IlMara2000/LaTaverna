@@ -1,6 +1,7 @@
 import { Chess } from 'chess.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
 
 /**
  * GIOCO: SCACCHI
@@ -60,7 +61,8 @@ function renderLayout(container, state) {
         <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">SCACCHI</h1>
-            <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
+            ${renderOnlineModeButton('scacchi')}
+            <p class="minigame-bot-level-title" style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 12px;">CONTRO IL BOT</p>
             <div id="levels-container"></div>
             <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; opacity: 0.6;">TORNA ALLA TAVERNA</button>
         </div>
@@ -82,7 +84,27 @@ function renderLayout(container, state) {
     </div>
     `;
 
+    const cleanupOnlineMode = bindOnlineModeButton(container, {
+        gameId: 'scacchi',
+        gameName: 'Scacchi',
+        onConnected: (room) => {
+            state.onlineMode = true;
+            state.onlineRoom = room;
+            state.currentLevel = 1;
+            state.game = new Chess();
+            state.selectedSquare = null;
+            state.lastMove = null;
+            state.isAnimating = false;
+            container.querySelector('#start-screen')?.remove();
+            container.querySelector('#bot-label').textContent = 'AVVERSARIO ONLINE · NERI';
+            updateUI(container, state);
+        }
+    });
+
     renderLevelLadder('scacchi', container.querySelector('#levels-container'), (selectedLevel) => {
+        cleanupOnlineMode();
+        state.onlineMode = false;
+        state.onlineRoom = null;
         state.currentLevel = selectedLevel;
         state.game = new Chess();
         state.selectedSquare = null;
@@ -93,8 +115,14 @@ function renderLayout(container, state) {
         updateUI(container, state);
     });
 
-    container.querySelector('#exit-btn').onclick = () => quitGame(container);
-    container.querySelector('#back-menu').onclick = () => quitGame(container);
+    container.querySelector('#exit-btn').onclick = () => {
+        cleanupOnlineMode();
+        quitGame(container);
+    };
+    container.querySelector('#back-menu').onclick = () => {
+        cleanupOnlineMode();
+        quitGame(container);
+    };
 }
 
 function coordsToSquare(row, col) {
