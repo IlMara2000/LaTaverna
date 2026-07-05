@@ -1,5 +1,6 @@
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
 
 /**
  * GIOCO: BRISCOLA - MASTER EDITION
@@ -43,7 +44,8 @@ export function initBriscola(container) {
         <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">BRISCOLA</h1>
-            <p style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 30px;">SELEZIONA IL LIVELLO</p>
+            ${renderOnlineModeButton('briscola')}
+            <p class="minigame-bot-level-title" style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 12px;">CONTRO IL BOT</p>
             
             <div id="levels-container"></div>
 
@@ -75,8 +77,24 @@ export function initBriscola(container) {
     </div>
     `;
 
+    const cleanupOnlineMode = bindOnlineModeButton(container, {
+        gameId: 'briscola',
+        gameName: 'Briscola',
+        onConnected: (room) => {
+            state.onlineMode = true;
+            state.onlineRoom = room;
+            state.currentLevel = 1;
+            container.querySelector('#start-screen')?.remove();
+            container.querySelector('#bot-label').innerHTML = `ONLINE: <b id="p1-score">0</b>`;
+            startMatch();
+        }
+    });
+
     // Disegna la scala dei livelli
     renderLevelLadder('briscola', container.querySelector('#levels-container'), (selectedLevel) => {
+        cleanupOnlineMode();
+        state.onlineMode = false;
+        state.onlineRoom = null;
         state.currentLevel = selectedLevel;
         container.querySelector('#start-screen').remove();
         container.querySelector('#bot-label').innerHTML = `BOT (LV.${state.currentLevel}): <b id="p1-score">0</b>`;
@@ -84,6 +102,7 @@ export function initBriscola(container) {
     });
 
     const quit = async () => {
+        cleanupOnlineMode();
         document.documentElement.style.overflow = '';
         document.body.style.touchAction = '';
         document.body.style.overflow = '';
