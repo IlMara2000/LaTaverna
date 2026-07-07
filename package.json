@@ -16,7 +16,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",
     "chess.js": "^1.4.0",
-    "howler": "^2.2.4"
+    "howler": "^2.2.4",
+    "motion": "^12.42.2"
   },
   "devDependencies": {
     "terser": "^5.31.0",

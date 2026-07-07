@@ -452,14 +452,85 @@
    }
 
    .taverna-home {
+       --aurora-x: 50%;
+       --aurora-y: -20%;
+       --aurora-alpha: 0.2;
        width: 100%;
        min-height: var(--viewport-stable-height);
        margin: 0;
        padding: max(22px, env(safe-area-inset-top)) clamp(18px, 3vw, 44px) calc(112px + env(safe-area-inset-bottom));
        color: white;
        background:
-           radial-gradient(circle at 50% -20%, rgba(110, 46, 165, 0.2), transparent 42%),
+           radial-gradient(circle at var(--aurora-x) var(--aurora-y), rgba(199, 125, 255, var(--aurora-alpha)), transparent 42%),
+           radial-gradient(circle at 8% 96%, rgba(0, 255, 163, 0.12), transparent 38%),
+           radial-gradient(circle at 94% 74%, rgba(255, 65, 108, 0.12), transparent 34%),
            #05010a;
+       position: relative;
+       isolation: isolate;
+       overflow: hidden;
+   }
+
+   .taverna-home::before {
+       content: '';
+       position: absolute;
+       inset: -22% -12% auto;
+       height: 58%;
+       z-index: -2;
+       pointer-events: none;
+       background:
+           conic-gradient(from 130deg at 50% 50%,
+               rgba(199, 125, 255, 0),
+               rgba(199, 125, 255, 0.18),
+               rgba(0, 255, 163, 0.1),
+               rgba(255, 189, 57, 0.08),
+               rgba(199, 125, 255, 0));
+       filter: blur(72px) saturate(1.35);
+       opacity: 0.82;
+       transform: rotate(-6deg);
+       animation: tavernAuroraDrift 16s ease-in-out infinite alternate;
+   }
+
+   .taverna-home::after {
+       content: '';
+       position: absolute;
+       inset: 0;
+       z-index: -1;
+       pointer-events: none;
+       opacity: 0.36;
+       background-image:
+           linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+           linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+       background-size: 82px 82px;
+       mask-image: radial-gradient(circle at 50% 35%, black 0%, transparent 72%);
+   }
+
+   .taverna-home-ambient {
+       position: absolute;
+       z-index: -1;
+       pointer-events: none;
+       border-radius: 999px;
+       border: 1px solid rgba(199, 125, 255, 0.16);
+       box-shadow:
+           inset 0 0 42px rgba(199, 125, 255, 0.12),
+           0 0 42px rgba(157, 78, 222, 0.12);
+       opacity: 0.64;
+       animation: tavernOrbit 18s linear infinite;
+   }
+
+   .taverna-home-ambient.ambient-one {
+       width: clamp(220px, 26vw, 420px);
+       height: clamp(220px, 26vw, 420px);
+       top: 10%;
+       left: -9%;
+   }
+
+   .taverna-home-ambient.ambient-two {
+       width: clamp(180px, 22vw, 340px);
+       height: clamp(180px, 22vw, 340px);
+       right: -7%;
+       bottom: 18%;
+       animation-direction: reverse;
+       animation-duration: 22s;
    }
 
    .taverna-home-header {
@@ -511,15 +582,26 @@
        --pointer-y: 0px;
        display: flex;
        align-items: stretch;
-       gap: 0;
+       gap: clamp(10px, 1.4vw, 18px);
        width: 100%;
        height: clamp(470px, 67dvh, 650px);
        min-height: 0;
        overflow: hidden;
-       border: 1px solid rgba(220, 181, 118, 0.34);
-       border-radius: 8px;
+       padding: clamp(8px, 1vw, 12px);
+       border: 1px solid rgba(220, 181, 118, 0.22);
+       border-radius: clamp(22px, 2.8vw, 34px);
+       background:
+           linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.015)),
+           radial-gradient(circle at 50% 0%, rgba(199, 125, 255, 0.22), transparent 56%),
+           rgba(12, 4, 20, 0.62);
+       backdrop-filter: blur(22px) saturate(1.22);
+       -webkit-backdrop-filter: blur(22px) saturate(1.22);
        perspective: 1400px;
-       box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+       transform-style: preserve-3d;
+       box-shadow:
+           0 34px 92px rgba(0, 0, 0, 0.58),
+           0 0 48px rgba(157, 78, 222, 0.12),
+           inset 0 1px 0 rgba(255, 255, 255, 0.07);
    }
 
    .taverna-scene {
@@ -529,9 +611,8 @@
        isolation: isolate;
        overflow: hidden;
        padding: 0;
-       border: 0;
-       border-right: 1px solid rgba(255, 255, 255, 0.1);
-       border-radius: 0;
+       border: 1px solid rgba(255, 255, 255, 0.12);
+       border-radius: clamp(18px, 2vw, 26px);
        background: #120b18;
        color: #fff;
        cursor: pointer;
@@ -545,11 +626,41 @@
            border-color 300ms ease,
            filter 420ms ease,
            box-shadow 420ms ease;
+       transform-style: preserve-3d;
    }
 
    .taverna-scene:nth-child(2) { transition-delay: 70ms; }
    .taverna-scene:nth-child(3) { transition-delay: 140ms; }
-   .taverna-scene:last-child { border-right: 0; }
+   .taverna-scene:last-child { border-right: 1px solid rgba(255, 255, 255, 0.12); }
+
+   .taverna-scene::before {
+       content: '';
+       position: absolute;
+       inset: 0;
+       z-index: 1;
+       pointer-events: none;
+       border-radius: inherit;
+       background:
+           linear-gradient(110deg, rgba(255, 255, 255, 0.2), transparent 18%, transparent 72%, rgba(255, 255, 255, 0.08)),
+           radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.13), transparent 42%);
+       mix-blend-mode: screen;
+       opacity: 0.34;
+       transition: opacity 420ms ease;
+   }
+
+   .taverna-scene::after {
+       content: '';
+       position: absolute;
+       inset: auto 16px 16px;
+       z-index: 0;
+       height: 34%;
+       pointer-events: none;
+       border-radius: 999px;
+       background: radial-gradient(circle, rgba(199, 125, 255, 0.22), transparent 68%);
+       filter: blur(28px);
+       opacity: 0;
+       transition: opacity 420ms ease;
+   }
 
    .taverna-scene.is-in-view {
        opacity: 1;
@@ -581,6 +692,7 @@
    }
 
    .taverna-scene-title {
+       z-index: 2;
        position: absolute;
        left: 24px;
        right: 24px;
@@ -593,7 +705,7 @@
        text-transform: uppercase;
        text-shadow: 0 4px 24px rgba(0, 0, 0, 0.72);
        transform: translateY(8px);
-       transition: transform 500ms var(--ease-out);
+       transition: transform 500ms var(--ease-out), letter-spacing 500ms var(--ease-out), filter 500ms ease;
    }
 
    .taverna-scene-title::after {
@@ -610,7 +722,21 @@
    .taverna-scene:focus-visible {
        flex: 1.55 1 0;
        transform: translateY(-5px);
-       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+       border-color: rgba(220, 181, 118, 0.42);
+       box-shadow:
+           0 24px 58px rgba(0, 0, 0, 0.42),
+           0 0 36px rgba(157, 78, 222, 0.18),
+           inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+   }
+
+   .taverna-scene:hover::before,
+   .taverna-scene:focus-visible::before {
+       opacity: 0.54;
+   }
+
+   .taverna-scene:hover::after,
+   .taverna-scene:focus-visible::after {
+       opacity: 1;
    }
 
    .taverna-scene:hover img,
@@ -653,15 +779,19 @@
        min-height: 62px;
        padding: 10px 14px;
        border: 1px solid rgba(220, 181, 118, 0.17);
-       border-radius: 8px;
-       background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025));
+       border-radius: 14px;
+       background:
+           radial-gradient(circle at 50% 0%, rgba(199, 125, 255, 0.14), transparent 58%),
+           linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.026));
        color: rgba(255, 255, 255, 0.82);
        font-size: clamp(0.68rem, 1vw, 0.78rem);
        font-weight: 800;
        letter-spacing: 0;
        cursor: pointer;
        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
-       transition: transform 240ms var(--ease-spring), background 240ms ease, color 240ms ease, border-color 240ms ease;
+       backdrop-filter: blur(16px) saturate(1.2);
+       -webkit-backdrop-filter: blur(16px) saturate(1.2);
+       transition: transform 240ms var(--ease-spring), background 240ms ease, color 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
    }
 
    .taverna-home-dock button:hover,
@@ -670,6 +800,7 @@
        background: rgba(255, 255, 255, 0.09);
        border-color: rgba(199, 125, 255, 0.4);
        color: #fff;
+       box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28), 0 0 24px rgba(157, 78, 222, 0.12);
    }
 
    .taverna-home-dock .is-resume {
@@ -703,6 +834,16 @@
    @keyframes homeDockReveal {
        from { opacity: 0; transform: translateY(16px); }
        to { opacity: 1; transform: translateY(0); }
+   }
+
+   @keyframes tavernAuroraDrift {
+       from { transform: translate3d(-3%, -2%, 0) rotate(-8deg) scale(1); }
+       to { transform: translate3d(3%, 4%, 0) rotate(8deg) scale(1.08); }
+   }
+
+   @keyframes tavernOrbit {
+       from { transform: rotate(0deg) translate3d(0, 0, 0); }
+       to { transform: rotate(360deg) translate3d(0, 0, 0); }
    }
 
    .minigames-lobby-wrapper {

@@ -2,6 +2,7 @@ import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { showLobby } from './lobby.js';
 import { MINIGAMES, MINIGAME_CATEGORIES, getGamesByCategory } from './services/experienceCatalog.js';
 import { rememberDestination } from './services/appNavigation.js';
+import { enhanceSurfaceMotion, playRouteExit } from './services/motionSystem.js';
 import {
     createMinigameRoom,
     getMinigameRoomByCode,
@@ -12,6 +13,7 @@ import {
 } from './services/minigameMultiplayer.js';
 
 export function showMinigamesList(container, options = {}) {
+    window.__homeCleanup?.();
     if (window.__minigameMultiplayerCleanup) {
         window.__minigameMultiplayerCleanup();
         window.__minigameMultiplayerCleanup = null;
@@ -81,6 +83,11 @@ export function showMinigamesList(container, options = {}) {
     let multiplayerRoom = getSavedMinigameRoom();
     let stopRoomWatch = null;
     let pollTimer = null;
+    let catalogMotionCleanup = null;
+    const pageMotionCleanup = enhanceSurfaceMotion(container, {
+        selector: '.minigame-multiplayer-panel, .session-tool-switcher',
+        interactiveSelector: '#btn-back-main, #btn-minigame-multiplayer, #minigame-multiplayer-join button, [data-game-filter]'
+    });
     const clientCanPoll = () => Boolean(multiplayerRoom?.code);
 
     const exposeMultiplayerRoom = () => {
@@ -171,11 +178,14 @@ export function showMinigamesList(container, options = {}) {
 
     window.__minigameMultiplayerCleanup = () => {
         stopWatchingRoom();
+        pageMotionCleanup?.();
+        catalogMotionCleanup?.();
     };
 
     const launchGame = async (game) => {
         try {
             stopWatchingRoom();
+            await playRouteExit(container.querySelector('#lobby-wrapper') || container);
             const module = await import(`./dashboards/minigames/${game.id}.js`);
             if (module && module[game.initFn]) {
                 module[game.initFn](container);
@@ -216,6 +226,12 @@ export function showMinigamesList(container, options = {}) {
             if (game) button.onclick = () => launchGame(game);
         });
 
+        catalogMotionCleanup?.();
+        catalogMotionCleanup = enhanceSurfaceMotion(catalog, {
+            selector: '.lobby-section, .game-card',
+            interactiveSelector: '.game-card'
+        });
+
         container.querySelectorAll('[data-game-filter]').forEach(button => {
             const active = button.dataset.gameFilter === activeFilter;
             button.classList.toggle('active', active);
@@ -240,8 +256,9 @@ export function showMinigamesList(container, options = {}) {
     };
 
     // Torna alla lobby principale
-    document.getElementById('btn-back-main').onclick = () => {
+    document.getElementById('btn-back-main').onclick = async () => {
         stopWatchingRoom();
+        await playRouteExit(container.querySelector('#lobby-wrapper') || container);
         showLobby(container);
     };
 
