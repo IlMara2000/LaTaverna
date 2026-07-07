@@ -1,6 +1,7 @@
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { APP_DESTINATIONS } from './services/experienceCatalog.js';
 import { getLastDestination, navigateTo } from './services/appNavigation.js';
+import { enhanceHomeMotion, playRouteExit } from './services/motionSystem.js';
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -23,6 +24,7 @@ const getGuestState = () => {
 };
 
 export function showLobby(container) {
+    window.__homeCleanup?.();
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
     document.body.style.position = '';
@@ -39,6 +41,8 @@ export function showLobby(container) {
 
     container.innerHTML = `
         <div id="lobby-wrapper" class="taverna-home">
+            <div class="taverna-home-ambient ambient-one" aria-hidden="true"></div>
+            <div class="taverna-home-ambient ambient-two" aria-hidden="true"></div>
             <header class="taverna-home-header">
                 <img src="/assets/logo2.png" alt="" aria-hidden="true">
                 <h1>LA TAVERNA</h1>
@@ -91,13 +95,14 @@ export function showLobby(container) {
     };
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const openWithTransition = (button, destination, options = {}) => {
+    const openWithTransition = async (button, destination, options = {}) => {
         if (!button || reducedMotion) {
             openDestination(destination, options);
             return;
         }
         button.classList.add('is-opening');
-        window.setTimeout(() => openDestination(destination, options), 340);
+        await playRouteExit(container.querySelector('#lobby-wrapper') || container, button);
+        openDestination(destination, options);
     };
 
     const scenes = [...container.querySelectorAll('.taverna-scene')];
@@ -118,10 +123,12 @@ export function showLobby(container) {
     };
     stage?.addEventListener('pointermove', handlePointerMove);
     stage?.addEventListener('pointerleave', resetPointer);
+    const motionCleanup = enhanceHomeMotion(container);
     window.__homeCleanup = () => {
         observer.disconnect();
         stage?.removeEventListener('pointermove', handlePointerMove);
         stage?.removeEventListener('pointerleave', resetPointer);
+        motionCleanup?.();
     };
 
     const cardScene = container.querySelector('#hub-card-games');

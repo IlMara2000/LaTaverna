@@ -7,6 +7,7 @@ import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthIn
 import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
 import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './services/appPreferences.js';
 import { getSessionInviteFromUrl, joinSessionInvite } from './services/sessionInvites.js';
+import { enhancePortalMotion, playPortalOpen } from './services/motionSystem.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
@@ -84,12 +85,12 @@ function renderPortal(user) {
 
     const entryScreen = document.getElementById('entry-screen');
     const logo = document.getElementById('main-logo');
+    const cleanupPortalMotion = enhancePortalMotion(appContainer);
 
-    entryScreen.onclick = () => {
+    entryScreen.onclick = async () => {
         // Effetto "Click" sul logo
-        logo.style.transform = 'scale(1.1) translateY(-10px)';
-        entryScreen.style.opacity = '0';
-        entryScreen.style.transition = 'opacity 0.4s ease';
+        await playPortalOpen(entryScreen, logo);
+        cleanupPortalMotion?.();
         
         setTimeout(() => {
             if (user) {
@@ -97,7 +98,7 @@ function renderPortal(user) {
             } else {
                 initLogin(appContainer);
             }
-        }, 400);
+        }, 40);
     };
 }
 
