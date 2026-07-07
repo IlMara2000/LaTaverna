@@ -7,7 +7,7 @@ import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthIn
 import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
 import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './services/appPreferences.js';
 import { getSessionInviteFromUrl, joinSessionInvite } from './services/sessionInvites.js';
-import { enhancePortalMotion, playPortalOpen } from './services/motionSystem.js';
+import { enhancePortalMotion, playLoaderExit, playPortalOpen } from './services/motionSystem.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
@@ -22,17 +22,11 @@ async function initApp() {
     if (!uiContainer) return;
 
     const loader = document.getElementById('app-loader');
+    const appContainer = document.getElementById('app');
+    appContainer?.classList.add('app-preparing');
     
     // Funzione blindata per distruggere il loader fisicamente
-    const destroyLoader = () => { 
-        if (loader) {
-            loader.style.opacity = '0';
-            loader.style.visibility = 'hidden';
-            setTimeout(() => {
-                loader.remove(); // Lo elimina dal DOM così non blocca i tocchi
-            }, 500);
-        }
-    };
+    const destroyLoader = () => playLoaderExit(loader, appContainer);
 
     try {
         // 1. Gestisci PRIMA DI TUTTO l'eventuale ritorno da Discord
@@ -69,7 +63,7 @@ async function initApp() {
         renderPortal(null);
     } finally {
         // GRAZIE AL FINALLY, IL LOADER VERRÀ RIMOSSO SEMPRE E COMUNQUE.
-        destroyLoader();
+        void destroyLoader();
     }
 }
 
