@@ -35,6 +35,85 @@ const safeAnimate = (target, keyframes, options = {}) => {
     }
 };
 
+const waitForBootVisibility = () => new Promise(resolve => {
+    const app = document.getElementById('app');
+    if (!app?.classList.contains('app-preparing')) {
+        requestAnimationFrame(resolve);
+        return;
+    }
+
+    window.addEventListener('taverna:boot-visible', () => requestAnimationFrame(resolve), { once: true });
+});
+
+export async function playLoaderExit(loader, app = document.getElementById('app')) {
+    const revealApp = () => {
+        if (!app) return;
+        app.classList.remove('app-preparing');
+        window.dispatchEvent(new CustomEvent('taverna:boot-visible'));
+
+        if (prefersReducedMotion()) {
+            app.style.opacity = '';
+            app.style.transform = '';
+            app.style.filter = '';
+            return;
+        }
+
+        safeAnimate(app, {
+            opacity: [0, 1],
+            y: [10, 0],
+            scale: [0.995, 1],
+            filter: ['blur(8px)', 'blur(0px)']
+        }, { duration: 0.58, ease: EASE_OUT });
+    };
+
+    if (!loader) {
+        revealApp();
+        return;
+    }
+
+    if (prefersReducedMotion()) {
+        loader.remove();
+        revealApp();
+        return;
+    }
+
+    const logo = loader.querySelector('.pulse-logo');
+    const text = loader.querySelector('.loader-text');
+
+    loader.style.pointerEvents = 'none';
+    safeAnimate(logo, {
+        opacity: [1, 0],
+        scale: [1, 0.88],
+        y: [0, -8],
+        filter: [
+            'drop-shadow(0 0 30px var(--amethyst-bright))',
+            'drop-shadow(0 0 0 rgba(157, 78, 221, 0))'
+        ]
+    }, { duration: 0.32, ease: EASE_OUT });
+
+    safeAnimate(text, {
+        opacity: [0.42, 0],
+        y: [0, 8],
+        letterSpacing: ['4px', '8px']
+    }, { duration: 0.3, ease: EASE_OUT });
+
+    revealApp();
+
+    const exit = safeAnimate(loader, {
+        opacity: [1, 0],
+        scale: [1, 1.018],
+        filter: ['blur(0px)', 'blur(14px)']
+    }, { duration: 0.52, delay: 0.08, ease: EASE_OUT });
+
+    try {
+        await exit?.finished;
+    } catch {
+        // Ignore interrupted boot animation.
+    }
+
+    loader.remove();
+}
+
 export async function playRouteExit(target, source = null) {
     if (!target || prefersReducedMotion()) return;
 
@@ -138,6 +217,7 @@ export function enhanceHomeMotion(container) {
     if (!container || prefersReducedMotion()) return () => {};
 
     const cleanups = [];
+    let cancelled = false;
     const home = container.querySelector('.taverna-home');
     const header = container.querySelector('.taverna-home-header');
     const stage = container.querySelector('.taverna-scene-stage');
@@ -145,6 +225,10 @@ export function enhanceHomeMotion(container) {
     const sceneImages = scenes.map(scene => scene.querySelector('img')).filter(Boolean);
     const sceneTitles = scenes.map(scene => scene.querySelector('.taverna-scene-title')).filter(Boolean);
     const dockButtons = [...container.querySelectorAll('.taverna-home-dock button')];
+
+    const startHomeMotion = async () => {
+        await waitForBootVisibility();
+        if (cancelled) return;
 
     cleanups.push(safeAnimate(home, {
         '--aurora-x': ['16%', '84%', '50%', '16%'],
@@ -197,17 +281,17 @@ export function enhanceHomeMotion(container) {
 
         cleanups.push(hover(scene, element => {
             safeAnimate(element, {
-                y: -10,
-                scale: 1.018,
-                rotateX: -2
+                y: -5,
+                scale: 1.012,
+                rotateX: -1.25
             }, EASE_SPRING);
             safeAnimate(image, {
-                scale: 1.12,
+                scale: 1.1,
                 filter: 'saturate(1.22) contrast(1.07) brightness(1.06)'
             }, { duration: 0.52, ease: EASE_OUT });
             safeAnimate(title, {
-                y: -10,
-                letterSpacing: '0.045em'
+                y: -7,
+                letterSpacing: '0.035em'
             }, EASE_SPRING);
 
             return () => {
@@ -222,7 +306,7 @@ export function enhanceHomeMotion(container) {
 
         cleanups.push(press(scene, element => {
             safeAnimate(element, { scale: 0.985, y: -2 }, { duration: 0.12, ease: EASE_OUT });
-            return () => safeAnimate(element, { scale: 1.02, y: -8 }, { duration: 0.2, ease: EASE_OUT });
+            return () => safeAnimate(element, { scale: 1.012, y: -4 }, { duration: 0.2, ease: EASE_OUT });
         }));
     });
 
@@ -241,7 +325,14 @@ export function enhanceHomeMotion(container) {
         }));
     });
 
-    return () => stopAll(cleanups);
+    };
+
+    startHomeMotion();
+
+    return () => {
+        cancelled = true;
+        stopAll(cleanups);
+    };
 }
 
 export function enhanceSurfaceMotion(container, options = {}) {
@@ -314,4 +405,3 @@ export function enhanceSurfaceMotion(container, options = {}) {
 
     return () => stopAll(cleanups);
 }
-
