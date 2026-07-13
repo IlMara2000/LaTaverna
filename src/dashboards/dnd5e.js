@@ -379,6 +379,11 @@ function renderShell(container, activeView = 'overview') {
                     <p>Manuali, personaggi completi, sessioni attive, mappa, dadi e chat di gioco.</p>
                 </div>
                 <div class="dnd-hero-die">20</div>
+                <div class="dnd-hero-props" aria-hidden="true">
+                    <span class="dnd-prop-candle"></span>
+                    <span class="dnd-prop-mug"></span>
+                    <span class="dnd-prop-scroll"></span>
+                </div>
             </header>
 
             <nav class="dnd-tabs" aria-label="Sezioni D&D">
