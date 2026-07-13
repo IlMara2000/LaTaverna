@@ -645,7 +645,7 @@
        content: '';
        position: absolute;
        inset: 0;
-       z-index: 1;
+       z-index: 2;
        pointer-events: none;
        border-radius: inherit;
        background:
@@ -660,7 +660,7 @@
        content: '';
        position: absolute;
        inset: auto 16px 16px;
-       z-index: 0;
+       z-index: 1;
        height: 34%;
        pointer-events: none;
        border-radius: 999px;
@@ -677,7 +677,7 @@
 
    .taverna-scene img {
        position: absolute;
-       z-index: -2;
+       z-index: 0;
        inset: -18px;
        width: calc(100% + 36px);
        height: calc(100% + 36px);
@@ -692,7 +692,7 @@
 
    .taverna-scene-scrim {
        position: absolute;
-       z-index: -1;
+       z-index: 1;
        inset: 0;
        background:
            linear-gradient(180deg, rgba(5, 1, 10, 0.04) 28%, rgba(5, 1, 10, 0.74) 100%),
@@ -700,7 +700,7 @@
    }
 
    .taverna-scene-title {
-       z-index: 2;
+       z-index: 3;
        position: absolute;
        left: 24px;
        right: 24px;
@@ -713,6 +713,8 @@
        text-transform: uppercase;
        text-shadow: 0 4px 24px rgba(0, 0, 0, 0.72);
        transform: translateY(8px);
+       filter: none !important;
+       backface-visibility: hidden;
        transition: transform 500ms var(--ease-out), letter-spacing 500ms var(--ease-out), filter 500ms ease;
    }
 
@@ -9417,5 +9419,138 @@ body.manual-page-modal-open .floating-trigger {
     .manual-section-landing,
     .manual-library-empty {
         padding-inline: 2px;
+    }
+}
+
+/* ============================================
+   PASS IMPAGINAZIONE / ALLEGGERIMENTO WEBAPP
+   ============================================ */
+
+.dnd-section-actions > .btn-primary,
+.dnd-inline-actions > .btn-primary,
+.dnd-inline-actions > .btn-back-glass {
+    width: auto;
+    min-width: max-content;
+    margin-bottom: 0;
+    flex: 0 0 auto;
+}
+
+.dnd-section-actions > .btn-primary {
+    min-width: 220px;
+}
+
+.dnd-tabs button {
+    text-align: center !important;
+}
+
+.taverna-scene-stage {
+    backdrop-filter: blur(14px) saturate(1.12);
+    -webkit-backdrop-filter: blur(14px) saturate(1.12);
+}
+
+.taverna-home-dock button {
+    backdrop-filter: blur(10px) saturate(1.08);
+    -webkit-backdrop-filter: blur(10px) saturate(1.08);
+}
+
+@supports (content-visibility: auto) {
+    .dnd-grid,
+    .dnd-card-list,
+    .manual-section-browser,
+    .manual-search-results,
+    .manual-complete-section,
+    .game-category-section,
+    .minigame-multiplayer-panel {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 420px;
+    }
+}
+
+@media (pointer: coarse), (max-width: 760px) {
+    .taverna-home::before {
+        filter: blur(42px) saturate(1.05);
+        opacity: 0.62;
+        animation-duration: 24s;
+    }
+
+    .taverna-home-ambient {
+        opacity: 0.38;
+        animation: none;
+    }
+
+    .sidebar-glass {
+        backdrop-filter: blur(20px) saturate(1.12);
+        -webkit-backdrop-filter: blur(20px) saturate(1.12);
+    }
+
+    .floating-trigger {
+        width: 54px;
+        height: 54px;
+        border-radius: 17px;
+        box-shadow: 0 10px 20px rgba(157, 78, 221, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+
+    .floating-trigger:hover {
+        transform: translateY(-2px) scale(1.025);
+        box-shadow: 0 14px 28px rgba(157, 78, 221, 0.34);
+    }
+}
+
+@media (max-width: 600px) {
+    .dnd-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+        overflow: visible;
+    }
+
+    .dnd-tabs button {
+        width: 100%;
+        min-width: 0;
+        padding: 11px 9px;
+        margin-bottom: 0;
+        font-size: 0.72rem;
+    }
+
+    .dnd-section-actions,
+    .dnd-list-card {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dnd-section-actions > .btn-primary,
+    .dnd-inline-actions > .btn-primary,
+    .dnd-inline-actions > .btn-back-glass {
+        width: 100%;
+        min-width: 0;
+    }
+
+    body:has(.dnd-app) .floating-trigger {
+        width: 50px;
+        height: 50px;
+        right: max(10px, var(--safe-right));
+        bottom: calc(14px + var(--safe-bottom));
+        border-radius: 16px;
+    }
+
+    body:has(.dnd-app) #app {
+        padding-bottom: calc(128px + max(16px, var(--safe-bottom)));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .taverna-home::before,
+    .taverna-home-ambient,
+    .dnd-hero-die {
+        animation: none !important;
+    }
+
+    .taverna-scene,
+    .taverna-home-dock button,
+    .dnd-panel,
+    .manual-filter-button,
+    .manual-search-control,
+    .floating-trigger {
+        transition-duration: 1ms !important;
     }
 }
