@@ -268,8 +268,16 @@ export function renderManualLibrary({ container, manuals, systemId }) {
     container.innerHTML = `
         <section class="manual-library">
             <header class="manual-library-heading">
-                <h2>BIBLIOTECA DEI MANUALI</h2>
-                <p>Cerca regole, creature, classi, incantesimi o interi paragrafi. Ogni risposta rimanda alla pagina originale.</p>
+                <div class="manual-library-heading-copy">
+                    <span class="manual-library-eyebrow">Archivio della taverna</span>
+                    <h2>BIBLIOTECA DEI MANUALI</h2>
+                    <p>Cerca regole, creature, classi, incantesimi o interi paragrafi. Ogni risposta rimanda alla pagina originale.</p>
+                </div>
+                <div class="manual-library-heading-art" aria-hidden="true">
+                    <span class="manual-heading-candle"></span>
+                    <span class="manual-heading-book"></span>
+                    <span class="manual-heading-runes">✦ ✧ ✦</span>
+                </div>
             </header>
 
             <div class="manual-library-layout">
