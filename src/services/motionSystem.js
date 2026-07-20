@@ -58,12 +58,24 @@ export async function playLoaderExit(loader, app = document.getElementById('app'
             return;
         }
 
-        safeAnimate(app, {
+        const reveal = safeAnimate(app, {
             opacity: [0, 1],
             y: [10, 0],
             scale: [0.995, 1],
             filter: ['blur(8px)', 'blur(0px)']
         }, { duration: 0.58, ease: EASE_OUT });
+
+        const clearRevealStyles = () => {
+            app.style.opacity = '';
+            app.style.transform = '';
+            app.style.filter = '';
+        };
+
+        if (reveal?.finished) {
+            reveal.finished.then(clearRevealStyles, clearRevealStyles);
+        } else {
+            clearRevealStyles();
+        }
     };
 
     if (!loader) {
