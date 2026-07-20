@@ -6842,18 +6842,27 @@
    }
 
    @media (max-width: 760px) {
+       #app:has(> .taverna-home) {
+           overflow-y: auto !important;
+           scroll-snap-type: none;
+       }
+
        .taverna-home {
+           flex: 0 0 auto;
+           height: auto;
            min-height: var(--visual-viewport-height);
            padding:
-               max(12px, var(--safe-top))
-               max(12px, var(--safe-right))
-               calc(100px + max(12px, var(--safe-bottom)))
-               max(12px, var(--safe-left));
+               max(14px, var(--safe-top))
+               max(14px, var(--safe-right))
+               calc(32px + max(14px, var(--safe-bottom)))
+               max(14px, var(--safe-left));
        }
 
        .taverna-home-header {
-           min-height: 54px;
-           margin-bottom: 10px;
+           width: 100%;
+           min-height: 48px;
+           margin-bottom: 14px;
+           padding-inline: 52px;
        }
 
        .taverna-home-header img {
@@ -6861,37 +6870,47 @@
        }
 
        .taverna-home-header h1 {
-           font-size: clamp(1.5rem, 8vw, 2rem);
+           font-size: clamp(1.4rem, 7.2vw, 1.8rem);
+           line-height: 1.05;
        }
 
        .taverna-scene-stage {
            display: grid;
-           grid-template-columns: 1fr;
-           gap: 8px;
+           grid-template-columns: repeat(2, minmax(0, 1fr));
+           gap: 12px;
            width: 100%;
            height: auto;
-           overflow: visible;
-           padding: 0;
-           border: 0;
-           border-radius: 0;
-           background: transparent;
+           overflow: hidden;
+           padding: 10px;
+           border: 1px solid rgba(220, 181, 118, 0.18);
+           border-radius: 22px;
+           background:
+               radial-gradient(circle at 50% 0%, rgba(199, 125, 255, 0.13), transparent 56%),
+               rgba(12, 4, 20, 0.5);
            backdrop-filter: none;
            -webkit-backdrop-filter: none;
            perspective: none;
-           box-shadow: none;
+           box-shadow:
+               inset 0 1px 0 rgba(255, 255, 255, 0.045),
+               0 18px 44px rgba(0, 0, 0, 0.24);
        }
 
        .taverna-scene {
            width: 100%;
-           min-height: clamp(210px, 29svh, 276px);
-           border: 1px solid rgba(220, 181, 118, 0.24);
-           border-radius: 10px;
-           scroll-snap-align: center;
+           min-height: clamp(132px, 18svh, 158px);
+           border: 1px solid rgba(220, 181, 118, 0.2);
+           border-radius: 16px;
+           scroll-snap-align: none;
            transform: translateY(20px) scale(0.985);
        }
 
+       .taverna-scene:first-child {
+           grid-column: 1 / -1;
+           min-height: clamp(168px, 23svh, 200px);
+       }
+
        .taverna-scene:last-child {
-           border-right: 1px solid rgba(220, 181, 118, 0.24);
+           border-right: 1px solid rgba(220, 181, 118, 0.2);
        }
 
        .taverna-scene.is-in-view {
@@ -6920,81 +6939,215 @@
        .scene-gdr img { object-position: 64% 50%; }
 
        .taverna-scene-title {
-           bottom: 24px;
-           font-size: clamp(1.7rem, 9vw, 2.35rem);
+           left: 14px;
+           right: 14px;
+           bottom: 16px;
+           font-size: clamp(1.05rem, 5.4vw, 1.55rem);
+           line-height: 1;
+       }
+
+       .taverna-scene-title::after {
+           width: 38px;
+           margin-top: 9px;
        }
 
        .taverna-home-dock,
        .taverna-home-dock:has(.is-resume) {
            grid-template-columns: repeat(2, minmax(0, 1fr));
            gap: 8px;
-           margin-top: 8px;
+           margin-top: 14px;
+           padding: 10px;
+           border: 1px solid rgba(220, 181, 118, 0.14);
+           border-radius: 20px;
+           background: rgba(12, 4, 20, 0.42);
+           box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
        }
 
        .taverna-home-dock .is-resume {
            grid-column: 1 / -1;
+           min-height: 56px;
+       }
+
+       .taverna-home-dock #btn-manga {
+           grid-column: 1 / -1;
        }
 
        .taverna-home-dock button {
-           min-height: 58px;
-           padding: 9px 8px;
-           font-size: 0.68rem;
+           min-height: 50px;
+           padding: 8px 9px;
+           border-radius: 12px;
+           font-size: 0.66rem;
+           touch-action: manipulation;
        }
 
        body:has(.taverna-home) .floating-trigger {
-           top: calc(17px + env(safe-area-inset-top));
-           right: 12px;
+           top: calc(16px + env(safe-area-inset-top));
+           right: max(14px, var(--safe-right));
            bottom: auto;
-           width: 48px;
-           height: 48px;
-           border-radius: 8px;
+           width: 44px;
+           height: 44px;
+           border-radius: 14px;
        }
    }
 
-   @media (max-width: 350px) {
+   @media (max-width: 370px) {
        .taverna-home {
-           padding-inline: 10px;
+           padding-inline: 11px;
        }
 
        #app:has(.taverna-home) {
            padding-inline: 0;
        }
 
+       .taverna-home-header {
+           min-height: 44px;
+           margin-bottom: 11px;
+           padding-inline: 48px;
+       }
+
+       .taverna-home-header h1 {
+           font-size: 1.32rem;
+       }
+
+       .taverna-scene-stage {
+           gap: 8px;
+           padding: 8px;
+           border-radius: 18px;
+       }
+
        .taverna-scene {
-           min-height: 210px;
+           min-height: 128px;
+           border-radius: 13px;
+       }
+
+       .taverna-scene:first-child {
+           min-height: 162px;
        }
 
        .taverna-scene-title {
-           font-size: 1.55rem;
+           left: 10px;
+           right: 10px;
+           bottom: 13px;
+           font-size: 1rem;
+       }
+
+       .taverna-home-dock {
+           margin-top: 11px;
+           padding: 8px;
+           border-radius: 18px;
+       }
+
+       .taverna-home-dock button {
+           min-height: 48px;
+           padding-inline: 6px;
+           font-size: 0.62rem;
+       }
+
+       body:has(.taverna-home) .floating-trigger {
+           top: calc(13px + env(safe-area-inset-top));
+           right: max(11px, var(--safe-right));
+           width: 42px;
+           height: 42px;
        }
    }
 
    @media (max-width: 900px) and (orientation: landscape) {
+       #app:has(> .taverna-home) {
+           overflow-y: auto !important;
+           scroll-snap-type: none;
+       }
+
+       .taverna-home {
+           flex: 0 0 auto;
+           height: auto;
+           min-height: var(--visual-viewport-height);
+           padding:
+               max(10px, var(--safe-top))
+               max(12px, var(--safe-right))
+               calc(18px + max(10px, var(--safe-bottom)))
+               max(12px, var(--safe-left));
+       }
+
+       .taverna-home-header {
+           min-height: 40px;
+           margin-bottom: 8px;
+       }
+
+       .taverna-home-header img {
+           display: none;
+       }
+
+       .taverna-home-header h1 {
+           font-size: 1.45rem;
+       }
+
        body:has(.taverna-home) .floating-trigger {
-           top: calc(12px + var(--safe-top));
+           top: calc(10px + var(--safe-top));
            right: max(12px, var(--safe-right));
            bottom: auto;
-           width: 48px;
-           height: 48px;
-           border-radius: 8px;
+           width: 42px;
+           height: 42px;
+           border-radius: 13px;
        }
 
        .taverna-scene-stage {
            display: flex;
-           height: min(66dvh, 440px);
+           gap: 10px;
+           height: min(50dvh, 220px);
+           padding: 10px;
+           border-radius: 20px;
        }
 
        .taverna-scene {
            min-height: 0;
+           border-radius: 14px;
+       }
+
+       .taverna-scene-title {
+           left: 12px;
+           right: 12px;
+           bottom: 15px;
+           font-size: clamp(1rem, 3.4vw, 1.45rem);
+       }
+
+       .taverna-scene-title::after {
+           width: 34px;
+           margin-top: 8px;
        }
 
        .taverna-home-dock,
        .taverna-home-dock:has(.is-resume) {
-           grid-template-columns: repeat(5, minmax(0, 1fr));
+           grid-template-columns: repeat(3, minmax(0, 1fr));
+           gap: 8px;
+           margin-top: 10px;
        }
 
        .taverna-home-dock .is-resume {
            grid-column: auto;
+       }
+
+       .taverna-home-dock #btn-manga {
+           grid-column: auto;
+       }
+
+       .taverna-home-dock:not(:has(.is-resume)) {
+           grid-template-columns: repeat(6, minmax(0, 1fr));
+       }
+
+       .taverna-home-dock:not(:has(.is-resume)) button {
+           grid-column: span 2;
+       }
+
+       .taverna-home-dock:not(:has(.is-resume)) button:nth-last-child(-n + 2),
+       .taverna-home-dock:not(:has(.is-resume)) #btn-manga {
+           grid-column: span 3;
+       }
+
+       .taverna-home-dock button,
+       .taverna-home-dock .is-resume {
+           min-height: 46px;
+           padding: 7px 8px;
+           font-size: 0.64rem;
        }
    }
 
@@ -8458,971 +8611,6 @@ body.manual-page-modal-open .floating-trigger {
 }
 
 /* ============================================
-   D&D / BIBLIOTECA - TEMA TAVERNA FANTASY
-   ============================================ */
-
-#app:has(.dnd-app) {
-    background:
-        radial-gradient(circle at 16% 12%, rgba(255, 177, 73, 0.18), transparent 26%),
-        radial-gradient(circle at 86% 8%, rgba(156, 75, 28, 0.18), transparent 24%),
-        radial-gradient(circle at 50% 110%, rgba(88, 29, 12, 0.36), transparent 42%),
-        repeating-linear-gradient(90deg, rgba(255, 228, 166, 0.025) 0 1px, transparent 1px 86px),
-        linear-gradient(180deg, #160807 0%, #080304 46%, #030104 100%) !important;
-}
-
-.dnd-app {
-    --tavern-ink: #fff3d1;
-    --tavern-muted: rgba(244, 212, 157, 0.68);
-    --tavern-brass: #d19a4b;
-    --tavern-brass-hot: #ffc86f;
-    --tavern-ember: #f27635;
-    --tavern-wood: #36190d;
-    --tavern-wood-dark: #130806;
-    --tavern-leather: #4b2114;
-    --tavern-parchment: #ead4a2;
-    --tavern-border: rgba(229, 166, 82, 0.28);
-    max-width: 1180px;
-    position: relative;
-    isolation: isolate;
-    padding-top: 18px;
-}
-
-.dnd-app::before,
-.dnd-app::after {
-    content: "";
-    position: fixed;
-    pointer-events: none;
-    z-index: -1;
-}
-
-.dnd-app::before {
-    inset: 0;
-    background:
-        linear-gradient(90deg, transparent, rgba(255, 207, 122, 0.045), transparent),
-        repeating-linear-gradient(0deg, rgba(255, 238, 190, 0.026) 0 2px, transparent 2px 34px);
-    opacity: 0.62;
-    mix-blend-mode: screen;
-}
-
-.dnd-app::after {
-    inset: auto 0 0;
-    height: 190px;
-    background: linear-gradient(180deg, transparent, rgba(54, 22, 8, 0.68));
-}
-
-#ui .dnd-app,
-#ui .dnd-app * {
-    text-align: left !important;
-}
-
-.dnd-back.btn-back-glass {
-    margin: 0 auto 24px !important;
-    display: flex !important;
-    width: fit-content !important;
-    border-color: rgba(216, 160, 76, 0.36) !important;
-    background:
-        linear-gradient(180deg, rgba(92, 43, 18, 0.72), rgba(30, 12, 8, 0.92)) !important;
-    box-shadow:
-        inset 0 1px 0 rgba(255, 236, 184, 0.13),
-        0 16px 38px rgba(0, 0, 0, 0.36),
-        0 0 28px rgba(217, 130, 48, 0.1) !important;
-    color: var(--tavern-ink) !important;
-}
-
-.dnd-hero {
-    min-height: clamp(260px, 35vw, 340px);
-    align-items: flex-end;
-    border: 1px solid rgba(229, 166, 82, 0.32);
-    border-radius: 30px;
-    padding: clamp(28px, 5vw, 54px);
-    margin-bottom: 22px;
-    background:
-        radial-gradient(circle at 78% 20%, rgba(255, 198, 104, 0.28), transparent 20%),
-        radial-gradient(circle at 8% 100%, rgba(131, 58, 24, 0.45), transparent 34%),
-        linear-gradient(115deg, rgba(77, 31, 12, 0.88), rgba(18, 7, 5, 0.96) 48%, rgba(6, 2, 4, 0.98)),
-        repeating-linear-gradient(90deg, rgba(255, 223, 154, 0.045) 0 1px, transparent 1px 72px),
-        repeating-linear-gradient(0deg, #32160c 0 18px, #2a1109 18px 36px);
-    box-shadow:
-        inset 0 0 0 1px rgba(255, 230, 165, 0.08),
-        inset 0 -44px 80px rgba(20, 6, 3, 0.56),
-        0 34px 90px rgba(0, 0, 0, 0.55),
-        0 0 54px rgba(207, 112, 38, 0.08);
-}
-
-.dnd-hero::before {
-    content: "";
-    position: absolute;
-    inset: 14px;
-    border: 1px solid rgba(255, 219, 146, 0.12);
-    border-radius: 22px;
-    background:
-        linear-gradient(90deg, rgba(255, 210, 124, 0.11), transparent 18% 82%, rgba(255, 210, 124, 0.08)),
-        radial-gradient(circle at 73% 24%, rgba(255, 188, 87, 0.2), transparent 18%);
-    pointer-events: none;
-    z-index: -1;
-}
-
-.dnd-hero::after {
-    inset: auto -8% -44px -8%;
-    width: auto;
-    height: 150px;
-    background:
-        radial-gradient(ellipse at center, rgba(0, 0, 0, 0.62), transparent 66%),
-        linear-gradient(180deg, rgba(102, 44, 18, 0), rgba(102, 44, 18, 0.62));
-    z-index: -1;
-}
-
-.dnd-kicker {
-    color: var(--tavern-brass-hot);
-    opacity: 0.86;
-    text-shadow: 0 0 20px rgba(245, 148, 56, 0.24);
-}
-
-#ui .dnd-hero h1 {
-    max-width: 720px;
-    color: var(--tavern-ink);
-    font-family: Georgia, 'Times New Roman', serif !important;
-    font-weight: 700;
-    letter-spacing: -0.045em;
-    text-shadow:
-        0 2px 0 rgba(48, 17, 5, 0.9),
-        0 16px 38px rgba(0, 0, 0, 0.5);
-}
-
-#ui .dnd-hero h1 span {
-    color: var(--tavern-brass-hot);
-    text-shadow:
-        0 0 24px rgba(255, 188, 87, 0.46),
-        0 2px 0 rgba(65, 24, 7, 0.9);
-}
-
-.dnd-hero p:last-child {
-    color: var(--tavern-muted);
-    opacity: 1;
-    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.42);
-}
-
-.dnd-hero-die {
-    width: clamp(136px, 19vw, 210px);
-    height: clamp(136px, 19vw, 210px);
-    display: grid;
-    place-items: center;
-    align-self: center;
-    font-size: clamp(3.4rem, 9vw, 7.4rem);
-    line-height: 1;
-    color: rgba(255, 214, 136, 0.22);
-    text-shadow:
-        0 0 36px rgba(255, 188, 87, 0.18),
-        0 4px 0 rgba(0, 0, 0, 0.32);
-    background:
-        radial-gradient(circle at 42% 34%, rgba(255, 214, 135, 0.14), transparent 32%),
-        linear-gradient(135deg, rgba(79, 29, 16, 0.72), rgba(17, 6, 8, 0.92));
-    border: 1px solid rgba(234, 170, 81, 0.24);
-    clip-path: polygon(50% 0, 88% 16%, 100% 52%, 76% 90%, 24% 90%, 0 52%, 12% 16%);
-    box-shadow:
-        inset 0 0 34px rgba(0, 0, 0, 0.28),
-        0 24px 58px rgba(0, 0, 0, 0.36);
-}
-
-.dnd-hero-props {
-    position: absolute;
-    right: clamp(24px, 4vw, 54px);
-    bottom: 22px;
-    width: min(260px, 28vw);
-    height: 90px;
-    opacity: 0.86;
-    pointer-events: none;
-}
-
-.dnd-prop-candle {
-    position: absolute;
-    right: 22px;
-    bottom: 0;
-    width: 24px;
-    height: 58px;
-    border-radius: 9px 9px 4px 4px;
-    background: linear-gradient(90deg, #f6d99f, #8d5a2a 58%, #553017);
-    box-shadow:
-        0 -28px 42px rgba(255, 177, 72, 0.45),
-        0 0 0 1px rgba(255, 245, 206, 0.16);
-}
-
-.dnd-prop-candle::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: -24px;
-    width: 16px;
-    height: 25px;
-    border-radius: 60% 45% 55% 45%;
-    background: radial-gradient(circle at 45% 58%, #fff6c9 0 18%, #ffbd55 42%, rgba(242, 89, 30, 0.18) 72%);
-    transform: translateX(-50%) rotate(7deg);
-    filter: blur(0.2px);
-}
-
-.dnd-prop-mug {
-    position: absolute;
-    right: 70px;
-    bottom: 0;
-    width: 44px;
-    height: 34px;
-    border-radius: 6px 6px 12px 12px;
-    background: linear-gradient(135deg, #7a3c1b, #2e1208);
-    border: 1px solid rgba(255, 204, 122, 0.18);
-    box-shadow: inset 0 8px 0 rgba(255, 224, 145, 0.13);
-}
-
-.dnd-prop-mug::after {
-    content: "";
-    position: absolute;
-    right: -17px;
-    top: 8px;
-    width: 18px;
-    height: 17px;
-    border: 4px solid rgba(144, 73, 31, 0.9);
-    border-left: 0;
-    border-radius: 0 14px 14px 0;
-}
-
-.dnd-prop-scroll {
-    position: absolute;
-    left: 4px;
-    bottom: 3px;
-    width: 96px;
-    height: 28px;
-    border-radius: 999px 8px 8px 999px;
-    background: linear-gradient(90deg, #d5b373, #f0d9a4 18% 76%, #a56a35);
-    box-shadow:
-        inset 0 0 16px rgba(77, 40, 14, 0.22),
-        0 10px 22px rgba(0, 0, 0, 0.26);
-    transform: rotate(-5deg);
-}
-
-.dnd-tabs {
-    gap: 9px;
-    padding: 6px 0 22px;
-}
-
-.dnd-tabs button {
-    border-color: rgba(220, 159, 74, 0.28);
-    background:
-        linear-gradient(180deg, rgba(82, 35, 16, 0.82), rgba(25, 9, 6, 0.9));
-    color: rgba(255, 239, 205, 0.82);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 239, 190, 0.08),
-        0 10px 26px rgba(0, 0, 0, 0.25);
-}
-
-.dnd-tabs button:hover {
-    border-color: rgba(255, 197, 103, 0.5);
-    background:
-        linear-gradient(180deg, rgba(104, 47, 21, 0.9), rgba(34, 13, 8, 0.95));
-    box-shadow:
-        inset 0 1px 0 rgba(255, 239, 190, 0.12),
-        0 14px 32px rgba(0, 0, 0, 0.32),
-        0 0 24px rgba(224, 132, 43, 0.1);
-}
-
-.dnd-tabs button.active {
-    border-color: rgba(255, 204, 112, 0.76);
-    background:
-        radial-gradient(circle at 50% 0, rgba(255, 194, 98, 0.23), transparent 62%),
-        linear-gradient(180deg, rgba(110, 52, 22, 0.96), rgba(43, 16, 8, 0.96));
-    color: #ffd78b;
-    box-shadow:
-        inset 0 0 0 1px rgba(255, 241, 192, 0.09),
-        0 14px 36px rgba(0, 0, 0, 0.34),
-        0 0 26px rgba(255, 174, 71, 0.15);
-}
-
-.dnd-panel,
-.dnd-list-card,
-.dnd-empty {
-    border-color: rgba(218, 158, 79, 0.24);
-    background:
-        linear-gradient(180deg, rgba(62, 28, 13, 0.7), rgba(18, 7, 5, 0.82)),
-        repeating-linear-gradient(90deg, rgba(255, 228, 162, 0.035) 0 1px, transparent 1px 54px);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 232, 180, 0.08),
-        0 18px 45px rgba(0, 0, 0, 0.36);
-}
-
-.dnd-panel:hover,
-.dnd-list-card:hover {
-    border-color: rgba(255, 194, 98, 0.48);
-    background:
-        linear-gradient(180deg, rgba(78, 36, 16, 0.76), rgba(23, 8, 5, 0.88)),
-        repeating-linear-gradient(90deg, rgba(255, 228, 162, 0.045) 0 1px, transparent 1px 54px);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 232, 180, 0.1),
-        0 22px 54px rgba(0, 0, 0, 0.44),
-        0 0 30px rgba(229, 135, 45, 0.11);
-}
-
-.dnd-panel span,
-.dnd-list-card span,
-.dnd-section-head p,
-.dnd-muted {
-    color: var(--tavern-muted);
-}
-
-.dnd-panel strong,
-.dnd-list-card strong,
-.dnd-section-head h2 {
-    color: var(--tavern-ink);
-    font-family: Georgia, 'Times New Roman', serif !important;
-    letter-spacing: -0.015em;
-}
-
-.dnd-panel p,
-.dnd-list-card p {
-    color: rgba(255, 232, 188, 0.66);
-}
-
-.manual-library {
-    --library-ink: #fff0c9;
-    --library-muted: rgba(241, 212, 162, 0.7);
-    --library-border: rgba(219, 158, 79, 0.24);
-    --library-accent: #ffc76f;
-    --library-accent-soft: rgba(255, 178, 74, 0.14);
-    --library-surface: rgba(22, 8, 4, 0.82);
-    position: relative;
-    isolation: isolate;
-    margin-top: 16px;
-    padding: clamp(20px, 3.4vw, 36px);
-    border: 1px solid rgba(225, 166, 87, 0.24);
-    border-radius: 32px;
-    background:
-        radial-gradient(circle at 12% 0%, rgba(255, 186, 83, 0.16), transparent 30%),
-        radial-gradient(circle at 88% 6%, rgba(131, 61, 26, 0.28), transparent 28%),
-        linear-gradient(180deg, rgba(42, 17, 8, 0.84), rgba(12, 4, 4, 0.9)),
-        repeating-linear-gradient(90deg, rgba(255, 232, 177, 0.035) 0 1px, transparent 1px 74px);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 238, 190, 0.08),
-        inset 0 -30px 80px rgba(0, 0, 0, 0.24),
-        0 28px 90px rgba(0, 0, 0, 0.44);
-}
-
-.manual-library::before {
-    content: "";
-    position: absolute;
-    inset: 12px;
-    z-index: -1;
-    border: 1px solid rgba(255, 220, 151, 0.1);
-    border-radius: 24px;
-    background:
-        linear-gradient(90deg, rgba(255, 201, 111, 0.07), transparent 18% 82%, rgba(255, 201, 111, 0.05)),
-        radial-gradient(circle at 10% 18%, rgba(255, 180, 70, 0.1), transparent 24%);
-    pointer-events: none;
-}
-
-.manual-library::after {
-    content: "";
-    position: absolute;
-    inset: auto 8% -24px;
-    height: 42px;
-    z-index: -2;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.42);
-    filter: blur(18px);
-}
-
-.manual-library-heading {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(160px, 260px);
-    align-items: end;
-    gap: 24px;
-    min-height: 210px;
-    padding: 28px 0 34px;
-    border-bottom: 1px solid rgba(218, 158, 79, 0.22);
-}
-
-.manual-library-heading-copy {
-    position: relative;
-    max-width: 760px;
-}
-
-.manual-library-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    color: var(--library-accent);
-    font-size: 0.68rem;
-    font-weight: 900;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    text-shadow: 0 0 18px rgba(255, 183, 80, 0.26);
-}
-
-.manual-library-eyebrow::before,
-.manual-library-eyebrow::after {
-    content: "";
-    width: 22px;
-    height: 1px;
-    background: currentColor;
-    opacity: 0.58;
-}
-
-#ui .manual-library-heading h2 {
-    color: #fff2cc;
-    font-size: clamp(2.4rem, 6vw, 5rem);
-    font-weight: 700;
-    letter-spacing: -0.055em;
-    text-shadow:
-        0 2px 0 rgba(45, 16, 4, 0.86),
-        0 16px 36px rgba(0, 0, 0, 0.46),
-        0 0 28px rgba(255, 179, 77, 0.12);
-}
-
-.manual-library-heading p {
-    color: var(--library-muted);
-    max-width: 760px;
-    font-size: 0.95rem;
-}
-
-.manual-library-heading-art {
-    position: relative;
-    height: 180px;
-    min-width: 0;
-    filter: drop-shadow(0 24px 30px rgba(0, 0, 0, 0.34));
-}
-
-.manual-heading-book {
-    position: absolute;
-    right: 16px;
-    bottom: 12px;
-    width: 142px;
-    height: 92px;
-    border-radius: 8px 18px 18px 8px;
-    background:
-        linear-gradient(90deg, rgba(255, 236, 185, 0.18), transparent 16px),
-        linear-gradient(135deg, #8e3d20, #39150b 68%);
-    border: 1px solid rgba(255, 212, 129, 0.28);
-    box-shadow:
-        inset 9px 0 0 rgba(255, 225, 157, 0.08),
-        inset -12px 0 28px rgba(0, 0, 0, 0.25);
-    transform: rotate(-4deg);
-}
-
-.manual-heading-book::before {
-    content: "";
-    position: absolute;
-    inset: 12px 16px;
-    border-top: 1px solid rgba(255, 220, 145, 0.28);
-    border-bottom: 1px solid rgba(255, 220, 145, 0.18);
-}
-
-.manual-heading-candle {
-    position: absolute;
-    right: 156px;
-    bottom: 8px;
-    width: 28px;
-    height: 76px;
-    border-radius: 10px 10px 4px 4px;
-    background: linear-gradient(90deg, #f5dca7, #9b6732 62%, #4d2a12);
-    box-shadow:
-        0 -38px 64px rgba(255, 180, 72, 0.48),
-        0 0 0 1px rgba(255, 245, 206, 0.16);
-}
-
-.manual-heading-candle::before {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: -30px;
-    width: 18px;
-    height: 30px;
-    border-radius: 60% 45% 55% 45%;
-    background: radial-gradient(circle at 45% 58%, #fff8cb 0 18%, #ffc15d 43%, rgba(242, 89, 30, 0.18) 75%);
-    transform: translateX(-50%) rotate(-6deg);
-}
-
-.manual-heading-runes {
-    position: absolute;
-    right: 38px;
-    top: 30px;
-    color: rgba(255, 207, 123, 0.62);
-    font-family: Georgia, 'Times New Roman', serif !important;
-    font-size: 1.25rem;
-    letter-spacing: 0.35em;
-    text-shadow: 0 0 20px rgba(255, 176, 75, 0.38);
-}
-
-.manual-library-layout {
-    grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
-    gap: clamp(24px, 4.2vw, 54px);
-    padding-top: 34px;
-}
-
-.manual-filter-heading {
-    padding: 0 4px 12px;
-}
-
-.manual-filter-heading strong,
-.manual-search-form > span,
-.manual-result-meta span,
-.manual-section-active-scope span,
-.manual-section-row > div:first-child > span {
-    color: var(--library-accent);
-}
-
-.manual-filter-button,
-.manual-complete-button,
-.manual-section-manuals button,
-.manual-section-discovery,
-.manual-section-row,
-.manual-complete-tabs button,
-.manual-reader-actions button,
-.manual-reader-actions a,
-.manual-reader-stage > button,
-.manual-reader-page-strip button,
-.manual-page-modal-panel a,
-.manual-page-modal-panel button {
-    border-color: rgba(218, 158, 79, 0.24);
-    background:
-        linear-gradient(180deg, rgba(74, 31, 14, 0.62), rgba(18, 7, 5, 0.78));
-    box-shadow: inset 0 1px 0 rgba(255, 232, 181, 0.06);
-}
-
-.manual-filter-button {
-    border-radius: 16px;
-    background:
-        linear-gradient(180deg, rgba(66, 27, 14, 0.76), rgba(22, 8, 5, 0.86));
-}
-
-.manual-filter-button:hover {
-    border-color: rgba(255, 196, 104, 0.5);
-    background:
-        linear-gradient(180deg, rgba(88, 39, 18, 0.84), rgba(27, 9, 5, 0.9));
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.26), 0 0 22px rgba(255, 156, 58, 0.08);
-}
-
-.manual-filter-button.active {
-    border-color: rgba(255, 201, 112, 0.64);
-    background:
-        radial-gradient(circle at 0 20%, rgba(255, 190, 94, 0.18), transparent 38%),
-        linear-gradient(180deg, rgba(96, 43, 19, 0.9), rgba(30, 11, 6, 0.94));
-}
-
-.manual-filter-check {
-    border-radius: 8px;
-    border-color: rgba(255, 221, 150, 0.25);
-    background: rgba(0, 0, 0, 0.18);
-}
-
-.manual-filter-button.active .manual-filter-check {
-    border-color: rgba(255, 209, 126, 0.8);
-    background: linear-gradient(135deg, #f0b765, #8d431e);
-    color: #221006;
-    box-shadow: 0 0 16px rgba(255, 184, 79, 0.26);
-}
-
-.manual-filter-button small,
-.manual-complete-button small,
-.manual-section-browser > header p,
-.manual-section-group > summary small,
-.manual-section-row p,
-.manual-library-empty p,
-.manual-complete-heading p,
-.manual-complete-tabs span,
-.manual-reader-toolbar > div:first-child span,
-.manual-reader-actions label,
-.manual-reader-actions > span,
-.manual-result-count,
-.manual-section-no-results span {
-    color: var(--library-muted);
-}
-
-.manual-complete-button {
-    border-radius: 18px;
-    border-color: rgba(255, 199, 111, 0.48);
-    background:
-        radial-gradient(circle at 20% 0, rgba(255, 195, 98, 0.24), transparent 46%),
-        linear-gradient(135deg, rgba(122, 57, 23, 0.94), rgba(43, 14, 7, 0.95));
-    color: var(--library-ink);
-}
-
-.manual-complete-button:hover {
-    border-color: rgba(255, 215, 144, 0.82);
-    background:
-        radial-gradient(circle at 20% 0, rgba(255, 205, 113, 0.3), transparent 46%),
-        linear-gradient(135deg, rgba(142, 70, 29, 0.98), rgba(52, 17, 8, 0.98));
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32), 0 0 28px rgba(255, 168, 64, 0.13);
-}
-
-.manual-search-form {
-    padding: 22px;
-    border: 1px solid rgba(218, 158, 79, 0.2);
-    border-radius: 24px;
-    background:
-        linear-gradient(180deg, rgba(56, 24, 11, 0.62), rgba(15, 6, 4, 0.74)),
-        repeating-linear-gradient(90deg, rgba(255, 226, 166, 0.026) 0 1px, transparent 1px 54px);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 236, 186, 0.06),
-        0 18px 44px rgba(0, 0, 0, 0.27);
-}
-
-#ui .manual-search-form label,
-#ui .manual-section-browser h3,
-#ui .manual-section-row h4,
-#ui .manual-section-landing h3,
-#ui .manual-library-empty h3,
-#ui .manual-search-result h3,
-#ui .manual-complete-heading h3,
-.manual-section-group > summary strong {
-    color: var(--library-ink);
-    font-family: Georgia, 'Times New Roman', serif !important;
-}
-
-.manual-search-control {
-    border-color: rgba(255, 197, 104, 0.46);
-    border-radius: 18px;
-    background:
-        linear-gradient(180deg, rgba(19, 7, 4, 0.88), rgba(8, 3, 3, 0.92));
-    box-shadow:
-        inset 0 0 0 1px rgba(255, 238, 191, 0.04),
-        0 18px 45px rgba(0, 0, 0, 0.3);
-}
-
-.manual-search-control:focus-within {
-    border-color: rgba(255, 211, 133, 0.82);
-    box-shadow:
-        0 0 0 3px rgba(255, 184, 79, 0.13),
-        0 20px 52px rgba(0, 0, 0, 0.36),
-        0 0 34px rgba(255, 164, 60, 0.1);
-}
-
-.manual-search-control svg,
-.manual-section-discovery svg,
-.manual-library-empty-icon,
-.manual-ai-answer-heading,
-.manual-search-result > button,
-.manual-complete-heading > button,
-.manual-reader-actions a {
-    color: var(--library-accent);
-}
-
-.manual-search-control button {
-    border-color: rgba(255, 219, 146, 0.42);
-    border-radius: 12px;
-    background:
-        linear-gradient(180deg, #f0b768, #9b4c20 58%, #6d2d14);
-    color: #261107;
-    text-shadow: 0 1px 0 rgba(255, 239, 198, 0.28);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 245, 210, 0.3),
-        0 10px 24px rgba(0, 0, 0, 0.3),
-        0 0 22px rgba(255, 170, 67, 0.14);
-}
-
-.manual-section-browser {
-    margin-top: 26px;
-    padding: 22px;
-    border: 1px solid rgba(218, 158, 79, 0.18);
-    border-radius: 24px;
-    background:
-        linear-gradient(180deg, rgba(29, 11, 6, 0.62), rgba(12, 4, 4, 0.52));
-}
-
-.manual-section-browser > header button {
-    border-color: rgba(255, 199, 111, 0.3);
-    background: rgba(255, 181, 76, 0.08);
-    color: var(--library-accent);
-}
-
-.manual-section-manuals button {
-    border-radius: 12px;
-    color: rgba(255, 236, 197, 0.7);
-}
-
-.manual-section-manuals button.active {
-    border-color: rgba(255, 203, 119, 0.66);
-    background:
-        radial-gradient(circle at 50% 0, rgba(255, 194, 98, 0.2), transparent 62%),
-        linear-gradient(180deg, rgba(92, 41, 18, 0.96), rgba(31, 11, 6, 0.96));
-    color: var(--library-ink);
-}
-
-.manual-section-discovery {
-    border-radius: 14px;
-    background: rgba(10, 4, 3, 0.66);
-}
-
-.manual-section-groups {
-    border-top-color: rgba(218, 158, 79, 0.2);
-}
-
-.manual-section-group {
-    border-bottom-color: rgba(218, 158, 79, 0.16);
-}
-
-.manual-section-group > summary {
-    padding: 16px 12px;
-    border-radius: 16px;
-}
-
-.manual-section-group[open] > summary {
-    background:
-        linear-gradient(90deg, rgba(255, 182, 76, 0.1), transparent);
-}
-
-.manual-section-group > summary > span:last-child {
-    color: rgba(255, 210, 132, 0.54);
-}
-
-.manual-section-row {
-    margin: 8px 0;
-    padding: 16px;
-    border: 1px solid rgba(218, 158, 79, 0.14);
-    border-left: 3px solid rgba(218, 158, 79, 0.22);
-    border-radius: 16px;
-    background:
-        linear-gradient(180deg, rgba(255, 226, 168, 0.045), rgba(255, 226, 168, 0.015));
-}
-
-.manual-section-row:hover,
-.manual-section-row.active {
-    border-left-color: rgba(255, 202, 116, 0.86);
-    border-color: rgba(255, 199, 111, 0.3);
-    background:
-        linear-gradient(90deg, rgba(255, 177, 73, 0.11), rgba(255, 226, 168, 0.02) 75%);
-}
-
-.manual-section-row button {
-    border-radius: 10px;
-}
-
-.manual-section-row button:first-child,
-.manual-section-landing button:first-child {
-    border-color: rgba(255, 199, 111, 0.46);
-    color: var(--library-accent);
-    background: rgba(255, 183, 78, 0.08);
-}
-
-.manual-section-landing,
-.manual-library-empty {
-    padding-inline: 22px;
-}
-
-.manual-library-empty-icon {
-    border-color: rgba(255, 199, 111, 0.3);
-    background:
-        radial-gradient(circle, rgba(255, 184, 79, 0.14), rgba(35, 13, 6, 0.62));
-}
-
-.manual-library-suggestions button {
-    border-color: rgba(218, 158, 79, 0.24);
-    border-radius: 999px;
-    background: rgba(255, 181, 76, 0.07);
-    color: rgba(255, 236, 197, 0.76);
-}
-
-.manual-library-suggestions button:hover {
-    border-color: rgba(255, 199, 111, 0.5);
-    background: rgba(255, 181, 76, 0.12);
-}
-
-.manual-ai-answer,
-.manual-section-active-scope {
-    border-left-color: rgba(255, 202, 116, 0.9);
-    border-radius: 14px;
-    background:
-        linear-gradient(90deg, rgba(255, 180, 72, 0.13), rgba(255, 180, 72, 0.026));
-}
-
-.manual-search-result {
-    margin-top: 16px;
-    padding: 22px;
-    border: 1px solid rgba(218, 158, 79, 0.18);
-    border-radius: 22px;
-    background:
-        linear-gradient(180deg, rgba(38, 15, 7, 0.62), rgba(14, 5, 4, 0.76));
-    box-shadow:
-        inset 0 1px 0 rgba(255, 236, 186, 0.05),
-        0 18px 44px rgba(0, 0, 0, 0.22);
-}
-
-#ui .manual-search-result p {
-    border-left-color: rgba(122, 67, 24, 0.36);
-    border-radius: 4px 16px 16px 4px;
-    background:
-        linear-gradient(180deg, rgba(255, 244, 216, 0.98), rgba(230, 207, 158, 0.96));
-    color: #372314;
-    box-shadow:
-        inset 0 0 30px rgba(86, 49, 18, 0.07),
-        0 12px 28px rgba(0, 0, 0, 0.18);
-}
-
-.manual-search-result mark {
-    background: rgba(210, 143, 52, 0.34);
-    color: #241207;
-}
-
-.manual-complete-section {
-    padding: 22px;
-    border: 1px solid rgba(218, 158, 79, 0.18);
-    border-radius: 24px;
-    background:
-        linear-gradient(180deg, rgba(38, 15, 7, 0.62), rgba(14, 5, 4, 0.76));
-}
-
-.manual-complete-heading {
-    border-bottom-color: rgba(218, 158, 79, 0.2);
-}
-
-.manual-book-reader {
-    border-color: rgba(218, 158, 79, 0.26);
-    border-radius: 22px;
-    background:
-        linear-gradient(180deg, rgba(31, 12, 6, 0.82), rgba(9, 3, 3, 0.92));
-    box-shadow:
-        inset 0 1px 0 rgba(255, 236, 186, 0.06),
-        0 26px 70px rgba(0, 0, 0, 0.42);
-}
-
-.manual-reader-toolbar,
-.manual-reader-page-strip {
-    border-color: rgba(218, 158, 79, 0.18);
-}
-
-.manual-reader-progress {
-    background: rgba(255, 226, 168, 0.08);
-}
-
-.manual-reader-progress span {
-    background: linear-gradient(90deg, #8d431e, #ffc76f);
-}
-
-.manual-reader-stage {
-    background:
-        radial-gradient(circle at 50% 48%, rgba(255, 180, 72, 0.12), transparent 44%),
-        linear-gradient(180deg, #1d0c06, #090303);
-}
-
-.manual-reader-paper {
-    border-color: rgba(255, 229, 180, 0.24);
-    background: #f8ecd0;
-    box-shadow:
-        -10px 0 0 rgba(255, 232, 180, 0.055),
-        24px 28px 65px rgba(0, 0, 0, 0.5);
-}
-
-.manual-reader-page-label {
-    background:
-        linear-gradient(180deg, #f5e4bd, #ddbf80);
-    color: #3a2412;
-}
-
-.manual-page-modal-backdrop {
-    background:
-        radial-gradient(circle at 50% 14%, rgba(255, 177, 73, 0.16), transparent 34%),
-        rgba(6, 2, 2, 0.86);
-}
-
-.manual-page-modal-panel {
-    border-color: rgba(255, 199, 111, 0.42);
-    background: #120604;
-}
-
-@media (max-width: 820px) {
-    .dnd-hero {
-        min-height: 240px;
-        padding: 28px;
-    }
-
-    .dnd-hero-props {
-        display: none;
-    }
-
-    .manual-library-heading {
-        grid-template-columns: 1fr;
-        min-height: 0;
-    }
-
-    .manual-library-heading-art {
-        display: none;
-    }
-
-    .manual-library-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 600px) {
-    .dnd-app {
-        padding-top: 8px;
-    }
-
-    .dnd-hero {
-        min-height: 222px;
-        border-radius: 24px;
-        padding: 22px;
-    }
-
-    .dnd-hero::before {
-        inset: 10px;
-        border-radius: 18px;
-    }
-
-    .dnd-hero-die {
-        position: absolute;
-        right: 16px;
-        bottom: 18px;
-        width: 88px;
-        height: 88px;
-        font-size: 2.65rem;
-        opacity: 0.42;
-    }
-
-    #ui .dnd-hero h1 {
-        font-size: clamp(2rem, 11.5vw, 2.95rem);
-        max-width: 320px;
-    }
-
-    .dnd-hero p:last-child {
-        max-width: 270px;
-        font-size: 0.82rem;
-    }
-
-    .manual-library {
-        padding: 18px;
-        border-radius: 24px;
-    }
-
-    .manual-library::before {
-        inset: 8px;
-        border-radius: 18px;
-    }
-
-    .manual-library-heading {
-        padding: 18px 0 24px;
-    }
-
-    .manual-library-eyebrow {
-        font-size: 0.58rem;
-        letter-spacing: 0.15em;
-    }
-
-    #ui .manual-library-heading h2 {
-        font-size: clamp(2rem, 11vw, 2.7rem);
-        line-height: 1;
-    }
-
-    .manual-search-form,
-    .manual-section-browser,
-    .manual-complete-section {
-        padding: 16px;
-        border-radius: 20px;
-    }
-
-    .manual-section-landing,
-    .manual-library-empty {
-        padding-inline: 2px;
-    }
-}
-
-/* ============================================
    PASS IMPAGINAZIONE / ALLEGGERIMENTO WEBAPP
    ============================================ */
 
@@ -9553,4 +8741,1864 @@ body.manual-page-modal-open .floating-trigger {
     .floating-trigger {
         transition-duration: 1ms !important;
     }
+}
+
+/* ============================================
+   MANGA - CATALOGO AMETISTA
+   ============================================ */
+
+#app:has(.manga-app) {
+    background:
+        radial-gradient(circle at 10% 2%, rgba(199, 125, 255, 0.2), transparent 28%),
+        radial-gradient(circle at 90% 16%, rgba(91, 33, 182, 0.22), transparent 30%),
+        radial-gradient(circle at 50% 110%, rgba(157, 78, 221, 0.2), transparent 42%),
+        linear-gradient(180deg, #0d0517 0%, #05010a 52%, #030106 100%) !important;
+}
+
+.manga-app {
+    --manga-ink: #fbf8ff;
+    --manga-muted: rgba(230, 216, 247, 0.68);
+    --manga-soft: rgba(199, 125, 255, 0.12);
+    --manga-border: rgba(211, 171, 255, 0.22);
+    --manga-accent: #c77dff;
+    --manga-accent-bright: #e0aaff;
+    --manga-surface: rgba(16, 7, 27, 0.78);
+    width: min(100%, 1240px);
+    min-height: 100%;
+    margin: 0 auto;
+    padding: clamp(24px, 4vw, 52px) clamp(16px, 4vw, 42px) 110px;
+    position: relative;
+    isolation: isolate;
+    color: var(--manga-ink);
+}
+
+.manga-app::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(90deg, rgba(225, 198, 255, 0.018) 0 1px, transparent 1px 88px),
+        linear-gradient(90deg, transparent, rgba(199, 125, 255, 0.035), transparent);
+    mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+#ui .manga-app,
+#ui .manga-app * {
+    text-align: left;
+}
+
+.manga-app.fade-in {
+    animation: mangaPageReveal 420ms var(--ease-out) both;
+}
+
+@keyframes mangaPageReveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#ui .manga-hero-copy,
+#ui .manga-hero-copy *,
+#ui .manga-search-form > label,
+#ui .manga-search-control input,
+#ui .manga-catalog-head > div,
+#ui .manga-catalog-head > div *,
+#ui .manga-detail-copy,
+#ui .manga-detail-copy > h2,
+#ui .manga-detail-byline,
+#ui .manga-detail-description,
+#ui .manga-detail-translations,
+#ui .manga-detail-translations * {
+    text-align: left !important;
+}
+
+.manga-search-control button,
+.manga-load-more,
+.manga-empty button,
+.manga-detail-link,
+.manga-detail-close {
+    text-align: center !important;
+}
+
+.manga-back.btn-back-glass {
+    display: flex;
+    width: fit-content;
+    margin: 0 auto 24px;
+    border-color: rgba(199, 125, 255, 0.28);
+    background: rgba(24, 10, 39, 0.82);
+    color: rgba(247, 239, 255, 0.88);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+}
+
+.manga-hero {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.8fr) minmax(430px, 1.25fr);
+    align-items: center;
+    gap: clamp(30px, 5vw, 72px);
+    min-height: 430px;
+    position: relative;
+    overflow: visible;
+    padding: clamp(34px, 5vw, 64px);
+    border: 1px solid var(--manga-border);
+    border-radius: 38px;
+    background:
+        radial-gradient(circle at 18% 14%, rgba(224, 170, 255, 0.2), transparent 28%),
+        radial-gradient(circle at 92% 80%, rgba(91, 33, 182, 0.28), transparent 34%),
+        linear-gradient(135deg, rgba(42, 16, 67, 0.92), rgba(14, 5, 24, 0.96) 58%, rgba(5, 2, 10, 0.98));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -50px 100px rgba(0, 0, 0, 0.18),
+        0 32px 90px rgba(0, 0, 0, 0.48),
+        0 0 54px rgba(157, 78, 221, 0.1);
+}
+
+.manga-hero::before {
+    content: "漫";
+    position: absolute;
+    left: clamp(20px, 4vw, 52px);
+    bottom: -34px;
+    color: rgba(224, 170, 255, 0.045);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(12rem, 24vw, 22rem);
+    font-weight: 700;
+    line-height: 0.8;
+    pointer-events: none;
+}
+
+.manga-hero::after {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    z-index: 0;
+    border: 1px solid rgba(224, 170, 255, 0.08);
+    border-radius: 28px;
+    pointer-events: none;
+}
+
+.manga-hero-copy,
+.manga-search-panel {
+    position: relative;
+    z-index: 2;
+}
+
+.manga-eyebrow,
+.manga-section-kicker,
+.manga-detail-eyebrow {
+    margin: 0 0 12px;
+    color: var(--manga-accent-bright);
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-shadow: 0 0 18px rgba(199, 125, 255, 0.32);
+}
+
+#ui .manga-hero h1 {
+    margin: 0;
+    color: var(--manga-ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(4.5rem, 10vw, 8.4rem);
+    font-weight: 700;
+    line-height: 0.78;
+    letter-spacing: -0.075em;
+    text-shadow:
+        0 2px 0 rgba(35, 11, 57, 0.9),
+        0 18px 44px rgba(0, 0, 0, 0.45),
+        0 0 34px rgba(199, 125, 255, 0.18);
+}
+
+.manga-hero-intro {
+    max-width: 390px;
+    margin: 26px 0 0;
+    color: var(--manga-muted);
+    font-size: 0.95rem;
+    line-height: 1.75;
+}
+
+.manga-hero-orbit {
+    position: absolute;
+    z-index: 1;
+    border: 1px solid rgba(224, 170, 255, 0.13);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.manga-hero-orbit::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--manga-accent-bright);
+    box-shadow: 0 0 18px rgba(224, 170, 255, 0.75);
+}
+
+.manga-hero-orbit.orbit-one {
+    width: 220px;
+    height: 220px;
+    left: -110px;
+    top: -90px;
+    transform: rotate(18deg);
+}
+
+.manga-hero-orbit.orbit-two {
+    width: 320px;
+    height: 320px;
+    right: -180px;
+    bottom: -170px;
+    transform: rotate(-38deg);
+}
+
+.manga-search-panel {
+    display: grid;
+    gap: 12px;
+}
+
+.manga-search-form {
+    display: grid;
+    gap: 10px;
+}
+
+.manga-search-form > label {
+    color: rgba(245, 237, 255, 0.76);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.manga-search-control {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    min-height: 68px;
+    padding: 7px 7px 7px 20px;
+    border: 1px solid rgba(211, 171, 255, 0.34);
+    border-radius: 20px;
+    background: rgba(7, 2, 13, 0.76);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.045),
+        0 18px 46px rgba(0, 0, 0, 0.28);
+    transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+}
+
+.manga-search-control:focus-within {
+    border-color: rgba(224, 170, 255, 0.8);
+    box-shadow:
+        0 0 0 3px rgba(199, 125, 255, 0.11),
+        0 20px 52px rgba(0, 0, 0, 0.34),
+        0 0 34px rgba(157, 78, 221, 0.13);
+    transform: translateY(-1px);
+}
+
+.manga-search-control svg,
+.manga-filter-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+
+.manga-search-control svg {
+    color: var(--manga-accent);
+}
+
+.manga-search-control input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--manga-ink);
+    font: 600 0.94rem/1.4 'Montserrat', sans-serif;
+}
+
+.manga-search-control input::placeholder {
+    color: rgba(225, 209, 243, 0.38);
+}
+
+.manga-search-control button,
+.manga-load-more,
+.manga-empty button,
+.manga-detail-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 24px;
+    border: 1px solid rgba(229, 193, 255, 0.42);
+    border-radius: 14px;
+    background: linear-gradient(135deg, #b95cff, #7024b5 68%, #4a147e);
+    color: white;
+    font: 900 0.72rem/1 'Montserrat', sans-serif;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.24),
+        0 12px 28px rgba(74, 20, 126, 0.34);
+    transition: transform 200ms ease, filter 200ms ease, box-shadow 200ms ease;
+}
+
+.manga-search-control button:hover,
+.manga-load-more:hover,
+.manga-empty button:hover,
+.manga-detail-link:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.12);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        0 16px 34px rgba(98, 31, 158, 0.46),
+        0 0 26px rgba(199, 125, 255, 0.18);
+}
+
+.manga-genre-filter {
+    position: relative;
+    z-index: 10;
+}
+
+.manga-genre-filter > summary {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 28px;
+    align-items: center;
+    gap: 12px;
+    min-height: 66px;
+    padding: 10px 16px 10px 12px;
+    border: 1px solid rgba(211, 171, 255, 0.22);
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, rgba(61, 28, 91, 0.6), rgba(18, 7, 31, 0.82));
+    list-style: none;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    transition: border-color 220ms ease, background 220ms ease;
+}
+
+.manga-genre-filter > summary::-webkit-details-marker {
+    display: none;
+}
+
+.manga-genre-filter > summary:hover,
+.manga-genre-filter[open] > summary {
+    border-color: rgba(224, 170, 255, 0.5);
+    background:
+        linear-gradient(180deg, rgba(80, 36, 119, 0.7), rgba(23, 8, 39, 0.9));
+}
+
+.manga-filter-icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(224, 170, 255, 0.18);
+    border-radius: 13px;
+    color: var(--manga-accent-bright);
+    background: rgba(199, 125, 255, 0.08);
+}
+
+.manga-genre-filter > summary > span:nth-child(2) {
+    display: grid;
+    gap: 4px;
+}
+
+.manga-genre-filter > summary strong {
+    color: var(--manga-ink);
+    font-size: 0.82rem;
+}
+
+.manga-genre-filter > summary small {
+    color: var(--manga-muted);
+    font-size: 0.66rem;
+}
+
+.manga-filter-chevron {
+    color: var(--manga-accent);
+    font-size: 1.5rem;
+    text-align: center !important;
+    transition: transform 220ms ease;
+}
+
+.manga-genre-filter[open] .manga-filter-chevron {
+    transform: rotate(180deg);
+}
+
+.manga-genre-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    left: 0;
+    z-index: 20;
+    padding: 20px;
+    border: 1px solid rgba(211, 171, 255, 0.3);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 90% 0, rgba(199, 125, 255, 0.14), transparent 32%),
+        rgba(12, 4, 21, 0.98);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.055),
+        0 28px 70px rgba(0, 0, 0, 0.58),
+        0 0 34px rgba(157, 78, 221, 0.1);
+    animation: mangaFilterOpen 180ms ease-out both;
+}
+
+@keyframes mangaFilterOpen {
+    from { opacity: 0; transform: translateY(-7px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.manga-genre-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(211, 171, 255, 0.14);
+}
+
+.manga-genre-panel-head > div {
+    display: grid;
+    gap: 5px;
+}
+
+.manga-genre-panel-head strong {
+    color: var(--manga-ink);
+    font-size: 0.8rem;
+}
+
+.manga-genre-panel-head span {
+    color: var(--manga-muted);
+    font-size: 0.66rem;
+}
+
+.manga-genre-panel-head button {
+    border: 0;
+    background: transparent;
+    color: var(--manga-accent-bright);
+    font-size: 0.66rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+}
+
+.manga-genre-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    max-height: 270px;
+    overflow-y: auto;
+    padding-top: 16px;
+}
+
+.manga-genre-options button,
+.manga-active-filters button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid rgba(211, 171, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(199, 125, 255, 0.055);
+    color: rgba(244, 236, 255, 0.76);
+    font-size: 0.68rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.manga-genre-options button > span {
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(224, 170, 255, 0.45);
+    border-radius: 50%;
+}
+
+.manga-genre-options button:hover,
+.manga-genre-options button.active {
+    border-color: rgba(224, 170, 255, 0.56);
+    background: rgba(199, 125, 255, 0.14);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.manga-genre-options button.active > span {
+    border-color: white;
+    background: var(--manga-accent-bright);
+    box-shadow: 0 0 12px rgba(224, 170, 255, 0.7);
+}
+
+.manga-genre-loading {
+    color: var(--manga-muted);
+    font-size: 0.72rem;
+}
+
+.manga-active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding-top: 2px;
+}
+
+.manga-active-filters[hidden] {
+    display: none;
+}
+
+.manga-active-filters button {
+    min-height: 34px;
+    border-color: rgba(224, 170, 255, 0.3);
+    background: rgba(199, 125, 255, 0.1);
+}
+
+.manga-active-filters button span {
+    color: var(--manga-accent-bright);
+    font-size: 1rem;
+    line-height: 0;
+}
+
+.manga-catalog {
+    padding: clamp(44px, 6vw, 74px) 0 24px;
+}
+
+.manga-catalog-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 0 4px 24px;
+    border-bottom: 1px solid rgba(211, 171, 255, 0.14);
+}
+
+.manga-catalog-head > div {
+    display: grid;
+    gap: 7px;
+}
+
+.manga-section-kicker {
+    margin: 0;
+}
+
+#ui .manga-catalog-head h2 {
+    margin: 0;
+    color: var(--manga-ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+}
+
+.manga-catalog-head > div > span {
+    color: var(--manga-muted);
+    font-size: 0.74rem;
+}
+
+.manga-sort {
+    display: grid;
+    gap: 7px;
+    flex: 0 0 min(230px, 40%);
+}
+
+.manga-sort span {
+    color: var(--manga-muted);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.manga-sort select {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 42px 0 14px;
+    border: 1px solid rgba(211, 171, 255, 0.22);
+    border-radius: 13px;
+    outline: 0;
+    appearance: none;
+    background:
+        linear-gradient(45deg, transparent 50%, var(--manga-accent) 50%) calc(100% - 18px) calc(50% - 2px) / 6px 6px no-repeat,
+        linear-gradient(135deg, var(--manga-accent) 50%, transparent 50%) calc(100% - 12px) calc(50% - 2px) / 6px 6px no-repeat,
+        rgba(24, 10, 39, 0.86);
+    color: rgba(248, 242, 255, 0.88);
+    font: 700 0.72rem/1 'Montserrat', sans-serif;
+}
+
+.manga-sort select:focus {
+    border-color: rgba(224, 170, 255, 0.65);
+    box-shadow: 0 0 0 3px rgba(199, 125, 255, 0.1);
+}
+
+.manga-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: clamp(16px, 2.2vw, 26px);
+    padding: 28px 0;
+}
+
+.manga-card {
+    min-width: 0;
+    border: 1px solid rgba(211, 171, 255, 0.15);
+    border-radius: 22px;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(44, 19, 66, 0.68), rgba(11, 4, 19, 0.88));
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.045),
+        0 18px 42px rgba(0, 0, 0, 0.28);
+    transition: transform 260ms var(--ease-spring), border-color 260ms ease, box-shadow 260ms ease;
+}
+
+.manga-card:hover,
+.manga-card:focus-within {
+    transform: translateY(-7px);
+    border-color: rgba(224, 170, 255, 0.46);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 26px 54px rgba(0, 0, 0, 0.4),
+        0 0 30px rgba(157, 78, 221, 0.12);
+}
+
+.manga-card-open {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+}
+
+.manga-cover {
+    display: block;
+    aspect-ratio: 2 / 3;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 30%, rgba(224, 170, 255, 0.2), transparent 34%),
+        linear-gradient(145deg, #32134c, #0d0516 72%);
+}
+
+.manga-cover img {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 520ms var(--ease-out), filter 320ms ease;
+}
+
+.manga-card:hover .manga-cover img,
+.manga-card:focus-within .manga-cover img {
+    transform: scale(1.045);
+    filter: saturate(1.06) brightness(1.04);
+}
+
+.manga-cover-placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: rgba(224, 170, 255, 0.2);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 4.6rem;
+}
+
+.manga-cover-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+        linear-gradient(112deg, rgba(255, 255, 255, 0.15), transparent 18% 72%, rgba(224, 170, 255, 0.08)),
+        linear-gradient(180deg, transparent 50%, rgba(6, 2, 10, 0.68));
+    pointer-events: none;
+}
+
+.manga-card-status {
+    position: absolute;
+    z-index: 3;
+    top: 12px;
+    left: 12px;
+    max-width: calc(100% - 24px);
+    padding: 7px 9px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    background: rgba(8, 3, 14, 0.72);
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 0.54rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+}
+
+.manga-card-copy {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    min-height: 142px;
+    padding: 16px;
+}
+
+.manga-card-copy > strong {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--manga-ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1rem;
+    line-height: 1.25;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.manga-card-author {
+    overflow: hidden;
+    color: var(--manga-muted);
+    font-size: 0.64rem;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.manga-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: auto;
+}
+
+.manga-card-tags small {
+    padding: 5px 7px;
+    border: 1px solid rgba(211, 171, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(199, 125, 255, 0.06);
+    color: rgba(235, 222, 250, 0.65);
+    font-size: 0.52rem;
+    font-weight: 700;
+}
+
+.manga-card-skeleton {
+    min-height: 390px;
+    padding: 0;
+    border-color: rgba(211, 171, 255, 0.08);
+    animation: mangaSkeletonFade 1.4s calc(var(--skeleton-index) * 35ms) ease-in-out infinite alternate;
+}
+
+.manga-skeleton-cover,
+.manga-skeleton-line {
+    display: block;
+    background:
+        linear-gradient(100deg, rgba(199, 125, 255, 0.03) 20%, rgba(224, 170, 255, 0.1) 42%, rgba(199, 125, 255, 0.03) 68%);
+    background-size: 260% 100%;
+    animation: mangaSkeletonShimmer 1.45s linear infinite;
+}
+
+.manga-skeleton-cover {
+    aspect-ratio: 2 / 3;
+}
+
+.manga-skeleton-line {
+    height: 13px;
+    margin: 16px 16px 0;
+    border-radius: 999px;
+}
+
+.manga-skeleton-line.short {
+    width: 52%;
+    margin-top: 10px;
+}
+
+@keyframes mangaSkeletonShimmer {
+    from { background-position: 140% 0; }
+    to { background-position: -120% 0; }
+}
+
+@keyframes mangaSkeletonFade {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}
+
+.manga-empty {
+    grid-column: 1 / -1;
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    min-height: 320px;
+    padding: 48px 24px;
+    border: 1px dashed rgba(211, 171, 255, 0.2);
+    border-radius: 26px;
+    background: rgba(199, 125, 255, 0.035);
+    text-align: center !important;
+}
+
+.manga-empty > span {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border: 1px solid rgba(224, 170, 255, 0.24);
+    border-radius: 24px;
+    background: rgba(199, 125, 255, 0.08);
+    color: var(--manga-accent-bright);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 2.2rem;
+    text-align: center !important;
+    box-shadow: 0 0 28px rgba(157, 78, 221, 0.12);
+}
+
+#ui .manga-empty h3 {
+    margin: 4px 0 0;
+    color: var(--manga-ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.6rem;
+    text-align: center !important;
+}
+
+.manga-empty p {
+    max-width: 480px;
+    margin: 0;
+    color: var(--manga-muted);
+    font-size: 0.78rem;
+    line-height: 1.65;
+    text-align: center !important;
+}
+
+.manga-empty button {
+    min-height: 46px;
+    margin-top: 8px;
+}
+
+.manga-error > span {
+    color: #ffb4ce;
+    border-color: rgba(255, 117, 157, 0.3);
+    background: rgba(255, 65, 108, 0.08);
+}
+
+.manga-catalog-footer {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+}
+
+.manga-catalog-footer p {
+    min-height: 20px;
+    margin: 0;
+    color: var(--manga-muted);
+    font-size: 0.7rem;
+    text-align: center !important;
+}
+
+.manga-load-more {
+    min-width: 230px;
+}
+
+.manga-load-more[hidden] {
+    display: none;
+}
+
+.manga-load-more:disabled {
+    cursor: wait;
+    opacity: 0.6;
+    transform: none;
+}
+
+.manga-provider-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 24px;
+    color: rgba(225, 209, 243, 0.38);
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-align: center !important;
+}
+
+.manga-provider-note span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--manga-accent);
+    box-shadow: 0 0 12px rgba(199, 125, 255, 0.7);
+}
+
+.manga-detail-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    place-items: center;
+    padding: clamp(14px, 3vw, 34px);
+}
+
+.manga-detail-modal.active {
+    display: grid;
+}
+
+body.manga-detail-open #app {
+    overflow: hidden !important;
+}
+
+body.manga-detail-open #navbar-trigger,
+body.manga-detail-open #nav-home-btn {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.manga-detail-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background:
+        radial-gradient(circle at 50% 18%, rgba(157, 78, 221, 0.22), transparent 34%),
+        rgba(3, 1, 7, 0.88);
+    backdrop-filter: blur(16px) saturate(0.8);
+    cursor: pointer;
+}
+
+.manga-detail-panel {
+    width: min(960px, 100%);
+    max-height: min(820px, calc(100dvh - 40px));
+    position: relative;
+    z-index: 1;
+    overflow-y: auto;
+    padding: clamp(20px, 4vw, 42px);
+    border: 1px solid rgba(224, 170, 255, 0.34);
+    border-radius: 30px;
+    outline: 0;
+    background:
+        radial-gradient(circle at 90% 0, rgba(199, 125, 255, 0.15), transparent 34%),
+        linear-gradient(145deg, rgba(38, 15, 61, 0.98), rgba(8, 3, 14, 0.99) 62%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.075),
+        0 40px 120px rgba(0, 0, 0, 0.7),
+        0 0 56px rgba(157, 78, 221, 0.12);
+    animation: mangaModalIn 260ms var(--ease-out) both;
+}
+
+@keyframes mangaModalIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.975); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.manga-detail-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(224, 170, 255, 0.26);
+    border-radius: 14px;
+    background: rgba(10, 4, 17, 0.82);
+    color: var(--manga-ink);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.manga-detail-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.68fr) minmax(0, 1.45fr);
+    gap: clamp(26px, 5vw, 54px);
+}
+
+.manga-detail-cover {
+    align-self: start;
+    aspect-ratio: 2 / 3;
+    position: sticky;
+    top: 0;
+    overflow: hidden;
+    border: 1px solid rgba(224, 170, 255, 0.24);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 50% 28%, rgba(224, 170, 255, 0.2), transparent 36%),
+        linear-gradient(145deg, #32134c, #0d0516 72%);
+    box-shadow: 0 26px 54px rgba(0, 0, 0, 0.4);
+}
+
+.manga-detail-cover > span {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: rgba(224, 170, 255, 0.2);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 5rem;
+}
+
+.manga-detail-cover img {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.manga-detail-copy {
+    min-width: 0;
+    padding: 18px 8px 8px 0;
+}
+
+.manga-detail-eyebrow {
+    margin-bottom: 10px;
+}
+
+#ui .manga-detail-copy h2 {
+    max-width: 90%;
+    margin: 0;
+    color: var(--manga-ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(2.2rem, 5vw, 4.2rem);
+    line-height: 0.98;
+    letter-spacing: -0.05em;
+}
+
+.manga-detail-byline {
+    margin: 14px 0 0;
+    color: var(--manga-muted);
+    font-size: 0.78rem;
+}
+
+.manga-detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 22px 0;
+}
+
+.manga-detail-tags span {
+    padding: 7px 10px;
+    border: 1px solid rgba(224, 170, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(199, 125, 255, 0.07);
+    color: rgba(241, 232, 252, 0.76);
+    font-size: 0.62rem;
+    font-weight: 700;
+}
+
+.manga-detail-description {
+    margin: 0;
+    color: rgba(238, 228, 250, 0.74);
+    font-size: 0.8rem;
+    line-height: 1.8;
+    white-space: pre-line;
+}
+
+.manga-detail-data {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 26px 0 0;
+}
+
+.manga-detail-data div {
+    min-width: 0;
+    padding: 13px;
+    border: 1px solid rgba(211, 171, 255, 0.12);
+    border-radius: 14px;
+    background: rgba(199, 125, 255, 0.035);
+}
+
+.manga-detail-data dt {
+    margin-bottom: 6px;
+    color: rgba(224, 170, 255, 0.66);
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.manga-detail-data dd {
+    overflow: hidden;
+    margin: 0;
+    color: rgba(250, 246, 255, 0.84);
+    font-size: 0.7rem;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+}
+
+.manga-detail-translations {
+    margin-top: 22px;
+    padding: 15px;
+    border-left: 2px solid var(--manga-accent);
+    border-radius: 4px 14px 14px 4px;
+    background: linear-gradient(90deg, rgba(199, 125, 255, 0.1), transparent);
+}
+
+.manga-detail-translations strong {
+    color: var(--manga-ink);
+    font-size: 0.68rem;
+}
+
+.manga-detail-translations p {
+    margin: 6px 0 0;
+    color: var(--manga-muted);
+    font-size: 0.66rem;
+    line-height: 1.6;
+}
+
+.manga-detail-link {
+    width: fit-content;
+    margin-top: 24px;
+    gap: 10px;
+}
+
+.manga-detail-link span {
+    font-size: 1rem;
+}
+
+@supports (content-visibility: auto) {
+    .manga-card {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 420px;
+    }
+}
+
+@media (max-width: 920px) {
+    .manga-hero {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 36px;
+        min-height: 0;
+    }
+
+    .manga-hero-copy,
+    .manga-search-panel {
+        min-width: 0;
+    }
+
+    .manga-hero-copy {
+        max-width: 580px;
+    }
+
+    .manga-hero-intro {
+        max-width: 560px;
+    }
+
+    .manga-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .manga-app {
+        padding: 18px 12px 120px;
+    }
+
+    .manga-back.btn-back-glass {
+        margin-bottom: 16px;
+    }
+
+    .manga-hero {
+        gap: 28px;
+        overflow: hidden;
+        padding: 26px 18px;
+        border-radius: 26px;
+    }
+
+    .manga-hero::after {
+        inset: 8px;
+        border-radius: 20px;
+    }
+
+    #ui .manga-hero h1 {
+        max-width: 100%;
+        font-size: clamp(3.35rem, 19vw, 4.5rem);
+        letter-spacing: -0.065em;
+    }
+
+    .manga-hero-intro {
+        margin-top: 20px;
+        font-size: 0.82rem;
+    }
+
+    .manga-search-control {
+        grid-template-columns: 20px minmax(0, 1fr);
+        min-height: 60px;
+        padding: 10px 14px;
+        border-radius: 17px;
+    }
+
+    .manga-search-control button {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-height: 46px;
+    }
+
+    .manga-genre-panel {
+        position: relative;
+        top: auto;
+        margin-top: 9px;
+        padding: 16px;
+        border-radius: 18px;
+    }
+
+    .manga-genre-panel-head {
+        align-items: flex-start;
+    }
+
+    .manga-genre-options {
+        max-height: 330px;
+    }
+
+    .manga-catalog {
+        padding-top: 44px;
+    }
+
+    .manga-catalog-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .manga-sort {
+        flex-basis: auto;
+        width: 100%;
+    }
+
+    .manga-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 11px;
+        padding-top: 20px;
+    }
+
+    .manga-card {
+        border-radius: 16px;
+    }
+
+    .manga-card-copy {
+        min-height: 132px;
+        padding: 12px;
+    }
+
+    .manga-card-copy > strong {
+        font-size: 0.88rem;
+    }
+
+    .manga-card-status {
+        top: 8px;
+        left: 8px;
+        padding: 6px 7px;
+        font-size: 0.48rem;
+    }
+
+    .manga-card-tags small:nth-child(n + 3) {
+        display: none;
+    }
+
+    .manga-detail-modal {
+        align-items: end;
+        padding: 8px;
+    }
+
+    .manga-detail-panel {
+        max-height: calc(100dvh - 16px);
+        padding: 54px 18px 24px;
+        border-radius: 24px;
+    }
+
+    .manga-detail-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .manga-detail-cover {
+        width: min(62vw, 260px);
+        position: relative;
+        top: auto;
+        margin: 0 auto;
+    }
+
+    .manga-detail-copy {
+        padding: 0;
+    }
+
+    #ui .manga-detail-copy h2 {
+        max-width: 100%;
+        font-size: clamp(2rem, 11vw, 3rem);
+    }
+
+    .manga-detail-data {
+        grid-template-columns: 1fr;
+    }
+
+    body:has(.manga-app) .floating-trigger {
+        width: 50px;
+        height: 50px;
+        right: max(10px, var(--safe-right));
+        bottom: calc(14px + var(--safe-bottom));
+        border-radius: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .manga-hero-orbit,
+    .manga-card-skeleton,
+    .manga-skeleton-cover,
+    .manga-skeleton-line {
+        animation: none !important;
+    }
+
+    .manga-card,
+    .manga-cover img,
+    .manga-search-control,
+    .manga-genre-options button {
+        transition-duration: 1ms !important;
+    }
+}
+
+/* La home ora ospita anche la destinazione Manga. */
+.taverna-home-dock {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.taverna-home-dock:has(.is-resume) {
+    grid-template-columns: minmax(180px, 1.45fr) repeat(5, minmax(100px, 1fr));
+}
+
+@media (max-width: 760px) {
+    .taverna-home-dock,
+    .taverna-home-dock:has(.is-resume) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) and (orientation: landscape) {
+    .taverna-home-dock,
+    .taverna-home-dock:has(.is-resume) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* ============================================
+   D&D + PATHFINDER - TAVERNA AMETISTA
+   ============================================ */
+
+#app:has(.dnd-app) {
+    background:
+        radial-gradient(circle at 14% 8%, rgba(199, 125, 255, 0.2), transparent 28%),
+        radial-gradient(circle at 88% 10%, rgba(91, 33, 182, 0.2), transparent 26%),
+        radial-gradient(circle at 50% 112%, rgba(157, 78, 221, 0.25), transparent 44%),
+        repeating-linear-gradient(90deg, rgba(224, 170, 255, 0.018) 0 1px, transparent 1px 86px),
+        linear-gradient(180deg, #10061c 0%, #07020d 50%, #030106 100%) !important;
+}
+
+.dnd-app {
+    --tavern-ink: #fbf8ff;
+    --tavern-muted: rgba(229, 215, 246, 0.7);
+    --tavern-brass: #c77dff;
+    --tavern-brass-hot: #e0aaff;
+    --tavern-ember: #9d4ede;
+    --tavern-wood: #271039;
+    --tavern-wood-dark: #0d0516;
+    --tavern-leather: #35164d;
+    --tavern-parchment: #eee7f5;
+    --tavern-border: rgba(199, 125, 255, 0.28);
+}
+
+.dnd-app::before {
+    background:
+        linear-gradient(90deg, transparent, rgba(224, 170, 255, 0.045), transparent),
+        repeating-linear-gradient(0deg, rgba(229, 207, 255, 0.022) 0 2px, transparent 2px 34px);
+}
+
+.dnd-app::after {
+    background: linear-gradient(180deg, transparent, rgba(32, 10, 50, 0.72));
+}
+
+.dnd-back.btn-back-glass {
+    border-color: rgba(199, 125, 255, 0.36) !important;
+    background:
+        linear-gradient(180deg, rgba(59, 25, 88, 0.78), rgba(18, 7, 31, 0.94)) !important;
+    box-shadow:
+        inset 0 1px 0 rgba(244, 231, 255, 0.11),
+        0 16px 38px rgba(0, 0, 0, 0.36),
+        0 0 28px rgba(157, 78, 221, 0.11) !important;
+}
+
+.dnd-hero {
+    border-color: rgba(199, 125, 255, 0.34);
+    background:
+        radial-gradient(circle at 78% 20%, rgba(224, 170, 255, 0.24), transparent 22%),
+        radial-gradient(circle at 8% 100%, rgba(91, 33, 182, 0.36), transparent 36%),
+        linear-gradient(115deg, rgba(55, 20, 84, 0.9), rgba(17, 6, 29, 0.97) 50%, rgba(5, 2, 10, 0.99)),
+        repeating-linear-gradient(90deg, rgba(229, 207, 255, 0.034) 0 1px, transparent 1px 72px);
+    box-shadow:
+        inset 0 0 0 1px rgba(242, 226, 255, 0.07),
+        inset 0 -44px 80px rgba(8, 2, 13, 0.58),
+        0 34px 90px rgba(0, 0, 0, 0.56),
+        0 0 54px rgba(157, 78, 221, 0.11);
+}
+
+.dnd-hero::before {
+    border-color: rgba(224, 170, 255, 0.13);
+    background:
+        linear-gradient(90deg, rgba(224, 170, 255, 0.1), transparent 18% 82%, rgba(224, 170, 255, 0.07)),
+        radial-gradient(circle at 73% 24%, rgba(199, 125, 255, 0.17), transparent 20%);
+}
+
+.dnd-hero::after {
+    background:
+        radial-gradient(ellipse at center, rgba(0, 0, 0, 0.62), transparent 66%),
+        linear-gradient(180deg, rgba(70, 24, 104, 0), rgba(70, 24, 104, 0.58));
+}
+
+.dnd-kicker {
+    text-shadow: 0 0 20px rgba(199, 125, 255, 0.36);
+}
+
+#ui .dnd-hero h1 {
+    text-shadow:
+        0 2px 0 rgba(31, 8, 48, 0.92),
+        0 16px 38px rgba(0, 0, 0, 0.52);
+}
+
+#ui .dnd-hero h1 span {
+    text-shadow:
+        0 0 26px rgba(224, 170, 255, 0.5),
+        0 2px 0 rgba(41, 10, 63, 0.9);
+}
+
+.dnd-hero-die {
+    color: rgba(224, 170, 255, 0.22);
+    text-shadow:
+        0 0 36px rgba(199, 125, 255, 0.2),
+        0 4px 0 rgba(0, 0, 0, 0.34);
+    background:
+        radial-gradient(circle at 42% 34%, rgba(224, 170, 255, 0.14), transparent 32%),
+        linear-gradient(135deg, rgba(69, 25, 102, 0.72), rgba(13, 4, 23, 0.94));
+    border-color: rgba(199, 125, 255, 0.25);
+}
+
+.dnd-prop-candle {
+    background: linear-gradient(90deg, #efe5f8, #a889bb 58%, #624975);
+    box-shadow:
+        0 -28px 44px rgba(199, 125, 255, 0.48),
+        0 0 0 1px rgba(245, 235, 255, 0.17);
+}
+
+.dnd-prop-candle::before {
+    background: radial-gradient(circle at 45% 58%, #ffffff 0 18%, #e0aaff 42%, rgba(157, 78, 221, 0.18) 72%);
+}
+
+.dnd-prop-mug {
+    border-color: rgba(224, 170, 255, 0.18);
+    background: linear-gradient(135deg, #653487, #271039);
+    box-shadow: inset 0 8px 0 rgba(236, 214, 255, 0.1);
+}
+
+.dnd-prop-mug::after {
+    border-color: rgba(129, 70, 163, 0.9);
+}
+
+.dnd-prop-scroll {
+    background: linear-gradient(90deg, #baa5ca, #eee7f5 18% 76%, #816a94);
+    box-shadow:
+        inset 0 0 16px rgba(56, 31, 75, 0.22),
+        0 10px 22px rgba(0, 0, 0, 0.28);
+}
+
+.dnd-tabs button {
+    border-color: rgba(199, 125, 255, 0.27);
+    background:
+        linear-gradient(180deg, rgba(59, 25, 88, 0.82), rgba(18, 7, 31, 0.92));
+    color: rgba(243, 233, 253, 0.82);
+    box-shadow:
+        inset 0 1px 0 rgba(245, 234, 255, 0.07),
+        0 10px 26px rgba(0, 0, 0, 0.25);
+}
+
+.dnd-tabs button:hover {
+    border-color: rgba(224, 170, 255, 0.5);
+    background:
+        linear-gradient(180deg, rgba(77, 33, 113, 0.9), rgba(25, 9, 42, 0.96));
+    box-shadow:
+        inset 0 1px 0 rgba(245, 234, 255, 0.11),
+        0 14px 32px rgba(0, 0, 0, 0.32),
+        0 0 24px rgba(157, 78, 221, 0.12);
+}
+
+.dnd-tabs button.active {
+    border-color: rgba(224, 170, 255, 0.76);
+    background:
+        radial-gradient(circle at 50% 0, rgba(224, 170, 255, 0.2), transparent 62%),
+        linear-gradient(180deg, rgba(91, 39, 133, 0.96), rgba(35, 13, 58, 0.97));
+    color: #eed2ff;
+    box-shadow:
+        inset 0 0 0 1px rgba(247, 237, 255, 0.08),
+        0 14px 36px rgba(0, 0, 0, 0.34),
+        0 0 28px rgba(199, 125, 255, 0.16);
+}
+
+.dnd-panel,
+.dnd-list-card,
+.dnd-empty {
+    border-color: rgba(199, 125, 255, 0.23);
+    background:
+        linear-gradient(180deg, rgba(47, 20, 70, 0.72), rgba(14, 5, 24, 0.86)),
+        repeating-linear-gradient(90deg, rgba(229, 207, 255, 0.025) 0 1px, transparent 1px 54px);
+    box-shadow:
+        inset 0 1px 0 rgba(244, 231, 255, 0.07),
+        0 18px 45px rgba(0, 0, 0, 0.36);
+}
+
+.dnd-panel:hover,
+.dnd-list-card:hover {
+    border-color: rgba(224, 170, 255, 0.47);
+    background:
+        linear-gradient(180deg, rgba(61, 26, 90, 0.78), rgba(18, 6, 30, 0.9)),
+        repeating-linear-gradient(90deg, rgba(229, 207, 255, 0.034) 0 1px, transparent 1px 54px);
+    box-shadow:
+        inset 0 1px 0 rgba(244, 231, 255, 0.09),
+        0 22px 54px rgba(0, 0, 0, 0.44),
+        0 0 30px rgba(157, 78, 221, 0.13);
+}
+
+.dnd-panel p,
+.dnd-list-card p {
+    color: rgba(232, 218, 247, 0.67);
+}
+
+.manual-library {
+    --library-ink: #fbf8ff;
+    --library-muted: rgba(229, 215, 246, 0.7);
+    --library-border: rgba(199, 125, 255, 0.23);
+    --library-accent: #d291ff;
+    --library-accent-soft: rgba(199, 125, 255, 0.14);
+    --library-surface: rgba(14, 5, 24, 0.84);
+    border-color: rgba(199, 125, 255, 0.23);
+    background:
+        radial-gradient(circle at 12% 0%, rgba(224, 170, 255, 0.15), transparent 30%),
+        radial-gradient(circle at 88% 6%, rgba(91, 33, 182, 0.25), transparent 30%),
+        linear-gradient(180deg, rgba(36, 14, 57, 0.86), rgba(10, 3, 18, 0.92)),
+        repeating-linear-gradient(90deg, rgba(229, 207, 255, 0.024) 0 1px, transparent 1px 74px);
+    box-shadow:
+        inset 0 1px 0 rgba(245, 235, 255, 0.07),
+        inset 0 -30px 80px rgba(0, 0, 0, 0.24),
+        0 28px 90px rgba(0, 0, 0, 0.44);
+}
+
+.manual-library::before {
+    border-color: rgba(224, 170, 255, 0.1);
+    background:
+        linear-gradient(90deg, rgba(224, 170, 255, 0.06), transparent 18% 82%, rgba(224, 170, 255, 0.045)),
+        radial-gradient(circle at 10% 18%, rgba(199, 125, 255, 0.09), transparent 24%);
+}
+
+.manual-library-heading {
+    border-bottom-color: rgba(199, 125, 255, 0.2);
+}
+
+.manual-library-eyebrow {
+    text-shadow: 0 0 18px rgba(199, 125, 255, 0.32);
+}
+
+#ui .manual-library-heading h2 {
+    color: #fbf8ff;
+    text-shadow:
+        0 2px 0 rgba(32, 8, 50, 0.9),
+        0 16px 36px rgba(0, 0, 0, 0.46),
+        0 0 30px rgba(199, 125, 255, 0.13);
+}
+
+.manual-heading-book {
+    border-color: rgba(224, 170, 255, 0.28);
+    background:
+        linear-gradient(90deg, rgba(245, 235, 255, 0.15), transparent 16px),
+        linear-gradient(135deg, #71399a, #28103b 68%);
+    box-shadow:
+        inset 9px 0 0 rgba(235, 214, 255, 0.07),
+        inset -12px 0 28px rgba(0, 0, 0, 0.26);
+}
+
+.manual-heading-book::before {
+    border-color: rgba(224, 170, 255, 0.24);
+}
+
+.manual-heading-candle {
+    background: linear-gradient(90deg, #eee5f5, #a68ab8 62%, #604c6e);
+    box-shadow:
+        0 -38px 64px rgba(199, 125, 255, 0.5),
+        0 0 0 1px rgba(246, 237, 255, 0.16);
+}
+
+.manual-heading-candle::before {
+    background: radial-gradient(circle at 45% 58%, #fff 0 18%, #e0aaff 43%, rgba(157, 78, 221, 0.18) 75%);
+}
+
+.manual-heading-runes {
+    color: rgba(224, 170, 255, 0.64);
+    text-shadow: 0 0 20px rgba(199, 125, 255, 0.4);
+}
+
+.manual-filter-button,
+.manual-complete-button,
+.manual-section-manuals button,
+.manual-section-discovery,
+.manual-section-row,
+.manual-complete-tabs button,
+.manual-reader-actions button,
+.manual-reader-actions a,
+.manual-reader-stage > button,
+.manual-reader-page-strip button,
+.manual-page-modal-panel a,
+.manual-page-modal-panel button {
+    border-color: rgba(199, 125, 255, 0.23);
+    background:
+        linear-gradient(180deg, rgba(56, 23, 84, 0.64), rgba(15, 5, 25, 0.82));
+    box-shadow: inset 0 1px 0 rgba(245, 233, 255, 0.055);
+}
+
+.manual-filter-button {
+    background:
+        linear-gradient(180deg, rgba(50, 20, 75, 0.78), rgba(17, 6, 28, 0.88));
+}
+
+.manual-filter-button:hover {
+    border-color: rgba(224, 170, 255, 0.5);
+    background:
+        linear-gradient(180deg, rgba(68, 29, 100, 0.86), rgba(22, 7, 36, 0.92));
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.26), 0 0 22px rgba(157, 78, 221, 0.1);
+}
+
+.manual-filter-button.active {
+    border-color: rgba(224, 170, 255, 0.64);
+    background:
+        radial-gradient(circle at 0 20%, rgba(224, 170, 255, 0.17), transparent 38%),
+        linear-gradient(180deg, rgba(77, 34, 113, 0.92), rgba(25, 8, 42, 0.96));
+}
+
+.manual-filter-check {
+    border-color: rgba(224, 170, 255, 0.25);
+}
+
+.manual-filter-button.active .manual-filter-check {
+    border-color: rgba(239, 216, 255, 0.82);
+    background: linear-gradient(135deg, #d291ff, #7135a4);
+    color: #190827;
+    box-shadow: 0 0 16px rgba(199, 125, 255, 0.3);
+}
+
+.manual-complete-button {
+    border-color: rgba(224, 170, 255, 0.48);
+    background:
+        radial-gradient(circle at 20% 0, rgba(224, 170, 255, 0.22), transparent 46%),
+        linear-gradient(135deg, rgba(91, 40, 132, 0.95), rgba(31, 10, 51, 0.96));
+}
+
+.manual-complete-button:hover {
+    border-color: rgba(239, 216, 255, 0.8);
+    background:
+        radial-gradient(circle at 20% 0, rgba(224, 170, 255, 0.28), transparent 46%),
+        linear-gradient(135deg, rgba(107, 47, 154, 0.98), rgba(39, 12, 63, 0.98));
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.32), 0 0 28px rgba(157, 78, 221, 0.15);
+}
+
+.manual-search-form {
+    border-color: rgba(199, 125, 255, 0.2);
+    background:
+        linear-gradient(180deg, rgba(43, 17, 66, 0.64), rgba(12, 4, 21, 0.78)),
+        repeating-linear-gradient(90deg, rgba(229, 207, 255, 0.02) 0 1px, transparent 1px 54px);
+    box-shadow:
+        inset 0 1px 0 rgba(245, 233, 255, 0.055),
+        0 18px 44px rgba(0, 0, 0, 0.27);
+}
+
+.manual-search-control {
+    border-color: rgba(224, 170, 255, 0.45);
+    background:
+        linear-gradient(180deg, rgba(13, 4, 22, 0.9), rgba(6, 2, 11, 0.94));
+    box-shadow:
+        inset 0 0 0 1px rgba(245, 233, 255, 0.035),
+        0 18px 45px rgba(0, 0, 0, 0.3);
+}
+
+.manual-search-control:focus-within {
+    border-color: rgba(232, 196, 255, 0.82);
+    box-shadow:
+        0 0 0 3px rgba(199, 125, 255, 0.13),
+        0 20px 52px rgba(0, 0, 0, 0.36),
+        0 0 34px rgba(157, 78, 221, 0.12);
+}
+
+.manual-search-control button {
+    border-color: rgba(239, 216, 255, 0.42);
+    background:
+        linear-gradient(180deg, #d291ff, #8a43bd 58%, #5d248d);
+    color: #190827;
+    text-shadow: 0 1px 0 rgba(250, 243, 255, 0.26);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 10px 24px rgba(0, 0, 0, 0.3),
+        0 0 22px rgba(199, 125, 255, 0.16);
+}
+
+.manual-section-browser,
+.manual-search-result,
+.manual-complete-section {
+    border-color: rgba(199, 125, 255, 0.18);
+    background:
+        linear-gradient(180deg, rgba(31, 11, 50, 0.66), rgba(10, 3, 17, 0.78));
+}
+
+.manual-section-browser > header button,
+.manual-section-row button:first-child,
+.manual-section-landing button:first-child {
+    border-color: rgba(224, 170, 255, 0.34);
+    background: rgba(199, 125, 255, 0.08);
+}
+
+.manual-section-manuals button {
+    color: rgba(240, 229, 251, 0.7);
+}
+
+.manual-section-manuals button.active {
+    border-color: rgba(224, 170, 255, 0.65);
+    background:
+        radial-gradient(circle at 50% 0, rgba(224, 170, 255, 0.18), transparent 62%),
+        linear-gradient(180deg, rgba(71, 30, 105, 0.97), rgba(23, 7, 39, 0.97));
+}
+
+.manual-section-discovery {
+    background: rgba(7, 2, 12, 0.7);
+}
+
+.manual-section-groups {
+    border-top-color: rgba(199, 125, 255, 0.19);
+}
+
+.manual-section-group {
+    border-bottom-color: rgba(199, 125, 255, 0.15);
+}
+
+.manual-section-group[open] > summary {
+    background:
+        linear-gradient(90deg, rgba(199, 125, 255, 0.1), transparent);
+}
+
+.manual-section-group > summary > span:last-child {
+    color: rgba(224, 170, 255, 0.56);
+}
+
+.manual-section-row {
+    border-color: rgba(199, 125, 255, 0.14);
+    border-left-color: rgba(199, 125, 255, 0.24);
+    background:
+        linear-gradient(180deg, rgba(229, 207, 255, 0.04), rgba(229, 207, 255, 0.012));
+}
+
+.manual-section-row:hover,
+.manual-section-row.active {
+    border-left-color: rgba(224, 170, 255, 0.86);
+    border-color: rgba(224, 170, 255, 0.3);
+    background:
+        linear-gradient(90deg, rgba(199, 125, 255, 0.11), rgba(229, 207, 255, 0.015) 75%);
+}
+
+.manual-library-empty-icon {
+    border-color: rgba(224, 170, 255, 0.3);
+    background:
+        radial-gradient(circle, rgba(199, 125, 255, 0.14), rgba(24, 8, 39, 0.64));
+}
+
+.manual-library-suggestions button {
+    border-color: rgba(199, 125, 255, 0.23);
+    background: rgba(199, 125, 255, 0.07);
+    color: rgba(240, 229, 251, 0.76);
+}
+
+.manual-library-suggestions button:hover {
+    border-color: rgba(224, 170, 255, 0.5);
+    background: rgba(199, 125, 255, 0.12);
+}
+
+.manual-ai-answer,
+.manual-section-active-scope {
+    border-left-color: rgba(224, 170, 255, 0.9);
+    background:
+        linear-gradient(90deg, rgba(199, 125, 255, 0.13), rgba(199, 125, 255, 0.025));
+}
+
+.manual-search-result {
+    box-shadow:
+        inset 0 1px 0 rgba(245, 233, 255, 0.045),
+        0 18px 44px rgba(0, 0, 0, 0.22);
+}
+
+#ui .manual-search-result p {
+    border-left-color: rgba(107, 67, 133, 0.36);
+    background:
+        linear-gradient(180deg, rgba(247, 242, 250, 0.99), rgba(224, 214, 231, 0.97));
+    color: #33213e;
+    box-shadow:
+        inset 0 0 30px rgba(61, 34, 78, 0.06),
+        0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.manual-search-result mark {
+    background: rgba(199, 125, 255, 0.32);
+    color: #281632;
+}
+
+.manual-complete-heading,
+.manual-reader-toolbar,
+.manual-reader-page-strip {
+    border-color: rgba(199, 125, 255, 0.19);
+}
+
+.manual-book-reader {
+    border-color: rgba(199, 125, 255, 0.26);
+    background:
+        linear-gradient(180deg, rgba(25, 8, 41, 0.84), rgba(7, 2, 12, 0.94));
+    box-shadow:
+        inset 0 1px 0 rgba(245, 233, 255, 0.055),
+        0 26px 70px rgba(0, 0, 0, 0.42);
+}
+
+.manual-reader-progress {
+    background: rgba(229, 207, 255, 0.07);
+}
+
+.manual-reader-progress span {
+    background: linear-gradient(90deg, #7135a4, #d291ff);
+}
+
+.manual-reader-stage {
+    background:
+        radial-gradient(circle at 50% 48%, rgba(199, 125, 255, 0.12), transparent 44%),
+        linear-gradient(180deg, #180826, #06020b);
+}
+
+.manual-reader-paper {
+    border-color: rgba(237, 219, 249, 0.24);
+    background: #f0eaf4;
+    box-shadow:
+        -10px 0 0 rgba(230, 214, 241, 0.055),
+        24px 28px 65px rgba(0, 0, 0, 0.5);
+}
+
+.manual-reader-page-label {
+    background:
+        linear-gradient(180deg, #efe7f4, #cec0d8);
+    color: #382743;
+}
+
+.manual-page-modal-backdrop {
+    background:
+        radial-gradient(circle at 50% 14%, rgba(199, 125, 255, 0.16), transparent 34%),
+        rgba(4, 1, 8, 0.88);
+}
+
+.manual-page-modal-panel {
+    border-color: rgba(224, 170, 255, 0.42);
+    background: #0d0417;
 }

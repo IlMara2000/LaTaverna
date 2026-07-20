@@ -108,6 +108,10 @@ export const APP_DESTINATIONS = {
     pathfinder2e: {
         name: 'Pathfinder 2e',
         description: 'Tavoli, personaggi e manuali Pathfinder.'
+    },
+    manga: {
+        name: 'Manga',
+        description: 'Ricerca e scoperta nel catalogo MangaDex.'
     }
 };
 
