@@ -56,10 +56,6 @@ function renderSidebarContent(container, context) {
                     PATHFINDER 2E
                 </button>
 
-                <button class="btn-glass sidebar-nav-item" id="nav-manga" data-context="manga" style="font-size: 0.8rem; padding: 12px;">
-                    MANGA
-                </button>
-
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
 
                 <button class="btn-glass sidebar-nav-item" id="nav-profile" data-context="profile" style="font-size: 0.8rem; padding: 12px;">
@@ -166,7 +162,6 @@ function setupEventListeners(container, context) {
     attachNav('nav-minigames', 'minigames');
     attachNav('nav-dnd5e', 'dnd5e');
     attachNav('nav-pathfinder2e', 'pathfinder2e');
-    attachNav('nav-manga', 'manga');
     attachNav('nav-profile', 'profile');
     attachNav('nav-settings', 'settings');
 

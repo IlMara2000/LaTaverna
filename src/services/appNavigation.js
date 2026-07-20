@@ -5,7 +5,6 @@ export const resetAppSurface = () => {
     window.__dndSessionCleanup?.();
     window.__minigameMultiplayerCleanup?.();
     window.__settingsCleanup?.();
-    window.__mangaCleanup?.();
     window.__homeCleanup = null;
     window.__settingsCleanup = null;
     document.documentElement.style.overflow = '';
@@ -83,13 +82,6 @@ export async function navigateTo(destination, container = document.getElementByI
         rememberDestination(destination);
         const { initPathfinderDashboard } = await import('../dashboards/pathfinder2e.js');
         initPathfinderDashboard(container);
-        return true;
-    }
-
-    if (destination === 'manga') {
-        rememberDestination(destination);
-        const { initMangaDashboard } = await import('../dashboards/manga.js');
-        initMangaDashboard(container);
         return true;
     }
 

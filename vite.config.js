@@ -57,14 +57,6 @@ export default defineConfig(({ mode }) => {
       host: true,
       port: 3000,
       strictPort: true, // Se la 3000 è occupata, non avviare su un'altra (evita confusione)
-      proxy: {
-        // Replica in sviluppo il proxy serverless /api/manga usato su Vercel.
-        '/mangadex-api': {
-          target: 'https://api.mangadex.org',
-          changeOrigin: true,
-          rewrite: requestPath => requestPath.replace(/^\/mangadex-api/, ''),
-        },
-      },
     },
 
     // Definisce costanti globali utili (opzionale)

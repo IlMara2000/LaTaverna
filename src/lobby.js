@@ -80,7 +80,6 @@ export function showLobby(container) {
                     <button type="button" id="hub-strategy-games">STRATEGIA</button>
                     <button type="button" id="btn-dnd5e">D&amp;D 5E</button>
                     <button type="button" id="btn-pathfinder2e">PATHFINDER 2E</button>
-                    <button type="button" id="btn-manga">MANGA</button>
                 </nav>
             </main>
         </div>
@@ -145,5 +144,4 @@ export function showLobby(container) {
     container.querySelector('#hub-all-games').onclick = event => openWithTransition(event.currentTarget, 'minigames', { filter: 'all' });
     container.querySelector('#btn-dnd5e').onclick = event => openWithTransition(event.currentTarget, 'dnd5e');
     container.querySelector('#btn-pathfinder2e').onclick = event => openWithTransition(event.currentTarget, 'pathfinder2e');
-    container.querySelector('#btn-manga').onclick = event => openWithTransition(event.currentTarget, 'manga');
 }
