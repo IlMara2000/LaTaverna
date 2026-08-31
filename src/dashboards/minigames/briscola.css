@@ -1,0 +1,566 @@
+.briscola-game {
+    --briscola-card-width: clamp(68px, 7.2vw, 92px);
+    --briscola-card-height: calc(var(--briscola-card-width) * 1.46);
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: var(--visual-viewport-height, 100dvh);
+    min-height: 0;
+    padding: max(10px, env(safe-area-inset-top)) clamp(10px, 2vw, 26px) max(10px, env(safe-area-inset-bottom));
+    overflow: hidden;
+    color: #f8f4ff;
+    background:
+        radial-gradient(circle at 12% 8%, rgba(99, 47, 163, 0.28), transparent 31%),
+        radial-gradient(circle at 88% 84%, rgba(81, 26, 121, 0.25), transparent 34%),
+        linear-gradient(145deg, #08030e 0%, #12071e 48%, #050209 100%);
+    isolation: isolate;
+}
+
+body:has(.briscola-game) #navbar-trigger,
+body:has(.briscola-game) #nav-home-btn {
+    display: none !important;
+}
+
+.briscola-game::before,
+.briscola-game::after {
+    position: absolute;
+    z-index: -1;
+    width: min(44vw, 560px);
+    aspect-ratio: 1;
+    border: 1px solid rgba(199, 125, 255, 0.08);
+    border-radius: 50%;
+    content: '';
+    pointer-events: none;
+}
+
+.briscola-game::before { top: -34%; left: -12%; }
+.briscola-game::after { right: -14%; bottom: -42%; }
+
+.briscola-game [hidden] { display: none !important; }
+
+.briscola-shell {
+    width: min(100%, 1180px);
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    gap: clamp(7px, 1.2vh, 12px);
+    margin: 0 auto;
+}
+
+.briscola-topbar {
+    min-height: 48px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 12px;
+}
+
+.briscola-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.briscola-brand-mark {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(199, 125, 255, 0.34);
+    border-radius: 12px;
+    color: #dba9ff;
+    background: linear-gradient(145deg, rgba(157, 78, 221, 0.25), rgba(26, 9, 42, 0.8));
+    box-shadow: 0 8px 24px rgba(59, 14, 93, 0.36);
+    font-family: Georgia, serif;
+    font-size: 1.25rem;
+}
+
+.briscola-brand > span:last-child {
+    display: grid;
+    gap: 2px;
+}
+
+.briscola-brand small,
+.briscola-brand strong {
+    line-height: 1;
+    letter-spacing: 1.5px;
+}
+
+.briscola-brand small { color: rgba(237, 225, 246, 0.48); font-size: 0.5rem; }
+.briscola-brand strong { color: #fff; font-size: 0.92rem; }
+
+.briscola-top-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 7px;
+}
+
+.briscola-icon-button,
+.briscola-text-button {
+    border: 1px solid rgba(218, 174, 255, 0.18);
+    color: #f7eeff;
+    background: rgba(255, 255, 255, 0.055);
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.05), 0 10px 24px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 900;
+    transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.briscola-icon-button:hover,
+.briscola-icon-button:focus-visible,
+.briscola-text-button:hover,
+.briscola-text-button:focus-visible {
+    border-color: rgba(213, 151, 255, 0.62);
+    background: rgba(157, 78, 221, 0.17);
+    transform: translateY(-1px);
+}
+
+.briscola-icon-button {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 13px;
+    font-size: 0.9rem;
+}
+
+.briscola-exit-button { justify-self: start; }
+.briscola-exit-button span { margin-left: 4px; font-size: 0.66rem; letter-spacing: 0.8px; }
+
+.briscola-scoreboard {
+    min-height: 60px;
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(150px, .72fr) minmax(160px, 1fr);
+    align-items: center;
+    gap: clamp(10px, 2vw, 26px);
+    padding: 8px clamp(12px, 2vw, 22px);
+    border: 1px solid rgba(215, 172, 245, 0.14);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(33, 14, 48, 0.82), rgba(11, 5, 18, 0.78));
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.04), 0 18px 42px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(16px);
+}
+
+.briscola-score { min-width: 0; display: grid; gap: 6px; }
+.briscola-score > span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.briscola-score small { overflow: hidden; color: rgba(239, 229, 247, 0.58); font-size: 0.59rem; font-weight: 900; letter-spacing: 1px; text-overflow: ellipsis; white-space: nowrap; }
+.briscola-score strong { color: #fff; font-family: Georgia, serif; font-size: 1.35rem; line-height: 1; }
+.briscola-score-track { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.09); }
+.briscola-score-track i { display: block; width: 0; height: 100%; border-radius: inherit; transition: width 400ms ease; }
+.briscola-score-player i { background: linear-gradient(90deg, #9d4edd, #d99bff); box-shadow: 0 0 12px rgba(199, 125, 255, 0.65); }
+.briscola-score-bot i { margin-left: auto; background: linear-gradient(90deg, #7653af, #b56be8); }
+
+.briscola-round-status {
+    min-width: 0;
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    text-align: center;
+}
+
+.briscola-round-status small { color: rgba(239, 229, 247, 0.42); font-size: 0.53rem; font-weight: 900; letter-spacing: 1.3px; }
+.briscola-round-status strong { max-width: 100%; overflow: hidden; color: #dfacff; font-size: 0.67rem; letter-spacing: 0.9px; text-overflow: ellipsis; white-space: nowrap; }
+
+.briscola-table {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    border: 1px solid rgba(223, 190, 244, 0.18);
+    border-radius: clamp(22px, 3vw, 34px);
+    background:
+        radial-gradient(ellipse at 50% 48%, rgba(107, 43, 138, 0.24), transparent 45%),
+        repeating-linear-gradient(118deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 7px),
+        linear-gradient(145deg, #24102f, #16091f 58%, #0c0712);
+    box-shadow:
+        inset 0 0 0 7px rgba(13, 6, 18, 0.5),
+        inset 0 0 70px rgba(0, 0, 0, 0.46),
+        0 24px 64px rgba(0, 0, 0, 0.34);
+}
+
+.briscola-table::before {
+    position: absolute;
+    inset: 14px;
+    border: 1px solid rgba(218, 166, 246, 0.08);
+    border-radius: inherit;
+    content: '';
+    pointer-events: none;
+}
+
+.briscola-felt-ornament {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(37vh, 300px);
+    aspect-ratio: 1;
+    border: 1px solid rgba(225, 182, 255, 0.055);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.briscola-felt-ornament::before,
+.briscola-felt-ornament::after {
+    position: absolute;
+    inset: 16%;
+    border: 1px solid rgba(225, 182, 255, 0.045);
+    border-radius: 18%;
+    content: '';
+    transform: rotate(45deg);
+}
+
+.briscola-felt-ornament::after { inset: 32%; border-radius: 50%; }
+
+.briscola-seat {
+    position: absolute;
+    left: 50%;
+    z-index: 3;
+    display: grid;
+    justify-items: center;
+    gap: 5px;
+    transform: translateX(-50%);
+}
+
+.briscola-bot-seat { top: clamp(12px, 2.4vh, 24px); }
+.briscola-player-seat { bottom: clamp(10px, 2vh, 20px); }
+
+.briscola-seat-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: rgba(239, 229, 247, 0.58);
+    font-size: 0.54rem;
+    letter-spacing: 1.3px;
+}
+
+.briscola-seat-label i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #bc78e9;
+    box-shadow: 0 0 12px #a950e6;
+}
+
+.briscola-hand {
+    min-height: var(--briscola-card-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.briscola-hand .briscola-card + .briscola-card { margin-left: clamp(-9px, -0.7vw, -4px); }
+.briscola-hand-bot { transform: scale(.76); transform-origin: top center; }
+.briscola-hand-bot .briscola-card:nth-child(1) { transform: rotate(-7deg) translateY(4px); }
+.briscola-hand-bot .briscola-card:nth-child(3) { transform: rotate(7deg) translateY(4px); }
+
+.briscola-card {
+    position: relative;
+    width: var(--briscola-card-width);
+    min-width: var(--briscola-card-width);
+    height: var(--briscola-card-height);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid rgba(81, 52, 33, 0.3);
+    border-radius: clamp(8px, 1vw, 12px);
+    box-sizing: border-box;
+    box-shadow: 0 14px 26px rgba(0, 0, 0, 0.35);
+    user-select: none;
+}
+
+button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; }
+
+.briscola-card-face {
+    color: var(--suit-color);
+    background:
+        linear-gradient(100deg, transparent 48%, rgba(74, 45, 18, 0.04) 49% 51%, transparent 52%),
+        repeating-linear-gradient(0deg, rgba(86, 53, 21, 0.025) 0 1px, transparent 1px 5px),
+        #f2e8d2;
+    box-shadow: inset 0 0 0 3px #f8f1e2, inset 0 0 0 4px rgba(69, 42, 18, 0.18), 0 14px 26px rgba(0, 0, 0, 0.35);
+}
+
+.briscola-card-face::before {
+    position: absolute;
+    inset: 7px;
+    border: 1px solid color-mix(in srgb, var(--suit-color) 38%, transparent);
+    border-radius: 6px;
+    content: '';
+    pointer-events: none;
+}
+
+.briscola-card-back {
+    border: 2px solid rgba(213, 160, 248, 0.64);
+    background:
+        linear-gradient(45deg, transparent 43%, rgba(226, 185, 255, 0.14) 44% 56%, transparent 57%),
+        linear-gradient(-45deg, transparent 43%, rgba(226, 185, 255, 0.12) 44% 56%, transparent 57%),
+        radial-gradient(circle, rgba(225, 180, 255, 0.3) 0 2px, transparent 3px),
+        linear-gradient(145deg, #57217b, #240e39);
+    background-size: 19px 19px, 19px 19px, 19px 19px, auto;
+    box-shadow: inset 0 0 0 4px #180923, inset 0 0 0 6px rgba(210, 151, 250, 0.35), 0 14px 26px rgba(0, 0, 0, 0.38);
+}
+
+.briscola-card-corner {
+    position: absolute;
+    top: 9px;
+    left: 9px;
+    display: grid;
+    justify-items: center;
+    line-height: .85;
+}
+
+.briscola-card-corner b { font-family: Georgia, serif; font-size: clamp(.78rem, 1.35vw, 1.05rem); }
+.briscola-card-corner i { margin-top: 3px; font-size: clamp(.57rem, .9vw, .75rem); font-style: normal; }
+.briscola-card-corner-bottom { inset: auto 9px 9px auto; transform: rotate(180deg); }
+
+.briscola-card-center-symbol,
+.briscola-figure {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    transform: translate(-50%, -50%);
+}
+
+.briscola-card-center-symbol { font-family: Georgia, serif; font-size: clamp(1.8rem, 3.5vw, 2.8rem); line-height: .8; }
+.briscola-card-center-symbol small { margin-top: 9px; color: #6a523c; font-family: inherit; font-size: clamp(.45rem, .65vw, .58rem); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+
+.briscola-figure {
+    width: 58%;
+    height: 50%;
+    border: 1px solid color-mix(in srgb, var(--suit-color) 42%, transparent);
+    border-radius: 50% 50% 44% 44%;
+    background: color-mix(in srgb, var(--suit-color) 8%, transparent);
+}
+
+.briscola-figure small { color: #6d563f; font-family: Georgia, serif; font-size: clamp(.42rem, .64vw, .58rem); font-weight: 800; letter-spacing: .7px; }
+.briscola-figure b { font-family: Georgia, serif; font-size: clamp(1.35rem, 2.7vw, 2.2rem); }
+.briscola-card-suit-name { position: absolute; right: 18px; bottom: 6px; left: 18px; overflow: hidden; color: rgba(74, 52, 33, 0.56); font-family: Georgia, serif; font-size: clamp(.4rem, .55vw, .52rem); font-weight: 700; letter-spacing: .5px; text-align: center; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+
+.briscola-hand-player button.briscola-card {
+    transition: transform 190ms cubic-bezier(.2, .8, .2, 1), filter 180ms ease, box-shadow 180ms ease;
+}
+
+.briscola-hand-player button.briscola-card:hover:not(:disabled),
+.briscola-hand-player button.briscola-card:focus-visible:not(:disabled) {
+    z-index: 4;
+    outline: none;
+    filter: brightness(1.05);
+    transform: translateY(-10px) rotate(-1deg);
+    box-shadow: 0 20px 34px rgba(0, 0, 0, 0.46), 0 0 0 3px rgba(199, 125, 255, 0.42);
+}
+
+.briscola-hand-player button.briscola-card:disabled { cursor: default; filter: saturate(.74) brightness(.86); }
+
+.briscola-stock-zone {
+    position: absolute;
+    top: 50%;
+    left: clamp(24px, 5vw, 72px);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateY(-50%);
+}
+
+.briscola-stock-copy { width: 42px; display: grid; justify-items: center; gap: 3px; color: rgba(242, 232, 248, .52); }
+.briscola-stock-copy small { font-size: .48rem; font-weight: 900; letter-spacing: 1px; }
+.briscola-stock-copy strong { color: #fff; font-family: Georgia, serif; font-size: 1.25rem; }
+.briscola-stock-cards { position: relative; width: calc(var(--briscola-card-height) + 24px); height: calc(var(--briscola-card-height) + 10px); }
+.briscola-stock-cards > .briscola-card-back { position: absolute; top: 2px; right: 0; z-index: 2; }
+.briscola-stock-cards > .briscola-card-back::after { position: absolute; inset: -5px 3px 3px -5px; z-index: -1; border: 1px solid rgba(218, 168, 249, .28); border-radius: inherit; background: #210d31; content: ''; }
+.briscola-stock-cards > .briscola-card-back.is-empty { opacity: 0; }
+.briscola-trump-card { position: absolute; top: 9px; left: calc(var(--briscola-card-height) / 2 - var(--briscola-card-width) / 2); transform: rotate(90deg); }
+.briscola-card-trump { box-shadow: 0 0 0 3px rgba(200, 133, 241, .24), 0 16px 28px rgba(0, 0, 0, .38); }
+.briscola-trump-gone { position: absolute; top: 50%; left: 50%; width: 90px; color: rgba(242, 231, 248, .36); font-size: .48rem; font-weight: 900; letter-spacing: .8px; line-height: 1.3; text-align: center; transform: translate(-50%, -50%) rotate(-90deg); }
+
+.briscola-trick-zone {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    width: min(36vw, 340px);
+    display: grid;
+    justify-items: center;
+    gap: 9px;
+    transform: translate(-50%, -50%);
+}
+
+.briscola-trick-cards {
+    min-width: calc(var(--briscola-card-width) * 2 + 24px);
+    min-height: var(--briscola-card-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+}
+
+.briscola-empty-trick { color: rgba(234, 218, 242, .26); font-family: Georgia, serif; font-size: clamp(.54rem, .8vw, .68rem); font-style: italic; letter-spacing: .7px; text-align: center; }
+.briscola-played-card { display: grid; justify-items: center; gap: 4px; animation: briscola-card-arrive 300ms ease both; }
+.briscola-played-card:nth-child(2) { transform: rotate(4deg) translateY(5px); }
+.briscola-played-card > small { color: rgba(240, 229, 247, .5); font-size: .48rem; font-weight: 900; letter-spacing: 1px; }
+.briscola-trump-label { padding: 6px 10px; border: 1px solid rgba(223, 184, 249, .12); border-radius: 999px; color: rgba(239, 227, 246, .46); background: rgba(10, 4, 14, .42); font-size: .5rem; font-weight: 900; letter-spacing: .9px; }
+.briscola-trump-label span { margin-left: 5px; color: var(--suit-color); }
+
+.briscola-flying-card { position: fixed; z-index: 20000; pointer-events: none; transition: left 400ms cubic-bezier(.2,.75,.2,1), top 400ms cubic-bezier(.2,.75,.2,1), transform 400ms ease, opacity 400ms ease; }
+
+.briscola-start {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden auto;
+    padding: max(24px, env(safe-area-inset-top)) 18px max(26px, env(safe-area-inset-bottom));
+    text-align: center;
+    background:
+        radial-gradient(circle at 50% 34%, rgba(157, 78, 221, .22), transparent 28%),
+        linear-gradient(145deg, rgba(16, 6, 25, .985), rgba(5, 2, 9, .995));
+}
+
+.briscola-start::before { position: absolute; width: min(70vmin, 620px); aspect-ratio: 1; border: 1px solid rgba(218, 172, 248, .07); border-radius: 50%; content: ''; pointer-events: none; }
+.briscola-start-emblem { position: relative; width: 74px; height: 74px; margin-bottom: 16px; display: grid; place-items: center; border: 1px solid rgba(213, 159, 250, .26); border-radius: 24px; color: #ddb1fa; background: rgba(157, 78, 221, .12); box-shadow: 0 16px 50px rgba(77, 21, 117, .32); transform: rotate(45deg); }
+.briscola-start-emblem span { position: absolute; font-family: Georgia, serif; font-size: 1.45rem; transform: rotate(-45deg) translate(-10px, -10px); }
+.briscola-start-emblem span:last-child { color: #a668cf; transform: rotate(-45deg) translate(11px, 11px); }
+.briscola-eyebrow { color: #c982f4; font-size: .58rem; font-weight: 950; letter-spacing: 2.2px; text-transform: uppercase; }
+.briscola-start h1 { margin: 8px 0 7px; color: #fff; font-family: Georgia, serif; font-size: clamp(3rem, 8vw, 5rem); font-weight: 700; letter-spacing: clamp(3px, .7vw, 8px); line-height: .95; text-shadow: 0 8px 40px rgba(172, 87, 224, .28); }
+.briscola-start > p { max-width: 520px; margin: 0 0 16px; color: rgba(239, 228, 246, .62); font-size: clamp(.72rem, 1.1vw, .88rem); line-height: 1.5; }
+.briscola-start .minigame-online-mode-panel { width: min(100%, 400px); margin: 0 0 5px !important; }
+.briscola-start .minigame-online-status { margin-bottom: 5px !important; }
+.briscola-level-select { width: min(100%, 370px); display: grid; gap: 8px; }
+.briscola-level-select > span { color: rgba(235, 218, 244, .5); font-size: .55rem; font-weight: 950; letter-spacing: 1.7px; }
+.briscola-level-select .game-level-ladder { width: 100%; padding: 7px; }
+.briscola-text-button { margin-top: 13px; padding: 10px 16px; border-color: transparent; border-radius: 12px; color: rgba(242, 231, 249, .56); font-size: .58rem; letter-spacing: 1px; }
+
+.briscola-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(4, 1, 7, .72);
+    backdrop-filter: blur(12px);
+}
+
+.briscola-modal-card { position: relative; width: min(100%, 500px); max-height: min(88dvh, 660px); overflow: hidden auto; padding: clamp(25px, 4vw, 42px); border: 1px solid rgba(219, 171, 250, .24); border-radius: 26px; background: radial-gradient(circle at 50% 0%, rgba(157, 78, 221, .19), transparent 38%), linear-gradient(145deg, #1b0c29, #0c0612); box-shadow: 0 32px 90px rgba(0, 0, 0, .6); text-align: center; }
+.briscola-modal-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; color: #fff; background: rgba(255,255,255,.06); cursor: pointer; font-size: 1.25rem; }
+.briscola-modal h2 { margin: 8px 0 14px; color: #fff; font-family: Georgia, serif; font-size: clamp(1.8rem, 5vw, 2.8rem); letter-spacing: .8px; }
+.briscola-modal-copy { color: rgba(240, 229, 247, .68); font-size: .78rem; line-height: 1.55; }
+.briscola-modal-copy p { margin: 0 auto; max-width: 390px; }
+.briscola-rules { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; counter-reset: rule; text-align: left; }
+.briscola-rules li { position: relative; display: grid; gap: 3px; padding: 11px 12px 11px 46px; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; background: rgba(255,255,255,.035); counter-increment: rule; }
+.briscola-rules li::before { position: absolute; top: 50%; left: 12px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 8px; color: #edceff; background: rgba(157,78,221,.25); content: counter(rule); font-size: .65rem; font-weight: 900; transform: translateY(-50%); }
+.briscola-rules b { color: #fff; font-size: .69rem; }
+.briscola-rules span { font-size: .65rem; }
+.briscola-final-score { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 22px 0; }
+.briscola-final-score span { min-width: 76px; display: grid; gap: 3px; }
+.briscola-final-score small { color: rgba(239,227,247,.5); font-size: .55rem; font-weight: 900; letter-spacing: 1px; }
+.briscola-final-score strong { color: #fff; font-family: Georgia, serif; font-size: 2.5rem; }
+.briscola-final-score i { color: rgba(255,255,255,.25); font-style: normal; }
+.briscola-modal-actions { display: grid; grid-template-columns: 1.25fr 1fr .65fr; gap: 8px; margin-top: 20px; }
+.briscola-modal-actions button { min-height: 44px; padding: 8px 10px; border: 1px solid rgba(213,157,248,.2); border-radius: 13px; color: #fff; background: rgba(255,255,255,.055); cursor: pointer; font-family: inherit; font-size: .58rem; font-weight: 950; letter-spacing: .7px; }
+.briscola-modal-actions button:first-child { border-color: rgba(210,150,250,.48); background: linear-gradient(135deg, #8f42c6, #5f278e); box-shadow: 0 12px 28px rgba(73,19,108,.36); }
+
+@keyframes briscola-card-arrive {
+    from { opacity: 0; transform: translateY(-15px) scale(.92); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 720px) {
+    .briscola-game {
+        --briscola-card-width: clamp(56px, 17vw, 70px);
+        gap: 0;
+        padding: max(7px, env(safe-area-inset-top)) 7px max(7px, env(safe-area-inset-bottom));
+    }
+
+    .briscola-shell { gap: 6px; }
+    .briscola-topbar { min-height: 42px; grid-template-columns: 1fr auto 1fr; gap: 5px; }
+    .briscola-brand { gap: 6px; }
+    .briscola-brand-mark { width: 33px; height: 33px; border-radius: 10px; font-size: 1rem; }
+    .briscola-brand small { display: none; }
+    .briscola-brand strong { font-size: .69rem; letter-spacing: 1px; }
+    .briscola-icon-button { min-width: 35px; height: 35px; padding: 0 9px; border-radius: 11px; }
+    .briscola-exit-button span { display: none; }
+    .briscola-top-actions { gap: 4px; }
+
+    .briscola-scoreboard { min-height: 52px; grid-template-columns: 1fr minmax(86px, .78fr) 1fr; gap: 8px; padding: 7px 9px; border-radius: 15px; }
+    .briscola-score { gap: 4px; }
+    .briscola-score small { max-width: 76px; font-size: .47rem; letter-spacing: .6px; }
+    .briscola-score strong { font-size: 1.1rem; }
+    .briscola-round-status small { font-size: .43rem; letter-spacing: .7px; }
+    .briscola-round-status strong { font-size: .51rem; letter-spacing: .4px; }
+
+    .briscola-table { border-radius: 22px; box-shadow: inset 0 0 0 4px rgba(13,6,18,.45), inset 0 0 45px rgba(0,0,0,.42); }
+    .briscola-table::before { inset: 9px; }
+    .briscola-bot-seat { top: 9px; }
+    .briscola-player-seat { bottom: 8px; }
+    .briscola-seat { gap: 3px; }
+    .briscola-seat-label { font-size: .45rem; }
+    .briscola-hand-bot { transform: scale(.7); }
+    .briscola-hand .briscola-card + .briscola-card { margin-left: -5px; }
+
+    .briscola-stock-zone { top: 52%; left: 8px; gap: 3px; transform: translateY(-50%) scale(.72); transform-origin: left center; }
+    .briscola-stock-copy { width: 32px; }
+    .briscola-stock-cards { width: calc(var(--briscola-card-height) + 8px); }
+    .briscola-trick-zone { top: 52%; left: 58%; width: calc(100% - 128px); gap: 6px; }
+    .briscola-trick-cards { min-width: 0; min-height: var(--briscola-card-height); gap: 6px; }
+    .briscola-trump-label { max-width: 100%; overflow: hidden; padding: 5px 7px; font-size: .42rem; text-overflow: ellipsis; white-space: nowrap; }
+    .briscola-empty-trick { max-width: 140px; font-size: .5rem; }
+    .briscola-card-face::before { inset: 5px; }
+    .briscola-card-corner { top: 7px; left: 7px; }
+    .briscola-card-corner-bottom { inset: auto 7px 7px auto; }
+    .briscola-card-suit-name { display: none; }
+
+    .briscola-start { justify-content: center; padding-top: max(22px, env(safe-area-inset-top)); }
+    .briscola-start-emblem { width: 54px; height: 54px; margin: 2px 0 11px; border-radius: 18px; }
+    .briscola-start-emblem span { font-size: 1.05rem; transform: rotate(-45deg) translate(-7px,-7px); }
+    .briscola-start-emblem span:last-child { transform: rotate(-45deg) translate(8px,8px); }
+    .briscola-start h1 { margin: 6px 0; font-size: clamp(2.6rem, 15vw, 3.5rem); }
+    .briscola-start > p { max-width: 330px; margin-bottom: 10px; font-size: .67rem; }
+    .briscola-start .tictactoe-mode-button { min-height: 50px; padding: 7px 9px; }
+    .briscola-start .tictactoe-mode-icon { width: 32px; height: 32px; border-radius: 10px; font-size: .95rem; }
+    .briscola-level-select .game-level-ladder { padding: 6px; }
+    .briscola-text-button { margin-top: 8px; }
+
+    .briscola-modal-actions { grid-template-columns: 1fr; }
+    .briscola-modal-card { padding: 29px 18px 20px; border-radius: 22px; }
+}
+
+@media (max-height: 700px) and (min-width: 721px) {
+    .briscola-game { --briscola-card-width: clamp(58px, 8.2vh, 72px); }
+    .briscola-scoreboard { min-height: 52px; }
+    .briscola-bot-seat { top: 7px; }
+    .briscola-player-seat { bottom: 7px; }
+    .briscola-hand-bot { transform: scale(.68); }
+    .briscola-seat-label { font-size: .46rem; }
+    .briscola-start-emblem { width: 54px; height: 54px; margin-bottom: 9px; }
+    .briscola-start h1 { font-size: 3.25rem; }
+    .briscola-start > p { margin-bottom: 8px; }
+    .briscola-start .tictactoe-mode-button { min-height: 50px; }
+}
+
+@media (max-height: 620px) {
+    .briscola-game { --briscola-card-width: clamp(50px, 8.1vh, 62px); }
+    .briscola-topbar { min-height: 36px; }
+    .briscola-icon-button { height: 34px; }
+    .briscola-scoreboard { min-height: 46px; padding-top: 5px; padding-bottom: 5px; }
+    .briscola-seat-label { display: none; }
+    .briscola-bot-seat { top: 7px; }
+    .briscola-player-seat { bottom: 7px; }
+    .briscola-start { justify-content: flex-start; }
+    .briscola-start-emblem { display: none; }
+    .briscola-start h1 { font-size: 2.7rem; }
+    .briscola-start > p { margin-bottom: 6px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .briscola-game *,
+    .briscola-game *::before,
+    .briscola-game *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
