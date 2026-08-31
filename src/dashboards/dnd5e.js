@@ -1,5 +1,6 @@
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { renderManualLibrary } from '../components/features/manuals/ManualLibrary.js';
+import { renderDndTools } from '../components/features/tools/DndTools.js';
 import { showLobby } from '../lobby.js';
 import { supabase, SUPABASE_CONFIG } from '../services/supabase.js';
 import { dndLocalStore, getLocalDndUser, isLocalDndUser, isLocalDndUserId } from '../services/dndLocalStore.js';
@@ -376,7 +377,7 @@ function renderShell(container, activeView = 'overview') {
                 <div>
                     <p class="dnd-kicker">Sistema D&D 5e</p>
                     <h1>DUNGEONS <span>& DRAGONS</span></h1>
-                    <p>Manuali, personaggi completi, sessioni attive, mappa, dadi e chat di gioco.</p>
+                    <p>Manuali, personaggi, sessioni live e strumenti rapidi per giocatori e Master.</p>
                 </div>
                 <div class="dnd-hero-die">20</div>
                 <div class="dnd-hero-props" aria-hidden="true">
@@ -391,6 +392,7 @@ function renderShell(container, activeView = 'overview') {
                 <button class="${activeView === 'sessions' ? 'active' : ''}" data-dnd-view="sessions">Sessioni</button>
                 <button class="${activeView === 'manuals' ? 'active' : ''}" data-dnd-view="manuals">Manuali</button>
                 <button class="${activeView === 'characters' ? 'active' : ''}" data-dnd-view="characters">Personaggi</button>
+                <button class="${activeView === 'tools' ? 'active' : ''}" data-dnd-view="tools">Strumenti</button>
             </nav>
 
             <main id="dnd-content"></main>
@@ -405,6 +407,7 @@ function renderShell(container, activeView = 'overview') {
             if (view === 'manuals') renderManuals(container);
             if (view === 'characters') renderCharacters(container);
             if (view === 'sessions') renderSessions(container);
+            if (view === 'tools') renderTools(container);
         };
     });
 }
@@ -413,7 +416,7 @@ function renderDashboard(container) {
     renderShell(container, 'overview');
     const content = container.querySelector('#dnd-content');
     content.innerHTML = `
-        <section class="dnd-grid">
+        <section class="dnd-grid dnd-grid-tools">
             <button class="dnd-panel" data-open="sessions">
                 <span>Tavolo</span>
                 <strong>Sessioni</strong>
@@ -429,12 +432,18 @@ function renderDashboard(container) {
                 <strong>Personaggi completi</strong>
                 <p>Statistiche, abilita, tiri salvezza, incantesimi, inventario e note.</p>
             </button>
+            <button class="dnd-panel" data-open="tools">
+                <span>Banco dell’avventuriero</span>
+                <strong>Strumenti del Viandante</strong>
+                <p>Archivio rapido, caratteristiche, incontri, GS, bottino, iniziativa e schermo del Master.</p>
+            </button>
         </section>
     `;
 
     content.querySelector('[data-open="sessions"]').onclick = () => renderSessions(container);
     content.querySelector('[data-open="manuals"]').onclick = () => renderManuals(container);
     content.querySelector('[data-open="characters"]').onclick = () => renderCharacters(container);
+    content.querySelector('[data-open="tools"]').onclick = () => renderTools(container);
 }
 
 function renderManuals(container) {
@@ -443,6 +452,39 @@ function renderManuals(container) {
         container: container.querySelector('#dnd-content'),
         manuals: MANUALS,
         systemId: 'dnd5e'
+    });
+}
+
+function renderTools(container) {
+    renderShell(container, 'tools');
+    renderDndTools({
+        container: container.querySelector('#dnd-content'),
+        onCreateCharacter: async (stats) => {
+            const user = await getCurrentUser();
+            if (!getUserId(user)) {
+                container.querySelector('#dnd-content').innerHTML = renderSupabaseAuthError();
+                return;
+            }
+            renderCharacterEditor(container, user, {
+                _draft: true,
+                data: { stats: { ...stats } }
+            });
+        },
+        onPrepareSession: async (patch = {}) => {
+            const user = await getCurrentUser();
+            if (!getUserId(user)) {
+                container.querySelector('#dnd-content').innerHTML = renderSupabaseAuthError();
+                return;
+            }
+            renderSessionEditor(container, user, {
+                _draft: true,
+                party_level: Number(patch.party_level || 1),
+                data: {
+                    planned_encounters: patch.planned_encounters || '',
+                    loot: patch.loot || ''
+                }
+            });
+        }
     });
 }
 
@@ -822,7 +864,7 @@ function renderCharacterEditor(container, user, char) {
         <form id="characterForm" class="dnd-sheet">
             <section class="dnd-section-head dnd-section-actions">
                 <div>
-                    <h2>${char ? 'Modifica Personaggio' : 'Nuovo Personaggio'}</h2>
+                    <h2>${char?.id ? 'Modifica Personaggio' : 'Nuovo Personaggio'}</h2>
                     <p>Scheda completa D&D 5e.</p>
                 </div>
                 <div class="dnd-inline-actions">
@@ -1104,7 +1146,7 @@ function renderSessionEditor(container, user, session) {
         <form id="sessionForm" class="dnd-sheet">
             <section class="dnd-section-head dnd-section-actions">
                 <div>
-                    <h2>${session ? 'Modifica Sessione' : 'Nuova Sessione'}</h2>
+                    <h2>${session?.id ? 'Modifica Sessione' : 'Nuova Sessione'}</h2>
                     <p>Configurazione tavolo, mappa e note master.</p>
                 </div>
                 <div class="dnd-inline-actions">

@@ -93,6 +93,17 @@ export const MINIGAMES = [
         description: 'La sfida piu pura per chi ama pensare qualche mossa avanti.',
         color: 'linear-gradient(135deg, #333333, #000000)',
         initFn: 'initScacchi'
+    },
+    {
+        id: 'blocchi',
+        name: 'Blocchi Arcani',
+        category: 'strategy',
+        icon: '▦',
+        players: '1 giocatore',
+        duration: '5-20 min',
+        description: 'Incastra i blocchi, completa le righe e domina la caduta.',
+        color: 'linear-gradient(145deg, #37105d, #101b3f 58%, #07111b)',
+        initFn: 'initBlocchi'
     }
 ];
 
