@@ -218,6 +218,12 @@ async function restoreRecoveredContext(container, context, user) {
         if (context === 'pathfinder2e') {
             const { initPathfinderDashboard } = await import('./dashboards/pathfinder2e.js');
             initPathfinderDashboard(container);
+            return;
+        }
+
+        if (context === 'shop') {
+            const { initShop } = await import('./dashboards/shop.js');
+            initShop(container);
         }
     } catch (err) {
         console.warn('Recovery soft non completata:', err);
