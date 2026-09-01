@@ -773,7 +773,7 @@
 
    .taverna-home-dock {
        display: grid;
-       grid-template-columns: repeat(4, minmax(0, 1fr));
+       grid-template-columns: repeat(5, minmax(0, 1fr));
        gap: 10px;
        width: min(100%, 1120px);
        margin: 14px auto 0;
@@ -781,7 +781,15 @@
    }
 
    .taverna-home-dock:has(.is-resume) {
-       grid-template-columns: minmax(190px, 1.55fr) repeat(4, minmax(110px, 1fr));
+       grid-template-columns: minmax(190px, 1.55fr) repeat(5, minmax(100px, 1fr));
+   }
+
+   .taverna-home-dock #hub-shop {
+       border-color: rgba(213, 169, 93, 0.3);
+       background:
+           radial-gradient(circle at 50% 0%, rgba(224, 181, 106, 0.18), transparent 58%),
+           linear-gradient(135deg, rgba(89, 45, 120, 0.25), rgba(35, 18, 20, 0.45));
+       color: #fff3dc;
    }
 
    .taverna-home-dock button {
@@ -6968,6 +6976,10 @@
            min-height: 56px;
        }
 
+       .taverna-home-dock #hub-shop {
+           grid-column: 1 / -1;
+       }
+
        .taverna-home-dock button {
            min-height: 50px;
            padding: 8px 9px;
@@ -7112,16 +7124,17 @@
        }
 
        .taverna-home-dock {
-           grid-template-columns: repeat(4, minmax(0, 1fr));
+           grid-template-columns: repeat(5, minmax(0, 1fr));
            gap: 8px;
            margin-top: 10px;
        }
 
        .taverna-home-dock:has(.is-resume) {
-           grid-template-columns: repeat(5, minmax(0, 1fr));
+           grid-template-columns: repeat(6, minmax(0, 1fr));
        }
 
-       .taverna-home-dock .is-resume {
+       .taverna-home-dock .is-resume,
+       .taverna-home-dock #hub-shop {
            grid-column: auto;
        }
 

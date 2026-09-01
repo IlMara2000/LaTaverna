@@ -2,10 +2,12 @@ const LAST_DESTINATION_KEY = 'taverna_last_destination';
 
 export const resetAppSurface = () => {
     window.__homeCleanup?.();
+    window.__shopCleanup?.();
     window.__dndSessionCleanup?.();
     window.__minigameMultiplayerCleanup?.();
     window.__settingsCleanup?.();
     window.__homeCleanup = null;
+    window.__shopCleanup = null;
     window.__settingsCleanup = null;
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
@@ -15,6 +17,7 @@ export const resetAppSurface = () => {
     document.body.style.width = '';
     document.body.style.touchAction = '';
     document.body.style.backgroundColor = '';
+    document.getElementById('app')?.scrollTo(0, 0);
     document.body.classList.remove('dnd-session-active', 'dnd-session-tools-open', 'dnd-session-chat-open');
 };
 
@@ -82,6 +85,13 @@ export async function navigateTo(destination, container = document.getElementByI
         rememberDestination(destination);
         const { initPathfinderDashboard } = await import('../dashboards/pathfinder2e.js');
         initPathfinderDashboard(container);
+        return true;
+    }
+
+    if (destination === 'shop') {
+        rememberDestination(destination);
+        const { initShop } = await import('../dashboards/shop.js');
+        initShop(container);
         return true;
     }
 
