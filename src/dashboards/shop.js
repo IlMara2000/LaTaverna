@@ -4,7 +4,6 @@ import { navigateTo } from '../services/appNavigation.js';
 import { prefersReducedMotion } from '../services/motionSystem.js';
 import './shop.css';
 
-const PRODUCT_IMAGE = '/assets/shop/bocchini-artigianali.jpg';
 const CART_KEY = 'taverna_bottega_request_v1';
 const AGE_KEY = 'taverna_bottega_adult_confirmed';
 
@@ -14,49 +13,64 @@ const PRODUCTS = [
         name: 'Bruno Antico',
         category: 'scuri',
         collection: 'FINITURA SCURA',
-        availability: 'PEZZO SINGOLO',
-        mediaClass: 'shop-crop-dark',
-        description: 'Linea irregolare, tono profondo e imboccatura compatta. Ogni segno resta visibile e rende il pezzo riconoscibile.',
-        facts: ['Misura da confermare', 'Finitura da scegliere', 'Realizzazione artigianale']
+        availability: 'CONCEPT — SU RICHIESTA',
+        image: '/assets/shop/product-bruno-antico.jpg',
+        cutout: '/assets/shop/product-bruno-antico-cutout.webp',
+        viewerAngle: '-55deg',
+        imageAlt: 'Render 3D completo del bocchino Bruno Antico, scuro e scolpito',
+        description: 'Una lettura 3D del carattere più rustico: venatura profonda, profilo irregolare e impugnatura scandita.',
+        facts: ['Render indicativo', 'Misura da confermare', 'Finitura da definire']
     },
     {
         id: 'spirale-chiara',
         name: 'Spirale Chiara',
         category: 'chiari',
         collection: 'FINITURA CHIARA',
-        availability: 'PEZZO SINGOLO',
-        mediaClass: 'shop-crop-light',
-        description: 'Profilo tornito a spirale e presenza luminosa. Pensato come oggetto personale, realizzato in piccole quantità.',
-        facts: ['Profilo a spirale', 'Tonalità chiara', 'Dettagli da concordare']
+        availability: 'CONCEPT — SU RICHIESTA',
+        image: '/assets/shop/product-spirale-chiara.jpg',
+        cutout: '/assets/shop/product-spirale-chiara-cutout.webp',
+        viewerAngle: '70deg',
+        imageAlt: 'Render 3D completo del bocchino Spirale Chiara in legno chiaro',
+        description: 'Il concept più luminoso, con un ritmo morbido di anelli scolpiti e una silhouette interamente visibile.',
+        facts: ['Render indicativo', 'Profilo a spirale', 'Tonalità da confermare']
     },
     {
-        id: 'duo-taverna',
-        name: 'Duo della Taverna',
-        category: 'set',
-        collection: 'COPPIA ARTIGIANALE',
-        availability: 'SET DA DUE',
-        mediaClass: 'shop-crop-duo',
-        description: 'Due caratteri diversi nello stesso set: uno essenziale e scuro, l’altro chiaro e scolpito.',
-        facts: ['Due pezzi coordinati', 'Contrasto chiaro/scuro', 'Confezione da definire']
+        id: 'ametista-regale',
+        name: 'Ametista Regale',
+        category: 'ametista',
+        collection: 'EDIZIONE AMETISTA',
+        availability: 'CONCEPT — SU RICHIESTA',
+        image: '/assets/shop/product-ametista-regale.jpg',
+        cutout: '/assets/shop/product-ametista-regale-cutout.webp',
+        viewerAngle: '48deg',
+        imageAlt: 'Render 3D completo del bocchino Ametista Regale viola con dettagli color ottone',
+        description: 'Una variante scenografica ametista con riflessi profondi e sottili dettagli color ottone.',
+        facts: ['Render indicativo', 'Accenti da concordare', 'Finitura speciale da verificare']
     },
     {
-        id: 'pezzo-su-misura',
-        name: 'Pezzo su Misura',
-        category: 'personalizzati',
-        collection: 'SU COMMISSIONE',
-        availability: 'RICHIESTA PERSONALE',
-        mediaClass: 'shop-crop-custom',
-        description: 'Una richiesta costruita attorno a profilo, tonalità e dettagli scelti insieme prima della lavorazione.',
-        facts: ['Forma personalizzata', 'Finitura concordata', 'Tempi comunicati prima di iniziare']
+        id: 'ossidiana-corvo',
+        name: 'Ossidiana del Corvo',
+        category: 'ossidiana',
+        collection: 'EDIZIONE OSSIDIANA',
+        availability: 'CONCEPT — SU RICHIESTA',
+        image: '/assets/shop/product-ossidiana.jpg',
+        cutout: '/assets/shop/product-ossidiana-cutout.webp',
+        viewerAngle: '50deg',
+        imageAlt: 'Render 3D completo del bocchino Ossidiana del Corvo nero con collare color bronzo',
+        description: 'Nero materico, profilo affusolato e un unico accento color bronzo per la versione più austera.',
+        facts: ['Render indicativo', 'Profilo da confermare', 'Accento metallico opzionale']
     }
 ];
+
+const HERO_PRODUCT = PRODUCTS.find(product => product.id === 'ametista-regale');
+const STORY_PRODUCT = PRODUCTS.find(product => product.id === 'spirale-chiara');
 
 const FILTERS = [
     { id: 'all', label: 'Tutti' },
     { id: 'scuri', label: 'Scuri' },
     { id: 'chiari', label: 'Chiari' },
-    { id: 'set', label: 'Set' },
-    { id: 'personalizzati', label: 'Su misura' }
+    { id: 'ametista', label: 'Ametista' },
+    { id: 'ossidiana', label: 'Ossidiana' }
 ];
 
 const BAG_ICON = `
@@ -114,6 +128,7 @@ export function initShop(container) {
         cart: loadCart(),
         filter: 'all',
         activeProduct: null,
+        viewerPaused: false,
         motionCleanup: [],
         eventCleanup: [],
         animationStarted: false
@@ -190,16 +205,16 @@ function renderShop() {
                         </div>
                     </div>
 
-                    <div class="shop-hero-visual" aria-label="Due bocchini artigianali su un tavolo in legno">
+                    <div class="shop-hero-visual" aria-label="Concept 3D completo di ${HERO_PRODUCT.name}">
                         <div class="shop-orbit orbit-large" aria-hidden="true"></div>
                         <div class="shop-orbit orbit-small" aria-hidden="true"></div>
                         <figure class="shop-hero-photo">
-                            <img src="${PRODUCT_IMAGE}" alt="Due bocchini artigianali, uno scuro e uno chiaro, appoggiati su un tavolo in legno" fetchpriority="high">
+                            <img src="${HERO_PRODUCT.image}" alt="${HERO_PRODUCT.imageAlt}" fetchpriority="high">
                             <span class="shop-photo-light" aria-hidden="true"></span>
-                            <figcaption><small>FOTO REALE</small><strong>PEZZI DELLA BOTTEGA</strong></figcaption>
+                            <figcaption><small>CONCEPT 3D</small><strong>${HERO_PRODUCT.name}</strong></figcaption>
                         </figure>
-                        <span class="shop-floating-label label-one">SCOLPITO<br>A MANO</span>
-                        <span class="shop-floating-label label-two">PEZZO<br>UNICO</span>
+                        <span class="shop-floating-label label-one">EDIZIONE<br>AMETISTA</span>
+                        <span class="shop-floating-label label-two">FORMA<br>INTERA</span>
                     </div>
 
                     <div class="shop-scroll-cue" aria-hidden="true"><span></span>SCORRI</div>
@@ -218,20 +233,29 @@ function renderShop() {
                             <span class="shop-kicker">COLLEZIONE ATTUALE</span>
                             <h2 id="shop-catalog-title">SCEGLI IL TUO <em>CARATTERE</em></h2>
                         </div>
-                        <p>Seleziona un pezzo per vedere i dettagli oppure aggiungilo alla lista da condividere con l’artigiano.</p>
+                        <p>Scorri tra i concept e tocca una foto per aprire il pezzo isolato nella nuova rotazione 3D verticale.</p>
                     </header>
                     <nav class="shop-filters" aria-label="Filtra la collezione">
                         ${FILTERS.map((filter, index) => `
                             <button type="button" data-shop-filter="${filter.id}" class="${index === 0 ? 'active' : ''}" aria-pressed="${index === 0 ? 'true' : 'false'}">${filter.label}</button>
                         `).join('')}
                     </nav>
-                    <div id="shop-product-grid" class="shop-product-grid"></div>
+                    <div class="shop-product-rail-head">
+                        <span id="shop-rail-status" class="shop-rail-status" aria-live="polite">01 / 04</span>
+                        <span class="shop-rail-progress" aria-hidden="true"><i id="shop-rail-progress"></i></span>
+                        <span class="shop-rail-controls">
+                            <button id="shop-rail-prev" type="button" aria-label="Mostra la variante precedente">←</button>
+                            <button id="shop-rail-next" type="button" aria-label="Mostra la variante successiva">→</button>
+                        </span>
+                    </div>
+                    <div id="shop-product-grid" class="shop-product-grid" role="list" tabindex="0" aria-label="Concept 3D dei bocchini, scorri orizzontalmente"></div>
+                    <p class="shop-rail-hint"><span aria-hidden="true">↔</span> TRASCINA, SCORRI O USA LE FRECCE</p>
                 </section>
 
                 <section id="shop-story" class="shop-story shop-reveal-section" aria-labelledby="shop-story-title">
                     <div class="shop-story-image">
-                        <img src="${PRODUCT_IMAGE}" alt="Dettaglio ravvicinato della lavorazione di un bocchino chiaro" loading="lazy">
-                        <span>OGNI SEGNO<br>RACCONTA IL PEZZO</span>
+                        <img src="${STORY_PRODUCT.image}" alt="${STORY_PRODUCT.imageAlt}" loading="lazy">
+                        <span>CONCEPT COMPLETO<br>${STORY_PRODUCT.name.toUpperCase()}</span>
                     </div>
                     <div class="shop-story-copy">
                         <span class="shop-kicker">DALLA FORMA AL DETTAGLIO</span>
@@ -276,7 +300,18 @@ function renderShop() {
             <section id="shop-product-modal" class="shop-product-modal" hidden role="dialog" aria-modal="true" aria-labelledby="shop-modal-name">
                 <div class="shop-modal-panel">
                     <button id="shop-modal-close" type="button" aria-label="Chiudi dettaglio">×</button>
-                    <div id="shop-modal-media" class="shop-modal-media"><img src="${PRODUCT_IMAGE}" alt=""></div>
+                    <div id="shop-modal-media" class="shop-modal-media">
+                        <span class="shop-viewer-axis" aria-hidden="true"></span>
+                        <div id="shop-viewer-spin" class="shop-viewer-spin" role="img" aria-label="Vista 3D verticale di ${PRODUCTS[0].name}">
+                            <img class="shop-viewer-layer shop-viewer-layer-back" data-viewer-layer src="${PRODUCTS[0].cutout}" alt="" aria-hidden="true">
+                            <img class="shop-viewer-layer shop-viewer-layer-middle" data-viewer-layer src="${PRODUCTS[0].cutout}" alt="" aria-hidden="true">
+                            <img id="shop-viewer-object" class="shop-viewer-layer shop-viewer-layer-front" data-viewer-layer src="${PRODUCTS[0].cutout}" alt="" aria-hidden="true">
+                        </div>
+                        <div class="shop-viewer-toolbar">
+                            <span><b>VISTA 3D</b><small>ROTAZIONE VERTICALE · CONCEPT</small></span>
+                            <button id="shop-viewer-toggle" type="button" aria-pressed="false">PAUSA</button>
+                        </div>
+                    </div>
                     <div class="shop-modal-copy">
                         <span id="shop-modal-collection" class="shop-kicker"></span>
                         <h2 id="shop-modal-name"></h2>
@@ -308,11 +343,12 @@ function renderShop() {
 
 function productCard(product, index) {
     return `
-        <article class="shop-product-card" data-product-card="${product.id}" style="--card-index:${index}">
-            <button class="shop-product-media ${product.mediaClass}" type="button" data-product-detail="${product.id}" aria-label="Apri ${escapeHTML(product.name)}">
-                <img src="${PRODUCT_IMAGE}" alt="" loading="lazy">
+        <article class="shop-product-card" data-product-card="${product.id}" style="--card-index:${index}" role="listitem">
+            <button class="shop-product-media" type="button" data-product-detail="${product.id}" aria-label="Apri la vista 3D di ${escapeHTML(product.name)}">
+                <img src="${product.image}" alt="${escapeHTML(product.imageAlt)}" loading="lazy">
                 <span class="shop-product-index">0${index + 1}</span>
-                <span class="shop-product-view">VEDI DETTAGLI ${ARROW_ICON}</span>
+                <span class="shop-render-badge">CONCEPT 3D</span>
+                <span class="shop-product-view">VEDI IN 3D ${ARROW_ICON}</span>
             </button>
             <div class="shop-product-copy">
                 <span>${escapeHTML(product.collection)}</span>
@@ -341,16 +377,94 @@ function renderProducts(root, state) {
         button.onclick = () => addToCart(root, state, button.dataset.productAdd, button);
     });
     bindProductTilt(root, state);
+    bindProductCarousel(root, state);
 
     if (!prefersReducedMotion()) {
         const cards = [...grid.querySelectorAll('.shop-product-card')];
-        const animation = animate(cards, {
-            opacity: [0, 1],
-            y: [34, 0],
-            scale: [0.965, 1]
-        }, { delay: stagger(0.07), duration: 0.62, ease: [0.16, 1, 0.3, 1] });
-        state.motionCleanup.push(animation);
+        cards.forEach((card, index) => {
+            const animation = card.animate([
+                { translate: '72px 0', clipPath: 'inset(0 18% 0 0)' },
+                { translate: '0 0', clipPath: 'inset(0 0 0 0)' }
+            ], {
+                duration: 680,
+                delay: index * 75,
+                easing: 'cubic-bezier(.16,1,.3,1)',
+                fill: 'both'
+            });
+            state.motionCleanup.push(() => animation.cancel());
+        });
     }
+}
+
+function bindProductCarousel(root, state) {
+    const rail = root.querySelector('#shop-product-grid');
+    const cards = [...rail.querySelectorAll('.shop-product-card')];
+    const previous = root.querySelector('#shop-rail-prev');
+    const next = root.querySelector('#shop-rail-next');
+    const status = root.querySelector('#shop-rail-status');
+    const progress = root.querySelector('#shop-rail-progress');
+    let frame = 0;
+    let activeIndex = 0;
+
+    const getSnapPositions = () => {
+        const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+        return cards.map(card => Math.max(0, Math.min(
+            max,
+            card.offsetLeft - ((rail.clientWidth - card.offsetWidth) / 2)
+        )));
+    };
+
+    const update = () => {
+        frame = 0;
+        const max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+        const snapPositions = getSnapPositions();
+        activeIndex = snapPositions.reduce((closestIndex, position, index) => (
+            Math.abs(position - rail.scrollLeft) < Math.abs(snapPositions[closestIndex] - rail.scrollLeft)
+                ? index
+                : closestIndex
+        ), 0);
+        cards.forEach((card, index) => card.classList.toggle('is-active', index === activeIndex));
+        status.textContent = `${String(activeIndex + 1).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
+        progress.style.transform = `scaleX(${max ? Math.min(1, rail.scrollLeft / max) : 1})`;
+        previous.disabled = activeIndex === 0;
+        next.disabled = activeIndex === cards.length - 1;
+    };
+
+    const requestUpdate = () => {
+        if (frame) return;
+        frame = window.requestAnimationFrame(update);
+    };
+    const move = direction => {
+        const snapPositions = getSnapPositions();
+        if (cards.length < 2 || snapPositions.every(position => position === 0)) return;
+        const targetIndex = Math.max(0, Math.min(cards.length - 1, activeIndex + direction));
+        rail.scrollTo({
+            left: snapPositions[targetIndex],
+            behavior: prefersReducedMotion() ? 'auto' : 'smooth'
+        });
+    };
+    const keyHandler = event => {
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            move(-1);
+        }
+        if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            move(1);
+        }
+    };
+
+    previous.onclick = () => move(-1);
+    next.onclick = () => move(1);
+    rail.addEventListener('scroll', requestUpdate, { passive: true });
+    rail.addEventListener('keydown', keyHandler);
+    state.eventCleanup.push(() => {
+        rail.removeEventListener('scroll', requestUpdate);
+        rail.removeEventListener('keydown', keyHandler);
+        if (frame) window.cancelAnimationFrame(frame);
+    });
+    rail.scrollLeft = 0;
+    update();
 }
 
 function bindShop(root, state, container) {
@@ -400,6 +514,12 @@ function bindShop(root, state, container) {
     root.querySelector('#shop-cart-close').onclick = () => closeCart(root);
     root.querySelector('#shop-backdrop').onclick = () => closeCart(root);
     root.querySelector('#shop-modal-close').onclick = () => closeProduct(root, state);
+    root.querySelector('#shop-product-modal').onclick = event => {
+        if (event.target === event.currentTarget) closeProduct(root, state);
+    };
+    root.querySelector('#shop-viewer-toggle').onclick = () => {
+        setViewerPaused(root, state, !state.viewerPaused);
+    };
     root.querySelector('#shop-modal-add').onclick = event => {
         if (!state.activeProduct) return;
         addToCart(root, state, state.activeProduct, event.currentTarget);
@@ -469,7 +589,7 @@ function renderCart(root, state) {
             const product = getProduct(item.id);
             return `
                 <article class="shop-cart-item">
-                    <div class="shop-cart-thumb ${product.mediaClass}"><img src="${PRODUCT_IMAGE}" alt=""></div>
+                    <div class="shop-cart-thumb"><img src="${product.image}" alt=""></div>
                     <div><small>${escapeHTML(product.collection)}</small><strong>${escapeHTML(product.name)}</strong><span>${escapeHTML(product.availability)}</span></div>
                     <div class="shop-cart-quantity" aria-label="Quantità ${escapeHTML(product.name)}">
                         <button type="button" data-cart-minus="${product.id}" aria-label="Diminuisci quantità">−</button>
@@ -514,10 +634,15 @@ function openProduct(root, state, id) {
     root.querySelector('#shop-modal-availability').textContent = product.availability;
     root.querySelector('#shop-modal-facts').innerHTML = product.facts.map(fact => `<li>${escapeHTML(fact)}</li>`).join('');
     const media = root.querySelector('#shop-modal-media');
-    media.className = `shop-modal-media ${product.mediaClass}`;
+    media.style.setProperty('--viewer-angle', product.viewerAngle);
+    root.querySelector('#shop-viewer-spin').setAttribute('aria-label', `Vista 3D verticale di ${product.name}`);
+    media.querySelectorAll('[data-viewer-layer]').forEach(layer => {
+        layer.src = product.cutout;
+    });
     const modal = root.querySelector('#shop-product-modal');
     modal.hidden = false;
     root.classList.add('has-overlay', 'shop-product-open');
+    setViewerPaused(root, state, prefersReducedMotion());
     syncOverlayState(root);
 
     if (!prefersReducedMotion()) {
@@ -536,6 +661,21 @@ function closeProduct(root, state) {
     state.activeProduct = null;
     root.classList.remove('shop-product-open');
     syncOverlayState(root);
+}
+
+function setViewerPaused(root, state, paused) {
+    const reducedMotion = prefersReducedMotion();
+    paused = reducedMotion ? true : paused;
+    state.viewerPaused = paused;
+    const media = root.querySelector('#shop-modal-media');
+    const toggle = root.querySelector('#shop-viewer-toggle');
+    media.classList.toggle('is-paused', paused);
+    toggle.setAttribute('aria-pressed', paused ? 'true' : 'false');
+    toggle.disabled = reducedMotion;
+    toggle.textContent = reducedMotion ? 'MOVIMENTO RIDOTTO' : paused ? 'RUOTA' : 'PAUSA';
+    toggle.setAttribute('aria-label', reducedMotion
+        ? 'Rotazione disattivata dalle preferenze di movimento ridotto'
+        : paused ? 'Avvia la rotazione verticale' : 'Metti in pausa la rotazione verticale');
 }
 
 function syncOverlayState(root) {
