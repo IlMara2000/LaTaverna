@@ -108,6 +108,10 @@ export const MINIGAMES = [
 ];
 
 export const APP_DESTINATIONS = {
+    reading: {
+        name: 'Lettura',
+        description: 'Libri PDF, bacheca e raccolte personali.'
+    },
     minigames: {
         name: 'Sala giochi',
         description: 'Carte, party game e strategia.'

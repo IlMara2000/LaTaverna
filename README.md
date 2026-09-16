@@ -46,6 +46,20 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - D&D 5e e Pathfinder 2e: Biblioteca dei Manuali con ricerca OCR, filtri per parte/capitolo/argomento, sintesi AI basata sulle fonti, lettore pagina per pagina, personaggi e sessioni.
 - AI di sessione: bot testuale in chat, attivabile con `@oste` o dal pannello AI del tavolo, servito da function Vercel e Groq.
 - Libreria musicale con playlist tematiche e upload file audio locale.
+- Lettura: upload di PDF privati, consenso esplicito alla pubblicazione in Bacheca, elenco alfabetico con ricerca per titolo/autore, lettore PDF, preferiti e raccolte salvati per account.
+
+## Sezione Lettura
+
+La voce **Lettura** è disponibile nella home e nel menu laterale. Per un nuovo ambiente applica anche `supabase/migrations/20260916102901_reading_library.sql` dopo lo schema iniziale (sul progetto LaTaverna è già stata applicata).
+
+- Ogni PDF (massimo 50 MB) viene salvato nel bucket privato `reading_books`. Il titolo viene suggerito dal nome del file ed è modificabile prima dell'upload; l'autore è facoltativo.
+- Solo dopo il completamento dell'upload compare il popup. La casella è inizialmente vuota: chiudere il popup o confermare senza spunta lascia il libro privato. Con la spunta il libro viene indicizzato automaticamente nella bacheca, in ordine alfabetico italiano.
+- La ricerca per titolo/autore e la paginazione vengono eseguite sul database. Non viene estratto o indicizzato il testo interno del PDF.
+- Preferiti, nomi delle raccolte e appartenenza dei libri alle raccolte sono protetti da RLS e salvati per account. Una raccolta può essere rinominata o eliminata senza cancellare i libri.
+- Il proprietario può rendere nuovamente privato un libro. Ogni apertura verifica nuovamente i permessi nel database; i libri revocati non sono più visibili nelle liste degli altri utenti. Le copie già aperte/scaricate e le risposte già autorizzate in cache non sono richiamabili.
+- Gli account ospite Supabase hanno dati separati, legati al loro accesso temporaneo. Gli ospiti locali senza autenticazione possono solo consultare la bacheca.
+
+Verifica locale: `node --test scripts/tests/reading.test.mjs`. Verifica d'integrazione facoltativa: `node scripts/verify-reading-live.mjs --confirm-live` (crea due account ospite temporanei e rimuove i libri di prova; al termine stampa gli ID degli account da eliminare tramite amministrazione).
 
 ## Variabili Vercel
 

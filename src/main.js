@@ -197,6 +197,12 @@ async function renderSharedSessionInvite(invite) {
 
 async function restoreRecoveredContext(container, context, user) {
     try {
+        if (context === 'reading') {
+            const { showReading } = await import('./components/features/reading/Reading.js');
+            await showReading(container);
+            return;
+        }
+
         if (context === 'settings') {
             const { showSettings } = await import('./components/features/user/Settings.js');
             showSettings(container, user);
