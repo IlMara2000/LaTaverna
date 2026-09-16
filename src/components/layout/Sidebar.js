@@ -48,6 +48,10 @@ function renderSidebarContent(container, context) {
                     SALA GIOCHI
                 </button>
 
+                <button class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" style="font-size: 0.8rem; padding: 12px;">
+                    LETTURA
+                </button>
+
                 <button class="btn-glass sidebar-nav-item" id="nav-shop" data-context="shop" style="font-size: 0.8rem; padding: 12px;">
                     BOTTEGA
                 </button>
@@ -164,6 +168,7 @@ function setupEventListeners(container, context) {
 
     attachNav('nav-home', 'home');
     attachNav('nav-minigames', 'minigames');
+    attachNav('nav-reading', 'reading');
     attachNav('nav-shop', 'shop');
     attachNav('nav-dnd5e', 'dnd5e');
     attachNav('nav-pathfinder2e', 'pathfinder2e');
