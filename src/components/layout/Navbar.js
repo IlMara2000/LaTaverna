@@ -13,11 +13,11 @@ export function initNavbar(user, onLogout) {
     // Struttura HTML pulita. 
     // pointer-events: none sull'img impedisce il menu "Salva immagine" sui telefoni.
     navbarContainer.innerHTML = `
-        <div class="nav-logo-right" id="nav-home-btn" style="cursor: pointer; -webkit-tap-highlight-color: transparent;">
+        <button type="button" class="nav-logo-right" id="nav-home-btn" aria-label="Torna alla Taverna">
             <img src="/assets/logo2.png" alt="La Taverna" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none;">
-        </div>
+        </button>
 
-        <button id="navbar-trigger" class="floating-trigger" style="-webkit-tap-highlight-color: transparent; outline: none;">
+        <button id="navbar-trigger" class="floating-trigger" type="button" aria-label="Apri menu" aria-controls="sidebar-menu" aria-expanded="false">
             <span class="nav-bar"></span>
             <span class="nav-bar"></span>
             <span class="nav-bar"></span>
@@ -38,6 +38,8 @@ export function initNavbar(user, onLogout) {
     // Ascolta lo stato della sidebar per animare il pulsante Hamburger -> X
     window.addEventListener('sidebarState', (e) => {
         const isOpen = e.detail.isOpen;
+        btn.setAttribute('aria-expanded', String(isOpen));
+        btn.setAttribute('aria-label', isOpen ? 'Chiudi menu' : 'Apri menu');
         if (isOpen) {
             btn.classList.add('is-active'); // Si illumina di rosso e forma una X (global.css)
         } else {

@@ -173,11 +173,11 @@ export async function showSettings(container, user = null) {
                             </label>
                             <div class="settings-field-grid">
                                 <label>
-                                    <span>Colore accento</span>
+                                    <span>Sfumatura ametista</span>
                                     <select id="accentTheme">
                                         <option value="amethyst" ${profile.accent === 'amethyst' ? 'selected' : ''}>Ametista</option>
-                                        <option value="ember" ${profile.accent === 'ember' ? 'selected' : ''}>Brace</option>
-                                        <option value="emerald" ${profile.accent === 'emerald' ? 'selected' : ''}>Smeraldo</option>
+                                        <option value="ember" ${profile.accent === 'ember' ? 'selected' : ''}>Ametista rosata</option>
+                                        <option value="emerald" ${profile.accent === 'emerald' ? 'selected' : ''}>Ametista lavanda</option>
                                     </select>
                                 </label>
                                 <label>

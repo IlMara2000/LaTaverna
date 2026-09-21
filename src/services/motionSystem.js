@@ -14,6 +14,31 @@ export const prefersReducedMotion = () => {
     }
 };
 
+// Finish finite reveals when the preference changes, so nothing remains faded
+// out. Infinite decorative effects are cancelled instead of left running.
+export function initMotionPreferences() {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const sync = () => {
+        if (!prefersReducedMotion()) return;
+        document.getAnimations().forEach(animation => {
+            try {
+                if (animation.effect?.getComputedTiming().iterations === Infinity) animation.cancel();
+                else animation.finish();
+            } catch {
+                animation.cancel();
+            }
+        });
+    };
+    media.addEventListener('change', sync);
+    window.addEventListener('appPreferencesChanged', sync);
+    window.addEventListener('appPreferencesLoaded', sync);
+    return () => {
+        media.removeEventListener('change', sync);
+        window.removeEventListener('appPreferencesChanged', sync);
+        window.removeEventListener('appPreferencesLoaded', sync);
+    };
+}
+
 const stopAll = (items = []) => {
     items.forEach(item => {
         try {
@@ -138,9 +163,9 @@ export async function playRouteExit(target, source = null) {
 
     const exit = safeAnimate(target, {
         opacity: [1, 0],
-        y: [0, -12],
-        scale: [1, 0.985],
-        filter: ['blur(0px)', 'blur(10px)']
+        y: [0, -5],
+        scale: [1, 0.998],
+        filter: ['blur(0px)', 'blur(3px)']
     }, { duration: 0.26, ease: EASE_OUT });
 
     try {
@@ -171,9 +196,9 @@ export function enhancePortalMotion(container) {
     }, { ...EASE_SPRING, delay: 0.08 }));
 
     cleanups.push(safeAnimate(subtitle, {
-        opacity: [0, 0.56],
+        opacity: [0, 1],
         y: [16, 0],
-        letterSpacing: ['9px', '4px']
+        letterSpacing: ['1px', '0.3px']
     }, { duration: 0.76, delay: 0.24, ease: EASE_OUT }));
 
     if (entry) {
@@ -227,124 +252,35 @@ export async function playPortalOpen(entry, logo) {
 
 export function enhanceHomeMotion(container) {
     if (!container || prefersReducedMotion()) return () => {};
-
     const cleanups = [];
     let cancelled = false;
-    const home = container.querySelector('.taverna-home');
-    const header = container.querySelector('.taverna-home-header');
-    const stage = container.querySelector('.taverna-scene-stage');
     const scenes = [...container.querySelectorAll('.taverna-scene')];
-    const sceneImages = scenes.map(scene => scene.querySelector('img')).filter(Boolean);
-    const sceneTitles = scenes.map(scene => scene.querySelector('.taverna-scene-title')).filter(Boolean);
-    const dockButtons = [...container.querySelectorAll('.taverna-home-dock button')];
 
-    const startHomeMotion = async () => {
+    const start = async () => {
         await waitForBootVisibility();
-        if (cancelled) return;
+        if (cancelled || prefersReducedMotion()) return;
+        cleanups.push(safeAnimate(scenes, {
+            opacity: [0, 1], y: [12, 0]
+        }, { delay: stagger(0.065), duration: 0.45, ease: EASE_OUT }));
 
-    cleanups.push(safeAnimate(home, {
-        '--aurora-x': ['16%', '84%', '50%', '16%'],
-        '--aurora-y': ['-22%', '8%', '38%', '-22%'],
-        '--aurora-alpha': ['0.16', '0.32', '0.22', '0.16']
-    }, { duration: 14, repeat: Infinity, ease: 'easeInOut' }));
-
-    cleanups.push(safeAnimate(header, {
-        opacity: [0, 1],
-        y: [-18, 0],
-        filter: ['blur(10px)', 'blur(0px)']
-    }, { duration: 0.7, ease: EASE_OUT }));
-
-    cleanups.push(safeAnimate(stage, {
-        opacity: [0, 1],
-        y: [34, 0],
-        scale: [0.965, 1],
-        rotateX: [7, 0],
-        filter: ['blur(12px)', 'blur(0px)']
-    }, { duration: 0.92, ease: EASE_OUT }));
-
-    cleanups.push(safeAnimate(scenes, {
-        opacity: [0, 1],
-        y: [38, 0],
-        rotateX: [8, 0]
-    }, { delay: stagger(0.08, { startDelay: 0.12 }), duration: 0.82, ease: EASE_OUT }));
-
-    cleanups.push(safeAnimate(sceneTitles, {
-        opacity: [0, 1],
-        y: [26, 0],
-        filter: ['blur(8px)', 'blur(0px)']
-    }, { delay: stagger(0.08, { startDelay: 0.32 }), duration: 0.74, ease: EASE_OUT }));
-
-    cleanups.push(safeAnimate(dockButtons, {
-        opacity: [0, 1],
-        y: [18, 0],
-        scale: [0.96, 1]
-    }, { delay: stagger(0.045, { startDelay: 0.46 }), duration: 0.56, ease: EASE_OUT }));
-
-    sceneImages.forEach(image => {
-        cleanups.push(safeAnimate(image, {
-            scale: [1.12, 1.075],
-            filter: ['saturate(0.86) contrast(0.95)', 'saturate(1.06) contrast(1.02)']
-        }, { duration: 1.2, ease: EASE_OUT }));
-    });
-
-    scenes.forEach(scene => {
-        const image = scene.querySelector('img');
-        const title = scene.querySelector('.taverna-scene-title');
-
-        cleanups.push(hover(scene, element => {
-            safeAnimate(element, {
-                y: -5,
-                scale: 1.012,
-                rotateX: -1.25
-            }, EASE_SPRING);
-            safeAnimate(image, {
-                scale: 1.1,
-                filter: 'saturate(1.22) contrast(1.07) brightness(1.06)'
-            }, { duration: 0.52, ease: EASE_OUT });
-            safeAnimate(title, {
-                y: -7,
-                letterSpacing: '0.035em'
-            }, EASE_SPRING);
-
-            return () => {
-                safeAnimate(element, { y: 0, scale: 1, rotateX: 0 }, EASE_SPRING);
-                safeAnimate(image, {
-                    scale: 1.075,
-                    filter: 'saturate(1.06) contrast(1.02) brightness(1)'
-                }, { duration: 0.48, ease: EASE_OUT });
-                safeAnimate(title, { y: 0, letterSpacing: '0em' }, EASE_SPRING);
-            };
-        }));
-
-        cleanups.push(press(scene, element => {
-            safeAnimate(element, { scale: 0.985, y: -2 }, { duration: 0.12, ease: EASE_OUT });
-            return () => safeAnimate(element, { scale: 1.012, y: -4 }, { duration: 0.2, ease: EASE_OUT });
-        }));
-    });
-
-    dockButtons.forEach(button => {
-        cleanups.push(hover(button, element => {
-            safeAnimate(element, {
-                y: -4,
-                scale: 1.025,
-                filter: 'brightness(1.18)'
-            }, EASE_SPRING);
-            return () => safeAnimate(element, {
-                y: 0,
-                scale: 1,
-                filter: 'brightness(1)'
-            }, EASE_SPRING);
-        }));
-    });
-
+        scenes.forEach(scene => {
+            const image = scene.querySelector('img');
+            cleanups.push(hover(scene, element => {
+                safeAnimate(element, { y: -4 }, { duration: 0.28, ease: EASE_OUT });
+                safeAnimate(image, { scale: 1.055 }, { duration: 0.5, ease: EASE_OUT });
+                return () => {
+                    safeAnimate(element, { y: 0 }, { duration: 0.28, ease: EASE_OUT });
+                    safeAnimate(image, { scale: 1.025 }, { duration: 0.5, ease: EASE_OUT });
+                };
+            }));
+            cleanups.push(press(scene, element => {
+                safeAnimate(element, { scale: 0.99 }, { duration: 0.1 });
+                return () => safeAnimate(element, { scale: 1 }, { duration: 0.2, ease: EASE_OUT });
+            }));
+        });
     };
-
-    startHomeMotion();
-
-    return () => {
-        cancelled = true;
-        stopAll(cleanups);
-    };
+    void start();
+    return () => { cancelled = true; stopAll(cleanups); };
 }
 
 export function enhanceSurfaceMotion(container, options = {}) {
@@ -368,19 +304,17 @@ export function enhanceSurfaceMotion(container, options = {}) {
 
     elements.forEach((element, index) => {
         element.dataset.motionEnhanced = 'true';
-        element.style.opacity = '0';
-        element.style.transform = 'translate3d(0, 24px, 0) scale(0.975)';
-        element.style.filter = 'blur(10px)';
+        // Keep surfaces readable when offscreen or when motion is disabled mid-reveal.
 
         const stop = inView(element, target => {
             target.classList.add('motion-visible');
             safeAnimate(target, {
                 opacity: [0, 1],
-                y: [24, 0],
-                scale: [0.975, 1],
-                filter: ['blur(10px)', 'blur(0px)']
+                y: [10, 0],
+                scale: [0.995, 1],
+                filter: ['blur(3px)', 'blur(0px)']
             }, {
-                duration: 0.62,
+                duration: 0.4,
                 delay: Math.min((index % 8) * 0.045, 0.26),
                 ease: EASE_OUT
             });
@@ -400,7 +334,7 @@ export function enhanceSurfaceMotion(container, options = {}) {
         element.dataset.motionInteractive = 'true';
         cleanups.push(hover(element, target => {
             safeAnimate(target, {
-                scale: 1.018,
+                scale: 1.006,
                 y: -2
             }, EASE_SPRING);
             return () => safeAnimate(target, {
@@ -410,7 +344,7 @@ export function enhanceSurfaceMotion(container, options = {}) {
         }));
 
         cleanups.push(press(element, target => {
-            safeAnimate(target, { scale: 0.968, y: 0 }, { duration: 0.11, ease: EASE_OUT });
+            safeAnimate(target, { scale: 0.99, y: 0 }, { duration: 0.11, ease: EASE_OUT });
             return () => safeAnimate(target, { scale: 1, y: -1 }, { duration: 0.16, ease: EASE_OUT });
         }));
     });

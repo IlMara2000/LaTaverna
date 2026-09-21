@@ -44,28 +44,39 @@ export function showLobby(container) {
             <div class="taverna-home-ambient ambient-one" aria-hidden="true"></div>
             <div class="taverna-home-ambient ambient-two" aria-hidden="true"></div>
             <header class="taverna-home-header">
+                <div class="taverna-wordmark">
                 <img src="/assets/logo2.png" alt="" aria-hidden="true">
-                <h1>LA TAVERNA</h1>
+                <span>LA TAVERNA<small>GIOCHI, STORIE, COMPAGNIA</small></span>
+                </div>
+                <span class="taverna-home-badge"><span aria-hidden="true">✧</span> Il tuo prossimo capitolo</span>
             </header>
 
-            <main class="taverna-home-main">
+            <div class="taverna-home-main">
+                <section class="taverna-welcome" aria-labelledby="home-title">
+                    <span class="crystal-eyebrow">BENVENUTO NELLA TAVERNA</span>
+                    <h1 id="home-title">Prenditi un momento.<br><em>Entra in un altro mondo.</em></h1>
+                    <p>Una mano di carte, una sfida tra amici, una nuova avventura.<br>Il tuo posto al tavolo ti aspetta.</p>
+                </section>
                 <section class="taverna-scene-stage" aria-label="Scegli come giocare">
                     <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
                         <img src="/assets/home/portal-cards.jpg" alt="Carte italiane su un tavolo da gioco" fetchpriority="high">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
-                        <span class="taverna-scene-title">CARTE</span>
+                        <span class="scene-number" aria-hidden="true">01 / CARTE</span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">♠</span><span class="taverna-scene-title">Una mano ancora</span><span class="scene-description">I grandi classici, il tuo prossimo asso.</span><span class="scene-link">Scopri i giochi di carte <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-party" id="hub-party-games">
                         <img src="/assets/home/portal-party.jpg" alt="Gioco da tavolo con pedine colorate" loading="lazy">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
-                        <span class="taverna-scene-title">CON AMICI</span>
+                        <span class="scene-number" aria-hidden="true">02 / CON AMICI</span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">✧</span><span class="taverna-scene-title">Meglio in compagnia</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
                         <img src="/assets/home/portal-gdr.jpg" alt="Mappa fantasy, dadi e miniatura da gioco di ruolo" loading="lazy">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
-                        <span class="taverna-scene-title">GDR</span>
+                        <span class="scene-number" aria-hidden="true">03 / GIOCHI DI RUOLO</span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">◇</span><span class="taverna-scene-title">Oltre l’immaginazione</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
                     </button>
                 </section>
 
@@ -83,7 +94,8 @@ export function showLobby(container) {
                     <button type="button" id="btn-dnd5e">D&amp;D 5E</button>
                     <button type="button" id="btn-pathfinder2e">PATHFINDER 2E</button>
                 </nav>
-            </main>
+                <p class="taverna-home-footer"><span aria-hidden="true">✦</span> Le storie più belle si giocano insieme.</p>
+            </div>
         </div>
     `;
 
@@ -93,18 +105,26 @@ export function showLobby(container) {
             alert('Accedi per aprire i tavoli GDR.');
             return;
         }
-        navigateTo(destination, container, options);
+        return navigateTo(destination, container, options);
     };
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let navigating = false;
     const openWithTransition = async (button, destination, options = {}) => {
-        if (!button || reducedMotion) {
-            openDestination(destination, options);
-            return;
+        if (navigating) return;
+        navigating = true;
+        try {
+            button?.classList.add('is-opening');
+            await playRouteExit(button, null);
+            await openDestination(destination, options);
+        } finally {
+            navigating = false;
+            button?.classList.remove('is-opening');
+            if (button) {
+                button.style.opacity = '';
+                button.style.transform = '';
+                button.style.filter = '';
+            }
         }
-        button.classList.add('is-opening');
-        await playRouteExit(container.querySelector('#lobby-wrapper') || container, button);
-        openDestination(destination, options);
     };
 
     const scenes = [...container.querySelectorAll('.taverna-scene')];
@@ -113,23 +133,9 @@ export function showLobby(container) {
     }, { threshold: 0.46 });
     scenes.forEach(scene => observer.observe(scene));
 
-    const stage = container.querySelector('.taverna-scene-stage');
-    const handlePointerMove = event => {
-        const bounds = stage.getBoundingClientRect();
-        stage.style.setProperty('--pointer-x', `${((event.clientX - bounds.left) / bounds.width - 0.5) * 16}px`);
-        stage.style.setProperty('--pointer-y', `${((event.clientY - bounds.top) / bounds.height - 0.5) * 12}px`);
-    };
-    const resetPointer = () => {
-        stage.style.setProperty('--pointer-x', '0px');
-        stage.style.setProperty('--pointer-y', '0px');
-    };
-    stage?.addEventListener('pointermove', handlePointerMove);
-    stage?.addEventListener('pointerleave', resetPointer);
     const motionCleanup = enhanceHomeMotion(container);
     window.__homeCleanup = () => {
         observer.disconnect();
-        stage?.removeEventListener('pointermove', handlePointerMove);
-        stage?.removeEventListener('pointerleave', resetPointer);
         motionCleanup?.();
     };
 

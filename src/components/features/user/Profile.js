@@ -79,12 +79,12 @@ export async function showProfile(container, user) {
     const email = escapeHTML(resolvedUser?.email || 'Email non disponibile');
 
     container.innerHTML = `
-        <div class="fade-in" style="padding: 20px; max-width: 600px; margin: 0 auto;">
+        <div class="profile-page fade-in" style="padding: 20px; max-width: 600px; margin: 0 auto;">
             <button id="profileBack" class="btn-back-glass" style="width:auto; margin-bottom:20px;">TORNA ALLA TAVERNA</button>
             
             <h1 style="font-weight: 900; letter-spacing: -1px; margin-bottom: 30px;">IL MIO <span style="color:var(--amethyst-bright);">PROFILO</span></h1>
             
-            <div style="background: rgba(157, 78, 221, 0.05); border: 1px solid var(--amethyst-glow); border-radius: 24px; padding: 40px; text-align: center; backdrop-filter: blur(10px);">
+            <div class="profile-glass-card" style="border: 1px solid var(--glass-border); padding: 40px; text-align: center;">
                 <img src="${escapeHTML(avatar)}" alt="" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid var(--amethyst-bright); margin-bottom: 20px; box-shadow: 0 0 20px var(--amethyst-glow);">
                 <h2 style="margin: 0; text-transform: uppercase; letter-spacing: 1px;">${name}</h2>
                 <p style="opacity: 0.8; font-size: 13px; margin: 6px 0 0 0;">${title}</p>

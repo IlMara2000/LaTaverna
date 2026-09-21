@@ -28,13 +28,16 @@ export function initSidebar(container, user, onLogout, context = "home") {
 }
 
 function renderSidebarContent(container, context) {
+    const wasOpen = container.querySelector('#sidebar-menu')?.classList.contains('active');
+    const focusedId = container.contains(document.activeElement) ? document.activeElement.id : null;
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = escapeHTML(isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante"));
 
     let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI DALLA TAVERNA') : "⬅ TORNA ALLA HOME";
 
     container.innerHTML = `
-        <nav id="sidebar-menu" class="sidebar-glass">
+        <button class="sidebar-backdrop" type="button" aria-label="Chiudi menu" tabindex="-1" hidden></button>
+        <nav id="sidebar-menu" class="sidebar-glass" aria-label="Menu principale" inert>
             <div class="sidebar-header" style="margin-bottom: 24px;">
                 <h2 class="text-amethyst" style="font-size: 1.6rem; letter-spacing: -1px; margin-bottom: 5px;">${userName.toUpperCase()}</h2>
             </div>
@@ -104,6 +107,10 @@ function renderSidebarContent(container, context) {
 
     setupEventListeners(container, context);
     highlightActiveContext();
+    if (wasOpen) {
+        window.__tavernaSidebarToggle?.();
+        if (focusedId) document.getElementById(focusedId)?.focus({ preventScroll: true });
+    }
 }
 
 function resetGlobalScroll() {
@@ -116,10 +123,9 @@ function highlightActiveContext() {
         item.style.color = "";
         item.style.textShadow = "";
         item.style.borderColor = "";
+        item.removeAttribute('aria-current');
         if (item.dataset.context === currentActiveContext) {
-            item.style.color = "var(--amethyst-bright)";
-            item.style.textShadow = "0 0 10px var(--amethyst-glow)";
-            item.style.borderColor = "var(--amethyst-bright)";
+            item.setAttribute('aria-current', 'page');
         }
     });
 }
@@ -128,17 +134,48 @@ function setupEventListeners(container, context) {
     const sidebar = container.querySelector('#sidebar-menu');
     const trigger = document.getElementById('navbar-trigger');
     const mainContent = document.getElementById('app'); 
+    const backdrop = container.querySelector('.sidebar-backdrop');
+    mainContent.inert = false;
+    trigger?.setAttribute('aria-expanded', 'false');
+    trigger?.setAttribute('aria-label', 'Apri menu');
+    trigger?.classList.remove('is-active');
     
     const toggle = () => {
         const isOpen = sidebar.classList.toggle('active');
         trigger?.classList.toggle('is-active', isOpen);
+        sidebar.inert = !isOpen;
+        mainContent.inert = isOpen;
+        backdrop.hidden = !isOpen;
+        trigger?.setAttribute('aria-expanded', String(isOpen));
+        trigger?.setAttribute('aria-label', isOpen ? 'Chiudi menu' : 'Apri menu');
         if (!isOpen) {
             sidebar.style.right = '-110%';
         } else {
             sidebar.style.right = '0';
         }
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
+        if (isOpen) sidebar.querySelector('button')?.focus({ preventScroll: true });
+        else trigger?.focus({ preventScroll: true });
     };
+    backdrop.onclick = toggle;
+    if (window.__tavernaSidebarKeys) {
+        window.removeEventListener('keydown', window.__tavernaSidebarKeys);
+    }
+    window.__tavernaSidebarKeys = event => {
+        if (!sidebar.classList.contains('active')) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            toggle();
+        }
+        if (event.key === 'Tab') {
+            const controls = [...sidebar.querySelectorAll('button:not(:disabled)')];
+            if (trigger) controls.push(trigger);
+            const index = controls.indexOf(document.activeElement);
+            event.preventDefault();
+            controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length]?.focus();
+        }
+    };
+    window.addEventListener('keydown', window.__tavernaSidebarKeys);
 
     if (trigger) trigger.onclick = (e) => {
         e.preventDefault();

@@ -5,22 +5,23 @@ const PROFILE_TABLE = 'user_profiles';
 
 const ACCENT_THEMES = {
     amethyst: {
-        bright: '#9d4ede',
-        light: '#c77dff',
-        glow: 'rgba(157, 78, 221, 0.5)',
-        gradient: 'linear-gradient(135deg, #9d4ede 0%, #5a189a 100%)'
+        bright: '#ac78ed',
+        light: '#dbc2fc',
+        glow: 'rgba(172, 120, 237, 0.24)',
+        gradient: 'linear-gradient(135deg, #a276d2, #7242b2)'
     },
+    // Keep persisted accent IDs compatible; every variation belongs to amethyst.
     ember: {
-        bright: '#ff7a3d',
-        light: '#ffb36b',
-        glow: 'rgba(255, 122, 61, 0.42)',
-        gradient: 'linear-gradient(135deg, #ff7a3d 0%, #a83232 100%)'
+        bright: '#bd88d9',
+        light: '#efd0fc',
+        glow: 'rgba(189, 136, 217, 0.24)',
+        gradient: 'linear-gradient(135deg, #b381ce, #8750a4)'
     },
     emerald: {
-        bright: '#00c48c',
-        light: '#57f0bc',
-        glow: 'rgba(0, 196, 140, 0.36)',
-        gradient: 'linear-gradient(135deg, #00c48c 0%, #087f5b 100%)'
+        bright: '#9e86ee',
+        light: '#d3c6ff',
+        glow: 'rgba(158, 134, 238, 0.24)',
+        gradient: 'linear-gradient(135deg, #9d84db, #6751ac)'
     }
 };
 
