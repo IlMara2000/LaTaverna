@@ -1,3 +1,4 @@
+import { navigateTo } from '../../../services/appNavigation.js';
 import { supabase } from '../../../services/supabase.js';
 import { applyProfileAppearance } from '../../../services/profileAppearance.js';
 import {
@@ -107,12 +108,14 @@ const optionRow = ({ title, description, control, className = '' }) => `
     </div>
 `;
 
-export async function showSettings(container, user = null) {
+export async function showSettings(container, user = null, navigation = null) {
     const [supabaseUser, preferences] = await Promise.all([
         getSupabaseUser(user),
         loadAndApplyAppPreferences()
     ]);
+    if (navigation && !navigation.isCurrent()) return;
     const profile = await loadProfileSettings(supabaseUser);
+    if (navigation && !navigation.beforeRender()) return;
     applyProfileAppearance(profile);
 
     const accountLabel = supabaseUser?.email || (supabaseUser?.is_anonymous ? 'Sessione ospite sincronizzata' : 'Profilo locale');
@@ -391,11 +394,7 @@ export async function showSettings(container, user = null) {
     volume.oninput = () => { volumeValue.textContent = `${volume.value}%`; };
     volume.onchange = () => setPreference({ 'music.volume': Number(volume.value) / 100 }, 'Volume aggiornato.');
 
-    container.querySelector('#openMusicLibrary').onclick = async () => {
-        cleanupSettings();
-        const { AudioManager } = await import('../../ui/AudioManager.js');
-        AudioManager.showMusicCenter(container);
-    };
+    container.querySelector('#openMusicLibrary').onclick = () => navigateTo('music', container);
 
     const fullscreenButton = container.querySelector('#fullscreenToggle');
     updateFullscreenButton = () => {
@@ -433,9 +432,5 @@ export async function showSettings(container, user = null) {
         showStatus(error ? `Ripristino locale completato. Sync non riuscita: ${error.message}` : 'Preferenze ripristinate.', Boolean(error));
     };
 
-    container.querySelector('#settingsBack').onclick = async () => {
-        cleanupSettings();
-        const { showLobby } = await import('../../../lobby.js');
-        showLobby(container);
-    };
+    container.querySelector('#settingsBack').onclick = () => navigateTo('home', container);
 }

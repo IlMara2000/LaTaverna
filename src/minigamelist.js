@@ -1,8 +1,8 @@
+import { loadView } from './services/navigationLoading.js';
 import { updateSidebarContext } from './components/layout/Sidebar.js';
-import { showLobby } from './lobby.js';
 import { MINIGAMES, MINIGAME_CATEGORIES, getGamesByCategory } from './services/experienceCatalog.js';
-import { rememberDestination } from './services/appNavigation.js';
-import { enhanceSurfaceMotion, playRouteExit } from './services/motionSystem.js';
+import { rememberDestination, navigateTo, resetAppSurface } from './services/appNavigation.js';
+import { enhanceSurfaceMotion } from './services/motionSystem.js';
 import {
     createMinigameRoom,
     getMinigameRoomByCode,
@@ -11,11 +11,6 @@ import {
     joinMinigameRoom,
     watchMinigameRoom
 } from './services/minigameMultiplayer.js';
-
-const GAME_MARKS = {
-    briscola: '♠︎', scopa: '♦︎', solitario: '♥︎', solo: '✦', burraco: '♣︎',
-    impostore: '◈', numeri: '#', tictactoe: '×', scacchi: '♞', dama: '◉', blocchi: '▦'
-};
 
 export function showMinigamesList(container, options = {}) {
     window.__homeCleanup?.();
@@ -92,8 +87,7 @@ export function showMinigamesList(container, options = {}) {
     let pollTimer = null;
     let catalogMotionCleanup = null;
     const pageMotionCleanup = enhanceSurfaceMotion(container, {
-        selector: '.minigame-multiplayer-panel, .session-tool-switcher',
-        interactiveSelector: '#btn-back-main, #btn-minigame-multiplayer, #minigame-multiplayer-join button, [data-game-filter]'
+        selector: '.minigame-multiplayer-panel, .session-tool-switcher'
     });
     const clientCanPoll = () => Boolean(multiplayerRoom?.code);
 
@@ -189,18 +183,13 @@ export function showMinigamesList(container, options = {}) {
         catalogMotionCleanup?.();
     };
 
-    const launchGame = async (game) => {
-        try {
-            stopWatchingRoom();
-            await playRouteExit(container.querySelector('#lobby-wrapper') || container);
-            const module = await import(`./dashboards/minigames/${game.id}.js`);
-            if (module && module[game.initFn]) {
-                module[game.initFn](container);
-            }
-        } catch (err) {
-            console.error(`Errore nel caricamento del gioco ${game.id}:`, err);
-        }
-    };
+    const launchGame = game => loadView(container, async () => {
+        const module = await import(`./dashboards/minigames/${game.id}.js`);
+        if (typeof module[game.initFn] !== 'function') throw new Error('Gioco non disponibile');
+        return context => {
+            if (context.beforeRender()) module[game.initFn](container);
+        };
+    }, { label: game.name, beforeRender: resetAppSurface });
 
     const renderGameCatalog = () => {
         const catalog = container.querySelector('#minigame-catalog');
@@ -216,7 +205,7 @@ export function showMinigamesList(container, options = {}) {
                     <div class="grid-layout">
                         ${games.map(game => `
                             <button type="button" class="game-card catalog-game-card" data-launch-game="${game.id}">
-                                <span class="catalog-game-icon" aria-hidden="true">${GAME_MARKS[game.id] || '◇'}</span>
+                                <span class="catalog-game-icon" aria-hidden="true">${game.icon}</span>
                                 <div class="catalog-game-copy">
                                     <h3>${game.name}</h3>
                                     <small>${game.players} · ${game.duration}</small>
@@ -236,8 +225,7 @@ export function showMinigamesList(container, options = {}) {
 
         catalogMotionCleanup?.();
         catalogMotionCleanup = enhanceSurfaceMotion(catalog, {
-            selector: '.lobby-section, .game-card',
-            interactiveSelector: '.game-card'
+            selector: '.lobby-section, .game-card'
         });
 
         container.querySelectorAll('[data-game-filter]').forEach(button => {
@@ -264,11 +252,7 @@ export function showMinigamesList(container, options = {}) {
     };
 
     // Torna alla lobby principale
-    document.getElementById('btn-back-main').onclick = async () => {
-        stopWatchingRoom();
-        await playRouteExit(container.querySelector('#lobby-wrapper') || container);
-        showLobby(container);
-    };
+    document.getElementById('btn-back-main').onclick = () => navigateTo('home', container);
 
     document.getElementById('btn-minigame-multiplayer').onclick = async () => {
         setMultiplayerBusy(true);

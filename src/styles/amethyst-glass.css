@@ -201,8 +201,8 @@ html[data-theme="amethyst"] .taverna-home-ambient { display: none; }
 #ui .taverna-welcome h1 em { font-style: normal; color: #c69aec; }
 #ui .taverna-welcome p { margin: 0; color: #bdaacc; font-size: 12px; line-height: 1.9; }
 #ui .taverna-scene-stage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; width: 100%; height: clamp(320px, 39vh, 430px); padding: 0; overflow: visible; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; perspective: none; }
-#ui .taverna-scene { border: 1px solid rgb(222 184 255 / 30%); border-radius: 30px; box-shadow: var(--crystal-shadow); opacity: 1; background: #241534; transform-style: flat; transition: border-color 240ms, box-shadow 300ms; }
-#ui .taverna-scene img { opacity: .66; }
+#ui .taverna-scene { border: 1px solid rgb(222 184 255 / 30%); border-radius: 30px; box-shadow: var(--crystal-shadow); opacity: 1; background: #241534; transform: none; transform-style: flat; transition: transform 220ms ease-out, border-color 220ms ease-out; }
+#ui .taverna-scene img { opacity: .66; transform: scale(1.025); transition: transform 360ms ease-out; }
 #ui .taverna-scene-scrim { background: linear-gradient(180deg, rgb(31 12 49 / 15%), rgb(28 11 44 / 12%) 25%, rgb(27 12 42 / 70%) 62%, rgb(25 13 40 / 95%)); }
 #ui .taverna-scene::before { background: linear-gradient(130deg, rgb(245 219 255 / 26%), transparent 25% 68%, rgb(218 164 255 / 16%)); opacity: .6; }
 #ui .taverna-scene::after { inset: 0 auto 0 -40%; width: 65%; height: 100%; border-radius: 0; background: linear-gradient(90deg, transparent, rgb(225 186 255 / 16%), transparent); filter: none; opacity: 0; }
@@ -230,7 +230,8 @@ html[data-theme="amethyst"] .taverna-home-ambient { display: none; }
 .sidebar-backdrop { position: fixed; inset: 0; z-index: 8999; border: 0; background: rgb(13 5 23 / 48%); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: crystal-enter 240ms ease-out; cursor: pointer; }
 .sidebar-backdrop[hidden] { display: none; }
 html[data-theme="amethyst"] .sidebar-glass { top: max(12px, var(--safe-top)); width: min(330px, calc(100vw - 24px)); height: calc(var(--visual-viewport-height) - max(12px, var(--safe-top)) - max(12px, var(--safe-bottom))); padding: 30px 20px 90px; border: 1px solid rgb(215 182 246 / 30%); border-radius: 30px; background: linear-gradient(140deg, rgb(151 100 198 / 14%), transparent 55%), rgb(24 13 38 / 90%); backdrop-filter: blur(30px) saturate(140%); -webkit-backdrop-filter: blur(30px) saturate(140%); box-shadow: var(--crystal-shadow), -15px 0 70px rgb(6 1 16 / 28%); overflow-y: auto; }
-html[data-theme="amethyst"] .sidebar-glass.active { right: 12px !important; }
+html[data-theme="amethyst"] .sidebar-glass { right: 12px !important; transform: translateX(calc(100% + 28px)); visibility: hidden; transition: transform 280ms cubic-bezier(.16, 1, .3, 1), visibility 280ms; animation: none; }
+html[data-theme="amethyst"] .sidebar-glass.active { transform: translateX(0); visibility: visible; }
 html[data-theme="amethyst"] .sidebar-header h2 { font-size: 1.15rem !important; color: #dfc3f6; text-shadow: none; }
 html[data-theme="amethyst"] .sidebar-nav-item { min-height: 44px; font-size: 11px !important; letter-spacing: .08em; font-weight: 600; }
 html[data-theme="amethyst"] .side-music-toggle.is-on { background: var(--crystal-selected); box-shadow: var(--crystal-inset); }
@@ -289,7 +290,8 @@ html[data-theme="amethyst"] .game-turn-indicator.white-turn { color: #e4c6ff; bo
 }
 
 /* Route fades affect opacity only so fixed game/dialog positioning stays intact. */
-html[data-theme="amethyst"] #app > :is(.reading-page, .settings-page, .profile-page, .minigames-lobby-wrapper, .artisan-shop, .dnd-app, .music-center) { animation: crystal-enter 420ms ease-out; }
+html[data-theme="amethyst"] .minigames-lobby-wrapper { animation: none; }
+html[data-theme="amethyst"] #app > :is(.reading-page, .settings-page, .profile-page, .artisan-shop, .dnd-app, .music-center) { animation: crystal-enter 220ms ease-out; }
 html[data-theme="amethyst"] :is(.reading-dialog[open], .manual-page-modal.active .manual-page-modal-panel) { animation: crystal-enter 280ms ease-out; }
 
 @media (max-width: 760px) {
@@ -335,6 +337,24 @@ html[data-theme="amethyst"] :is(.reading-dialog[open], .manual-page-modal.active
     #ui .taverna-home-badge { display: none; }
     #ui .taverna-home { padding-inline: 14px; }
 }
+
+/* Emoji retain their native color inside the amethyst glass. */
+#ui :is(.catalog-game-icon, .scene-symbol) { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; font-variant-emoji: emoji; line-height: 1; }
+#ui .catalog-game-card { transition: transform 180ms ease-out, border-color 180ms ease-out; }
+#ui .catalog-game-card:active, #ui .taverna-scene:active { transform: scale(.99); }
+#ui #app.app-preparing { transform: none; filter: none; }
+#app-loader { transition: none; }
+@keyframes crystal-loader-breathe { 0%, 100% { opacity: .65; transform: scale(.96); } 50% { opacity: 1; transform: scale(1); } }
+#app-loader .pulse-logo { animation: crystal-loader-breathe 1800ms ease-in-out infinite; }
+@media (hover: hover) and (pointer: fine) {
+    #ui .taverna-scene:hover, #ui .catalog-game-card:hover { transform: translateY(-3px); }
+    #ui .taverna-scene:hover img { transform: scale(1.055); }
+}
+.route-status { position: fixed; z-index: 10000; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 32px); padding: 14px 18px; border: 1px solid var(--glass-border); border-radius: 22px; background: rgb(35 20 52 / 96%); box-shadow: var(--crystal-shadow); color: var(--text-primary); font-size: 12px; animation: crystal-enter 160ms ease-out; }
+.route-status > span:not(.route-status-indicator) { min-width: 0; }
+.route-status-indicator { flex: 0 0 10px; height: 10px; border-radius: 50%; background: #c391f3; box-shadow: 0 0 14px rgb(182 114 239 / 35%); animation: crystal-loader-breathe 1200ms ease-in-out infinite; }
+.route-status button { padding: 8px 10px; border: 1px solid var(--glass-border); border-radius: 12px; color: #e5cdfb; background: rgb(184 134 229 / 12%); font: inherit; cursor: pointer; }
+.route-status button:focus-visible { outline: 2px solid #dfb8ff; outline-offset: 3px; }
 
 /* Preferences apply immediately, including to already running CSS effects. */
 html[data-theme="amethyst"] body.taverna-no-glow .amethyst-spark { display: none; }

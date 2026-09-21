@@ -1,5 +1,6 @@
+import { navigateTo } from '../../services/appNavigation.js';
 import { Howl, Howler } from 'howler';
-import { getPreference, setPreference } from '../../services/userPreferences.js';
+import { getPreferences, setPreference } from '../../services/userPreferences.js';
 import { getCachedAppPreference } from '../../services/appPreferences.js';
 
 // Configurazione Playlist Tematiche Unificata
@@ -39,18 +40,29 @@ let currentTrackName = 'Nessuna traccia';
 let isMusicEnabled = true;
 let currentVolume = Number(getCachedAppPreference('music.volume', 0.5));
 let isPlaylistActive = false;
-let preferencesHydrated = false;
+let preferencesHydration = null;
 
 const getPlaylist = (key = currentPlaylistKey) => PLAYLISTS[key] || PLAYLISTS.tavern;
 
-async function hydrateAudioPreferences() {
-    if (preferencesHydrated) return;
-    preferencesHydrated = true;
-    currentPlaylistKey = await getPreference('music.playlist', currentPlaylistKey);
-    currentTrackName = await getPreference('music.track', currentTrackName);
-    isMusicEnabled = await getPreference('music.enabled', true);
-    currentVolume = Number(await getPreference('music.volume', currentVolume));
-    Howler.volume(currentVolume);
+function hydrateAudioPreferences() {
+    if (!preferencesHydration) {
+        preferencesHydration = getPreferences({
+            'music.playlist': currentPlaylistKey,
+            'music.track': currentTrackName,
+            'music.enabled': isMusicEnabled,
+            'music.volume': currentVolume
+        }).then(values => {
+            currentPlaylistKey = values['music.playlist'];
+            currentTrackName = values['music.track'];
+            isMusicEnabled = values['music.enabled'];
+            currentVolume = Number(values['music.volume']);
+            Howler.volume(currentVolume);
+        }).catch(error => {
+            preferencesHydration = null;
+            throw error;
+        });
+    }
+    return preferencesHydration;
 }
 
 function persistAudioPreferences() {
@@ -118,8 +130,9 @@ export const AudioManager = {
         setPreference('music.volume', currentVolume);
     },
 
-    showMusicCenter: async (container) => {
+    showMusicCenter: async (container, navigation = null) => {
         await hydrateAudioPreferences();
+        if (navigation && !navigation.beforeRender()) return;
         const selectedPlaylist = getPlaylist();
         container.innerHTML = `
             <div class="music-center fade-in">
@@ -228,10 +241,7 @@ export const AudioManager = {
             });
             refreshSelectionUI();
         };
-        container.querySelector('#musicBack').onclick = async () => {
-            const { showLobby } = await import('../../lobby.js');
-            showLobby(container);
-        };
+        container.querySelector('#musicBack').onclick = () => navigateTo('home', container);
     }
 };
 

@@ -285,9 +285,10 @@ function setupEventListeners(container, context) {
     musicCenterBtn.onclick = async () => {
         toggle();
         try {
-            currentActiveContext = 'music';
-            await navigateTo('music', mainContent, { user: currentSidebarUser });
-            renderSidebarContent(container, 'music');
+            if (await navigateTo('music', mainContent, { user: currentSidebarUser })) {
+                currentActiveContext = 'music';
+                renderSidebarContent(container, 'music');
+            }
         } catch (err) { console.error("Errore Music Center", err); }
     };
 
