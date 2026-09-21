@@ -1,7 +1,7 @@
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { APP_DESTINATIONS } from './services/experienceCatalog.js';
 import { getLastDestination, navigateTo } from './services/appNavigation.js';
-import { enhanceHomeMotion, playRouteExit } from './services/motionSystem.js';
+import { enhanceHomeMotion } from './services/motionSystem.js';
 
 const escapeHTML = (value = '') => String(value)
     .replaceAll('&', '&amp;')
@@ -59,24 +59,24 @@ export function showLobby(container) {
                 </section>
                 <section class="taverna-scene-stage" aria-label="Scegli come giocare">
                     <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
-                        <img src="/assets/home/portal-cards.jpg" alt="Carte italiane su un tavolo da gioco" fetchpriority="high">
+                        <img src="/assets/home/portal-cards.jpg" alt="Carte italiane su un tavolo da gioco" fetchpriority="high" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">01 / CARTE</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">♠</span><span class="taverna-scene-title">Una mano ancora</span><span class="scene-description">I grandi classici, il tuo prossimo asso.</span><span class="scene-link">Scopri i giochi di carte <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Giochi di Carte</span><span class="scene-description">I grandi classici, il tuo prossimo asso.</span><span class="scene-link">Scopri i giochi di carte <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-party" id="hub-party-games">
-                        <img src="/assets/home/portal-party.jpg" alt="Gioco da tavolo con pedine colorate" loading="lazy">
+                        <img src="/assets/home/portal-party.jpg" alt="Gioco da tavolo con pedine colorate" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">02 / CON AMICI</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">✧</span><span class="taverna-scene-title">Meglio in compagnia</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Giochi da Tavolo</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
-                        <img src="/assets/home/portal-gdr.jpg" alt="Mappa fantasy, dadi e miniatura da gioco di ruolo" loading="lazy">
+                        <img src="/assets/home/portal-gdr.jpg" alt="Mappa fantasy, dadi e miniatura da gioco di ruolo" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">03 / GIOCHI DI RUOLO</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">◇</span><span class="taverna-scene-title">Oltre l’immaginazione</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di Ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
                     </button>
                 </section>
 
@@ -108,50 +108,24 @@ export function showLobby(container) {
         return navigateTo(destination, container, options);
     };
 
-    let navigating = false;
-    const openWithTransition = async (button, destination, options = {}) => {
-        if (navigating) return;
-        navigating = true;
-        try {
-            button?.classList.add('is-opening');
-            await playRouteExit(button, null);
-            await openDestination(destination, options);
-        } finally {
-            navigating = false;
-            button?.classList.remove('is-opening');
-            if (button) {
-                button.style.opacity = '';
-                button.style.transform = '';
-                button.style.filter = '';
-            }
-        }
-    };
-
-    const scenes = [...container.querySelectorAll('.taverna-scene')];
-    const observer = new IntersectionObserver(entries => {
-        entries.forEach(entry => entry.target.classList.toggle('is-in-view', entry.isIntersecting));
-    }, { threshold: 0.46 });
-    scenes.forEach(scene => observer.observe(scene));
-
     const motionCleanup = enhanceHomeMotion(container);
     window.__homeCleanup = () => {
-        observer.disconnect();
         motionCleanup?.();
     };
 
     const cardScene = container.querySelector('#hub-card-games');
     const partyScene = container.querySelector('#hub-party-games');
     const gdrScene = container.querySelector('#hub-gdr-games');
-    container.querySelector('#resume-last-destination')?.addEventListener('click', event => {
-        openWithTransition(event.currentTarget, lastDestination.destination, lastDestination.options || {});
+    container.querySelector('#resume-last-destination')?.addEventListener('click', () => {
+        openDestination(lastDestination.destination, lastDestination.options || {});
     });
-    cardScene.onclick = () => openWithTransition(cardScene, 'minigames', { filter: 'cards' });
-    partyScene.onclick = () => openWithTransition(partyScene, 'minigames', { filter: 'party' });
-    gdrScene.onclick = () => openWithTransition(gdrScene, 'dnd5e');
-    container.querySelector('#hub-strategy-games').onclick = event => openWithTransition(event.currentTarget, 'minigames', { filter: 'strategy' });
-    container.querySelector('#hub-all-games').onclick = event => openWithTransition(event.currentTarget, 'minigames', { filter: 'all' });
-    container.querySelector('#hub-shop').onclick = event => openWithTransition(event.currentTarget, 'shop');
-    container.querySelector('#hub-reading').onclick = event => openWithTransition(event.currentTarget, 'reading');
-    container.querySelector('#btn-dnd5e').onclick = event => openWithTransition(event.currentTarget, 'dnd5e');
-    container.querySelector('#btn-pathfinder2e').onclick = event => openWithTransition(event.currentTarget, 'pathfinder2e');
+    cardScene.onclick = () => openDestination('minigames', { filter: 'cards' });
+    partyScene.onclick = () => openDestination('minigames', { filter: 'party' });
+    gdrScene.onclick = () => openDestination('dnd5e');
+    container.querySelector('#hub-strategy-games').onclick = () => openDestination('minigames', { filter: 'strategy' });
+    container.querySelector('#hub-all-games').onclick = () => openDestination('minigames', { filter: 'all' });
+    container.querySelector('#hub-shop').onclick = () => openDestination('shop');
+    container.querySelector('#hub-reading').onclick = () => openDestination('reading');
+    container.querySelector('#btn-dnd5e').onclick = () => openDestination('dnd5e');
+    container.querySelector('#btn-pathfinder2e').onclick = () => openDestination('pathfinder2e');
 }

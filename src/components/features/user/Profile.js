@@ -1,3 +1,4 @@
+import { navigateTo } from '../../../services/appNavigation.js';
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 
 const PROFILE_TABLE = 'user_profiles';
@@ -65,13 +66,15 @@ async function countRows(tableName, userId, extraFilters = []) {
     return count || 0;
 }
 
-export async function showProfile(container, user) {
+export async function showProfile(container, user, navigation = null) {
     const resolvedUser = await resolveUser(user);
     const [profile, characterCount, sessionCount] = await Promise.all([
         loadStoredProfile(resolvedUser),
         countRows(SUPABASE_CONFIG.tables.characters, resolvedUser?.id, [['system_id', 'dnd5e']]),
         countRows(SUPABASE_CONFIG.tables.sessions, resolvedUser?.id)
     ]);
+
+    if (navigation && !navigation.beforeRender()) return;
 
     const avatar = profile.avatar_url || 'https://placehold.co/100x100?text=V';
     const name = escapeHTML(profile.display_name);
@@ -104,8 +107,5 @@ export async function showProfile(container, user) {
         </div>
     `;
 
-    container.querySelector('#profileBack').onclick = async () => {
-        const { showLobby } = await import('../../../lobby.js');
-        showLobby(container);
-    };
+    container.querySelector('#profileBack').onclick = () => navigateTo('home', container);
 }

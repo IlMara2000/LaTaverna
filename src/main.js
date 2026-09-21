@@ -85,7 +85,6 @@ function renderPortal(user) {
     `;
 
     const entryScreen = document.getElementById('entry-screen');
-    const logo = document.getElementById('main-logo');
     const cleanupPortalMotion = enhancePortalMotion(appContainer);
 
     let opening = false;
@@ -99,16 +98,14 @@ function renderPortal(user) {
         if (opening) return;
         opening = true;
         // Effetto "Click" sul logo
-        await playPortalOpen(entryScreen, logo);
+        await playPortalOpen(entryScreen);
         cleanupPortalMotion?.();
         
-        setTimeout(() => {
-            if (user) {
-                checkAccess(user, appContainer);
-            } else {
-                initLogin(appContainer);
-            }
-        }, 40);
+        if (user) {
+            checkAccess(user, appContainer);
+        } else {
+            initLogin(appContainer);
+        }
     };
 }
 

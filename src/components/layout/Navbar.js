@@ -51,13 +51,6 @@ export function initNavbar(user, onLogout) {
     const logoBtn = document.getElementById('nav-home-btn');
     logoBtn.onclick = (e) => {
         e.preventDefault();
-        logoBtn.style.transform = 'scale(0.8)';
-        logoBtn.style.filter = 'brightness(1.5)';
-        
-        setTimeout(async () => {
-            logoBtn.style.transform = '';
-            logoBtn.style.filter = '';
-            await navigateTo('home', document.getElementById('app'));
-        }, 150); // Piccolo ritardo per far vedere l'animazione di tocco
+        void navigateTo('home', document.getElementById('app'));
     };
 }

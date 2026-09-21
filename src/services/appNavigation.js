@@ -1,3 +1,5 @@
+import { loadView } from './navigationLoading.js';
+
 const LAST_DESTINATION_KEY = 'taverna_last_destination';
 
 export const resetAppSurface = () => {
@@ -60,67 +62,28 @@ export async function navigateTo(destination, container = document.getElementByI
         }
     }
 
-    resetAppSurface();
-    container.innerHTML = '';
+    const routes = {
+        home: { label: 'la Taverna', load: () => import('../lobby.js'), render: (module) => module.showLobby(container) },
+        minigames: { label: 'la sala giochi', load: () => import('../minigamelist.js'), render: (module) => module.showMinigamesList(container, options) },
+        dnd5e: { label: 'D&D', load: () => import('../dashboards/dnd5e.js'), render: (module) => module.initDndDashboard(container) },
+        pathfinder2e: { label: 'Pathfinder', load: () => import('../dashboards/pathfinder2e.js'), render: (module) => module.initPathfinderDashboard(container) },
+        reading: { label: 'Lettura', load: () => import('../components/features/reading/Reading.js'), render: (module) => module.showReading(container) },
+        shop: { label: 'la bottega', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
+        profile: { label: 'il profilo', deferred: true, load: () => import('../components/features/user/Profile.js'), render: (module, context) => module.showProfile(container, options.user || null, context) },
+        settings: { label: 'le impostazioni', deferred: true, load: () => import('../components/features/user/Settings.js'), render: (module, context) => module.showSettings(container, options.user || null, context) },
+        music: { label: 'la libreria musicale', deferred: true, load: () => import('../components/ui/AudioManager.js'), render: (module, context) => module.AudioManager.showMusicCenter(container, context) }
+    };
+    const route = routes[destination];
+    if (!route) return false;
 
-    if (destination === 'home') {
-        const { showLobby } = await import('../lobby.js');
-        showLobby(container);
-        return true;
-    }
-
-    if (destination === 'minigames') {
-        rememberDestination(destination, options);
-        const { showMinigamesList } = await import('../minigamelist.js');
-        showMinigamesList(container, options);
-        return true;
-    }
-
-    if (destination === 'dnd5e') {
-        rememberDestination(destination);
-        const { initDndDashboard } = await import('../dashboards/dnd5e.js');
-        initDndDashboard(container);
-        return true;
-    }
-
-    if (destination === 'pathfinder2e') {
-        rememberDestination(destination);
-        const { initPathfinderDashboard } = await import('../dashboards/pathfinder2e.js');
-        initPathfinderDashboard(container);
-        return true;
-    }
-
-    if (destination === 'reading') {
-        rememberDestination(destination);
-        const { showReading } = await import('../components/features/reading/Reading.js');
-        await showReading(container);
-        return true;
-    }
-
-    if (destination === 'shop') {
-        rememberDestination(destination);
-        const { initShop } = await import('../dashboards/shop.js');
-        initShop(container);
-        return true;
-    }
-
-    if (destination === 'profile') {
-        const { showProfile } = await import('../components/features/user/Profile.js');
-        showProfile(container, options.user || null);
-        return true;
-    }
-
-    if (destination === 'settings') {
-        const { showSettings } = await import('../components/features/user/Settings.js');
-        showSettings(container, options.user || null);
-        return true;
-    }
-
-    if (destination === 'music') {
-        const { AudioManager } = await import('../components/ui/AudioManager.js');
-        AudioManager.showMusicCenter(container);
-        return true;
-    }
-
-    return false;
+    return loadView(container, async () => {
+        const module = await route.load();
+        return async context => {
+            if (!route.deferred && !context.beforeRender()) return;
+            await route.render(module, context);
+            if (context.isCurrent() && ['minigames', 'dnd5e', 'pathfinder2e', 'reading', 'shop'].includes(destination)) {
+                rememberDestination(destination, destination === 'minigames' ? options : {});
+            }
+        };
+    }, { label: route.label, beforeRender: resetAppSurface });
 }
