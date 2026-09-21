@@ -1,4 +1,5 @@
 import './styles/global.css'; 
+import './styles/amethyst-glass.css';
 import { supabase } from './services/supabase.js';
 import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';
@@ -7,12 +8,14 @@ import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthIn
 import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
 import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './services/appPreferences.js';
 import { getSessionInviteFromUrl, joinSessionInvite } from './services/sessionInvites.js';
-import { enhancePortalMotion, playLoaderExit, playPortalOpen } from './services/motionSystem.js';
+import { enhancePortalMotion, initMotionPreferences, playLoaderExit, playPortalOpen } from './services/motionSystem.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
 
 applyCachedAppPreferences();
+const cleanupMotionPreferences = initMotionPreferences();
+if (import.meta.hot) import.meta.hot.dispose(cleanupMotionPreferences);
 
 const uiContainer = document.getElementById('ui');
 const SERVER_INVITE = "https://discord.gg/9BqNgdqC";
@@ -71,9 +74,13 @@ function renderPortal(user) {
     const appContainer = document.getElementById('app');
     
     appContainer.innerHTML = `
-        <div class="entry-container" id="entry-screen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; cursor: pointer; animation: fadeInUp 0.8s ease-out forwards;">
+        <div class="entry-container" id="entry-screen" role="button" tabindex="0" aria-label="Entra nella Taverna">
+            <span class="entry-eyebrow">UN POSTO PER LE TUE AVVENTURE</span>
+            <div class="entry-crystal" aria-hidden="true"><i></i><i></i><i></i></div>
             <img src="/assets/logo.png" alt="La Taverna" id="main-logo" style="width: 140px; filter: drop-shadow(0 0 20px var(--amethyst-glow)); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-            <p class="subtitle" style="margin-top: 35px; opacity: 0.5; font-size: 11px; letter-spacing: 4px; text-transform: uppercase; font-family: 'Montserrat', sans-serif; font-weight: 800;">Tocca per Entrare</p>
+            <h1>La Taverna</h1>
+            <p class="entry-description">Ogni grande storia comincia insieme.</p>
+            <span class="subtitle entry-cta">Entra nella Taverna <span aria-hidden="true">↗</span></span>
         </div>
     `;
 
@@ -81,7 +88,16 @@ function renderPortal(user) {
     const logo = document.getElementById('main-logo');
     const cleanupPortalMotion = enhancePortalMotion(appContainer);
 
+    let opening = false;
+    entryScreen.onkeydown = event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            entryScreen.click();
+        }
+    };
     entryScreen.onclick = async () => {
+        if (opening) return;
+        opening = true;
         // Effetto "Click" sul logo
         await playPortalOpen(entryScreen, logo);
         cleanupPortalMotion?.();

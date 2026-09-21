@@ -12,6 +12,11 @@ import {
     watchMinigameRoom
 } from './services/minigameMultiplayer.js';
 
+const GAME_MARKS = {
+    briscola: '♠︎', scopa: '♦︎', solitario: '♥︎', solo: '✦', burraco: '♣︎',
+    impostore: '◈', numeri: '#', tictactoe: '×', scacchi: '♞', dama: '◉', blocchi: '▦'
+};
+
 export function showMinigamesList(container, options = {}) {
     window.__homeCleanup?.();
     if (window.__minigameMultiplayerCleanup) {
@@ -46,7 +51,9 @@ export function showMinigamesList(container, options = {}) {
             </div>
             
             <header style="margin: 10px 0 28px 0; text-align: center;">
-                <h1 class="main-title" style="margin: 0; font-size: 3rem; filter: drop-shadow(0 0 15px rgba(157,78,221,0.4));">SALA GIOCHI</h1>
+                <span class="crystal-eyebrow">IL PIACERE DI STARE AL TAVOLO</span>
+                <h1 class="main-title">Sala giochi</h1>
+                <p class="catalog-intro">Ritrova un classico o lasciati sorprendere da una nuova sfida.</p>
             </header>
 
             <nav class="session-tool-switcher" id="minigame-filters" aria-label="Categorie minigiochi" style="margin-bottom: 18px;">
@@ -208,12 +215,13 @@ export function showMinigamesList(container, options = {}) {
                     <h2 class="subtitle" style="opacity: 0.72; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 6px;">${category.name.toUpperCase()}</h2>
                     <div class="grid-layout">
                         ${games.map(game => `
-                            <button type="button" class="game-card" data-launch-game="${game.id}" style="background: ${game.color}; min-height: 176px; align-items: center; justify-content: space-between; text-align: center; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 20px rgba(0,0,0,0.3);">
-                                <div style="font-size: 2.4rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));">${game.icon}</div>
-                                <div>
-                                    <h3 style="margin: 0; font-size: 1rem; font-weight: 900; color: white; letter-spacing: 1px; text-transform: uppercase;">${game.name}</h3>
-                                    <small style="color: rgba(255,255,255,0.58); font-weight: 800;">${game.players} · ${game.duration}</small>
+                            <button type="button" class="game-card catalog-game-card" data-launch-game="${game.id}">
+                                <span class="catalog-game-icon" aria-hidden="true">${GAME_MARKS[game.id] || '◇'}</span>
+                                <div class="catalog-game-copy">
+                                    <h3>${game.name}</h3>
+                                    <small>${game.players} · ${game.duration}</small>
                                 </div>
+                                <span class="catalog-game-arrow" aria-hidden="true">↗</span>
                             </button>
                         `).join('')}
                     </div>
