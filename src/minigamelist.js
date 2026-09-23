@@ -1,3 +1,4 @@
+import { renderHomeBackButton } from './components/ui/BackButton.js';
 import { loadView } from './services/navigationLoading.js';
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { MINIGAMES, MINIGAME_CATEGORIES, getGamesByCategory } from './services/experienceCatalog.js';
@@ -40,9 +41,7 @@ export function showMinigamesList(container, options = {}) {
         <div id="lobby-wrapper" class="minigames-lobby-wrapper fade-in">
             
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 30px;">
-                <button id="btn-back-main" class="btn-back-glass" style="width: auto; margin-bottom: 0;">
-                    ← TORNA ALLA TAVERNA
-                </button>
+                ${renderHomeBackButton({ id: 'btn-back-main' })}
             </div>
             
             <header style="margin: 10px 0 28px 0; text-align: center;">

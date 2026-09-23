@@ -1,3 +1,4 @@
+import { renderHomeBackButton } from '../../ui/BackButton.js';
 import { navigateTo } from '../../../services/appNavigation.js';
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 
@@ -83,7 +84,7 @@ export async function showProfile(container, user, navigation = null) {
 
     container.innerHTML = `
         <div class="profile-page fade-in" style="padding: 20px; max-width: 600px; margin: 0 auto;">
-            <button id="profileBack" class="btn-back-glass" style="width:auto; margin-bottom:20px;">TORNA ALLA TAVERNA</button>
+            ${renderHomeBackButton({ id: 'profileBack' })}
             
             <h1 style="font-weight: 900; letter-spacing: -1px; margin-bottom: 30px;">IL MIO <span style="color:var(--amethyst-bright);">PROFILO</span></h1>
             

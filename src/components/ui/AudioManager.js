@@ -1,3 +1,4 @@
+import { renderHomeBackButton } from './BackButton.js';
 import { navigateTo } from '../../services/appNavigation.js';
 import { Howl, Howler } from 'howler';
 import { getPreferences, setPreference } from '../../services/userPreferences.js';
@@ -136,7 +137,7 @@ export const AudioManager = {
         const selectedPlaylist = getPlaylist();
         container.innerHTML = `
             <div class="music-center fade-in">
-                <button id="musicBack" class="btn-back-glass music-back">TORNA ALLA TAVERNA</button>
+                ${renderHomeBackButton({ id: 'musicBack' })}
 
                 <header class="music-header">
                     <p class="settings-kicker">Audio ambiente</p>

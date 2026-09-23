@@ -1,0 +1,133 @@
+/* Every page owns its safe-area once, even when #app has no outer padding. */
+:root { --page-top-gap: 24px; --menu-bottom-gap: 24px; }
+#ui #app:has(> :is(.minigames-lobby-wrapper, .reading-page, .settings-page, .profile-page, .dnd-app, .music-center)) {
+    padding: calc(var(--safe-top) + var(--page-top-gap)) max(16px, var(--safe-right)) calc(96px + var(--safe-bottom)) max(16px, var(--safe-left)) !important;
+    scroll-padding-block: calc(var(--safe-top) + 16px) calc(96px + var(--safe-bottom));
+}
+#ui #app > :is(.minigames-lobby-wrapper, .reading-page, .settings-page, .profile-page, .dnd-app, .music-center) {
+    padding-top: 0 !important;
+    padding-inline: 0 !important;
+    flex-shrink: 0;
+}
+#ui .reading-header { padding-top: 0; }
+#ui #app > .profile-page { width: 100%; }
+#ui .settings-page-header { grid-template-columns: minmax(0, 1fr) auto; }
+#ui .settings-page-header > .app-back-button { grid-column: 1 / -1; }
+
+/* The same return control in the catalog, library, account, RPG and shop. */
+#ui .app-back-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    align-self: flex-start;
+    justify-self: start;
+    margin-inline: 0 auto;
+    width: max-content;
+    max-width: 100%;
+    min-height: 48px;
+    flex-shrink: 0;
+    padding: 12px 18px;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    background: var(--crystal-control);
+    box-shadow: var(--crystal-inset);
+    color: var(--text-primary);
+    font: 700 11px/1.5 'Montserrat', sans-serif;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: border-color 160ms ease, background-color 160ms ease;
+}
+#ui .app-back-arrow { font-size: 20px; line-height: 1; }
+#ui .app-back-button:focus-visible { outline: 2px solid #dfbfff; outline-offset: 4px; }
+#ui .app-back-button:hover { border-color: #c59cf2; }
+#ui :is(.profile-page, .music-center, .dnd-app) > .app-back-button { margin-bottom: 24px; }
+#ui .app-back-button > span { display: inline; }
+
+/* No redundant floating home icon over headings or back buttons. */
+body:has(.app-back-button) #nav-home-btn { display: none !important; }
+#ui #nav-home-btn { top: calc(var(--safe-top) + var(--page-top-gap)); right: max(16px, var(--safe-right)); animation: none; filter: none; }
+#ui #navbar-trigger {
+    top: calc(var(--visual-viewport-top) + var(--visual-viewport-height) - var(--safe-bottom) - var(--menu-bottom-gap) - 56px) !important;
+    left: auto !important;
+    right: max(16px, var(--safe-right)) !important;
+    bottom: auto !important;
+    width: 56px;
+    height: 56px;
+    border-radius: 21px;
+    background: linear-gradient(145deg, rgb(190 132 239 / 18%), rgb(105 53 157 / 12%)), rgb(43 24 64 / 90%) !important;
+    touch-action: manipulation;
+}
+body.dnd-session-active { --menu-bottom-gap: 100px; }
+
+/* A native scroll region independent from any game's gesture lock. */
+html body.taverna-menu-open { touch-action: pan-y pinch-zoom !important; }
+html body:has(#start-screen) { touch-action: pan-y pinch-zoom !important; }
+body.taverna-menu-open #nav-home-btn { visibility: hidden; }
+#ui #sidebar-menu {
+    top: calc(var(--visual-viewport-top) + var(--safe-top) + 12px);
+    right: max(12px, var(--safe-right)) !important;
+    width: min(330px, calc(100vw - max(12px, var(--safe-left)) - max(12px, var(--safe-right))));
+    height: calc(var(--visual-viewport-height) - var(--safe-top) - var(--safe-bottom) - 24px);
+    min-height: 0;
+    padding: 24px 20px calc(88px + var(--menu-bottom-gap));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #9d79bd transparent;
+    scroll-padding-block: 16px;
+}
+#ui #sidebar-menu::-webkit-scrollbar { display: block; width: 4px; }
+#ui #sidebar-menu::-webkit-scrollbar-thumb { border-radius: 4px; background: #9d79bd; }
+#ui #sidebar-menu button { min-height: 44px; }
+
+/* Sticky headers and session drawers must also clear the iOS status area. */
+#ui .shop-topbar { padding-top: calc(var(--safe-top) + var(--page-top-gap)); }
+#ui .dnd-session-panel { top: calc(var(--safe-top) + 12px); bottom: calc(var(--safe-bottom) + 12px); padding-top: 16px; padding-bottom: 16px; touch-action: pan-y; overscroll-behavior-y: contain; }
+#ui .dnd-left-panel { padding-bottom: calc(88px + var(--menu-bottom-gap)); }
+#ui .dnd-panel-close { width: 44px; height: 44px; flex-basis: 44px; }
+#ui .dnd-table-topbar { top: calc(var(--safe-top) + 16px); left: max(16px, var(--safe-left)); right: max(16px, var(--safe-right)); }
+#ui .dnd-table-topbar button { min-width: 44px; min-height: 44px; background: rgb(57 32 81 / 90%) !important; color: #fff; }
+#ui .dnd-table-topbar button[aria-expanded="true"] { background: #71409a !important; border-color: #d6aff5; }
+#ui .dnd-session-hud { top: calc(var(--safe-top) + 28px + var(--session-toolbar-height, 100px)); }
+#ui .dnd-dice-bar { bottom: calc(var(--safe-bottom) + 12px); }
+
+/* Secondary overlays use the same usable viewport as the navigation drawer. */
+#ui .reading-dialog {
+    top: calc(var(--visual-viewport-top) + var(--safe-top) + 12px);
+    bottom: auto;
+    margin-block: 0;
+    max-height: calc(var(--visual-viewport-height) - var(--safe-top) - var(--safe-bottom) - 24px);
+    overscroll-behavior-y: contain;
+}
+#ui .reading-close { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+#ui .shop-cart {
+    top: calc(var(--visual-viewport-top) + var(--safe-top) + 12px);
+    right: max(12px, var(--safe-right));
+    width: min(480px, calc(100vw - max(12px, var(--safe-left)) - max(12px, var(--safe-right))));
+    height: calc(var(--visual-viewport-height) - var(--safe-top) - var(--safe-bottom) - 24px);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    border-radius: 28px;
+}
+#ui :is(.shop-product-modal, .shop-age-gate) {
+    top: calc(var(--visual-viewport-top) + var(--safe-top));
+    bottom: auto;
+    height: calc(var(--visual-viewport-height) - var(--safe-top) - var(--safe-bottom));
+    padding-block: 12px;
+}
+#ui .shop-modal-panel { max-height: min(760px, calc(var(--visual-viewport-height) - var(--safe-top) - var(--safe-bottom) - 24px)); }
+#ui :is(.shop-cart > header > button, .shop-modal-panel > button) { min-width: 44px; min-height: 44px; }
+
+@media (max-width: 760px) {
+    #ui .settings-page-header { grid-template-columns: 1fr; }
+    #ui .settings-sync-state { justify-self: start; }
+    #ui .shop-topbar { grid-template-columns: minmax(0, 1fr) auto; gap: 14px; padding-inline: max(16px, var(--safe-left)) max(16px, var(--safe-right)); }
+    #ui .shop-topbar > .app-back-button { grid-column: 1 / -1; }
+    #ui .shop-wordmark { justify-self: start; }
+}

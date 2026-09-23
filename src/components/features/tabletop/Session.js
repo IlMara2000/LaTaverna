@@ -275,14 +275,15 @@ export async function showSession(container, sessionId, options = {}) {
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
+    // Pan/zoom is isolated to the map viewport; menus keep native scrolling.
+    document.body.style.touchAction = '';
     document.body.classList.add('dnd-session-active');
 
     container.innerHTML = `
         <div class="dnd-session fade-in" data-left-open="false" data-chat-open="false" data-read-only="${readOnlyMode ? 'true' : 'false'}">
             <div class="dnd-session-scrim" data-close-session-drawer aria-hidden="true"></div>
 
-            <aside class="dnd-session-panel dnd-left-panel" id="sessionToolsPanel" aria-hidden="true" aria-label="Menu sessione">
+            <aside class="dnd-session-panel dnd-left-panel" id="sessionToolsPanel" aria-hidden="true" aria-label="Menu sessione" inert>
                 <header class="dnd-panel-head">
                     <div>
                         <span>Sessione</span>
@@ -487,7 +488,7 @@ export async function showSession(container, sessionId, options = {}) {
                 </div>
             </main>
 
-            <aside class="dnd-session-panel dnd-chat-panel" id="sessionChatPanel" aria-hidden="true" aria-label="Chat sessione">
+            <aside class="dnd-session-panel dnd-chat-panel" id="sessionChatPanel" aria-hidden="true" aria-label="Chat sessione" inert>
                 <header class="dnd-panel-head dnd-chat-head">
                     <div>
                         <span>Party live</span>
@@ -598,6 +599,8 @@ export async function showSession(container, sessionId, options = {}) {
 
         sessionToolsPanel?.setAttribute('aria-hidden', openTools ? 'false' : 'true');
         sessionChatPanel?.setAttribute('aria-hidden', openChat ? 'false' : 'true');
+        if (sessionToolsPanel) sessionToolsPanel.inert = !openTools;
+        if (sessionChatPanel) sessionChatPanel.inert = !openChat;
         sessionMenuToggle?.setAttribute('aria-expanded', openTools ? 'true' : 'false');
         sessionChatToggle?.setAttribute('aria-expanded', openChat ? 'true' : 'false');
         sessionMenuToggle?.classList.toggle('active', openTools);
@@ -606,7 +609,12 @@ export async function showSession(container, sessionId, options = {}) {
         document.body.classList.toggle('dnd-session-chat-open', openChat);
     };
 
-    const closeSessionDrawers = () => setSessionDrawer('none', false);
+    const closeSessionDrawers = () => {
+        const wasChatOpen = sessionShell?.dataset.chatOpen === 'true';
+        const focusedInDrawer = document.activeElement?.closest('.dnd-session-panel');
+        setSessionDrawer('none', false);
+        if (focusedInDrawer) (wasChatOpen ? sessionChatToggle : sessionMenuToggle)?.focus({ preventScroll: true });
+    };
     sessionMenuToggle.onclick = () => setSessionDrawer('tools', sessionShell?.dataset.leftOpen !== 'true');
     sessionChatToggle.onclick = () => setSessionDrawer('chat', sessionShell?.dataset.chatOpen !== 'true');
     container.querySelector('#closeSessionMenu').onclick = closeSessionDrawers;
@@ -631,9 +639,15 @@ export async function showSession(container, sessionId, options = {}) {
     setActiveSessionTool('brief');
 
     const handleSessionEscape = (event) => {
-        if (event.key === 'Escape') closeSessionDrawers();
+        if (event.key === 'Escape' && !document.body.classList.contains('taverna-menu-open')) closeSessionDrawers();
     };
     window.addEventListener('keydown', handleSessionEscape);
+
+    // Keep the HUD below the actual toolbar, including wrapped mobile controls.
+    const toolbarObserver = new ResizeObserver(([entry]) => {
+        sessionShell.style.setProperty('--session-toolbar-height', `${entry.target.offsetHeight}px`);
+    });
+    toolbarObserver.observe(container.querySelector('.dnd-table-topbar'));
 
     const tabletopDiv = container.querySelector('#tabletop-container');
     showTabletop(tabletopDiv, sessionId, {
@@ -953,6 +967,7 @@ export async function showSession(container, sessionId, options = {}) {
     renderPresence();
 
     const cleanupSessionView = () => {
+        toolbarObserver.disconnect();
         window.__dndMapApi?.cleanup();
         if (chatSubscription && supabase.removeChannel) supabase.removeChannel(chatSubscription);
         if (sessionSubscription && supabase.removeChannel) supabase.removeChannel(sessionSubscription);
