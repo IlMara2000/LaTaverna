@@ -1,3 +1,4 @@
+import { renderHomeBackButton } from '../../ui/BackButton.js';
 import { navigateTo } from '../../../services/appNavigation.js';
 import { supabase } from '../../../services/supabase.js';
 import { applyProfileAppearance } from '../../../services/profileAppearance.js';
@@ -124,7 +125,7 @@ export async function showSettings(container, user = null, navigation = null) {
     container.innerHTML = `
         <div class="fade-in settings-page">
             <header class="settings-page-header">
-                <button id="settingsBack" class="btn-back-glass settings-back" type="button">TORNA ALLA TAVERNA</button>
+                ${renderHomeBackButton({ id: 'settingsBack' })}
                 <div>
                     <h1 class="main-title settings-title">IMPOSTAZIONI</h1>
                     <p>Configura profilo, interfaccia e tavolo di gioco.</p>

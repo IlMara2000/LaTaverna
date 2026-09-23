@@ -1,3 +1,4 @@
+import { renderHomeBackButton } from '../components/ui/BackButton.js';
 import { animate, hover, inView, press, stagger } from 'motion';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { navigateTo } from '../services/appNavigation.js';
@@ -174,7 +175,7 @@ function renderShop() {
             <div class="shop-grain" aria-hidden="true"></div>
 
             <header class="shop-topbar">
-                <button id="shop-back" class="shop-back" type="button" aria-label="Torna alla Taverna">← <span>TAVERNA</span></button>
+                ${renderHomeBackButton({ id: 'shop-back' })}
                 <a href="#shop-top" class="shop-wordmark" aria-label="Torna in cima alla Bottega del Viandante">
                     <span class="shop-wordmark-seal" aria-hidden="true">B</span>
                     <span><small>LA TAVERNA</small><strong>BOTTEGA DEL VIANDANTE</strong></span>

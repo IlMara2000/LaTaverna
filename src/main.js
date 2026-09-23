@@ -1,5 +1,6 @@
 import './styles/global.css'; 
 import './styles/amethyst-glass.css';
+import './styles/navigation.css';
 import { supabase } from './services/supabase.js';
 import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';

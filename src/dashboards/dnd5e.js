@@ -1,3 +1,4 @@
+import { renderHomeBackButton } from '../components/ui/BackButton.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { renderManualLibrary } from '../components/features/manuals/ManualLibrary.js';
 import { renderDndTools } from '../components/features/tools/DndTools.js';
@@ -371,7 +372,7 @@ export function initDndDashboard(container) {
 function renderShell(container, activeView = 'overview') {
     container.innerHTML = `
         <div class="dnd-app fade-in">
-            <button id="back-to-lobby" class="btn-back-glass dnd-back">TORNA ALLA TAVERNA</button>
+            ${renderHomeBackButton({ id: 'back-to-lobby' })}
 
             <header class="dnd-hero">
                 <div>

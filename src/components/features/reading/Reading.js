@@ -1,3 +1,4 @@
+import { renderHomeBackButton } from '../../ui/BackButton.js';
 import { supabase, isSupabaseConfigured } from '../../../services/supabase.js';
 import { createReadingLibrary, bookTitleFromFilename, readingErrorMessage, READING_PAGE_SIZE } from '../../../services/readingLibrary.js';
 import { updateSidebarContext } from '../../layout/Sidebar.js';
@@ -34,7 +35,7 @@ export async function showReading(container) {
 
     root.innerHTML = `
         <header class="reading-header">
-            <button type="button" class="reading-back" data-home>← La Taverna</button>
+            ${renderHomeBackButton({ dataHome: true })}
             <span class="reading-eyebrow">UN POSTO PER OGNI STORIA</span>
             <div class="reading-heading"><div><h1>Lettura<span>.</span></h1>
                 <p>La tua biblioteca, un libro alla volta.</p></div>

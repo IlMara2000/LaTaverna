@@ -28,7 +28,9 @@ export function initSidebar(container, user, onLogout, context = "home") {
 }
 
 function renderSidebarContent(container, context) {
-    const wasOpen = container.querySelector('#sidebar-menu')?.classList.contains('active');
+    const previousMenu = container.querySelector('#sidebar-menu');
+    const wasOpen = previousMenu?.classList.contains('active');
+    const scrollTop = previousMenu?.scrollTop || 0;
     const focusedId = container.contains(document.activeElement) ? document.activeElement.id : null;
     const isGuest = currentSidebarUser?.isGuest === true;
     const userName = escapeHTML(isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante"));
@@ -109,6 +111,7 @@ function renderSidebarContent(container, context) {
     highlightActiveContext();
     if (wasOpen) {
         window.__tavernaSidebarToggle?.();
+        container.querySelector('#sidebar-menu').scrollTop = scrollTop;
         if (focusedId) document.getElementById(focusedId)?.focus({ preventScroll: true });
     }
 }
@@ -136,23 +139,20 @@ function setupEventListeners(container, context) {
     const mainContent = document.getElementById('app'); 
     const backdrop = container.querySelector('.sidebar-backdrop');
     mainContent.inert = false;
+    document.body.classList.remove('taverna-menu-open');
     trigger?.setAttribute('aria-expanded', 'false');
     trigger?.setAttribute('aria-label', 'Apri menu');
     trigger?.classList.remove('is-active');
     
     const toggle = () => {
         const isOpen = sidebar.classList.toggle('active');
+        document.body.classList.toggle('taverna-menu-open', isOpen);
         trigger?.classList.toggle('is-active', isOpen);
         sidebar.inert = !isOpen;
         mainContent.inert = isOpen;
         backdrop.hidden = !isOpen;
         trigger?.setAttribute('aria-expanded', String(isOpen));
         trigger?.setAttribute('aria-label', isOpen ? 'Chiudi menu' : 'Apri menu');
-        if (!isOpen) {
-            sidebar.style.right = '-110%';
-        } else {
-            sidebar.style.right = '0';
-        }
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
         if (isOpen) sidebar.querySelector('button')?.focus({ preventScroll: true });
         else trigger?.focus({ preventScroll: true });
@@ -165,6 +165,7 @@ function setupEventListeners(container, context) {
         if (!sidebar.classList.contains('active')) return;
         if (event.key === 'Escape') {
             event.preventDefault();
+            event.stopImmediatePropagation();
             toggle();
         }
         if (event.key === 'Tab') {
