@@ -245,76 +245,11 @@ const DND_MONSTERS = [
     }
 ];
 
-const PF_BASE = [
-    {
-        id: 'regole-base',
-        title: 'Regole e personaggi',
-        description: 'Le aree principali del gioco Pathfinder disponibili in archivio.',
-        sections: [
-            section('pf-creazione', 'Creazione del personaggio', 1, 1, 'Stirpe, background, classe, caratteristiche e competenze.', ['creare personaggio', 'stirpe', 'background', 'classe']),
-            section('pf-prove', 'Prove e gradi di successo', 2, 2, 'Tiri d20, CD, critici e modificatori.', ['prova', 'cd', 'critico', 'successo']),
-            section('pf-azioni', 'Azioni in combattimento', 3, 3, 'Tre azioni, reazioni, movimento e interazioni.', ['combattimento', 'turno', 'reazione', 'muoversi']),
-            section('pf-attacchi', 'Attacchi e penalità multiple', 4, 4, 'MAP, portata, copertura, fiancheggiamento e condizioni.', ['attacco', 'map', 'copertura', 'fiancheggiamento']),
-            section('pf-incantesimi', 'Incantesimi', 5, 5, 'Tradizioni, CD, focus, preparazione e tiri per colpire.', ['magia', 'focus', 'tradizione', 'incantatore']),
-            section('pf-esplorazione', 'Esplorazione', 6, 6, 'Attività, percezione, investigazione, furtività e viaggio.', ['viaggio', 'percezione', 'furtività', 'investigare']),
-            section('pf-equipaggiamento', 'Equipaggiamento', 7, 7, 'Armi, armature, tratti, alchimia e strumenti.', ['arma', 'armatura', 'oggetto', 'alchimia']),
-            section('pf-progressione', 'Progressione', 8, 8, 'Livelli, talenti, punti ferita e competenze.', ['salire livello', 'talento', 'punti ferita']),
-            section('pf-condizioni', 'Condizioni', 9, 9, 'Prono, spaventato, afferrato, ferito, morente e stabilizzato.', ['stato', 'morente', 'ferito', 'prono']),
-            section('pf-promemoria', 'Promemoria del tavolo', 10, 10, 'PG, token, iniziativa e obiettivi della sessione.', ['iniziativa', 'token', 'obiettivi'])
-        ]
-    }
-];
-
-const PF_GM = [
-    {
-        id: 'gestione-gioco',
-        title: 'Gestire avventure e sessioni',
-        description: 'Strumenti essenziali per preparare e condurre il tavolo.',
-        sections: [
-            section('pf-gm-cd', 'CD e difficoltà', 1, 1, 'Impostare difficoltà, modificatori e gradi di successo.', ['difficoltà', 'cd', 'prova']),
-            section('pf-gm-incontri', 'Costruire gli incontri', 2, 2, 'Budget, livello del gruppo e minacce.', ['incontro', 'budget', 'minaccia']),
-            section('pf-gm-ricompense', 'Ricompense e tesori', 3, 3, 'PE, denaro, oggetti e progressione.', ['tesoro', 'ricompensa', 'esperienza']),
-            section('pf-gm-esplorazione', 'Gestire l’esplorazione', 4, 4, 'Viaggi, attività e passaggio al combattimento.', ['viaggio', 'esplorare', 'attività']),
-            section('pf-gm-pericoli', 'Pericoli e trappole', 5, 5, 'Individuazione, disattivazione e conseguenze.', ['trappola', 'pericolo', 'disattivare']),
-            section('pf-gm-condizioni', 'Condizioni e danni persistenti', 6, 6, 'Applicare e rimuovere effetti nel tempo.', ['danno persistente', 'condizione', 'effetto']),
-            section('pf-gm-improvvisare', 'Improvvisare PNG', 7, 7, 'Statistiche rapide, atteggiamento e obiettivi.', ['png', 'npc', 'improvvisare']),
-            section('pf-gm-tavolo', 'Gestione del tavolo', 8, 8, 'Ritmo, spotlight e strumenti di sicurezza.', ['ritmo', 'giocatori', 'sicurezza']),
-            section('pf-gm-varianti', 'Varianti e regole opzionali', 9, 9, 'Modificare il tono e il livello di complessità.', ['variante', 'opzionale', 'regola']),
-            section('pf-gm-campagna', 'Preparare una campagna', 10, 10, 'Temi, archi narrativi, fazioni e note.', ['campagna', 'trama', 'fazione'])
-        ]
-    }
-];
-
-const PF_BESTIARY = [
-    {
-        id: 'creature-per-ruolo',
-        title: 'Creature per ruolo e utilizzo',
-        description: 'Categorie pratiche per scegliere rapidamente un avversario.',
-        sections: [
-            section('pf-creature-basse', 'Creature di basso livello', 1, 1, 'Avversari semplici per gruppi alle prime armi.', ['facile', 'basso livello']),
-            section('pf-creature-medie', 'Creature di livello medio', 2, 2, 'Nemici con capacità tattiche più articolate.', ['medio', 'tattica']),
-            section('pf-creature-alte', 'Creature di alto livello', 3, 3, 'Minacce importanti e avversari principali.', ['alto livello', 'boss']),
-            section('pf-sciami', 'Sciami e gruppi', 4, 4, 'Molte creature trattate come una singola minaccia.', ['sciame', 'orda', 'gruppo']),
-            section('pf-volanti', 'Creature volanti', 5, 5, 'Movimento aereo, quota e attacchi in volo.', ['volare', 'aria', 'ali']),
-            section('pf-acquatiche', 'Creature acquatiche', 6, 6, 'Nuoto, combattimento sott’acqua e ambienti marini.', ['acqua', 'nuotare', 'mare']),
-            section('pf-non-morti', 'Non morti', 7, 7, 'Creature animate da energie necromantiche.', ['zombie', 'scheletro', 'non morto']),
-            section('pf-immondi', 'Immondi e creature planari', 8, 8, 'Minacce extraplanari e resistenze particolari.', ['demone', 'diavolo', 'planare']),
-            section('pf-bestie', 'Bestie e animali', 9, 9, 'Fauna, compagni e creature naturali.', ['animale', 'bestia', 'natura']),
-            section('pf-pericoli-creature', 'Pericoli e creature speciali', 10, 10, 'Minacce ambientali e avversari insoliti.', ['pericolo', 'ambiente', 'speciale'])
-        ]
-    }
-];
-
 export const MANUAL_SECTION_CATALOG = {
     dnd5e: {
         player: DND_PLAYER,
         master: DND_MASTER,
         monsters: DND_MONSTERS
-    },
-    pathfinder2e: {
-        base: PF_BASE,
-        gm: PF_GM,
-        bestiary: PF_BESTIARY
     }
 };
 

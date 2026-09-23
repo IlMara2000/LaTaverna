@@ -120,10 +120,6 @@ export const APP_DESTINATIONS = {
         name: 'Dungeons & Dragons',
         description: 'Campagne, personaggi e sessioni D&D 5e.'
     },
-    pathfinder2e: {
-        name: 'Pathfinder 2e',
-        description: 'Tavoli, personaggi e manuali Pathfinder.'
-    },
     shop: {
         name: 'Bottega del Viandante',
         description: 'Bocchini artigianali e richieste su misura.'

@@ -242,7 +242,7 @@ export async function showSettings(container, user = null, navigation = null) {
                     <section class="settings-panel" data-settings-panel="tabletop" hidden>
                         <div class="settings-section-heading">
                             <h2>TAVOLO GDR</h2>
-                            <p>Preferenze condivise da D&D e Pathfinder.</p>
+                            <p>Preferenze del tavolo D&D.</p>
                         </div>
                         <div class="settings-group">
                             ${optionRow({

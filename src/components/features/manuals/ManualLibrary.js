@@ -72,9 +72,7 @@ const icon = (name) => {
     return `<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name] || ''}</svg>`;
 };
 
-const getSuggestions = (systemId) => systemId === 'pathfinder2e'
-    ? ['azioni in combattimento', 'gradi di successo', 'condizione morente', 'creature e pericoli']
-    : ['attacco di opportunità', 'tiro salvezza concentrazione', 'classe armatura', 'draghi adulti'];
+const getSuggestions = () => ['attacco di opportunità', 'tiro salvezza concentrazione', 'classe armatura', 'draghi adulti'];
 
 async function loadManualIndex(systemId, manual) {
     const key = `${systemId}:${manual.id}`;

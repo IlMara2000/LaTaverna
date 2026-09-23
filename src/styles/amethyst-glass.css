@@ -217,7 +217,7 @@ html[data-theme="amethyst"] .taverna-home-ambient { display: none; }
 #ui .scene-description { color: #d6c2e5; text-align: left !important; font-size: 10px; line-height: 1.7; margin-top: 8px; }
 #ui .scene-link { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 18px; padding-top: 13px; border-top: 1px solid rgb(221 191 248 / 15%); font-size: 9px; color: #ead6fb; }
 #ui .scene-link b { font-size: 17px; font-weight: 400; }
-#ui .taverna-home-dock, #ui .taverna-home-dock:has(.is-resume) { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: 100%; padding: 9px; margin-top: 20px; border: 1px solid var(--glass-border); border-radius: 25px; background: var(--crystal-glass); box-shadow: var(--crystal-inset); animation: none; }
+#ui .taverna-home-dock, #ui .taverna-home-dock:has(.is-resume) { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: 100%; padding: 9px; margin-top: 20px; border: 1px solid var(--glass-border); border-radius: 25px; background: var(--crystal-glass); box-shadow: var(--crystal-inset); animation: none; }
 #ui .taverna-home-dock button { min-height: 48px; padding: 10px 8px; border: 1px solid transparent; border-radius: 16px; background: rgb(205 166 242 / 4%); color: #d9c5ea; font-size: 9px; font-weight: 600; letter-spacing: .04em; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
 #ui .taverna-home-dock button:hover { background: var(--crystal-selected); border-color: var(--glass-border); color: #fff; }
 #ui .taverna-home-dock .is-resume { grid-column: 1 / -1; grid-template-columns: auto auto; justify-content: center; align-items: center; min-height: 38px; gap: 12px; background: rgb(168 108 223 / 12%); }

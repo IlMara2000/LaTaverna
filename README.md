@@ -43,7 +43,7 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - Profilo utente con avatar, titolo, conteggio personaggi e sessioni.
 - Impostazioni profilo con tema accento, glow e card compatte.
 - Minigiochi: Briscola, Solo, Impostore, Burraco, Scacchi e Numeri.
-- D&D 5e e Pathfinder 2e: Biblioteca dei Manuali con ricerca OCR, filtri per parte/capitolo/argomento, sintesi AI basata sulle fonti, lettore pagina per pagina, personaggi e sessioni.
+- D&D 5e: Biblioteca dei Manuali con ricerca OCR, filtri per parte/capitolo/argomento, sintesi AI basata sulle fonti, lettore pagina per pagina, personaggi e sessioni.
 - AI di sessione: bot testuale in chat, attivabile con `@oste` o dal pannello AI del tavolo, servito da function Vercel e Groq.
 - Libreria musicale con playlist tematiche e upload file audio locale.
 - Lettura: upload di PDF privati, consenso esplicito alla pubblicazione in Bacheca, elenco alfabetico con ricerca per titolo/autore, lettore PDF, preferiti e raccolte salvati per account.
@@ -91,7 +91,6 @@ I PDF sono scansioni, quindi la ricerca usa indici OCR statici in `public/manual
 
 ```bash
 npm run index:manuals:dnd
-npm run index:manuals:pathfinder
 ```
 
 L'applicazione distribuita usa solo i JSON generati e non richiede OCR lato server o lato browser.
