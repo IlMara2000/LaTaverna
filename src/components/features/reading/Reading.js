@@ -90,7 +90,7 @@ export async function showReading(container) {
         const element = document.createElement('dialog');
         element.className = `reading-dialog ${className}`;
         element.setAttribute('aria-labelledby', 'reading-dialog-title-' + dialogs.size);
-        element.innerHTML = `<div class="reading-dialog-top"><h2 id="reading-dialog-title-${dialogs.size}">${escapeHTML(title)}</h2>
+        element.innerHTML = `<div class="reading-dialog-top"><h2 tabindex="-1" autofocus id="reading-dialog-title-${dialogs.size}">${escapeHTML(title)}</h2>
             <button type="button" class="reading-close" aria-label="Chiudi">×</button></div>${content}
             <p class="reading-dialog-error" role="alert" hidden></p>`;
         root.append(element);

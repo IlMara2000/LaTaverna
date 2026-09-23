@@ -131,3 +131,36 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
     #ui .shop-topbar > .app-back-button { grid-column: 1 / -1; }
     #ui .shop-wordmark { justify-self: start; }
 }
+
+/* Compact close controls retain a full touch target and one keyboard focus ring. */
+#ui :is(.reading-close, .dnd-panel-close, .briscola-modal-close, .solitario-close,
+    .scopa-dialog-head [data-action="close-dialog"],
+    .shop-cart > header > button, .shop-modal-panel > button) {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; min-width: 44px; min-height: 44px;
+    flex: 0 0 44px; padding: 0; border: 0; border-radius: 50% !important;
+    background: transparent !important; box-shadow: none; line-height: 1; touch-action: manipulation;
+}
+#ui :is(.reading-close, .dnd-panel-close, .briscola-modal-close, .solitario-close,
+    .scopa-dialog-head [data-action="close-dialog"],
+    .shop-cart > header > button, .shop-modal-panel > button):focus-visible {
+    outline: 2px solid #d5acff !important; outline-offset: -5px; box-shadow: none;
+}
+#ui :is(.reading-close, .dnd-panel-close, .briscola-modal-close, .solitario-close):hover {
+    background: rgb(194 151 237 / 10%);
+}
+#ui .dnd-hero-die {
+    width: clamp(96px, 17vw, 176px); height: auto; overflow: visible;
+    background: none; border: 0; text-shadow: none; color: #c897ed;
+    opacity: .55; filter: drop-shadow(0 8px 14px rgb(119 62 175 / 22%));
+}
+.dnd-hero-die .die-shell { fill: rgb(131 72 175 / 22%); stroke: currentColor; stroke-width: 3; stroke-linejoin: round; }
+.dnd-hero-die .die-facets { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.dnd-hero-die text { fill: #ecd7ff; font: 800 27px 'Montserrat', sans-serif; }
+.music-status { min-height: 1.5em; color: var(--text-secondary); }
+.music-status[data-state="error"], .music-status[data-state="blocked"] { color: #f0c9ff; }
+@media (max-width: 760px) {
+    #ui .dnd-hero > div:first-child { min-width: 0; width: 100%; }
+    #ui .dnd-hero-die { position: absolute; width: 72px; right: 18px; bottom: 20px; }
+    #ui .dnd-hero > div:first-child > p:last-child { max-width: calc(100% - 72px); }
+}
