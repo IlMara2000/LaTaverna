@@ -380,7 +380,11 @@ function renderShell(container, activeView = 'overview') {
                     <h1>DUNGEONS <span>& DRAGONS</span></h1>
                     <p>Manuali, personaggi, sessioni live e strumenti rapidi per giocatori e Master.</p>
                 </div>
-                <div class="dnd-hero-die">20</div>
+                <svg class="dnd-hero-die" viewBox="0 0 120 132" aria-hidden="true" focusable="false">
+                    <path class="die-shell" d="M60 4 112 34 112 96 60 128 8 96 8 34Z"/>
+                    <path class="die-facets" d="M60 4 32 46 8 34M60 4 88 46 112 34M8 96 32 46 88 46 112 96M32 46 60 100 88 46M8 96 60 100 112 96M60 100 60 128"/>
+                    <text x="60" y="76" text-anchor="middle">20</text>
+                </svg>
                 <div class="dnd-hero-props" aria-hidden="true">
                     <span class="dnd-prop-candle"></span>
                     <span class="dnd-prop-mug"></span>

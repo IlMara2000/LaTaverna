@@ -1,3 +1,4 @@
+import './components/ui/AudioManager.js';
 import './styles/global.css'; 
 import './styles/amethyst-glass.css';
 import './styles/navigation.css';

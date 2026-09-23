@@ -1,10 +1,10 @@
 // Sidebar.js - Versione Master Integrata (Fiducia Totale)
-import { getPreference, setPreference } from '../../services/userPreferences.js';
+import { getCachedAppPreference } from '../../services/appPreferences.js';
 import { navigateTo, resetAppSurface } from '../../services/appNavigation.js';
 
 let currentSidebarUser = null;
 let currentLogoutFn = null;
-let isMusicOn = true;
+let isMusicOn = getCachedAppPreference('music.enabled', true);
 let currentActiveContext = "lobby";
 
 const escapeHTML = (value = '') => String(value)
@@ -19,12 +19,6 @@ export function initSidebar(container, user, onLogout, context = "home") {
     currentLogoutFn = onLogout;
     currentActiveContext = context;
     renderSidebarContent(container, context);
-    getPreference('music.enabled', true).then(enabled => {
-        if (isMusicOn !== Boolean(enabled)) {
-            isMusicOn = Boolean(enabled);
-            renderSidebarContent(container, currentActiveContext);
-        }
-    });
 }
 
 function renderSidebarContent(container, context) {
@@ -272,7 +266,6 @@ function setupEventListeners(container, context) {
     };
     musicToggle.onclick = () => {
         isMusicOn = !isMusicOn;
-        setPreference('music.enabled', isMusicOn);
         updateMusicToggle();
         window.dispatchEvent(new CustomEvent('musicToggled', { detail: isMusicOn }));
     };
@@ -306,3 +299,23 @@ export function updateSidebarContext(newContext) {
     const container = document.getElementById('sidebar-container');
     if (container) renderSidebarContent(container, newContext);
 }
+
+let musicPreferenceTouched = false;
+function syncMusicToggle(enabled) {
+    isMusicOn = Boolean(enabled);
+    const toggle = document.getElementById('sideMusicBtn');
+    if (!toggle) return;
+    toggle.classList.toggle('is-on', isMusicOn);
+    toggle.classList.toggle('is-off', !isMusicOn);
+    toggle.setAttribute('aria-pressed', String(isMusicOn));
+    toggle.querySelector('.side-music-toggle-knob').textContent = isMusicOn ? '🔊' : '🔈';
+    toggle.querySelector('.side-music-toggle-state').textContent = isMusicOn ? 'ON' : 'OFF';
+}
+window.addEventListener('appPreferencesChanged', event => {
+    if (!('music.enabled' in (event.detail?.patch || {}))) return;
+    musicPreferenceTouched = true;
+    syncMusicToggle(event.detail.patch['music.enabled']);
+});
+window.addEventListener('appPreferencesLoaded', event => {
+    if (!musicPreferenceTouched) syncMusicToggle(event.detail['music.enabled']);
+});
