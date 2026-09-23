@@ -3,11 +3,7 @@ import {
     dndLocalStore,
     getLocalDndUser,
     isLocalDndUser,
-    isLocalDndUserId,
-    pathfinderLocalStore,
-    getLocalPathfinderUser,
-    isLocalPathfinderUser,
-    isLocalPathfinderUserId
+    isLocalDndUserId
 } from '../../../services/dndLocalStore.js';
 import { getAIResponse } from '../../../services/ai.js';
 import { showTabletop } from './Map.js';
@@ -30,17 +26,6 @@ const SESSION_SYSTEMS = {
         loadDashboard: async () => {
             const { initDndDashboard } = await import('../../../dashboards/dnd5e.js');
             return initDndDashboard;
-        }
-    },
-    pathfinder2e: {
-        id: 'pathfinder2e',
-        localStore: pathfinderLocalStore,
-        getLocalUser: getLocalPathfinderUser,
-        isLocalUser: isLocalPathfinderUser,
-        isLocalUserId: isLocalPathfinderUserId,
-        loadDashboard: async () => {
-            const { initPathfinderDashboard } = await import('../../../dashboards/pathfinder2e.js');
-            return initPathfinderDashboard;
         }
     }
 };
@@ -218,6 +203,10 @@ const getCharacterInitiativeMod = (char = {}) => {
 };
 
 export async function showSession(container, sessionId, options = {}) {
+    if (options.systemId && options.systemId !== 'dnd5e') {
+        container.textContent = 'Questo sistema di gioco non è più disponibile.';
+        return;
+    }
     const requestedSystem = getSessionSystem(options.systemId || 'dnd5e');
     const currentUser = await getSupabaseUser(requestedSystem.id);
     if (!currentUser?.id) {
@@ -247,7 +236,12 @@ export async function showSession(container, sessionId, options = {}) {
     } catch (err) {
         console.warn('Sessione non recuperata:', err);
     }
-    const sessionSystem = getSessionSystem(sessionData.system_id || sessionData.data?.system_id || requestedSystem.id);
+    const savedSystemId = sessionData.system_id || sessionData.data?.system_id || requestedSystem.id;
+    if (savedSystemId !== 'dnd5e') {
+        container.textContent = 'Questo sistema di gioco non è più disponibile.';
+        return;
+    }
+    const sessionSystem = getSessionSystem(savedSystemId);
     const localStore = sessionSystem.localStore;
     const sessionOwnerId = sessionData.user_id || sessionData.data?.user_id || '';
     const forcedReadOnly = Boolean(options.readOnly || options.sharedInvite);

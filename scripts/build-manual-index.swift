@@ -30,9 +30,6 @@ let manualDefinitions = [
     ManualDefinition(id: "player", slug: "Giocatore", title: "Manuale del Giocatore", system: "dnd5e"),
     ManualDefinition(id: "master", slug: "DM", title: "Guida del Dungeon Master", system: "dnd5e"),
     ManualDefinition(id: "monsters", slug: "Mostri", title: "Manuale dei Mostri", system: "dnd5e"),
-    ManualDefinition(id: "base", slug: "PathfinderBase", title: "Manuale Base Pathfinder", system: "pathfinder2e"),
-    ManualDefinition(id: "gm", slug: "PathfinderGM", title: "Guida del Game Master", system: "pathfinder2e"),
-    ManualDefinition(id: "bestiary", slug: "PathfinderBestiario", title: "Bestiario Pathfinder", system: "pathfinder2e")
 ]
 
 func argumentValue(_ name: String) -> String? {

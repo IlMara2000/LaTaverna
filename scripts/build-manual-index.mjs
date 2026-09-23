@@ -8,9 +8,6 @@ const manuals = [
     { system: 'dnd5e', slug: 'Giocatore', id: 'player' },
     { system: 'dnd5e', slug: 'DM', id: 'master' },
     { system: 'dnd5e', slug: 'Mostri', id: 'monsters' },
-    { system: 'pathfinder2e', slug: 'PathfinderBase', id: 'base' },
-    { system: 'pathfinder2e', slug: 'PathfinderGM', id: 'gm' },
-    { system: 'pathfinder2e', slug: 'PathfinderBestiario', id: 'bestiary' }
 ].filter(manual => requestedSystem === 'all' || manual.system === requestedSystem);
 
 if (!manuals.length) {

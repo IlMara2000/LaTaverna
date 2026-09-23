@@ -50,7 +50,7 @@ export const getLastDestination = () => {
 export async function navigateTo(destination, container = document.getElementById('app'), options = {}) {
     if (!container) return false;
 
-    if (destination === 'dnd5e' || destination === 'pathfinder2e') {
+    if (destination === 'dnd5e') {
         try {
             const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user') || 'null');
             if (guestUser && !guestUser.isLocalDnd) {
@@ -66,7 +66,6 @@ export async function navigateTo(destination, container = document.getElementByI
         home: { label: 'la Taverna', load: () => import('../lobby.js'), render: (module) => module.showLobby(container) },
         minigames: { label: 'la sala giochi', load: () => import('../minigamelist.js'), render: (module) => module.showMinigamesList(container, options) },
         dnd5e: { label: 'D&D', load: () => import('../dashboards/dnd5e.js'), render: (module) => module.initDndDashboard(container) },
-        pathfinder2e: { label: 'Pathfinder', load: () => import('../dashboards/pathfinder2e.js'), render: (module) => module.initPathfinderDashboard(container) },
         reading: { label: 'Lettura', load: () => import('../components/features/reading/Reading.js'), render: (module) => module.showReading(container) },
         shop: { label: 'la bottega', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
         profile: { label: 'il profilo', deferred: true, load: () => import('../components/features/user/Profile.js'), render: (module, context) => module.showProfile(container, options.user || null, context) },
@@ -81,7 +80,7 @@ export async function navigateTo(destination, container = document.getElementByI
         return async context => {
             if (!route.deferred && !context.beforeRender()) return;
             await route.render(module, context);
-            if (context.isCurrent() && ['minigames', 'dnd5e', 'pathfinder2e', 'reading', 'shop'].includes(destination)) {
+            if (context.isCurrent() && ['minigames', 'dnd5e', 'reading', 'shop'].includes(destination)) {
                 rememberDestination(destination, destination === 'minigames' ? options : {});
             }
         };

@@ -26,7 +26,7 @@ const modeInstruction = (mode = 'master') => {
 };
 
 export const buildRpgMessages = ({ prompt, mode, systemId, context, history }) => {
-    const normalizedSystem = systemId === 'pathfinder2e' ? 'Pathfinder 2e' : 'D&D 5e';
+    const normalizedSystem = 'D&D 5e';
     const recentHistory = Array.isArray(history) ? history.slice(-12) : [];
 
     return [

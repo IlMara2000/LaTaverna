@@ -3,11 +3,6 @@ const SYSTEMS = {
         prefix: 'taverna_dnd5e_local_',
         email: 'ospite-locale@lataverna.local',
         flag: 'is_local_dnd'
-    },
-    pathfinder2e: {
-        prefix: 'taverna_pathfinder2e_local_',
-        email: 'ospite-pathfinder@lataverna.local',
-        flag: 'is_local_pathfinder'
     }
 };
 
@@ -158,14 +153,8 @@ const createLocalGameStore = (systemId) => {
 };
 
 const dndLocal = createLocalGameStore('dnd5e');
-const pathfinderLocal = createLocalGameStore('pathfinder2e');
 
 export const getLocalDndUser = dndLocal.getLocalUser;
 export const isLocalDndUser = dndLocal.isLocalUser;
 export const isLocalDndUserId = dndLocal.isLocalUserId;
 export const dndLocalStore = dndLocal.store;
-
-export const getLocalPathfinderUser = pathfinderLocal.getLocalUser;
-export const isLocalPathfinderUser = pathfinderLocal.isLocalUser;
-export const isLocalPathfinderUserId = pathfinderLocal.isLocalUserId;
-export const pathfinderLocalStore = pathfinderLocal.store;

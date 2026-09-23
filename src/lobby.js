@@ -92,7 +92,6 @@ export function showLobby(container) {
                     <button type="button" id="hub-shop">BOTTEGA</button>
                     <button type="button" id="hub-reading">LETTURA</button>
                     <button type="button" id="btn-dnd5e">D&amp;D 5E</button>
-                    <button type="button" id="btn-pathfinder2e">PATHFINDER 2E</button>
                 </nav>
                 <p class="taverna-home-footer"><span aria-hidden="true">✦</span> Le storie più belle si giocano insieme.</p>
             </div>
@@ -100,7 +99,7 @@ export function showLobby(container) {
     `;
 
     const openDestination = (destination, options = {}) => {
-        const isProtectedGdr = destination === 'dnd5e' || destination === 'pathfinder2e';
+        const isProtectedGdr = destination === 'dnd5e';
         if (isProtectedGdr && guest.isGuest && !guest.isLocalDndGuest) {
             alert('Accedi per aprire i tavoli GDR.');
             return;
@@ -127,5 +126,4 @@ export function showLobby(container) {
     container.querySelector('#hub-shop').onclick = () => openDestination('shop');
     container.querySelector('#hub-reading').onclick = () => openDestination('reading');
     container.querySelector('#btn-dnd5e').onclick = () => openDestination('dnd5e');
-    container.querySelector('#btn-pathfinder2e').onclick = () => openDestination('pathfinder2e');
 }

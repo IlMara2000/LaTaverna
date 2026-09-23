@@ -23,11 +23,11 @@ export const getSessionInviteFromUrl = (url = globalThis.location?.href || '') =
         const sessionId = parsed.searchParams.get('session') || parsed.searchParams.get('sessione');
         const code = parsed.searchParams.get('invite') || parsed.searchParams.get('codice');
         const systemId = parsed.searchParams.get('system') || parsed.searchParams.get('sistema') || 'dnd5e';
-        if (!isUuid(sessionId) || !code) return null;
+        if (!isUuid(sessionId) || !code || systemId !== 'dnd5e') return null;
         return {
             sessionId,
             code,
-            systemId: systemId === 'pathfinder2e' ? 'pathfinder2e' : 'dnd5e'
+            systemId: 'dnd5e'
         };
     } catch {
         return null;
@@ -35,11 +35,12 @@ export const getSessionInviteFromUrl = (url = globalThis.location?.href || '') =
 };
 
 export const buildSessionInviteUrl = ({ sessionId, code, systemId = 'dnd5e' } = {}) => {
+    if (systemId !== 'dnd5e') throw new Error('Sistema di gioco non disponibile.');
     const origin = globalThis.location?.origin || 'https://www.lataverna.xyz';
     const url = new URL(origin);
     url.searchParams.set('session', sessionId);
     url.searchParams.set('invite', code);
-    url.searchParams.set('system', systemId === 'pathfinder2e' ? 'pathfinder2e' : 'dnd5e');
+    url.searchParams.set('system', 'dnd5e');
     return url.toString();
 };
 
