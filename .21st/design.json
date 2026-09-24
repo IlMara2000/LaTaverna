@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "project": {
+    "name": "la-taverna-vtt",
+    "productType": null,
+    "stack": [
+      "vite"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "src/styles/amethyst-glass.css"
+    ],
+    "components": [
+      "src/components/ui"
+    ],
+    "assets": [
+      "public/assets"
+    ],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "dark",
+    "colors": {},
+    "typography": {},
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [
+      "AudioManager",
+      "AuthInput",
+      "BackButton",
+      "GlassCard",
+      "PrimaryBtn"
+    ],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [],
+    "avoid": []
+  },
+  "decisions": [
+    {
+      "area": "Reading / PDF reader",
+      "decision": "Dedicated edge-to-edge ebook reading surface. Quiet amethyst controls outside the original PDF page; paper, sepia and night modes, bottom navigation, automatic personal reading position. Preserve the PDF layout and adapt to viewport width by default.",
+      "source": "User request, 2026-09-24"
+    }
+  ],
+  "evidence": [
+    {
+      "fact": "components.installed",
+      "source": "src/components/ui"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-09-24T17:22:06.993Z"
+}

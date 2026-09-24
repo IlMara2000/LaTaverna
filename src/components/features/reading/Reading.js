@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from '../../../services/supabase.js';
 import { createReadingLibrary, bookTitleFromFilename, readingErrorMessage, READING_PAGE_SIZE } from '../../../services/readingLibrary.js';
 import { updateSidebarContext } from '../../layout/Sidebar.js';
 import { navigateTo } from '../../../services/appNavigation.js';
+import { getReadingPosition } from '../../../services/readingProgress.js';
 import './reading.css';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -209,7 +210,9 @@ export async function showReading(container) {
             list.innerHTML = `<div class="reading-empty"><span class="reading-empty-icon">${bookIcon}</span><h3>${copy[0]}</h3><p>${copy[1]}</p></div>`;
             return;
         }
-        list.innerHTML = `<ol class="reading-book-list">${books.map(book => `
+        list.innerHTML = `<ol class="reading-book-list">${books.map(book => {
+            const position = getReadingPosition(user?.id, book.id);
+            return `
             <li class="reading-book-row" data-book="${escapeHTML(book.id)}">
                 <span class="reading-spine" aria-hidden="true">${bookIcon}<small>PDF</small></span>
                 <div class="reading-book-info"><h3>${escapeHTML(book.title)}</h3>
@@ -217,13 +220,13 @@ export async function showReading(container) {
                     <span class="reading-visibility ${book.is_public ? 'is-public' : ''}">${book.is_public ? 'In bacheca' : 'Solo tu'}</span>
                 </div>
                 <div class="reading-book-actions">
-                    <button type="button" class="reading-secondary" data-action="read">Leggi <span aria-hidden="true">↗</span></button>
+                    <button type="button" class="reading-secondary" data-action="read">${position ? `Riprendi · p. ${position.page}` : 'Leggi'} <span aria-hidden="true">↗</span></button>
                     ${user ? `<button type="button" class="reading-star ${favorites.has(book.id) ? 'is-favorite' : ''}" data-action="favorite"
                         aria-label="${favorites.has(book.id) ? 'Rimuovi dai' : 'Aggiungi ai'} preferiti: ${escapeHTML(book.title)}" aria-pressed="${favorites.has(book.id)}">${favorites.has(book.id) ? '★' : '☆'}</button>
                     <button type="button" class="reading-secondary" data-action="organize">Raccolte</button>` : ''}
                     ${book.owner_id === user?.id ? `<button type="button" class="reading-text-button" data-action="visibility">${book.is_public ? 'Rendi privato' : 'Condividi'}</button>` : ''}
                 </div>
-            </li>`).join('')}</ol>`;
+            </li>`; }).join('')}</ol>`;
     }
 
     function renderCollections() {
@@ -367,21 +370,35 @@ export async function showReading(container) {
     async function readBook(book) {
         const modal = dialog(book.title, '<p data-reader-loading>Preparazione del PDF…</p><div data-reader></div>', 'reading-reader');
         let objectUrl;
-        modal.onClose = () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+        const controller = new AbortController();
+        modal.onClose = () => {
+            controller.abort();
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+            if (aliveHere() && view !== 'collections') renderBooks();
+        };
         // Reading remains cancellable while the file is downloaded.
         try {
             const blob = await library.downloadBook(book);
             if (!aliveHere() || !modal.element.open) return;
             objectUrl = URL.createObjectURL(blob);
-            modal.element.querySelector('[data-reader-loading]').remove();
+            const loading = modal.element.querySelector('[data-reader-loading]');
+            loading.textContent = 'Apertura del libro…';
             const holder = modal.element.querySelector('[data-reader]');
             const link = document.createElement('a');
             link.href = objectUrl; link.download = `${book.title}.pdf`; link.className = 'reading-secondary'; link.textContent = 'Scarica PDF';
-            const frame = document.createElement('iframe');
-            frame.title = `Lettore PDF: ${book.title}`; frame.src = objectUrl;
-            holder.append(link, frame);
+            const reader = document.createElement('div');
+            holder.append(link, reader);
+            const { mountPdfReader } = await import('./PdfReader.js');
+            if (!aliveHere() || !modal.element.open) return;
+            loading.remove();
+            const data = new Uint8Array(await blob.arrayBuffer());
+            await mountPdfReader(reader, { data, bookId: book.id, userId: user?.id, signal: controller.signal, downloadLink: link });
         } catch (error) {
-            if (modal.element.open) modal.element.querySelector('[data-reader-loading]').textContent = readingErrorMessage(error);
+            if (modal.element.open) {
+                const message = modal.element.querySelector('[data-reader-loading]') || modal.element.querySelector('.reading-dialog-error');
+                message.hidden = false;
+                message.textContent = readingErrorMessage(error);
+            }
         }
     }
 
