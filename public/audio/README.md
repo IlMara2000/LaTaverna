@@ -25,4 +25,7 @@ Ancient Power Of Serpents: autore Kevin MacLeod; caricamento OpenGameArt di jose
 Fonti scaricabili e licenze: `src/data/musicCatalog.json`. Hash originali e file distribuiti: `provenance.json`.
 Per ricreare i file: `python3 scripts/import-music.py` (ffmpeg e ffprobe richiesti).
 Il player serve le copie locali: la riproduzione non dipende dal sito esterno.
+Le riscritture in `vercel.json` mantengono disponibili anche gli otto indirizzi delle
+vecchie tracce per le pagine già aperte prima dell’aggiornamento: servono le nuove
+registrazioni, senza ripristinare i vecchi loop. Conservare questi alias nei deploy.
 I file personali caricati dall’utente restano locali e non vengono inviati al server.

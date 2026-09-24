@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/audio/tavern.mp3", "destination": "/audio/old-tower-inn.mp3" },
+    { "source": "/audio/common-room.mp3", "destination": "/audio/bards-tale.mp3" },
+    { "source": "/audio/dungeon.mp3", "destination": "/audio/cave-theme.mp3" },
+    { "source": "/audio/battle.mp3", "destination": "/audio/battle-theme.mp3" },
+    { "source": "/audio/arcane.mp3", "destination": "/audio/ancient-power-of-serpents.mp3" },
+    { "source": "/audio/cards.mp3", "destination": "/audio/warm-fireplace.mp3" },
+    { "source": "/audio/chess.mp3", "destination": "/audio/vaporware.mp3" },
+    { "source": "/audio/challenge.mp3", "destination": "/audio/determined-pursuit.mp3" }
+  ]
+}
