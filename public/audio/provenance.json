@@ -1,0 +1,66 @@
+[
+  {
+    "file": "/audio/old-tower-inn.mp3",
+    "source": "https://opengameart.org/sites/default/files/The_Old_Tower_Inn.mp3",
+    "originalSha256": "3fe4070015b880b591c79a7fca31156a0083a8768d88a39da39ab6c54f2f014d",
+    "sha256": "faac73543ca3795f7e61a2c158b8eb7560f2f75c1dbc53bcde15ecfb8e43d4bb",
+    "durationSeconds": 105.48,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  },
+  {
+    "file": "/audio/bards-tale.mp3",
+    "source": "https://opengameart.org/sites/default/files/The_Bards_Tale.mp3",
+    "originalSha256": "6e93e8e8215bea17a209c321c182111058e024c53e3ad775ce1481ca1d1fcfc2",
+    "sha256": "772193019364bf32644db2261a992939d631ca61db6fc129c2ece98f6608d33f",
+    "durationSeconds": 158.59,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  },
+  {
+    "file": "/audio/cave-theme.mp3",
+    "source": "https://opengameart.org/sites/default/files/cave%20themeb4.ogg",
+    "originalSha256": "1ddf7a0845c808136edfda7ea829e48fa2b7c57793e008d706dadbb5917dff9c",
+    "sha256": "23d0d0ec15702484641c394c8b05621245359d2320c3b94f655c45ec71890ccc",
+    "durationSeconds": 280.0,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  },
+  {
+    "file": "/audio/battle-theme.mp3",
+    "source": "https://opengameart.org/sites/default/files/Battle.mp3",
+    "originalSha256": "dde7bd4f10bde031800ba8e22151fad591b7c13e1c9ae51920341b4e4ae37be5",
+    "sha256": "d6f91b4b2f98183386ed0073713d7e85dcd0e60487d6219e6a797951a5801039",
+    "durationSeconds": 116.11,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  },
+  {
+    "file": "/audio/ancient-power-of-serpents.mp3",
+    "source": "https://opengameart.org/sites/default/files/Ancient%20Power%20Of%20Serpents.mp3",
+    "originalSha256": "2ba69cc4c6a7d45229f1787d463c10e353e186c3da7c7aa395ad3fdf24d37bf8",
+    "sha256": "447e46582ce58e05cfe3eb7024302d32dae92757a15afaca2f04ebbfc720d006",
+    "durationSeconds": 108.83,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  },
+  {
+    "file": "/audio/warm-fireplace.mp3",
+    "source": "https://opengameart.org/sites/default/files/A%20Warm%20Fireplace_0.ogg",
+    "originalSha256": "39e7599f1419cb12dfb21ff1b45750bd514be0054516102a9235b869b9313d10",
+    "sha256": "d6786bea0e390f35fb8fa92608c6b5deffc6a3bbe168a8907bbc72ac8bbc9e65",
+    "durationSeconds": 80.39,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  },
+  {
+    "file": "/audio/vaporware.mp3",
+    "source": "https://opengameart.org/sites/default/files/003_Vaporware_2.mp3",
+    "originalSha256": "1697fa1b7ed6f3fe1eca4daa4f9d1a2eb3db8fe40a0f3c283529ab47e57b5b38",
+    "sha256": "ba71c0015186e94f8f027b9815ba358dddda4d5d00c880baf421cfbc61f65f4a",
+    "durationSeconds": 164.95,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  },
+  {
+    "file": "/audio/determined-pursuit.mp3",
+    "source": "https://opengameart.org/sites/default/files/determined_pursuit_loop.wav",
+    "originalSha256": "e4f3be098b50213b56a60aefe60fffae79cd9f7c9008088f93c187ef1bbc856b",
+    "sha256": "690794a2cf71018ca195775a366e347e9191fca5cfa772ad0088fb52a984ee3f",
+    "durationSeconds": 108.0,
+    "processing": "Full recording; two-pass loudness normalization to -21 LUFS / -2 dBTP, MP3 160 kbps stereo 44.1 kHz; no change of melody, pitch or tempo."
+  }
+]

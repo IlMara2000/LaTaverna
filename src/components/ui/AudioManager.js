@@ -5,35 +5,7 @@ import { createMusicPlayer } from '../../services/musicPlayer.js';
 import { getPreferences, setPreference } from '../../services/userPreferences.js';
 import { getCachedAppPreference, updateAppPreferences } from '../../services/appPreferences.js';
 
-// Configurazione Playlist Tematiche Unificata
-const PLAYLISTS = {
-    tavern: {
-        label: "Taverna",
-        description: "Atmosfera calda per lobby e preparazione della sessione.",
-        tracks: [
-            { name: "Esplorazione Taverna", url: "/audio/tavern.mp3", tags: "ambient" },
-            { name: "Sala Comune", url: "/audio/common-room.mp3", tags: "social" }
-        ]
-    },
-    dnd: {
-        label: "D&D",
-        description: "Esplorazione, tensione e combattimento per campagne GDR.",
-        tracks: [
-            { name: "Dungeon Oscuro", url: "/audio/dungeon.mp3", tags: "exploration" },
-            { name: "Combattimento Epico", url: "/audio/battle.mp3", tags: "combat" },
-            { name: "Mistero Arcano", url: "/audio/arcane.mp3", tags: "mystery" }
-        ]
-    },
-    minigames: {
-        label: "Minigiochi",
-        description: "Tracce più leggere per carte, strategia e partite rapide.",
-        tracks: [
-            { id: "cards", name: "Carte al Tavolo", url: "/audio/cards.mp3", tags: "relax" },
-            { id: "scacchi", name: "Scacchi Focus", url: "/audio/chess.mp3", tags: "focus" },
-            { id: "default", name: "Sfida Intensa", url: "/audio/challenge.mp3", tags: "action" }
-        ]
-    }
-};
+import PLAYLISTS from '../../data/musicCatalog.json';
 
 let playback = { state: 'idle', message: 'Scegli una traccia e premi Play.' };
 let preferenceRevision = 0;
@@ -174,14 +146,26 @@ export const AudioManager = {
                             <div class="music-track-list">
                                 ${playlist.tracks.map((track, index) => `
                                     <button class="music-track" data-playlist="${playlistKey}" data-index="${index}" data-url="${track.url}" type="button">
-                                        <span>${track.name}</span>
-                                        <small>${track.tags}</small>
+                                        <span class="music-track-copy"><strong>${track.name}</strong><small>${track.title} · ${track.artist}</small></span>
+                                        <small class="music-track-mood">${track.tags}</small>
                                     </button>
                                 `).join('')}
                             </div>
                         </article>
                     `).join('')}
                 </section>
+
+                <details class="music-credits glass-box">
+                    <summary>Brani, autori e download gratuiti</summary>
+                    <p>Registrazioni complete di autori diversi, disponibili con licenze libere. Volume uniformato e conversione MP3; melodie e tempi originali.</p>
+                    <ul>${Object.values(PLAYLISTS).flatMap(playlist => playlist.tracks).map(track => `
+                        <li><strong>${track.title}</strong> — ${track.artist}<br>
+                            <a href="${track.source}" target="_blank" rel="noopener noreferrer">Fonte e autore</a> ·
+                            <a href="${track.licenseUrl}" target="_blank" rel="noopener noreferrer">${track.license}</a> ·
+                            <a href="${track.url}" download>Scarica MP3</a>
+                        </li>`).join('')}</ul>
+                    <p>Vaporware: The Cynic Project · <a href="https://cynicmusic.com" target="_blank" rel="noopener noreferrer">cynicmusic.com</a> · <a href="https://pixelsphere.org" target="_blank" rel="noopener noreferrer">pixelsphere.org</a>.</p>
+                </details>
 
                 <div class="music-actions">
                     <button id="playSelectedPlaylist" class="btn-primary" type="button">AVVIA PLAYLIST</button>

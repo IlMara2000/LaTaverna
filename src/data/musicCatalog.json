@@ -1,0 +1,116 @@
+{
+  "tavern": {
+    "label": "Taverna",
+    "description": "Folk medievale per incontrarsi, raccontare storie e preparare la sessione.",
+    "tracks": [
+      {
+        "name": "Al tavolo della taverna",
+        "title": "The Old Tower Inn",
+        "artist": "RandomMind",
+        "url": "/audio/old-tower-inn.mp3",
+        "tags": "Folk medievale",
+        "source": "https://opengameart.org/content/medieval-the-old-tower-inn",
+        "download": "https://opengameart.org/sites/default/files/The_Old_Tower_Inn.mp3",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedOn": "2026-09-24"
+      },
+      {
+        "name": "Racconti del bardo",
+        "title": "The Bard’s Tale",
+        "artist": "RandomMind",
+        "url": "/audio/bards-tale.mp3",
+        "tags": "Liuto e flauto",
+        "source": "https://opengameart.org/content/medieval-the-bards-tale",
+        "download": "https://opengameart.org/sites/default/files/The_Bards_Tale.mp3",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedOn": "2026-09-24"
+      }
+    ]
+  },
+  "dnd": {
+    "label": "D&D",
+    "description": "Scegli l’atmosfera della scena: esplorazione, combattimento o mistero.",
+    "tracks": [
+      {
+        "name": "Esplorazione sotterranea",
+        "title": "Cave Theme",
+        "artist": "Brandon Morris (HaelDB / Brandon75689)",
+        "url": "/audio/cave-theme.mp3",
+        "tags": "Ambient misterioso",
+        "source": "https://opengameart.org/content/cave-theme",
+        "download": "https://opengameart.org/sites/default/files/cave%20themeb4.ogg",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedOn": "2026-09-24"
+      },
+      {
+        "name": "Combattimento",
+        "title": "Battle Theme",
+        "artist": "Wolfgang_ (Theodore Kerr)",
+        "url": "/audio/battle-theme.mp3",
+        "tags": "Orchestra e tensione",
+        "source": "https://opengameart.org/content/battle-theme-0",
+        "download": "https://opengameart.org/sites/default/files/Battle.mp3",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedOn": "2026-09-24"
+      },
+      {
+        "name": "Rituali e misteri",
+        "title": "Ancient Power Of Serpents",
+        "artist": "Kevin MacLeod",
+        "url": "/audio/ancient-power-of-serpents.mp3",
+        "tags": "Suspense lenta",
+        "source": "https://opengameart.org/content/ancient-power-of-serpents",
+        "download": "https://opengameart.org/sites/default/files/Ancient%20Power%20Of%20Serpents.mp3",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedOn": "2026-09-24"
+      }
+    ]
+  },
+  "minigames": {
+    "label": "Giochi al tavolo",
+    "description": "Sottofondi tranquilli per carte e scacchi, più energia nelle sfide a tempo.",
+    "tracks": [
+      {
+        "name": "Carte in compagnia",
+        "title": "A Warm Fireplace",
+        "artist": "MouthlessGames",
+        "url": "/audio/warm-fireplace.mp3",
+        "tags": "Piano e chitarra",
+        "source": "https://opengameart.org/content/snowy-cozyness-calm-pianoguitar",
+        "download": "https://opengameart.org/sites/default/files/A%20Warm%20Fireplace_0.ogg",
+        "license": "CC BY 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+        "verifiedOn": "2026-09-24"
+      },
+      {
+        "name": "Scacchi e concentrazione",
+        "title": "Vaporware",
+        "artist": "The Cynic Project",
+        "url": "/audio/vaporware.mp3",
+        "tags": "Piano e ambient",
+        "source": "https://opengameart.org/content/calm-piano-1-vaporware",
+        "download": "https://opengameart.org/sites/default/files/003_Vaporware_2.mp3",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedOn": "2026-09-24"
+      },
+      {
+        "name": "Sfide a tempo",
+        "title": "Determined Pursuit",
+        "artist": "Emma_MA",
+        "url": "/audio/determined-pursuit.mp3",
+        "tags": "Orchestra incalzante",
+        "source": "https://opengameart.org/content/determined-pursuit-epic-orchestra-loop",
+        "download": "https://opengameart.org/sites/default/files/determined_pursuit_loop.wav",
+        "license": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "verifiedOn": "2026-09-24"
+      }
+    ]
+  }
+}
