@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { pdfAssetsPlugin } from './scripts/pdf-assets-plugin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
+    plugins: [pdfAssetsPlugin()],
     publicDir: 'public', 
     
     resolve: {
@@ -44,6 +46,7 @@ export default defineConfig(({ mode }) => {
           
           // Divide le librerie esterne (Supabase) dal codice dell'app
           manualChunks(id) {
+            if (id.includes('pdfjs-dist')) return 'pdf-reader';
             if (id.includes('node_modules')) {
               if (id.includes('@supabase')) return 'vendor-supabase';
               return 'vendor'; // Altre librerie
