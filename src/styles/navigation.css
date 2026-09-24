@@ -164,3 +164,19 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
     #ui .dnd-hero-die { position: absolute; width: 72px; right: 18px; bottom: 20px; }
     #ui .dnd-hero > div:first-child > p:last-child { max-width: calc(100% - 72px); }
 }
+
+/* Curated music: distinguish the intended scene from the original recording. */
+.music-track-copy { display: grid; gap: 5px; min-width: 0; }
+.music-track-copy strong { font-size: .85rem; }
+.music-track-copy small { font-size: .72rem; line-height: 1.5; overflow-wrap: anywhere; }
+.music-track-mood { flex: 0 0 100px; text-align: right; font-size: .7rem; }
+.music-credits { margin-block: 20px; padding: 20px; text-align: left; }
+.music-credits summary { cursor: pointer; font-weight: 600; min-height: 44px; align-content: center; }
+.music-credits p, .music-credits li { font-size: .8rem; line-height: 1.7; color: var(--text-secondary); }
+.music-credits ul { padding-left: 20px; }
+.music-credits li + li { margin-top: 14px; }
+.music-credits a { color: #dfbfff; text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 480px) {
+    .music-track { flex-wrap: wrap; }
+    .music-track-mood { flex-basis: 100%; text-align: left; }
+}
