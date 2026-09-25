@@ -1,8 +1,11 @@
+import { enhanceSurfaceMotion } from './motionSystem.js';
 import { loadView } from './navigationLoading.js';
 
 const LAST_DESTINATION_KEY = 'taverna_last_destination';
 
 export const resetAppSurface = () => {
+    window.__routeMotionCleanup?.();
+    window.__routeMotionCleanup = null;
     window.__homeCleanup?.();
     window.__shopCleanup?.();
     window.__dndSessionCleanup?.();
@@ -80,6 +83,11 @@ export async function navigateTo(destination, container = document.getElementByI
         return async context => {
             if (!route.deferred && !context.beforeRender()) return;
             await route.render(module, context);
+            if (context.isCurrent() && !['home', 'shop', 'minigames'].includes(destination)) {
+                window.__routeMotionCleanup = enhanceSurfaceMotion(container, {
+                    selector: '.reading-welcome, .reading-shelf, .settings-group, .profile-glass-card, .music-player, .music-playlist, .dnd-hero, .dnd-panel'
+                });
+            }
             if (context.isCurrent() && ['minigames', 'dnd5e', 'reading', 'shop'].includes(destination)) {
                 rememberDestination(destination, destination === 'minigames' ? options : {});
             }

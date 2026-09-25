@@ -43,3 +43,7 @@ Generated from project sources at 2026-09-24T17:22:06.993Z.
 ## Reading experience
 
 The user requested a dedicated ebook reading experience: an edge-to-edge page, quiet amethyst controls, bottom navigation, paper/sepia/night modes, search and automatic reading progress. Preserve PDF layout, fit width by default, and retain a separate position per account and book on the device. Use the existing tokens in `src/styles/amethyst-glass.css`.
+
+## Bottega and motion
+
+Retain the four original product concepts and amethyst glass styling. Add a server-authorized master console, editable products and order requests with payment to be agreed. Keep controls rounded, close targets compact and accessible, and forms within the visible viewport. D&D chat fills that viewport, with collapsible notes. Use finite opacity/transform entrances, short stagger and quicker dismissal. Avoid animated blur and endless ornamental rotations; honor reduced motion.

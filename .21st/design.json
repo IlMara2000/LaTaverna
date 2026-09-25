@@ -49,6 +49,11 @@
       "area": "Reading / PDF reader",
       "decision": "Dedicated edge-to-edge ebook reading surface. Quiet amethyst controls outside the original PDF page; paper, sepia and night modes, bottom navigation, automatic personal reading position. Preserve the PDF layout and adapt to viewport width by default.",
       "source": "User request, 2026-09-24"
+    },
+    {
+      "area": "Bottega / D&D chat / motion",
+      "decision": "Preserve amethyst glass and emoji. Chat occupies the full visible viewport, with collapsible session notes. Commerce uses the existing catalog artwork, a persistent cart, a master-only product/order console and agreed-payment orders. Prefer finite 150–400 ms opacity/transform animation; no continuous decorative rotations or animated blur. Respect reduced motion and the mobile keyboard.",
+      "source": "User request, 2026-09-25"
     }
   ],
   "evidence": [
