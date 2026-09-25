@@ -482,7 +482,7 @@ export async function showSession(container, sessionId, options = {}) {
                 </div>
             </main>
 
-            <aside class="dnd-session-panel dnd-chat-panel" id="sessionChatPanel" aria-hidden="true" aria-label="Chat sessione" inert>
+            <aside class="dnd-session-panel dnd-chat-panel" id="sessionChatPanel" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Chat sessione" inert>
                 <header class="dnd-panel-head dnd-chat-head">
                     <div>
                         <span>Party live</span>
@@ -490,16 +490,16 @@ export async function showSession(container, sessionId, options = {}) {
                     </div>
                     <button type="button" class="dnd-panel-close" id="closeSessionChat" aria-label="Chiudi chat">X</button>
                 </header>
-                <section class="session-prep-log">
+                <details class="session-prep-log"><summary>📜 Appunti della sessione</summary>
                     ${renderPrepText('Obiettivi', sessionData.data?.objectives)}
                     ${renderPrepText('Recap', sessionData.data?.recap)}
                     ${renderPrepText('Agganci', sessionData.data?.hooks)}
                     ${renderPrepText('PNG', sessionData.data?.npcs)}
                     ${renderPrepText('Tesori', sessionData.data?.loot)}
-                </section>
+                </details>
                 <div id="chat-msgs" class="dnd-chat-messages"></div>
                 <form id="chatForm" class="dnd-chat-form">
-                    <input id="chat-input" type="text" placeholder="Scrivi al party... usa @oste per chiamare l'AI">
+                    <input id="chat-input" type="text" aria-label="Messaggio al party" placeholder="Scrivi al party... usa @oste per chiamare l'AI">
                     <button id="chatSubmit" class="btn-primary" type="button">INVIA</button>
                 </form>
             </aside>
@@ -595,6 +595,8 @@ export async function showSession(container, sessionId, options = {}) {
         sessionChatPanel?.setAttribute('aria-hidden', openChat ? 'false' : 'true');
         if (sessionToolsPanel) sessionToolsPanel.inert = !openTools;
         if (sessionChatPanel) sessionChatPanel.inert = !openChat;
+        container.querySelector('.dnd-table-area').inert = openChat;
+        if (openChat) container.querySelector('#closeSessionChat').focus({ preventScroll: true });
         sessionMenuToggle?.setAttribute('aria-expanded', openTools ? 'true' : 'false');
         sessionChatToggle?.setAttribute('aria-expanded', openChat ? 'true' : 'false');
         sessionMenuToggle?.classList.toggle('active', openTools);
@@ -634,6 +636,13 @@ export async function showSession(container, sessionId, options = {}) {
 
     const handleSessionEscape = (event) => {
         if (event.key === 'Escape' && !document.body.classList.contains('taverna-menu-open')) closeSessionDrawers();
+        if (event.key === 'Tab' && sessionShell.dataset.chatOpen === 'true') {
+            const controls = [...sessionChatPanel.querySelectorAll('button, input, textarea, summary, [tabindex="0"]')]
+                .filter(el => !el.disabled && el.getClientRects().length);
+            const first = controls[0], last = controls.at(-1);
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+        }
     };
     window.addEventListener('keydown', handleSessionEscape);
 
@@ -659,6 +668,7 @@ export async function showSession(container, sessionId, options = {}) {
     const chatMsgs = container.querySelector('#chat-msgs');
     const recentChatDocs = [];
     const renderMessage = (doc) => {
+        const nearBottom = chatMsgs.scrollHeight - chatMsgs.scrollTop - chatMsgs.clientHeight < 80;
         const div = document.createElement('div');
         const senderName = doc.sender_name || 'Sistema';
         const isAiMessage = /(^|\s)(AI|Oste AI|Master AI|Compagno AI)/i.test(senderName);
@@ -675,7 +685,7 @@ export async function showSession(container, sessionId, options = {}) {
             isRoll: Boolean(doc.is_roll)
         });
         if (recentChatDocs.length > 24) recentChatDocs.splice(0, recentChatDocs.length - 24);
-        chatMsgs.scrollTo({ top: chatMsgs.scrollHeight, behavior: 'smooth' });
+        if (nearBottom) chatMsgs.scrollTo({ top: chatMsgs.scrollHeight, behavior: 'instant' });
     };
 
     const sendMsg = async (message, isRoll = false, overrides = {}) => {
@@ -746,6 +756,7 @@ export async function showSession(container, sessionId, options = {}) {
                         .limit(80);
             if (error) throw error;
             (data || []).forEach(renderMessage);
+            chatMsgs.scrollTo({ top: chatMsgs.scrollHeight, behavior: 'instant' });
         } catch (err) {
             console.warn('Chat non caricata:', err);
         }

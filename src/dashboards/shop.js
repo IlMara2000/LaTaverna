@@ -1,67 +1,17 @@
 import { renderHomeBackButton } from '../components/ui/BackButton.js';
-import { animate, hover, inView, press, stagger } from 'motion';
+import { animate, stagger } from 'motion';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { navigateTo } from '../services/appNavigation.js';
-import { prefersReducedMotion } from '../services/motionSystem.js';
+import { prefersReducedMotion, enhanceSurfaceMotion } from '../services/motionSystem.js';
 import './shop.css';
+
+import { SHOP_SEED_PRODUCTS } from '../services/shopCatalog.js';
+import { shopStore, productFromRow, formatPrice } from '../services/shopStore.js';
+import { initShopCommerce } from './shopCommerce.js';
 
 const CART_KEY = 'taverna_bottega_request_v1';
 const AGE_KEY = 'taverna_bottega_adult_confirmed';
-
-const PRODUCTS = [
-    {
-        id: 'bruno-antico',
-        name: 'Bruno Antico',
-        category: 'scuri',
-        collection: 'FINITURA SCURA',
-        availability: 'CONCEPT — SU RICHIESTA',
-        image: '/assets/shop/product-bruno-antico.jpg',
-        cutout: '/assets/shop/product-bruno-antico-cutout.webp',
-        viewerAngle: '-55deg',
-        imageAlt: 'Render 3D completo del bocchino Bruno Antico, scuro e scolpito',
-        description: 'Una lettura 3D del carattere più rustico: venatura profonda, profilo irregolare e impugnatura scandita.',
-        facts: ['Render indicativo', 'Misura da confermare', 'Finitura da definire']
-    },
-    {
-        id: 'spirale-chiara',
-        name: 'Spirale Chiara',
-        category: 'chiari',
-        collection: 'FINITURA CHIARA',
-        availability: 'CONCEPT — SU RICHIESTA',
-        image: '/assets/shop/product-spirale-chiara.jpg',
-        cutout: '/assets/shop/product-spirale-chiara-cutout.webp',
-        viewerAngle: '70deg',
-        imageAlt: 'Render 3D completo del bocchino Spirale Chiara in legno chiaro',
-        description: 'Il concept più luminoso, con un ritmo morbido di anelli scolpiti e una silhouette interamente visibile.',
-        facts: ['Render indicativo', 'Profilo a spirale', 'Tonalità da confermare']
-    },
-    {
-        id: 'ametista-regale',
-        name: 'Ametista Regale',
-        category: 'ametista',
-        collection: 'EDIZIONE AMETISTA',
-        availability: 'CONCEPT — SU RICHIESTA',
-        image: '/assets/shop/product-ametista-regale.jpg',
-        cutout: '/assets/shop/product-ametista-regale-cutout.webp',
-        viewerAngle: '48deg',
-        imageAlt: 'Render 3D completo del bocchino Ametista Regale viola con dettagli color ottone',
-        description: 'Una variante scenografica ametista con riflessi profondi e sottili dettagli color ottone.',
-        facts: ['Render indicativo', 'Accenti da concordare', 'Finitura speciale da verificare']
-    },
-    {
-        id: 'ossidiana-corvo',
-        name: 'Ossidiana del Corvo',
-        category: 'ossidiana',
-        collection: 'EDIZIONE OSSIDIANA',
-        availability: 'CONCEPT — SU RICHIESTA',
-        image: '/assets/shop/product-ossidiana.jpg',
-        cutout: '/assets/shop/product-ossidiana-cutout.webp',
-        viewerAngle: '50deg',
-        imageAlt: 'Render 3D completo del bocchino Ossidiana del Corvo nero con collare color bronzo',
-        description: 'Nero materico, profilo affusolato e un unico accento color bronzo per la versione più austera.',
-        facts: ['Render indicativo', 'Profilo da confermare', 'Accento metallico opzionale']
-    }
-];
+let PRODUCTS = [...SHOP_SEED_PRODUCTS];
 
 const HERO_PRODUCT = PRODUCTS.find(product => product.id === 'ametista-regale');
 const STORY_PRODUCT = PRODUCTS.find(product => product.id === 'spirale-chiara');
@@ -98,7 +48,7 @@ const loadCart = () => {
     try {
         const value = JSON.parse(localStorage.getItem(CART_KEY) || '[]');
         return Array.isArray(value)
-            ? value.filter(item => PRODUCTS.some(product => product.id === item.id) && Number(item.quantity) > 0)
+            ? value.filter(item => /^[a-z0-9-]{1,80}$/.test(item?.id) && Number.isFinite(Number(item.quantity)) && Number(item.quantity) >= 1)
                 .map(item => ({ id: item.id, quantity: Math.min(9, Math.floor(Number(item.quantity))) }))
             : [];
     } catch {
@@ -113,6 +63,7 @@ const saveCart = cart => {
 export function initShop(container) {
     if (!container) return;
     window.__shopCleanup?.();
+    PRODUCTS = [...SHOP_SEED_PRODUCTS];
     try { updateSidebarContext('shop'); } catch { /* sidebar opzionale */ }
     const sidebarMenu = document.querySelector('#sidebar-menu');
     if (sidebarMenu) sidebarMenu.inert = true;
@@ -127,6 +78,7 @@ export function initShop(container) {
 
     const state = {
         cart: loadCart(),
+        products: PRODUCTS, allProducts: [], catalogReady: false, disposed: false,
         filter: 'all',
         activeProduct: null,
         viewerPaused: false,
@@ -140,6 +92,47 @@ export function initShop(container) {
     renderProducts(root, state);
     renderCart(root, state);
     bindShop(root, state, container);
+    const refresh = async () => {
+        const [rows, account] = await Promise.all([shopStore.products(), shopStore.account()]);
+        if (state.disposed) return;
+        state.accountId = account.user?.id || null;
+        state.allProducts = rows;
+        state.products = PRODUCTS = rows.filter(row => row.status === 'active').map(productFromRow);
+        const count = state.cart.length;
+        state.cart = state.cart.filter(item => PRODUCTS.some(product => product.id === item.id));
+        state.catalogReady = true;
+        saveCart(state.cart);
+        renderFilters(root, state);
+        renderProducts(root, state);
+        renderCart(root, state);
+        root.querySelector('#shop-master').hidden = !account.master;
+        root.querySelector('#shop-orders').hidden = !account.user;
+        root.querySelector('#shop-catalog-status').textContent = '';
+        if (state.cart.length !== count) showToast(root, 'Carrello aggiornato: alcuni prodotti non sono più nel catalogo.');
+        return state.cart.length !== count;
+    };
+    const commerce = initShopCommerce(root, state, { refresh, onOrder: () => {
+        state.cart = []; saveCart([]); renderCart(root, state);
+    } });
+    root.querySelector('#shop-share-request').onclick = () => { closeCart(root); commerce.checkout(); };
+    const load = () => refresh().catch(() => {
+        if (!state.disposed) {
+            state.catalogReady = false;
+            root.querySelector('#shop-catalog-status').textContent = 'Catalogo non raggiungibile. Riprova prima di ordinare.';
+            renderCart(root, state);
+        }
+    });
+    root.querySelector('#shop-catalog-retry').onclick = load;
+    void load();
+    const authSubscription = shopStore.onAuthChange?.((event, session) => {
+        if (state.disposed) return;
+        if (event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') return;
+        if (event === 'SIGNED_OUT' || state.accountId !== (session?.user?.id || null)) commerce.reset();
+        root.querySelector('#shop-master').hidden = true;
+        root.querySelector('#shop-orders').hidden = true;
+        void load();
+    });
+
 
     let confirmed = false;
     try { confirmed = localStorage.getItem(AGE_KEY) === 'true'; } catch { /* storage facoltativo */ }
@@ -151,6 +144,10 @@ export function initShop(container) {
     else window.requestAnimationFrame(() => root.querySelector('#shop-age-confirm')?.focus());
 
     window.__shopCleanup = () => {
+        state.disposed = true;
+        state.catalogCleanup?.();
+        commerce.cleanup();
+        authSubscription?.unsubscribe();
         state.motionCleanup.forEach(cleanup => {
             try {
                 if (typeof cleanup === 'function') cleanup();
@@ -180,14 +177,15 @@ function renderShop() {
                     <span class="shop-wordmark-seal" aria-hidden="true">B</span>
                     <span><small>LA TAVERNA</small><strong>BOTTEGA DEL VIANDANTE</strong></span>
                 </a>
-                <button id="shop-cart-trigger" class="shop-cart-trigger" type="button" aria-label="Apri lista richieste">
+                <button id="shop-cart-trigger" class="shop-cart-trigger" type="button" aria-label="Apri carrello">
                     ${BAG_ICON}
-                    <span>RICHIESTA</span>
+                    <span>CARRELLO</span>
                     <b id="shop-cart-count">0</b>
                 </button>
             </header>
 
             <main id="shop-top" class="shop-main">
+                <nav class="shop-account-actions" aria-label="Il tuo account bottega"><button type="button" id="shop-orders" class="shop-secondary-action" hidden>📦 I MIEI ORDINI</button><button type="button" id="shop-master" class="shop-primary-action" hidden>💎 GESTISCI BOTTEGA</button></nav>
                 <section id="shop-hero" class="shop-hero" aria-labelledby="shop-title">
                     <div class="shop-hero-copy">
                         <span class="shop-kicker">BOCCHINI ARTIGIANALI · PEZZI UNICI</span>
@@ -234,9 +232,9 @@ function renderShop() {
                             <span class="shop-kicker">COLLEZIONE ATTUALE</span>
                             <h2 id="shop-catalog-title">SCEGLI IL TUO <em>CARATTERE</em></h2>
                         </div>
-                        <p>Scorri tra i concept e tocca una foto per aprire il pezzo isolato nella nuova rotazione 3D verticale.</p>
+                        <p>Scegli i tuoi pezzi, aggiungili al carrello e invia un ordine. Consegna e pagamento si concordano direttamente con la bottega.</p>
                     </header>
-                    <nav class="shop-filters" aria-label="Filtra la collezione">
+                    <p id="shop-catalog-status" role="status">Aggiornamento catalogo…</p><button type="button" id="shop-catalog-retry" class="shop-secondary-action">AGGIORNA CATALOGO</button><nav class="shop-filters" aria-label="Filtra la collezione">
                         ${FILTERS.map((filter, index) => `
                             <button type="button" data-shop-filter="${filter.id}" class="${index === 0 ? 'active' : ''}" aria-pressed="${index === 0 ? 'true' : 'false'}">${filter.label}</button>
                         `).join('')}
@@ -274,26 +272,22 @@ function renderShop() {
                     <span aria-hidden="true">18+</span>
                     <div>
                         <strong>ACCESSORI PER FUMATORI ADULTI</strong>
-                        <p>Nessun articolo contiene tabacco o nicotina. Il fumo nuoce gravemente alla salute. Questa pagina raccoglie richieste informative e non esegue pagamenti.</p>
+                        <p>Nessun articolo contiene tabacco o nicotina. Il fumo nuoce gravemente alla salute. Gli ordini vengono confermati dalla bottega, con pagamento da concordare.</p>
                     </div>
                 </section>
             </main>
 
             <div id="shop-backdrop" class="shop-backdrop" aria-hidden="true"></div>
 
-            <aside id="shop-cart" class="shop-cart" aria-hidden="true" aria-labelledby="shop-cart-title">
+            <aside id="shop-cart" class="shop-cart" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="shop-cart-title">
                 <header>
-                    <div><span class="shop-kicker">LA TUA SELEZIONE</span><h2 id="shop-cart-title">LISTA RICHIESTA</h2></div>
-                    <button id="shop-cart-close" type="button" aria-label="Chiudi lista">×</button>
+                    <div><span class="shop-kicker">LA TUA SELEZIONE</span><h2 id="shop-cart-title">IL TUO CARRELLO</h2></div>
+                    <button id="shop-cart-close" type="button" aria-label="Chiudi carrello">×</button>
                 </header>
                 <div id="shop-cart-items" class="shop-cart-items"></div>
-                <div class="shop-request-fields">
-                    <label>NOME O RIFERIMENTO<input id="shop-request-name" type="text" maxlength="80" placeholder="Come possiamo riconoscerti?"></label>
-                    <label>NOTA<textarea id="shop-request-note" maxlength="500" rows="3" placeholder="Finitura, misura o domanda..."></textarea></label>
-                </div>
                 <footer>
-                    <p>La lista non è un ordine e non comporta alcun pagamento.</p>
-                    <button id="shop-share-request" class="shop-primary-action" type="button">CONDIVIDI RICHIESTA ${ARROW_ICON}</button>
+                    <p id="shop-cart-total"></p><p>Spedizione e pagamento da concordare. Nessun addebito online.</p>
+                    <button id="shop-share-request" class="shop-primary-action" type="button">PROCEDI ALL’ORDINE ${ARROW_ICON}</button>
                     <button id="shop-copy-request" class="shop-secondary-action" type="button">COPIA RIEPILOGO</button>
                 </footer>
             </aside>
@@ -303,10 +297,10 @@ function renderShop() {
                     <button id="shop-modal-close" type="button" aria-label="Chiudi dettaglio">×</button>
                     <div id="shop-modal-media" class="shop-modal-media">
                         <span class="shop-viewer-axis" aria-hidden="true"></span>
-                        <div id="shop-viewer-spin" class="shop-viewer-spin" role="img" aria-label="Vista 3D verticale di ${PRODUCTS[0].name}">
-                            <img class="shop-viewer-layer shop-viewer-layer-back" data-viewer-layer src="${PRODUCTS[0].cutout}" alt="" aria-hidden="true">
-                            <img class="shop-viewer-layer shop-viewer-layer-middle" data-viewer-layer src="${PRODUCTS[0].cutout}" alt="" aria-hidden="true">
-                            <img id="shop-viewer-object" class="shop-viewer-layer shop-viewer-layer-front" data-viewer-layer src="${PRODUCTS[0].cutout}" alt="" aria-hidden="true">
+                        <div id="shop-viewer-spin" class="shop-viewer-spin" role="img" aria-label="Vista 3D verticale di ${SHOP_SEED_PRODUCTS[0].name}">
+                            <img class="shop-viewer-layer shop-viewer-layer-back" data-viewer-layer src="${SHOP_SEED_PRODUCTS[0].cutout}" alt="" aria-hidden="true">
+                            <img class="shop-viewer-layer shop-viewer-layer-middle" data-viewer-layer src="${SHOP_SEED_PRODUCTS[0].cutout}" alt="" aria-hidden="true">
+                            <img id="shop-viewer-object" class="shop-viewer-layer shop-viewer-layer-front" data-viewer-layer src="${SHOP_SEED_PRODUCTS[0].cutout}" alt="" aria-hidden="true">
                         </div>
                         <div class="shop-viewer-toolbar">
                             <span><b>VISTA 3D</b><small>ROTAZIONE VERTICALE · CONCEPT</small></span>
@@ -320,7 +314,7 @@ function renderShop() {
                         <ul id="shop-modal-facts"></ul>
                         <div class="shop-modal-actions">
                             <span id="shop-modal-availability"></span>
-                            <button id="shop-modal-add" class="shop-primary-action" type="button">AGGIUNGI ALLA RICHIESTA ${ARROW_ICON}</button>
+                            <button id="shop-modal-add" class="shop-primary-action" type="button">AGGIUNGI AL CARRELLO ${ARROW_ICON}</button>
                         </div>
                     </div>
                 </div>
@@ -345,23 +339,35 @@ function renderShop() {
 function productCard(product, index) {
     return `
         <article class="shop-product-card" data-product-card="${product.id}" style="--card-index:${index}" role="listitem">
-            <button class="shop-product-media" type="button" data-product-detail="${product.id}" aria-label="Apri la vista 3D di ${escapeHTML(product.name)}">
-                <img src="${product.image}" alt="${escapeHTML(product.imageAlt)}" loading="lazy">
+            <button class="shop-product-media" type="button" data-product-detail="${product.id}" aria-label="Apri ${escapeHTML(product.name)}">
+                <img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.imageAlt)}" loading="lazy">
                 <span class="shop-product-index">0${index + 1}</span>
-                <span class="shop-render-badge">CONCEPT 3D</span>
-                <span class="shop-product-view">VEDI IN 3D ${ARROW_ICON}</span>
+                <span class="shop-render-badge">${product.hasCutout === false ? 'ARTIGIANATO' : 'CONCEPT 3D'}</span>
+                <span class="shop-product-view">${product.hasCutout === false ? 'SCOPRI IL PEZZO' : 'VEDI IN 3D'} ${ARROW_ICON}</span>
             </button>
             <div class="shop-product-copy">
                 <span>${escapeHTML(product.collection)}</span>
                 <h3>${escapeHTML(product.name)}</h3>
                 <p>${escapeHTML(product.description)}</p>
                 <footer>
-                    <small>${escapeHTML(product.availability)}</small>
-                    <button type="button" data-product-add="${product.id}" aria-label="Aggiungi ${escapeHTML(product.name)} alla richiesta">+</button>
+                    <small><strong>${escapeHTML(formatPrice(product.price_cents))}</strong><br>${escapeHTML(product.availability)}</small>
+                    <button type="button" data-product-add="${product.id}" ${product.stock === 0 ? 'disabled' : ''} aria-label="Aggiungi ${escapeHTML(product.name)} al carrello">+</button>
                 </footer>
             </div>
         </article>
     `;
+}
+
+function renderFilters(root, state) {
+    const categories = [...new Set(PRODUCTS.map(p => p.category))];
+    if (state.filter !== 'all' && !categories.includes(state.filter)) state.filter = 'all';
+    const filters = [{id: 'all', label: 'Tutti'}, ...categories.map(id => ({id, label: FILTERS.find(f => f.id === id)?.label || id}))];
+    const nav = root.querySelector('.shop-filters');
+    nav.innerHTML = filters.map(f => `<button type="button" data-shop-filter="${escapeHTML(f.id)}" class="${state.filter === f.id ? 'active' : ''}" aria-pressed="${state.filter === f.id}">${escapeHTML(f.label)}</button>`).join('');
+    nav.querySelectorAll('button').forEach(button => button.onclick = () => {
+        state.filter = button.dataset.shopFilter;
+        renderFilters(root, state); renderProducts(root, state);
+    });
 }
 
 function renderProducts(root, state) {
@@ -369,7 +375,9 @@ function renderProducts(root, state) {
         ? PRODUCTS
         : PRODUCTS.filter(product => product.category === state.filter);
     const grid = root.querySelector('#shop-product-grid');
-    grid.innerHTML = products.map(productCard).join('');
+    state.catalogCleanup?.();
+    grid.innerHTML = products.map(productCard).join('') || '<p>Nessun prodotto in questa categoria.</p>';
+    const cleanupStart = state.eventCleanup.length;
 
     grid.querySelectorAll('[data-product-detail]').forEach(button => {
         button.onclick = () => openProduct(root, state, button.dataset.productDetail);
@@ -379,18 +387,20 @@ function renderProducts(root, state) {
     });
     bindProductTilt(root, state);
     bindProductCarousel(root, state);
+    const catalogEvents = state.eventCleanup.splice(cleanupStart);
+    state.catalogCleanup = () => catalogEvents.forEach(cleanup => cleanup());
 
     if (!prefersReducedMotion()) {
         const cards = [...grid.querySelectorAll('.shop-product-card')];
         cards.forEach((card, index) => {
             const animation = card.animate([
-                { translate: '72px 0', clipPath: 'inset(0 18% 0 0)' },
-                { translate: '0 0', clipPath: 'inset(0 0 0 0)' }
+                { transform: 'translateY(12px) scale(.985)', opacity: 0 },
+                { transform: 'translateY(0) scale(1)', opacity: 1 }
             ], {
-                duration: 680,
-                delay: index * 75,
+                duration: 400,
+                delay: Math.min(index * 40, 160),
                 easing: 'cubic-bezier(.16,1,.3,1)',
-                fill: 'both'
+                fill: 'backwards'
             });
             state.motionCleanup.push(() => animation.cancel());
         });
@@ -425,10 +435,10 @@ function bindProductCarousel(root, state) {
                 : closestIndex
         ), 0);
         cards.forEach((card, index) => card.classList.toggle('is-active', index === activeIndex));
-        status.textContent = `${String(activeIndex + 1).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
+        status.textContent = `${String(cards.length ? activeIndex + 1 : 0).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`;
         progress.style.transform = `scaleX(${max ? Math.min(1, rail.scrollLeft / max) : 1})`;
         previous.disabled = activeIndex === 0;
-        next.disabled = activeIndex === cards.length - 1;
+        next.disabled = cards.length < 2 || activeIndex === cards.length - 1;
     };
 
     const requestUpdate = () => {
@@ -482,7 +492,7 @@ function bindShop(root, state, container) {
             startMotion(root, state);
             return;
         }
-        const exit = animate(gate.firstElementChild, { opacity: [1, 0], scale: [1, 0.94], y: [0, -18] }, { duration: 0.3, ease: [0.16, 1, 0.3, 1] });
+        const exit = animate(gate.firstElementChild, { opacity: [1, 0], scale: [1, 0.98], y: [0, -4] }, { duration: 0.15, ease: [0.16, 1, 0.3, 1] });
         event.currentTarget.disabled = true;
         exit.finished.finally(() => {
             gate.hidden = true;
@@ -526,9 +536,20 @@ function bindShop(root, state, container) {
         addToCart(root, state, state.activeProduct, event.currentTarget);
     };
     root.querySelector('#shop-copy-request').onclick = () => copyRequest(root, state);
-    root.querySelector('#shop-share-request').onclick = () => shareRequest(root, state);
 
     const keyHandler = event => {
+        if (root.querySelector('.shop-commerce-dialog')?.open) return;
+        if (event.key === 'Tab') {
+            const panel = !root.querySelector('#shop-age-gate').hidden ? root.querySelector('#shop-age-gate')
+                : !root.querySelector('#shop-product-modal').hidden ? root.querySelector('#shop-product-modal')
+                : root.classList.contains('shop-cart-open') ? root.querySelector('#shop-cart') : null;
+            if (panel) {
+                const controls = [...panel.querySelectorAll('button, input, textarea, a[href], [tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length);
+                const first = controls[0], last = controls.at(-1);
+                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+            }
+        }
         if (event.key !== 'Escape') return;
         if (!root.querySelector('#shop-product-modal').hidden) closeProduct(root, state);
         else if (root.classList.contains('shop-cart-open')) closeCart(root);
@@ -543,13 +564,14 @@ function getProduct(id) {
 
 function addToCart(root, state, id, source) {
     const product = getProduct(id);
-    if (!product) return;
+    if (!product || product.stock === 0) return;
+    const limit = Math.min(9, product.stock ?? 9);
     const current = state.cart.find(item => item.id === id);
-    if (current) current.quantity = Math.min(9, current.quantity + 1);
+    if (current) current.quantity = Math.min(limit, current.quantity + 1);
     else state.cart.push({ id, quantity: 1 });
     saveCart(state.cart);
     renderCart(root, state);
-    showToast(root, `${product.name.toUpperCase()} AGGIUNTO ALLA RICHIESTA`);
+    showToast(root, `${product.name.toUpperCase()} AGGIUNTO AL CARRELLO`);
 
     if (!prefersReducedMotion() && source) {
         animate(source, { scale: [1, 0.88, 1.08, 1], rotate: [0, -4, 3, 0] }, { duration: 0.46, ease: [0.16, 1, 0.3, 1] });
@@ -560,7 +582,7 @@ function addToCart(root, state, id, source) {
 function updateQuantity(root, state, id, delta) {
     const item = state.cart.find(entry => entry.id === id);
     if (!item) return;
-    item.quantity = Math.max(0, Math.min(9, item.quantity + delta));
+    item.quantity = Math.max(0, Math.min(9, getProduct(id)?.stock ?? 9, item.quantity + delta));
     if (!item.quantity) state.cart = state.cart.filter(entry => entry.id !== id);
     saveCart(state.cart);
     renderCart(root, state);
@@ -576,8 +598,8 @@ function renderCart(root, state) {
         items.innerHTML = `
             <div class="shop-cart-empty">
                 <span aria-hidden="true">◇</span>
-                <strong>LA LISTA È VUOTA</strong>
-                <p>Aggiungi uno o più pezzi per preparare una richiesta informativa.</p>
+                <strong>IL CARRELLO È VUOTO</strong>
+                <p>Aggiungi uno o più pezzi per preparare il tuo ordine.</p>
                 <button type="button" data-cart-to-catalog>ESPLORA LA COLLEZIONE</button>
             </div>
         `;
@@ -588,10 +610,11 @@ function renderCart(root, state) {
     } else {
         items.innerHTML = state.cart.map(item => {
             const product = getProduct(item.id);
+            if (!product) return '<p>Verifica del prodotto salvato…</p>';
             return `
                 <article class="shop-cart-item">
-                    <div class="shop-cart-thumb"><img src="${product.image}" alt=""></div>
-                    <div><small>${escapeHTML(product.collection)}</small><strong>${escapeHTML(product.name)}</strong><span>${escapeHTML(product.availability)}</span></div>
+                    <div class="shop-cart-thumb"><img src="${escapeHTML(product.image)}" alt=""></div>
+                    <div><small>${escapeHTML(product.collection)}</small><strong>${escapeHTML(product.name)}</strong><span>${escapeHTML(formatPrice(product.price_cents))} · ${escapeHTML(product.availability)}</span></div>
                     <div class="shop-cart-quantity" aria-label="Quantità ${escapeHTML(product.name)}">
                         <button type="button" data-cart-minus="${product.id}" aria-label="Diminuisci quantità">−</button>
                         <b>${item.quantity}</b>
@@ -609,18 +632,21 @@ function renderCart(root, state) {
     }
 
     root.querySelector('#shop-copy-request').disabled = !state.cart.length;
-    root.querySelector('#shop-share-request').disabled = !state.cart.length;
+    root.querySelector('#shop-share-request').disabled = !state.cart.length || !state.catalogReady;
+    const total = state.cart.every(item => getProduct(item.id)?.price_cents != null) ? state.cart.reduce((sum, item) => sum + getProduct(item.id).price_cents * item.quantity, 0) : null;
+    root.querySelector('#shop-cart-total').textContent = state.cart.length ? `Totale prodotti: ${formatPrice(total)}` : '';
 }
 
 function openCart(root) {
     root.classList.add('shop-cart-open', 'has-overlay');
     root.querySelector('#shop-cart').setAttribute('aria-hidden', 'false');
     syncOverlayState(root);
-    window.setTimeout(() => root.querySelector('#shop-cart-close').focus(), 260);
+    root.querySelector('#shop-cart-close').focus({ preventScroll: true });
 }
 
 function closeCart(root) {
     root.classList.remove('shop-cart-open');
+    root.querySelector('#shop-cart-trigger').focus({ preventScroll: true });
     root.querySelector('#shop-cart').setAttribute('aria-hidden', 'true');
     syncOverlayState(root);
 }
@@ -632,10 +658,12 @@ function openProduct(root, state, id) {
     root.querySelector('#shop-modal-collection').textContent = product.collection;
     root.querySelector('#shop-modal-name').textContent = product.name;
     root.querySelector('#shop-modal-description').textContent = product.description;
-    root.querySelector('#shop-modal-availability').textContent = product.availability;
+    root.querySelector('#shop-modal-availability').textContent = `${formatPrice(product.price_cents)} · ${product.availability}`;
+    root.querySelector('#shop-modal-add').disabled = product.stock === 0;
     root.querySelector('#shop-modal-facts').innerHTML = product.facts.map(fact => `<li>${escapeHTML(fact)}</li>`).join('');
     const media = root.querySelector('#shop-modal-media');
     media.style.setProperty('--viewer-angle', product.viewerAngle);
+    media.classList.toggle('is-flat', product.hasCutout === false);
     root.querySelector('#shop-viewer-spin').setAttribute('aria-label', `Vista 3D verticale di ${product.name}`);
     media.querySelectorAll('[data-viewer-layer]').forEach(layer => {
         layer.src = product.cutout;
@@ -649,19 +677,21 @@ function openProduct(root, state, id) {
     if (!prefersReducedMotion()) {
         animate(modal.querySelector('.shop-modal-panel'), {
             opacity: [0, 1],
-            y: [34, 0],
+            y: [12, 0],
             scale: [0.96, 1]
-        }, { duration: 0.48, ease: [0.16, 1, 0.3, 1] });
+        }, { duration: 0.25, ease: [0.16, 1, 0.3, 1] });
     }
     window.setTimeout(() => root.querySelector('#shop-modal-close').focus(), 120);
 }
 
 function closeProduct(root, state) {
     const modal = root.querySelector('#shop-product-modal');
+    const opener = root.querySelector(`[data-product-detail="${state.activeProduct}"]`);
     modal.hidden = true;
     state.activeProduct = null;
     root.classList.remove('shop-product-open');
     syncOverlayState(root);
+    opener?.focus({ preventScroll: true });
 }
 
 function setViewerPaused(root, state, paused) {
@@ -693,14 +723,15 @@ function syncOverlayState(root) {
 }
 
 function requestText(root, state) {
-    const name = root.querySelector('#shop-request-name').value.trim();
-    const note = root.querySelector('#shop-request-note').value.trim();
+    const name = '';
+    const note = '';
     const lines = state.cart.map(item => {
         const product = getProduct(item.id);
+        if (!product) return 'Prodotto in aggiornamento';
         return `• ${product.name} × ${item.quantity} — ${product.availability}`;
     });
     const header = [
-        'RICHIESTA INFORMAZIONI — BOTTEGA DEL VIANDANTE',
+        'CARRELLO — BOTTEGA DEL VIANDANTE',
         name ? `Riferimento: ${name}` : null
     ].filter(Boolean);
     const footer = [
@@ -727,21 +758,6 @@ async function copyRequest(root, state) {
         field.remove();
         showToast(root, 'RIEPILOGO COPIATO');
     }
-}
-
-async function shareRequest(root, state) {
-    if (!state.cart.length) return;
-    const text = requestText(root, state);
-    if (navigator.share) {
-        try {
-            await navigator.share({ title: 'Richiesta — Bottega del Viandante', text });
-            showToast(root, 'RICHIESTA CONDIVISA');
-            return;
-        } catch (error) {
-            if (error?.name === 'AbortError') return;
-        }
-    }
-    await copyRequest(root, state);
 }
 
 function showToast(root, message) {
@@ -815,47 +831,13 @@ function startMotion(root, state) {
     });
 
     if (prefersReducedMotion()) return;
-    const ease = [0.16, 1, 0.3, 1];
-    state.motionCleanup.push(animate(root.querySelector('.shop-topbar'), { opacity: [0, 1], y: [-20, 0] }, { duration: 0.7, ease }));
+    const ease = [0.22, 1, 0.36, 1];
+    state.motionCleanup.push(animate(root.querySelector('.shop-topbar'), { opacity: [0, 1] }, { duration: 0.25, ease }));
     state.motionCleanup.push(animate(root.querySelectorAll('.shop-hero-copy > *'), {
-        opacity: [0, 1],
-        y: [30, 0],
-        filter: ['blur(9px)', 'blur(0px)']
-    }, { delay: stagger(0.075, { startDelay: 0.12 }), duration: 0.72, ease }));
+        opacity: [0, 1], y: [12, 0]
+    }, { delay: stagger(0.04), duration: 0.4, ease }));
     state.motionCleanup.push(animate(heroVisual, {
-        opacity: [0, 1],
-        x: [54, 0],
-        scale: [0.92, 1],
-        rotateY: [-7, 0],
-        filter: ['blur(14px)', 'blur(0px)']
-    }, { duration: 1, delay: 0.16, ease }));
-    state.motionCleanup.push(animate(root.querySelector('.orbit-large'), { rotate: [0, 360] }, { duration: 30, repeat: Infinity, ease: 'linear' }));
-    state.motionCleanup.push(animate(root.querySelector('.orbit-small'), { rotate: [360, 0] }, { duration: 22, repeat: Infinity, ease: 'linear' }));
-    state.motionCleanup.push(animate(root.querySelector('.shop-marquee > div'), { x: ['0%', '-50%'] }, { duration: 24, repeat: Infinity, ease: 'linear' }));
-    state.motionCleanup.push(animate(root.querySelector('.shop-scroll-cue span'), { scaleY: [0.2, 1, 0.2], y: [-4, 4, -4] }, { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }));
-
-    root.querySelectorAll('.shop-reveal-section').forEach(section => {
-        state.motionCleanup.push(inView(section, () => {
-            const animation = animate(section, {
-                opacity: [0, 1],
-                y: [46, 0],
-                filter: ['blur(10px)', 'blur(0px)']
-            }, { duration: 0.82, ease });
-            return () => animation.stop();
-        }, { amount: 0.13 }));
-    });
-
-    root.querySelectorAll('.shop-primary-action, .shop-secondary-action, .shop-cart-trigger').forEach(button => {
-        state.motionCleanup.push(hover(button, element => {
-            const animation = animate(element, { y: -3, scale: 1.015 }, { type: 'spring', stiffness: 430, damping: 30 });
-            return () => {
-                animation.stop();
-                animate(element, { y: 0, scale: 1 }, { type: 'spring', stiffness: 430, damping: 30 });
-            };
-        }));
-        state.motionCleanup.push(press(button, element => {
-            animate(element, { scale: 0.97 }, { duration: 0.1 });
-            return () => animate(element, { scale: 1 }, { duration: 0.2, ease });
-        }));
-    });
+        opacity: [0, 1], y: [12, 0], scale: [0.985, 1]
+    }, { duration: 0.5, delay: 0.08, ease }));
+    state.motionCleanup.push(enhanceSurfaceMotion(root, { selector: '.shop-reveal-section' }));
 }

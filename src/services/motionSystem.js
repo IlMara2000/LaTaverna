@@ -1,4 +1,4 @@
-const EASE_OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const activeAnimations = new Set();
 
 export const prefersReducedMotion = () => {
@@ -31,6 +31,9 @@ const cancelAll = animations => animations.forEach(animation => {
 });
 
 export function initMotionPreferences() {
+    const visibility = () => document.documentElement.classList.toggle('app-backgrounded', document.hidden);
+    document.addEventListener('visibilitychange', visibility);
+    visibility();
     const media = window.matchMedia('(prefers-reduced-motion: reduce)');
     const sync = () => {
         if (!prefersReducedMotion()) return;
@@ -48,6 +51,7 @@ export function initMotionPreferences() {
     window.addEventListener('appPreferencesChanged', sync);
     window.addEventListener('appPreferencesLoaded', sync);
     return () => {
+        document.removeEventListener('visibilitychange', visibility);
         media.removeEventListener('change', sync);
         window.removeEventListener('appPreferencesChanged', sync);
         window.removeEventListener('appPreferencesLoaded', sync);
@@ -98,8 +102,8 @@ export function enhanceHomeMotion(container) {
         if (!container.isConnected || prefersReducedMotion()) return;
         container.querySelectorAll('.taverna-scene').forEach((scene, index) => {
             animations.push(reveal(scene, {
-                opacity: [0.75, 1], transform: ['translateY(6px)', 'translateY(0)']
-            }, { duration: 320, delay: index * 35 }));
+                opacity: [0, 1], transform: ['translateY(12px) scale(.99)', 'translateY(0) scale(1)']
+            }, { duration: 400, delay: index * 40 }));
         });
     };
     if (document.getElementById('app')?.classList.contains('app-preparing')) {
@@ -124,8 +128,8 @@ export function enhanceSurfaceMotion(container, options = {}) {
         entries.filter(entry => entry.isIntersecting).forEach((entry, index) => {
             observer.unobserve(entry.target);
             animations.push(reveal(entry.target, {
-                opacity: [0.75, 1], transform: ['translateY(4px)', 'translateY(0)']
-            }, { duration: 240, delay: Math.min(index * 25, 75) }));
+                opacity: [0, 1], transform: ['translateY(8px)', 'translateY(0)']
+            }, { duration: 350, delay: Math.min(index * 40, 160) }));
         });
     }, { threshold: 0.05 });
     surfaces.forEach(element => observer.observe(element));
