@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../../services/experienceTheme.js';
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 import {
     dndLocalStore,
@@ -271,6 +272,7 @@ export async function showSession(container, sessionId, options = {}) {
     document.body.style.overflow = 'hidden';
     // Pan/zoom is isolated to the map viewport; menus keep native scrolling.
     document.body.style.touchAction = '';
+    setExperienceTheme('dnd5e', 'session');
     document.body.classList.add('dnd-session-active');
 
     container.innerHTML = `

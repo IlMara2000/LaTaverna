@@ -3,6 +3,8 @@ import './styles/global.css';
 import './styles/amethyst-glass.css';
 import './styles/navigation.css';
 import './styles/motion-polish.css';
+import './styles/experience-worlds.css';
+import './styles/auth.css';
 import { supabase } from './services/supabase.js';
 import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';
@@ -78,10 +80,7 @@ function renderPortal(user) {
     
     appContainer.innerHTML = `
         <div class="entry-container" id="entry-screen" role="button" tabindex="0" aria-label="Entra nella Taverna">
-            <span class="entry-eyebrow">UN POSTO PER LE TUE AVVENTURE</span>
-            <div class="entry-crystal" aria-hidden="true"><i></i><i></i><i></i></div>
-            <img src="/assets/logo.png" alt="La Taverna" id="main-logo" style="width: 140px; filter: drop-shadow(0 0 20px var(--amethyst-glow)); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-            <h1>La Taverna</h1>
+            <img src="/assets/logo.png" alt="La Taverna" id="main-logo" width="512" height="512" fetchpriority="high" decoding="async">
             <p class="entry-description">Ogni grande storia comincia insieme.</p>
             <span class="subtitle entry-cta">Entra nella Taverna <span aria-hidden="true">↗</span></span>
         </div>

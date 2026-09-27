@@ -17,7 +17,7 @@
     --crystal-radius: 28px;
     --crystal-radius-sm: 16px;
     --crystal-radius-lg: 36px;
-    --crystal-blur: 22px;
+    --crystal-blur: 10px;
     --crystal-page: radial-gradient(ellipse at 14% 0%, rgb(149 87 205 / 23%), transparent 48%),
         radial-gradient(ellipse at 95% 72%, rgb(111 56 177 / 16%), transparent 48%), #10091d;
     --crystal-glass: linear-gradient(135deg, rgb(232 210 255 / 12%), rgb(180 133 227 / 4%) 42%, rgb(178 132 227 / 9%)), rgb(34 20 51 / 64%);
@@ -36,33 +36,6 @@ html[data-theme="amethyst"] #ui { isolation: isolate; }
 html[data-theme="amethyst"] #app { background: transparent !important; }
 ::selection { background: #9c6fd5; color: #fff; }
 
-/* One stationary atmosphere for the entire app: no mouse tracking or canvas. */
-.amethyst-atmosphere {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-    background: radial-gradient(ellipse at 52% -15%, rgb(184 126 241 / 12%), transparent 62%);
-}
-.amethyst-facet {
-    position: absolute;
-    width: clamp(260px, 35vw, 580px);
-    aspect-ratio: .72;
-    background: linear-gradient(115deg, rgb(226 195 255 / 8%), rgb(167 101 236 / 2%) 48%, rgb(234 206 255 / 11%) 49%, rgb(118 58 178 / 2%) 72%);
-    clip-path: polygon(50% 0, 88% 26%, 100% 74%, 50% 100%, 8% 72%, 0 28%);
-    opacity: .55;
-}
-.facet-one { top: -25%; right: -7%; transform: rotate(24deg); }
-.facet-two { bottom: -30%; left: -8%; transform: rotate(-24deg) scale(1.25); }
-.facet-three { top: 22%; left: 42%; opacity: .18; transform: rotate(12deg); }
-.amethyst-spark { position: absolute; width: 10px; height: 10px; opacity: 0; animation: crystal-twinkle 9s ease-in-out infinite; }
-.amethyst-spark::before, .amethyst-spark::after { content: ''; position: absolute; inset: 45% 0; border-radius: 50%; background: #e4c2ff; box-shadow: 0 0 10px 2px rgb(186 121 248 / 45%); }
-.amethyst-spark::after { transform: rotate(90deg); }
-.spark-one { top: 16%; left: 13%; }
-.spark-two { top: 31%; right: 9%; animation-delay: 2.6s; }
-.spark-three { bottom: 20%; left: 25%; animation-delay: 5.4s; }
-.spark-four { bottom: 12%; right: 22%; animation-delay: 7s; }
-@keyframes crystal-twinkle { 0%, 66%, 100% { opacity: 0; transform: scale(.6); } 78% { opacity: .65; transform: scale(1); } 89% { opacity: .18; } }
 @keyframes crystal-enter { from { opacity: 0; } to { opacity: 1; } }
 @keyframes crystal-sheen { from { transform: translateX(-130%) skewX(-20deg); } to { transform: translateX(240%) skewX(-20deg); } }
 
@@ -94,7 +67,7 @@ html[data-theme="amethyst"] :is(
 html[data-theme="amethyst"] :is(
     .glass-box, .glass-card, .login-auth-card, .profile-glass-card,
     .dnd-hero, .reading-welcome, .minigame-multiplayer-panel, .shop-story
-) { backdrop-filter: blur(var(--crystal-blur)) saturate(135%); -webkit-backdrop-filter: blur(var(--crystal-blur)) saturate(135%); }
+) { backdrop-filter: none; -webkit-backdrop-filter: none; }
 
 /* Avoid stacking expensive blur layers inside panels. */
 html[data-theme="amethyst"] :is(.settings-form, .dnd-panel, .reading-shelf) :is(.glass-box, .action-card) { backdrop-filter: none; -webkit-backdrop-filter: none; }
@@ -174,10 +147,6 @@ html[data-theme="amethyst"] #app:has(.entry-container) { padding: 24px; }
 #ui .entry-container h1 { font-size: clamp(2.5rem, 6vw, 4.3rem); font-weight: 600; letter-spacing: -.06em; margin: 28px 0 4px; }
 #ui .entry-description { color: var(--text-secondary); font-size: 13px; line-height: 1.8; }
 #ui .entry-cta { display: flex; gap: 25px; align-items: center; margin-top: 32px; padding: 18px 27px; border: 1px solid rgb(219 180 255 / 40%); border-radius: 999px; background: var(--crystal-glass); box-shadow: var(--crystal-shadow); color: #f2e4ff; font-size: 12px; letter-spacing: .02em; opacity: 1; }
-.entry-crystal { position: absolute; top: 50%; left: 50%; width: 285px; height: 350px; transform: translate(-50%, -72%); z-index: -1; pointer-events: none; }
-.entry-crystal i { position: absolute; inset: 0; clip-path: polygon(50% 0, 87% 24%, 88% 73%, 50% 100%, 12% 73%, 13% 24%); background: conic-gradient(from 30deg at 50% 42%, rgb(222 180 255 / 20%), rgb(144 73 211 / 5%), rgb(192 135 255 / 26%), rgb(255 231 255 / 15%), rgb(138 64 203 / 8%), rgb(222 180 255 / 20%)); }
-.entry-crystal i:nth-child(2) { transform: translateX(-44%) rotate(-24deg) scale(.55); opacity: .6; }
-.entry-crystal i:nth-child(3) { transform: translateX(44%) rotate(24deg) scale(.55); opacity: .6; }
 html[data-theme="amethyst"] #app-loader { background: var(--crystal-page); }
 html[data-theme="amethyst"] .login-auth-card { width: min(100%, 430px); padding: clamp(24px, 5vw, 42px); }
 html[data-theme="amethyst"] #login-discord { background: linear-gradient(135deg, rgb(148 133 230 / 28%), rgb(103 79 169 / 22%)) !important; border: 1px solid var(--glass-border); }

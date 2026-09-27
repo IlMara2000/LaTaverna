@@ -1,3 +1,4 @@
+import { setExperienceTheme } from './services/experienceTheme.js';
 import { renderHomeBackButton } from './components/ui/BackButton.js';
 import { loadView } from './services/navigationLoading.js';
 import { updateSidebarContext } from './components/layout/Sidebar.js';
@@ -44,7 +45,7 @@ export function showMinigamesList(container, options = {}) {
                 ${renderHomeBackButton({ id: 'btn-back-main' })}
             </div>
             
-            <header style="margin: 10px 0 28px 0; text-align: center;">
+            <header class="world-catalog-header" style="margin: 10px 0 28px 0; text-align: center;">
                 <span class="crystal-eyebrow">IL PIACERE DI STARE AL TAVOLO</span>
                 <h1 class="main-title">Sala giochi</h1>
                 <p class="catalog-intro">Ritrova un classico o lasciati sorprendere da una nuova sfida.</p>
@@ -191,6 +192,7 @@ export function showMinigamesList(container, options = {}) {
     }, { label: game.name, beforeRender: resetAppSurface });
 
     const renderGameCatalog = () => {
+        setExperienceTheme(activeFilter, 'catalog');
         const catalog = container.querySelector('#minigame-catalog');
         const visibleCategories = activeFilter === 'all'
             ? MINIGAME_CATEGORIES
@@ -207,7 +209,7 @@ export function showMinigamesList(container, options = {}) {
                                 <span class="catalog-game-icon" aria-hidden="true">${game.icon}</span>
                                 <div class="catalog-game-copy">
                                     <h3>${game.name}</h3>
-                                    <small>${game.players} · ${game.duration}</small>
+                                    <small>${game.players} · ${game.duration}</small><p class="world-game-description">${game.description}</p>
                                 </div>
                                 <span class="catalog-game-arrow" aria-hidden="true">↗</span>
                             </button>

@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
@@ -15,6 +16,7 @@ let gameData = {
 export function initNumeri(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
+    setExperienceTheme('numeri', 'experience');
     
     document.body.style.overflowX = 'hidden';
     document.body.style.overflowY = 'auto';

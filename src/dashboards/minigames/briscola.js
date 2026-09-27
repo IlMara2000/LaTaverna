@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
@@ -46,6 +47,7 @@ const createState = () => ({
 export function initBriscola(container) {
     if (!container) return;
     try { updateSidebarContext('minigames'); } catch { /* sidebar opzionale */ }
+    setExperienceTheme('briscola', 'experience');
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';

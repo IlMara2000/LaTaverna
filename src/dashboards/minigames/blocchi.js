@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { renderLevelLadder, unlockNextLevel } from '../../services/levels.js';
 import './blocchi.css';
@@ -141,6 +142,7 @@ const createState = () => {
 export function initBlocchi(container) {
     if (!container) return;
     try { updateSidebarContext('minigames'); } catch { /* sidebar opzionale */ }
+    setExperienceTheme('blocchi', 'experience');
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';

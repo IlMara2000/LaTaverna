@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, renderLevelLadder, unlockNextLevel } from '../../services/levels.js';
 import {
@@ -60,6 +61,7 @@ const createGameState = () => ({
 export function initTicTacToe(container) {
     if (!container) return;
     try { updateSidebarContext('minigames'); } catch (e) { console.log('Sidebar non pronta'); }
+    setExperienceTheme('tictactoe', 'experience');
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';

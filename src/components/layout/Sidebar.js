@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 // Sidebar.js - Versione Master Integrata (Fiducia Totale)
 import { getCachedAppPreference } from '../../services/appPreferences.js';
 import { navigateTo, resetAppSurface } from '../../services/appNavigation.js';
@@ -295,6 +296,7 @@ function setupEventListeners(container, context) {
 }
 
 export function updateSidebarContext(newContext) {
+    setExperienceTheme(newContext);
     currentActiveContext = newContext;
     const container = document.getElementById('sidebar-container');
     if (container) renderSidebarContent(container, newContext);

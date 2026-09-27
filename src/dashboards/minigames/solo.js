@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
@@ -24,6 +25,7 @@ const getIcon = (val) => {
 export function initSoloGame(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
+    setExperienceTheme('solo', 'experience');
 
     // BLOCCO SCROLL GLOBALE
     document.documentElement.style.overflow = 'hidden';

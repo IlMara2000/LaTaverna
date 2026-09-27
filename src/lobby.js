@@ -59,21 +59,21 @@ export function showLobby(container) {
                 </section>
                 <section class="taverna-scene-stage" aria-label="Scegli come giocare">
                     <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
-                        <img src="/assets/home/portal-cards.jpg" alt="Carte italiane su un tavolo da gioco" fetchpriority="high" decoding="async">
+                        <img src="/assets/worlds/cards.svg" alt="Collage ametista di carte sospese tra lune e orbite" fetchpriority="high" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">01 / CARTE</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Giochi di Carte</span><span class="scene-description">I grandi classici, il tuo prossimo asso.</span><span class="scene-link">Scopri i giochi di carte <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-party" id="hub-party-games">
-                        <img src="/assets/home/portal-party.jpg" alt="Gioco da tavolo con pedine colorate" loading="lazy" decoding="async">
+                        <img src="/assets/worlds/party.svg" alt="Dadi e pedine dalle forme morbide in argilla lilla" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">02 / CON AMICI</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Giochi da Tavolo</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
-                        <img src="/assets/home/portal-gdr.jpg" alt="Mappa fantasy, dadi e miniatura da gioco di ruolo" loading="lazy" decoding="async">
+                        <img src="/assets/worlds/gdr.svg" alt="Un drago e un dado disegnati su un taccuino ametista" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">03 / GIOCHI DI RUOLO</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di Ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>

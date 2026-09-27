@@ -47,3 +47,11 @@ The user requested a dedicated ebook reading experience: an edge-to-edge page, q
 ## Bottega and motion
 
 Retain the four original product concepts and amethyst glass styling. Add a server-authorized master console, editable products and order requests with payment to be agreed. Keep controls rounded, close targets compact and accessible, and forms within the visible viewport. D&D chat fills that viewport, with collapsible notes. Use finite opacity/transform entrances, short stagger and quicker dismissal. Avoid animated blur and endless ornamental rotations; honor reduced motion.
+
+## Progressive amethyst worlds
+
+Amethyst is the shared palette. Home previews collage card games, clay board games and handwritten RPG. Catalogs are restrained; game surfaces deepen the same material. D&D sessions have medieval pixel-cut panel borders, reading has bohemian stitched arches, and the shop has faceted glass. Preserve board geometry, suit colors, original product images and PDF page rendering. Use Nunito Sans consistently for headings and controls (latest user preference). Original portal SVGs live in `public/assets/worlds`; scope rules in `src/styles/experience-worlds.css`.
+
+## Lightweight entry
+
+Center the original logo without a second brand heading. No background crystal facets, animated sparks or repeated welcome step before login. Common panels use static translucent surfaces without backdrop blur; keep the dedicated Bottega material. Load one font family (Nunito Sans) and the global stylesheet once. Keep visible input labels and a scrollable login on short/mobile viewports.
