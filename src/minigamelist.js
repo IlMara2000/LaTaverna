@@ -208,12 +208,12 @@ export function showMinigamesList(container, options = {}) {
                     <div class="grid-layout">
                         ${games.map(game => `
                             <button type="button" class="game-card catalog-game-card" data-launch-game="${game.id}">
-                                <span class="catalog-game-icon" aria-hidden="true">${FANTASY_GAME_MARKS[game.id] || game.icon}</span>
+                                <span class="catalog-game-art" aria-hidden="true"><span class="catalog-game-icon">${FANTASY_GAME_MARKS[game.id] || game.icon}</span></span>
                                 <div class="catalog-game-copy">
                                     <h3>${game.name}</h3>
                                     <small>${game.players} · ${game.duration}</small><p class="world-game-description">${game.description}</p>
                                 </div>
-                                <span class="catalog-game-arrow" aria-hidden="true">↗</span>
+                                <span class="catalog-game-arrow" aria-hidden="true">Gioca <b>↗</b></span>
                             </button>
                         `).join('')}
                     </div>
