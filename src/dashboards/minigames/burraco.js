@@ -50,7 +50,7 @@ function renderLayout(container, state) {
         
         <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
-            <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">BURRACO</h1>
+            <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">Burraco</h1>
             ${renderOnlineModeButton('burraco')}
             <p class="minigame-bot-level-title" style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 12px;">CONTRO IL BOT</p>
             

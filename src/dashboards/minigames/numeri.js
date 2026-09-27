@@ -56,7 +56,7 @@ function renderSetup(container) {
         </style>
 
         <div class="master-wrapper">
-            <h1 class="main-title" style="font-size: 3rem; margin-bottom: 5px;">NUMERI</h1>
+            <h1 class="main-title" style="font-size: 3rem; margin-bottom: 5px;">Numeri</h1>
             <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 30px; letter-spacing: 2px;">MEMORIZZA E ORDINA</p>
 
             <div class="config-card">
@@ -132,7 +132,7 @@ function renderReveal(container) {
 function renderOrdering(container) {
     container.innerHTML = `
         <div class="master-wrapper" style="min-height: 80vh; justify-content: center;">
-            <h1 class="main-title" style="font-size: 2rem; margin-bottom: 5px;">ORDINA I NOMI</h1>
+            <h1 class="main-title" style="font-size: 2rem; margin-bottom: 5px;">Ordina i nomi</h1>
             <p style="opacity: 0.5; font-size: 12px; text-align: center; margin-bottom: 30px;">Trascina dal più piccolo al più grande.</p>
             
             <ul id="sort-list" style="list-style:none; padding:0; margin:0;">

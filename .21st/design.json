@@ -9,7 +9,8 @@
   },
   "sources": {
     "tokens": [
-      "src/styles/amethyst-glass.css"
+      "src/styles/amethyst-glass.css",
+      "src/styles/experience-worlds.css"
     ],
     "components": [
       "src/components/ui"
@@ -22,7 +23,11 @@
   "design": {
     "colorMode": "dark",
     "colors": {},
-    "typography": {},
+    "typography": {
+      "body": "Alegreya",
+      "display": "Unifraktur Maguntia",
+      "functionalGlyphs": "Georgia"
+    },
     "spacing": {},
     "radius": {},
     "shadows": {},
@@ -64,6 +69,11 @@
       "area": "Login, performance and platform typography",
       "decision": "Use Nunito Sans throughout the interface, including section headings. Keep the original logo centered at entry and login without a duplicate white brand title. Remove decorative crystals and animated sparks, disable backdrop blur on common panels, remove the duplicate global stylesheet link, and show login methods directly after the portal. Preserve section materials, functional suit/chess glyphs and PDF content.",
       "source": "User requests, 2026-09-27; supersedes the earlier mixed display fonts."
+    },
+    {
+      "area": "Unified dark fantasy redesign",
+      "decision": "Supersedes previous collage, clay, bohemian, glass and Nunito Sans directions. Use 60% dark fantasy, 30% medieval core, 10% restrained maximalism throughout login, home, catalogs, games, D&D, reading, shop and account surfaces. Blackened violet, amethyst highlights, ivory type, engraved borders and original triptych art. Alegreya for readable UI and Unifraktur Maguntia for primary display titles. Preserve centered original login logo, no duplicate white brand title or decorative crystals. Preserve game geometry, suit colors, product images and PDF content. No continuous decorative animation or blur.",
+      "source": "User references and corrections, 2026-09-27"
     }
   ],
   "evidence": [

@@ -167,7 +167,7 @@ function renderLayout(container, state) {
                     <i></i><i></i><i></i><i></i><i></i><i></i>
                 </div>
                 <span class="blocks-eyebrow">PUZZLE DELLA TAVERNA</span>
-                <h1 class="main-title">BLOCCHI <em>ARCANI</em></h1>
+                <h1 class="main-title">Blocchi <em>Arcani</em></h1>
                 <p>Incastra i sigilli, completa le righe e resisti alla caduta.</p>
 
                 <div class="blocks-feature-row" aria-label="Funzioni del gioco">

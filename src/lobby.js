@@ -48,34 +48,34 @@ export function showLobby(container) {
                 <img src="/assets/logo2.png" alt="" aria-hidden="true">
                 <span>LA TAVERNA<small>GIOCHI, STORIE, COMPAGNIA</small></span>
                 </div>
-                <span class="taverna-home-badge"><span aria-hidden="true">✧</span> Il tuo prossimo capitolo</span>
+                <span class="taverna-home-badge"><span aria-hidden="true">✧</span> Oltre la soglia, la leggenda</span>
             </header>
 
             <div class="taverna-home-main">
                 <section class="taverna-welcome" aria-labelledby="home-title">
-                    <span class="crystal-eyebrow">BENVENUTO NELLA TAVERNA</span>
-                    <h1 id="home-title">Prenditi un momento.<br><em>Entra in un altro mondo.</em></h1>
+                    <span class="crystal-eyebrow">UN RIFUGIO PER CHI CERCA ALTRE STORIE</span>
+                    <h1 id="home-title">Ogni notte,<br><em>una nuova leggenda.</em></h1>
                     <p>Una mano di carte, una sfida tra amici, una nuova avventura.<br>Il tuo posto al tavolo ti aspetta.</p>
                 </section>
                 <section class="taverna-scene-stage" aria-label="Scegli come giocare">
                     <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
-                        <img src="/assets/worlds/cards.svg" alt="Collage ametista di carte sospese tra lune e orbite" fetchpriority="high" decoding="async">
+                        <img src="/assets/worlds/dark-fantasy-triptych.webp" alt="Carte incise tra le dita di un guanto medievale" fetchpriority="high" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
-                        <span class="scene-number" aria-hidden="true">01 / CARTE</span>
+                        <span class="scene-number" aria-hidden="true">I · LA SORTE</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Giochi di Carte</span><span class="scene-description">I grandi classici, il tuo prossimo asso.</span><span class="scene-link">Scopri i giochi di carte <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-party" id="hub-party-games">
-                        <img src="/assets/worlds/party.svg" alt="Dadi e pedine dalle forme morbide in argilla lilla" loading="lazy" decoding="async">
+                        <img src="/assets/worlds/dark-fantasy-triptych.webp" alt="Cavallo degli scacchi e dado scolpiti tra rovine gotiche" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
-                        <span class="scene-number" aria-hidden="true">02 / CON AMICI</span>
+                        <span class="scene-number" aria-hidden="true">II · LA SFIDA</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Giochi da Tavolo</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
-                        <img src="/assets/worlds/gdr.svg" alt="Un drago e un dado disegnati su un taccuino ametista" loading="lazy" decoding="async">
+                        <img src="/assets/worlds/dark-fantasy-triptych.webp" alt="Cavaliere in armatura sotto un’eclissi ametista" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
-                        <span class="scene-number" aria-hidden="true">03 / GIOCHI DI RUOLO</span>
+                        <span class="scene-number" aria-hidden="true">III · LA LEGGENDA</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di Ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
                     </button>
                 </section>

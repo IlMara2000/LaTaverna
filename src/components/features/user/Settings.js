@@ -127,7 +127,7 @@ export async function showSettings(container, user = null, navigation = null) {
             <header class="settings-page-header">
                 ${renderHomeBackButton({ id: 'settingsBack' })}
                 <div>
-                    <h1 class="main-title settings-title">IMPOSTAZIONI</h1>
+                    <h1 class="main-title settings-title">Impostazioni</h1>
                     <p>Configura profilo, interfaccia e tavolo di gioco.</p>
                 </div>
                 <span class="settings-sync-state">SALVATAGGIO AUTO</span>

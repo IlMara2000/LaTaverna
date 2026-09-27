@@ -66,7 +66,7 @@ function renderSetup(container) {
         </style>
 
         <div class="master-wrapper">
-            <h1 class="main-title" style="font-size: 3rem; margin-bottom: 5px;">IMPOSTORE</h1>
+            <h1 class="main-title" style="font-size: 3rem; margin-bottom: 5px;">Impostore</h1>
             <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 30px; letter-spacing: 2px;">LOCAL PARTY MODE</p>
 
             <div class="config-card">
@@ -169,7 +169,7 @@ function renderReveal(container) {
 function renderGameField(container) {
     container.innerHTML = `
         <div class="master-wrapper" style="min-height: 80vh; justify-content: center;">
-            <h1 class="main-title" style="font-size: 2.5rem; margin-bottom: 5px;">DISCUSSIONE</h1>
+            <h1 class="main-title" style="font-size: 2.5rem; margin-bottom: 5px;">Discussione</h1>
             <p style="opacity: 0.5; text-align: center; margin-bottom: 30px;">Trovate l'impostore!</p>
             
             <div style="display: flex; flex-direction: column; gap: 12px;">

@@ -122,7 +122,7 @@ export const AudioManager = {
 
                 <header class="music-header">
                     <p class="settings-kicker">Audio ambiente</p>
-                    <h1 class="main-title music-title">LIBRERIA MUSICALE</h1>
+                    <h1 class="main-title music-title">Libreria musicale</h1>
                 </header>
 
                 <section class="music-now glass-box">

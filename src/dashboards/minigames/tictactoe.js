@@ -92,7 +92,7 @@ function renderLayout(container, state) {
         <div class="game-master-wrapper tictactoe-wrapper fade-in">
             <div id="start-screen" class="game-master-wrapper tictactoe-start-screen">
                 <img src="/assets/logo.png" class="pulse-logo" alt="">
-                <h1 class="main-title">TIC TAC TOE</h1>
+                <h1 class="main-title">Tic Tac Toe</h1>
 
                 <section class="tictactoe-mode-panel" aria-label="Modalità Tic Tac Toe">
                     <button type="button" id="ttt-size-cycle" class="tictactoe-mode-button is-size">
