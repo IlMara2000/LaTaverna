@@ -57,23 +57,24 @@ export function showLobby(container) {
                     <h1 id="home-title">Ogni notte,<br><em>una nuova leggenda.</em></h1>
                     <p>Una mano di carte, una sfida tra amici, una nuova avventura.<br>Il tuo posto al tavolo ti aspetta.</p>
                 </section>
+                <div class="home-section-label"><span>Esplora la Taverna</span><span>Tre modi di vivere la notte <b aria-hidden="true">↘</b></span></div>
                 <section class="taverna-scene-stage" aria-label="Scegli come giocare">
                     <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
-                        <img src="/assets/worlds/dark-fantasy-triptych.webp" alt="Carte incise tra le dita di un guanto medievale" fetchpriority="high" decoding="async">
+                        <img src="/assets/worlds/handwritten-triptych.webp" alt="Carte illustrate a inchiostro tra le dita di un guanto medievale" fetchpriority="high" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">I · LA SORTE</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Giochi di Carte</span><span class="scene-description">I grandi classici, il tuo prossimo asso.</span><span class="scene-link">Scopri i giochi di carte <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-party" id="hub-party-games">
-                        <img src="/assets/worlds/dark-fantasy-triptych.webp" alt="Cavallo degli scacchi e dado scolpiti tra rovine gotiche" loading="lazy" decoding="async">
+                        <img src="/assets/worlds/handwritten-triptych.webp" alt="Cavallo degli scacchi e dadi disegnati a mano" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">II · LA SFIDA</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Giochi da Tavolo</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
-                        <img src="/assets/worlds/dark-fantasy-triptych.webp" alt="Cavaliere in armatura sotto un’eclissi ametista" loading="lazy" decoding="async">
+                        <img src="/assets/worlds/handwritten-triptych.webp" alt="Avventuriero incappucciato sotto una luna ametista" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">III · LA LEGGENDA</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di Ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>

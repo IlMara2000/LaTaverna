@@ -1,18 +1,18 @@
 # La Taverna — current design direction
 
-The latest user direction supersedes the earlier collage/clay/bohemian/glass worlds and Nunito Sans font.
+The latest user direction uses handwritten poster design, superseding the previous blackletter and serif typography.
 
 ## Identity
 
-60% dark fantasy, 30% medieval core, 10% restrained maximalism. Use blackened violet, amethyst highlights, ivory typography, engraved imagery and thin heraldic borders throughout the platform. Stronger illustrations on entry points; quieter surfaces around reading, gameplay and forms.
+Handwritten poster design is the latest requested base, layered over the amethyst fantasy identity. Use blackened violet, amethyst highlights, ivory typography, engraved imagery and thin heraldic borders throughout the platform. Stronger illustrations on entry points; quieter surfaces around reading, gameplay and forms.
 
 ## Typography
 
-Alegreya for body text, controls and secondary headings. Unifraktur Maguntia for primary display titles, preferably sentence case. Georgia remains for functional card suits and chess pieces. Never alter PDF content typography.
+Manrope for body text, controls and secondary headings. Bangers for primary display and game titles, echoing the hand-lettered poster reference. Georgia remains for functional card suits and chess pieces. Never alter PDF content typography.
 
 ## Shared implementation
 
-Tokens and section rules: `src/styles/experience-worlds.css`, after base and authentication styles. Reuse existing UI primitives. Every destination retains the dark-fantasy world; section and depth are tracked separately. The original triptych WebP is shared across the three home portals and RPG hero.
+Tokens and section rules: `src/styles/experience-worlds.css`, after base and authentication styles. Reuse existing UI primitives. Every destination retains the dark-fantasy world; section and depth are tracked separately. The original ink-drawn handwritten-triptych.webp is shared across home portals and the RPG hero. Cream labels, irregular borders and sparse ink ornaments complement the illustrations.
 
 ## Constraints
 

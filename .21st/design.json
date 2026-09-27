@@ -24,8 +24,8 @@
     "colorMode": "dark",
     "colors": {},
     "typography": {
-      "body": "Alegreya",
-      "display": "Unifraktur Maguntia",
+      "body": "Manrope",
+      "display": "Bangers",
       "functionalGlyphs": "Georgia"
     },
     "spacing": {},
@@ -74,6 +74,11 @@
       "area": "Unified dark fantasy redesign",
       "decision": "Supersedes previous collage, clay, bohemian, glass and Nunito Sans directions. Use 60% dark fantasy, 30% medieval core, 10% restrained maximalism throughout login, home, catalogs, games, D&D, reading, shop and account surfaces. Blackened violet, amethyst highlights, ivory type, engraved borders and original triptych art. Alegreya for readable UI and Unifraktur Maguntia for primary display titles. Preserve centered original login logo, no duplicate white brand title or decorative crystals. Preserve game geometry, suit colors, product images and PDF content. No continuous decorative animation or blur.",
       "source": "User references and corrections, 2026-09-27"
+    },
+    {
+      "area": "Handwritten product finish",
+      "decision": "Latest user reference supersedes Gothic display typography: use hand-lettered poster design as the base throughout the amethyst platform. Bangers for expressive primary headings and game titles, Manrope for legible UI. Original ink-illustrated triptych, cream paper labels, irregular ink borders, subtle offset shadows and hand-drawn ornaments. Keep refined responsive layout, clear visual hierarchy and subdued functional surfaces. Preserve game geometry, PDF content and existing logo.",
+      "source": "User handwritten poster reference IMG_4843.heic, 2026-09-27"
     }
   ],
   "evidence": [

@@ -15,3 +15,11 @@ Generation brief: Original landscape triptych with three equally sized vertical 
 ## Verification
 
 Browser checks cover login, homepage, catalog, RPG dashboard, reading, shop entry gate, profile, settings, music and representative card/board game surfaces. Check responsive home/catalog and reduced-motion support. Gameplay engines and document content remain unchanged by this redesign.
+
+## Handwritten revision — 2026-09-27
+
+The latest reference IMG_4843.heic establishes hand-lettered poster design as the base. Bangers replaces the previous display face; Manrope replaces body typography. The refreshed layout, controls and responsive hierarchy carry through the platform.
+
+New asset: `public/assets/worlds/handwritten-triptych.webp`, 1536 × 1024, approximately 293 KB. Generated with built-in `image_gen.imagegen`, then encoded as WebP. Previous art retained.
+
+Generation brief: Three equal panels: ink-drawn playing cards and medieval gauntlet; ivory dice and chess knight; hooded adventurer with sword, moon and towers. Handmade screenprint poster, thick irregular ink outlines, dry-brush hatching, tactile cream shapes, elegant angular forms. Predominantly amethyst, aubergine, ivory and lilac with small ochre accents. Quiet dark lower thirds for interface labels. No UI, logos or watermarks.
