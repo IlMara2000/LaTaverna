@@ -86,7 +86,7 @@ export async function showProfile(container, user, navigation = null) {
         <div class="profile-page fade-in" style="padding: 20px; max-width: 600px; margin: 0 auto;">
             ${renderHomeBackButton({ id: 'profileBack' })}
             
-            <h1 style="font-weight: 900; letter-spacing: -1px; margin-bottom: 30px;">IL MIO <span style="color:var(--amethyst-bright);">PROFILO</span></h1>
+            <h1 style="font-weight: 900; letter-spacing: -1px; margin-bottom: 30px;">Il mio <span style="color:var(--amethyst-bright);">profilo</span></h1>
             
             <div class="profile-glass-card" style="border: 1px solid var(--glass-border); padding: 40px; text-align: center;">
                 <img src="${escapeHTML(avatar)}" alt="" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%; border: 3px solid var(--amethyst-bright); margin-bottom: 20px; box-shadow: 0 0 20px var(--amethyst-glow);">

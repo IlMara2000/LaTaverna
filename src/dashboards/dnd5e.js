@@ -377,7 +377,7 @@ function renderShell(container, activeView = 'overview') {
             <header class="dnd-hero">
                 <div>
                     <p class="dnd-kicker">Sistema D&D 5e</p>
-                    <h1>DUNGEONS <span>& DRAGONS</span></h1>
+                    <h1>Dungeons <span>& Dragons</span></h1>
                     <p>Manuali, personaggi, sessioni live e strumenti rapidi per giocatori e Master.</p>
                 </div>
                 <svg class="dnd-hero-die" viewBox="0 0 120 132" aria-hidden="true" focusable="false">

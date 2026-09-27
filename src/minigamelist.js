@@ -14,6 +14,8 @@ import {
     watchMinigameRoom
 } from './services/minigameMultiplayer.js';
 
+const FANTASY_GAME_MARKS = { briscola: '♠︎', scopa: '♦︎', solitario: '♥︎', solo: '✦', burraco: '♣︎', impostore: '◈', numeri: 'Ⅶ', tictactoe: '✕', scacchi: '♞', dama: '◉', blocchi: '▦' };
+
 export function showMinigamesList(container, options = {}) {
     window.__homeCleanup?.();
     if (window.__minigameMultiplayerCleanup) {
@@ -206,7 +208,7 @@ export function showMinigamesList(container, options = {}) {
                     <div class="grid-layout">
                         ${games.map(game => `
                             <button type="button" class="game-card catalog-game-card" data-launch-game="${game.id}">
-                                <span class="catalog-game-icon" aria-hidden="true">${game.icon}</span>
+                                <span class="catalog-game-icon" aria-hidden="true">${FANTASY_GAME_MARKS[game.id] || game.icon}</span>
                                 <div class="catalog-game-copy">
                                     <h3>${game.name}</h3>
                                     <small>${game.players} · ${game.duration}</small><p class="world-game-description">${game.description}</p>
