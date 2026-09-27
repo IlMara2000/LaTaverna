@@ -54,6 +54,16 @@
       "area": "Bottega / D&D chat / motion",
       "decision": "Preserve amethyst glass and emoji. Chat occupies the full visible viewport, with collapsible session notes. Commerce uses the existing catalog artwork, a persistent cart, a master-only product/order console and agreed-payment orders. Prefer finite 150–400 ms opacity/transform animation; no continuous decorative rotations or animated blur. Respect reduced motion and the mobile keyboard.",
       "source": "User request, 2026-09-25"
+    },
+    {
+      "area": "Progressive amethyst worlds",
+      "decision": "Keep amethyst across all sections. Home previews original SVG worlds: surreal paper collage for cards, clay for party and strategy, handwritten notebook for RPG. Catalogs use soft materials; game boards intensify them without changing rules, suit colors or geometry. D&D sessions add medieval pixel-cut chrome. Reading uses bohemian stitched arches around unchanged PDF pages; shop uses faceted glass, preserving original product imagery. Headings use Caveat and Cormorant Garamond; controls retain Montserrat. Theme state resets on every destination, including direct game entry.",
+      "source": "User request, 2026-09-27"
+    },
+    {
+      "area": "Login, performance and platform typography",
+      "decision": "Use Nunito Sans throughout the interface, including section headings. Keep the original logo centered at entry and login without a duplicate white brand title. Remove decorative crystals and animated sparks, disable backdrop blur on common panels, remove the duplicate global stylesheet link, and show login methods directly after the portal. Preserve section materials, functional suit/chess glyphs and PDF content.",
+      "source": "User requests, 2026-09-27; supersedes the earlier mixed display fonts."
     }
   ],
   "evidence": [

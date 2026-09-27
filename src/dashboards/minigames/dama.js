@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
@@ -10,6 +11,7 @@ import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton
 export function initDama(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
+    setExperienceTheme('dama', 'experience');
 
     // BLOCCO SCROLL GLOBALE PER IL GIOCO
     document.documentElement.style.overflow = 'hidden';

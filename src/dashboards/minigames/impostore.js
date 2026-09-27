@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
@@ -25,6 +26,7 @@ const WORDS_DATABASE = [
 export function initImpostore(container) {
     if (!container) return;
     try { updateSidebarContext("minigames"); } catch(e) { console.log("Sidebar non pronta"); }
+    setExperienceTheme('impostore', 'experience');
     
     // Reset Scroll e Viewport
     document.body.style.overflowX = 'hidden';

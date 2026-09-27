@@ -1,3 +1,4 @@
+import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { Chess } from 'chess.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
@@ -26,6 +27,7 @@ const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
 export function initScacchi(container) {
     if (!container) return;
     try { updateSidebarContext('minigames'); } catch (e) { console.log('Sidebar non pronta'); }
+    setExperienceTheme('scacchi', 'experience');
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';

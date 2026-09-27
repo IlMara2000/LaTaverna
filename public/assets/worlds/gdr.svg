@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" fill="none">
+<defs><pattern id="paper" width="600" height="28" patternUnits="userSpaceOnUse"><path d="M0 27h600" stroke="#c1a3cf" stroke-opacity=".12"/></pattern></defs>
+<path fill="#3b274c" d="M0 0h600v700H0z"/><path fill="url(#paper)" d="M0 0h600v700H0z"/>
+<path d="M63 0v700M70 0v700" stroke="#c998ac" stroke-opacity=".24"/>
+<g stroke="#d9bedf" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+<path d="M160 326c-69-27-64-80-11-102 31-13 72 13 79 51 15 83 135 53 128-11-3-32-42-41-59-75l-14-36 24 7 26-12 12 18 35 10-21 19-30-1c9 14 47 12 57 48 16 59-53 101-106 77"/>
+<path d="m260 258-21-118 62 52-17-73 89-35-6 61 58-26-13 80-44-9M237 148l-51-60-29 91 39-21-6 62 39-11M317 156l-2-22 23 12M299 287l-14 31-27 13M346 295l25 19 18-8"/>
+<path d="M147 220c-20-2-39 4-47 18m49-31c-26-5-40 1-52 11M244 364l62-20 60 30-7 68-60 25-58-32Z"/>
+<path d="m244 364 54 22 68-12-39 57-28 36-1-81-57 49 86-4-21-87"/>
+<path d="m440 239 8 25 25 8-25 8-8 25-8-25-25-8 25-8ZM132 105v29m-14-14h29M429 376l27 31m-26-3 29-25"/>
+<path d="M91 360c10 40 40 68 100 69m-16-12 19 13-23 8" stroke-dasharray="5 8"/>
+</g>
+<g fill="#d9bedf" font-family="Georgia" font-style="italic"><text x="299" y="420" font-size="26">20</text><text x="106" y="66" font-size="20" transform="rotate(-6 106 66)">Una storia ancora da scrivere…</text></g>
+</svg>

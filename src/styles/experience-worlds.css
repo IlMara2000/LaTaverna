@@ -1,0 +1,111 @@
+/* One amethyst palette, different materials. Decorations never cover controls.
+   Scoped !important declarations override the legacy global glass/typography locks. */
+:root {
+    --world-ink: #edddf5;
+    --world-muted: #bea6ce;
+    --world-line: rgb(219 180 239 / 30%);
+    --world-hand: 'Nunito Sans', Arial, sans-serif;
+    --world-book: 'Nunito Sans', Arial, sans-serif;
+}
+body[data-world] { --world-surface: #281b37; }
+body[data-world="collage"] { --world-surface: #33203f; }
+body[data-world="clay"] { --world-surface: #342444; }
+body[data-world="bohemian"] { --world-surface: #302235; }
+body[data-world="manuscript"] { --world-surface: #2d203a; }
+
+/* The home is a notebook of doors: the illustration previews each world. */
+#ui .taverna-home-header { border-bottom-style: dashed; }
+#ui .taverna-home-badge { font-family: var(--world-hand) !important; font-size: 19px; border: 0; transform: rotate(-3deg); }
+#ui .taverna-welcome h1 { font-family: var(--world-book) !important; font-size: clamp(2.6rem, 4.6vw, 4.6rem); line-height: 1.03; letter-spacing: -.035em; }
+#ui .taverna-welcome h1 em { font-family: var(--world-hand) !important; font-size: .93em; font-weight: 500; }
+#ui .taverna-welcome { padding-top: 32px; }
+#ui .taverna-scene-stage { gap: 26px; height: clamp(365px, 44vh, 480px); }
+#ui .taverna-scene img { opacity: 1; object-position: center 25%; }
+#ui .taverna-scene-scrim { background: linear-gradient(transparent 30%, rgb(30 15 43 / 8%) 46%, rgb(25 12 37 / 88%) 100%) !important; }
+#ui .taverna-scene::before, #ui .taverna-scene::after { display: none; }
+#ui .taverna-scene-caption { background: rgb(32 17 44 / 84%) !important; backdrop-filter: none; border-color: rgb(226 194 242 / 20%); }
+#ui .scene-symbol { display: none; }
+#ui .scene-cards { border-radius: 5px 24px 8px 19px !important; border: 1px solid #ad83ba; box-shadow: 5px 7px 0 #302039, 6px 8px 0 #84638e !important; }
+#ui .scene-cards .scene-number { border-radius: 2px !important; transform: rotate(-4deg); background: #ddc4df !important; color: #44244f; }
+#ui .scene-cards .taverna-scene-title { font-family: var(--world-book) !important; font-size: 30px; }
+#ui .scene-party { border-radius: 48px !important; border: 2px solid #9776b0; box-shadow: inset 5px 5px 14px #d8b8ee40, 0 10px 0 #271834, 0 20px 35px #09020e55 !important; }
+#ui .scene-party .taverna-scene-caption { border-radius: 28px !important; }
+#ui .scene-gdr { border-radius: 6px 19px 10px 7px !important; border: 1px solid #ad8eba; outline: 1px dashed #be9dce66; outline-offset: -9px; }
+#ui .scene-gdr .taverna-scene-title { font-family: var(--world-hand) !important; font-size: 33px; }
+#ui .scene-gdr .taverna-scene-caption { border-radius: 5px 13px 7px 10px !important; border-style: dashed; }
+#ui .taverna-home-footer { font-family: var(--world-hand) !important; font-size: 20px; }
+#ui #hub-reading { border-radius: 40% 40% 12px 12px !important; border-style: double; border-width: 3px; }
+#ui #hub-shop { border-radius: 4px 16px !important; background: linear-gradient(120deg, #bd8cdd22, #bd8cdd05 45%, #bd8cdd30) !important; }
+
+/* Catalogs keep an amethyst ground, with softer hints of their destination. */
+#ui .world-catalog-header { position: relative; padding: 26px 120px 28px; border-block: 1px solid var(--world-line); }
+#ui .world-catalog-header::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 130px; background: url('/assets/worlds/party.svg') center 26% / 150px auto !important; border-radius: 35px 10px !important; opacity: .7; pointer-events: none; }
+body[data-world="collage"] #ui .world-catalog-header::after { background-image: url('/assets/worlds/cards.svg') !important; border-radius: 3px !important; rotate: 4deg; }
+#ui .world-catalog-header .main-title { font-family: var(--world-book) !important; text-transform: none; font-size: clamp(40px, 6vw, 64px); }
+#ui .catalog-game-card { min-height: 144px; gap: 18px; padding: 23px; }
+#ui .world-game-description { margin: 10px 0 0; color: var(--world-muted); font-size: 11px; font-weight: 400; line-height: 1.7; }
+#ui [data-game-category="cards"] .catalog-game-card { border-radius: 3px 17px 6px 12px !important; background: linear-gradient(125deg, #b98ac414, transparent 65%), #281a34 !important; border: 1px solid #aa80b35c; box-shadow: 3px 4px 0 #100a1c, 4px 5px 0 #79608370 !important; }
+#ui [data-game-category="cards"] .catalog-game-icon { display: grid; place-items: center; width: 53px; height: 66px; flex-shrink: 0; background: #d6bfdf !important; color: #4c285d; border-radius: 3px !important; rotate: -9deg; box-shadow: 4px 3px 0 #8b659e !important; }
+#ui [data-game-category="cards"] h3 { font-family: var(--world-book) !important; font-size: 27px; }
+#ui :is([data-game-category="party"], [data-game-category="strategy"]) .catalog-game-card { border-radius: 30px !important; background: linear-gradient(145deg, #4b355e, #2c1d3c) !important; border: 1px solid #c5a2df40; box-shadow: inset 2px 3px 3px #d3b1ed22, inset -3px -5px 8px #160b254f, 0 5px 0 #170d25 !important; }
+#ui :is([data-game-category="party"], [data-game-category="strategy"]) .catalog-game-icon { display: grid; place-items: center; flex-shrink: 0; width: 62px; height: 62px; border-radius: 22px !important; background: linear-gradient(145deg, #b48bcf, #75528f) !important; box-shadow: inset 3px 3px 5px #efdafa60, inset -3px -4px 7px #412b5d66, 3px 6px 8px #130a244f !important; }
+
+/* The handwritten chapter. Functional copy remains in the existing UI face. */
+#ui .dnd-app .dnd-hero { background: repeating-linear-gradient(0deg, transparent 0 31px, #ba96d014 31px 32px), #2b1d37 !important; border: 1px solid #a88dbb70; border-radius: 5px 16px 9px 20px !important; box-shadow: 5px 6px 0 #160e22, 6px 7px 0 #ad8eb440 !important; }
+#ui .dnd-app .dnd-hero :is(h1, h1 span) { font-family: var(--world-hand) !important; font-size: clamp(44px, 6vw, 72px); letter-spacing: -.02em; }
+#ui .dnd-app :is(.dnd-panel h2, .dnd-panel h3, .dnd-panel > strong, .dnd-section-head h2) { font-family: var(--world-hand) !important; font-size: 30px; }
+#ui .dnd-app .dnd-panel { border-radius: 5px 14px 7px 18px !important; border: 1px dashed #bd9ad06b; background: #2b2037 !important; box-shadow: 3px 4px 0 #150e20 !important; }
+#ui .dnd-app .dnd-kicker { font-family: var(--world-hand) !important; font-size: 21px; letter-spacing: .03em; }
+#ui .dnd-app .dnd-tabs { border-bottom: 1px dashed #bd9ad04d; }
+#ui .dnd-app .dnd-tabs button.active { border-radius: 45% 8% 40% 12% !important; }
+/* Pixel-cut metal borders belong to session chrome, never the map canvas. */
+#ui .dnd-session :is(.dnd-session-panel, .dnd-session-block) { border-radius: 2px !important; border-color: #9d7bbd; box-shadow: inset 0 0 0 3px #24182f, inset 0 0 0 4px #9d7bbd40 !important; background-color: #25192f !important; }
+#ui .dnd-session :is(h2, h3) { font-family: var(--world-hand) !important; letter-spacing: .02em; }
+#ui .dnd-session .session-tool-switcher { border-block: 3px double #9d7bbd70; padding-block: 7px; }
+#ui .dnd-session .initiative-round { font-family: var(--world-book) !important; border: 3px double #b69ace; border-radius: 0 !important; }
+
+/* Bohemian library: stitched linen, arches, quiet botanical ornaments. */
+#ui .reading-page { background-image: repeating-linear-gradient(90deg, #b295c005 0 1px, transparent 1px 5px) !important; }
+#ui .reading-page .reading-heading h1 { font-family: var(--world-book) !important; font-weight: 500; }
+#ui .reading-page .reading-welcome { position: relative; overflow: hidden; background: #34253c !important; border: 1px solid #b995bd70; border-radius: 90px 90px 10px 10px !important; padding: 38px 32px; box-shadow: inset 0 0 0 7px #34253c, inset 0 0 0 8px #b995bd40 !important; }
+#ui .reading-page .reading-welcome::after { content: ''; position: absolute; right: 28px; bottom: -25px; width: 140px; height: 170px; border: 1px solid #ceb3cb40; border-radius: 50% 50% 0 0 !important; background: repeating-radial-gradient(ellipse at 50% 100%, transparent 0 13px, #bda0c11a 14px 15px) !important; pointer-events: none; }
+#ui .reading-page .reading-welcome h2 { font-family: var(--world-book) !important; font-size: 30px; }
+#ui .reading-page .reading-welcome-note { font-family: var(--world-hand) !important; letter-spacing: .03em; font-size: 20px; }
+#ui .reading-page .reading-shelf { border-top: 1px dashed #b995bd70; padding-top: 26px; }
+#ui .reading-page .reading-book-row { border-bottom-style: dashed; }
+#ui .reading-page .reading-spine { border-radius: 40px 40px 4px 4px !important; border: 3px double #bea1c5; background: #493254 !important; }
+#ui .reading-page .reading-empty { border: 1px dashed #b995bd60; border-radius: 35% 35% 12px 12px !important; background: #38283e55 !important; }
+#ui .ebook-reader .ebook-tools { border-bottom: 3px double #b99acb66; }
+
+/* Bottega: faceted glass, with stronger refraction in product details. */
+#ui .artisan-shop .shop-hero-photo { border-radius: 6px 70px 6px 70px !important; border: 1px solid #d2a4f080; background: linear-gradient(130deg, #c699ef22, #1b122800 45%, #c699ef30) !important; box-shadow: inset 1px 1px 0 #e6c9ff70, 0 24px 70px #0b031a66 !important; }
+#ui .artisan-shop .shop-orbit { border-radius: 12px !important; rotate: 35deg; border-color: #d2a4f030; }
+#ui .artisan-shop .shop-floating-label { border-radius: 3px 18px !important; background: linear-gradient(130deg, #d2a4f035, #2b1c42b3) !important; border: 1px solid #d2a4f060; backdrop-filter: blur(16px); }
+#ui .artisan-shop :is(.shop-product-card, .shop-cart, .shop-modal-panel) { border: 1px solid #d2a4f060; background: linear-gradient(125deg, #9b6ad52b, transparent 40%, #be91e119), #1e152d !important; box-shadow: inset 1px 1px 0 #e6c9ff40, 0 24px 70px #0b031a55 !important; }
+
+/* Deeper game surfaces, preserving board geometry and suit colors. */
+body[data-world-depth="experience"] #ui :is(.game-master-wrapper, .master-wrapper, .scopa-game, .solitario-game) { background-color: var(--world-surface) !important; }
+body[data-world="collage"][data-world-depth="experience"] #ui :is(#start-screen, .briscola-start, .scopa-welcome) { background-image: radial-gradient(ellipse at 50% 5%, #b387d030, transparent 65%), repeating-linear-gradient(25deg, #cdb0df05 0 1px, transparent 1px 5px) !important; }
+body[data-world="collage"] #ui :is(.briscola-start h1, .scopa-welcome h2, .solitario-brand h1) { font-family: var(--world-book) !important; letter-spacing: .015em; }
+body[data-world="collage"] #ui :is(.briscola-table, .scopa-table-area, .solitario-table) { background: radial-gradient(ellipse, #5b3c6b 0%, #392446 65%, #2b1c36 100%) !important; border: 1px solid #c3a0ce66; box-shadow: inset 0 0 0 7px #32213e, inset 0 0 0 8px #b394bd40, inset 0 0 50px #1a0e2980 !important; }
+body[data-world-game="solitario"] #ui .solitario-table { border-radius: 32px 8px 32px 8px !important; }
+body[data-world-game="scopa"] #ui .scopa-table-area { border-radius: 45% !important; }
+body[data-world="clay"][data-world-depth="experience"] #ui .game-btn-action { border-radius: 18px !important; box-shadow: inset 2px 2px 3px #dcc2f133, inset -2px -3px 4px #190b2c66, 0 4px 0 #190c29 !important; }
+body[data-world="clay"][data-world-depth="experience"] #ui .game-chess-board { border: 6px solid #9270ac; border-radius: 14px !important; box-shadow: 0 9px 0 #3e2954, 0 20px 45px #0c061c80 !important; overflow: hidden; }
+body[data-world="clay"][data-world-depth="experience"] #ui :is(#start-screen, .blocks-start) { background-image: radial-gradient(ellipse at 50% 20%, #81609755, transparent 70%) !important; }
+body[data-world-game="blocchi"] #ui .blocks-game { --world-surface: #241934; }
+
+@media (max-width: 700px) {
+    #ui .taverna-scene-stage { gap: 18px; height: auto; }
+    #ui .taverna-scene { min-height: 330px; }
+    #ui .taverna-welcome h1 { font-size: clamp(37px, 9vw, 54px); }
+    #ui .world-catalog-header { padding: 24px 10px; }
+    #ui .world-catalog-header::after { display: none; }
+    #ui .catalog-game-card { padding: 18px; min-height: 130px; }
+    #ui .reading-page .reading-welcome { padding: 30px 22px; border-radius: 45px 45px 8px 8px !important; }
+    #ui .reading-page .reading-welcome::after { opacity: .4; right: -40px; }
+    body[data-world-game="scopa"] #ui .scopa-table-area { border-radius: 28px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #ui .taverna-scene, #ui .taverna-scene img { transition: none; }
+}

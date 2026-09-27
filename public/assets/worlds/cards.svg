@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" fill="none">
+<defs><radialGradient id="bg"><stop stop-color="#754690"/><stop offset="1" stop-color="#291735"/></radialGradient><pattern id="grain" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".6" fill="#e9d5ef" opacity=".15"/></pattern></defs>
+<path fill="url(#bg)" d="M0 0h600v700H0z"/><path fill="url(#grain)" d="M0 0h600v700H0z"/>
+<circle cx="360" cy="200" r="121" fill="#d7b9de"/><circle cx="396" cy="174" r="99" fill="#6c457c"/>
+<g stroke="#e0bad8" opacity=".55"><ellipse cx="308" cy="284" rx="251" ry="84" transform="rotate(-32 308 284)"/><ellipse cx="310" cy="280" rx="200" ry="142" transform="rotate(30 310 280)"/></g>
+<path d="m0 410 55-25 30 11 59-37 60 17 48-31 55 19 83-38 53 17 62-31 45 19 50-10v379H0Z" fill="#806287"/>
+<path d="m0 449 97-33 49 10 78-43 59 30 75-31 109 11 70-42 63 20v329H0Z" fill="#42264f"/>
+<g transform="translate(120 130) rotate(-19 95 130)"><path d="M0 0h178v248H0z" fill="#291539" transform="translate(10 14)"/><path d="M0 0h178v248H0z" fill="#e5cfe5"/><path d="M12 12h154v224H12z" stroke="#855195"/><path d="m89 62 42 61-42 61-42-61Z" fill="#814995"/><path d="m89 77 29 46-29 46-29-46Z" stroke="#ecd2ed"/><text x="22" y="44" font-family="Georgia" font-size="26" fill="#613771">A</text></g>
+<g transform="translate(304 174) rotate(17 80 112)"><path d="M0 0h160v223H0z" fill="#25112f" transform="translate(10 12)"/><path d="M0 0h160v223H0z" fill="#ae86be"/><path d="M12 12h136v199H12z" stroke="#efddf3"/><path d="M80 65C62 88 35 98 39 120c4 25 30 22 38 9l-11 34h29l-12-34c13 17 39 10 38-11-1-20-25-31-41-53" fill="#442253"/></g>
+<g fill="#f5daae"><path d="m96 91 5 17 17 5-17 5-5 17-5-17-17-5 17-5Z"/><path d="m488 276 5 17 17 5-17 5-5 17-5-17-17-5 17-5Z"/><circle cx="490" cy="103" r="4"/><circle cx="59" cy="290" r="4"/></g>
+<path d="m211 84 51 16-5 24-52-18" fill="#d6b396" opacity=".75"/>
+</svg>
