@@ -1,9 +1,9 @@
-import { renderHomeBackButton } from '../components/ui/BackButton.js';
 import { animate, stagger } from 'motion';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { navigateTo } from '../services/appNavigation.js';
 import { prefersReducedMotion, enhanceSurfaceMotion } from '../services/motionSystem.js';
 import './shop.css';
+import './bottega.css';
 
 import { SHOP_SEED_PRODUCTS } from '../services/shopCatalog.js';
 import { shopStore, productFromRow, formatPrice } from '../services/shopStore.js';
@@ -172,9 +172,9 @@ function renderShop() {
             <div class="shop-grain" aria-hidden="true"></div>
 
             <header class="shop-topbar">
-                ${renderHomeBackButton({ id: 'shop-back' })}
+                <button type="button" id="shop-back" class="app-back-button">← Torna alla Bottega</button>
                 <a href="#shop-top" class="shop-wordmark" aria-label="Torna in cima alla Bottega del Viandante">
-                    <span class="shop-wordmark-seal" aria-hidden="true">B</span>
+                    <img class="bottega-brand-icon" src="/assets/shop/bottega-logo.svg" alt="" aria-hidden="true">
                     <span><small>LA TAVERNA</small><strong>BOTTEGA DEL VIANDANTE</strong></span>
                 </a>
                 <button id="shop-cart-trigger" class="shop-cart-trigger" type="button" aria-label="Apri carrello">
@@ -189,7 +189,7 @@ function renderShop() {
                 <section id="shop-hero" class="shop-hero" aria-labelledby="shop-title">
                     <div class="shop-hero-copy">
                         <span class="shop-kicker">BOCCHINI ARTIGIANALI · PEZZI UNICI</span>
-                        <h1 id="shop-title"><span>RITUALE</span><em>ARTIGIANO</em></h1>
+                        <h1 id="shop-title"><span>L’Artigiano</span><em>Rituale</em></h1>
                         <p>Forme scolpite, finiture materiche e dettagli da concordare. Una vetrina per accessori personali realizzati in piccole quantità.</p>
                         <div class="shop-hero-actions">
                             <button class="shop-primary-action" type="button" data-scroll-catalog>
@@ -327,7 +327,7 @@ function renderShop() {
                     <h2 id="shop-age-title">BOTTEGA PER ADULTI</h2>
                     <p id="shop-age-description">Questa vetrina presenta esclusivamente accessori destinati a fumatori adulti. Non contiene né vende tabacco o nicotina.</p>
                     <button id="shop-age-confirm" class="shop-primary-action" type="button">HO ALMENO 18 ANNI ${ARROW_ICON}</button>
-                    <button id="shop-age-leave" class="shop-secondary-action" type="button">TORNA ALLA TAVERNA</button>
+                    <button id="shop-age-leave" class="shop-secondary-action" type="button">TORNA ALLA BOTTEGA</button>
                 </div>
             </section>
 
@@ -479,7 +479,7 @@ function bindProductCarousel(root, state) {
 }
 
 function bindShop(root, state, container) {
-    const goHome = () => navigateTo('home', document.getElementById('app') || container);
+    const goHome = () => navigateTo('shop', document.getElementById('app') || container);
     root.querySelector('#shop-back').onclick = goHome;
     root.querySelector('#shop-age-leave').onclick = goHome;
     root.querySelector('#shop-age-confirm').onclick = event => {

@@ -108,6 +108,26 @@ export function createReadingLibrary(client) {
             return data;
         },
 
+        async deleteBook(bookId, userId) {
+            const user = await account(userId);
+            const { data: book } = await checked(client.from('reading_books').select('id,owner_id,storage_path')
+                .eq('id', bookId).eq('owner_id', user.id).maybeSingle());
+            if (!book || book.owner_id !== user.id || !book.storage_path.startsWith(`${user.id}/`)) {
+                throw new Error('Puoi eliminare soltanto i libri che hai caricato.');
+            }
+            // Keep metadata until Storage succeeds, so a failed deletion can be retried.
+            await checked(client.from('reading_books').update({ is_public: false })
+                .eq('id', bookId).eq('owner_id', user.id).select().single());
+            try {
+                await checked(client.storage.from(READING_BUCKET).remove([book.storage_path]));
+                const { data } = await checked(client.from('reading_books').delete()
+                    .eq('id', bookId).eq('owner_id', user.id).select('id').maybeSingle());
+                if (!data) throw new Error('Scheda non rimossa.');
+            } catch (error) {
+                throw new Error('Eliminazione incompleta. Il libro è ora privato: riprova per completare la rimozione.', { cause: error });
+            }
+        },
+
         async downloadBook(book) {
             // Re-check database RLS on every open, including when Storage has an older cached download.
             const { data: accessible } = await checked(client.from('reading_books').select('storage_path')

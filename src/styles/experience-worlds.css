@@ -230,7 +230,6 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui .taverna-welcome p { text-align: left !important; font-size: 14px; line-height: 1.85; max-width: 320px; margin: 0 0 5px; color: #ad9fb8; }
 #ui .home-section-label { display: flex; justify-content: space-between; gap: 20px; padding: 0 0 16px; }
 #ui .home-section-label > span:first-child { font-size: 14px; font-weight: 600; color: #e2d8eb; }
-#ui .home-section-label > span:last-child { font-size: 11px; color: #a897b6; }
 #ui .home-section-label b { padding-left: 16px; color: #cfb0df; }
 #ui .taverna-scene-stage { height: clamp(360px, 43vh, 460px); gap: 22px; }
 #ui .taverna-scene { border-radius: 18px !important; border-color: #ad8bc540; transition: border-color 200ms, box-shadow 200ms, translate 200ms; }
@@ -286,7 +285,6 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
     #ui .taverna-welcome { display: block; padding: 30px 0 26px; }
     #ui .taverna-welcome h1 { font-size: clamp(36px, 9.5vw, 54px); }
     #ui .taverna-welcome p { margin: 18px 0 0; max-width: 100%; font-size: 13px; }
-    #ui .home-section-label > span:last-child { display: none; }
     #ui .taverna-scene-stage { height: auto; }
     #ui .taverna-scene { height: 370px !important; min-height: 370px; }
     #ui .taverna-scene-title { font-size: 30px; }
@@ -326,7 +324,6 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui .taverna-welcome h1 em::after { content: ''; position: absolute; left: 1%; right: 2%; bottom: -7px; height: 5px; border-bottom: 2px solid #c4a5db99; border-radius: 50%; transform: rotate(-1deg); }
 #ui .taverna-welcome p { padding-bottom: 5px; }
 #ui .home-section-label > span:first-child { font-family: var(--fantasy-display) !important; font-size: 23px; letter-spacing: .04em; font-weight: 400; }
-#ui .home-section-label > span:last-child { color: #c4b4d0; }
 #ui .taverna-home-badge { border-radius: 52% 4% 48% 5% / 8% 60% 8% 50%; border-color: #b18bc45c; }
 #ui .taverna-scene { border-radius: 6px 15px 7px 13px !important; border: 2px solid #a781ba70; box-shadow: 5px 6px 0 #08060b; }
 #ui .taverna-scene::before { border-radius: 10px 3px 12px 5px; border-color: #e3c8f135; transform: rotate(.25deg); }
@@ -364,3 +361,40 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
     #ui .catalog-game-copy h3 { font-size: 24px; }
     #ui .home-section-label { padding-bottom: 14px; }
 }
+
+/* Each game's ink motif appears in the artwork and fades under the copy. */
+#ui .catalog-game-card { position: relative; isolation: isolate; }
+#ui .catalog-game-card::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--game-art) center bottom / cover; opacity: .23; mask-image: linear-gradient(transparent 25%, #0008 60%, #000); }
+#ui .catalog-game-card .catalog-game-art { background: linear-gradient(#1b102533, #1b102566), var(--game-art) center / cover; }
+#ui .catalog-game-art::before, #ui .catalog-game-art::after { opacity: .2; }
+#ui [data-launch-game="briscola"] { --game-art: url("/assets/games/briscola.svg"); }
+#ui [data-launch-game="scopa"] { --game-art: url("/assets/games/scopa.svg"); }
+#ui [data-launch-game="solitario"] { --game-art: url("/assets/games/solitario.svg"); }
+#ui [data-launch-game="solo"] { --game-art: url("/assets/games/solo.svg"); }
+#ui [data-launch-game="burraco"] { --game-art: url("/assets/games/burraco.svg"); }
+#ui [data-launch-game="impostore"] { --game-art: url("/assets/games/impostore.svg"); }
+#ui [data-launch-game="numeri"] { --game-art: url("/assets/games/numeri.svg"); }
+#ui [data-launch-game="tictactoe"] { --game-art: url("/assets/games/tictactoe.svg"); }
+#ui [data-launch-game="scacchi"] { --game-art: url("/assets/games/scacchi.svg"); }
+#ui [data-launch-game="dama"] { --game-art: url("/assets/games/dama.svg"); }
+#ui [data-launch-game="blocchi"] { --game-art: url("/assets/games/blocchi.svg"); }
+
+/* Dice controls must retain readable contrast in both day and night map modes. */
+#ui .dnd-dice-bar :is(#diceFormula, #rollMode, #rollMod) {
+    background: #24172f !important; color: #f6e9ff !important;
+    -webkit-text-fill-color: #f6e9ff; color-scheme: dark;
+    border-color: #87639b !important; min-height: 40px;
+}
+#ui .dnd-dice-bar select option { background: #24172f; color: #f6e9ff; }
+#ui .dnd-dice-bar input::placeholder { color: #d1b8df; opacity: 1; }
+#ui .dnd-dice-bar :is(input,select):focus-visible { outline: 2px solid #b884da; outline-offset: 2px; }
+#ui .dnd-roll-cube[data-die] {
+    width: 88px; height: 88px; clip-path: none; border-radius: 0;
+    overflow: visible; background: transparent; filter: none; animation: none;
+    transform: none; will-change: auto;
+}
+#ui .dnd-roll-cube canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+#ui .dnd-roll-cube .dnd-die-facet, #ui .dnd-roll-cube::before { display: none; }
+#ui .dnd-roll-cube > strong { color: #fff3dd; text-shadow: 0 2px 4px #170b24; transform: none; }
+#ui .dnd-roll-display.is-rolling .dnd-roll-cube > strong { visibility: hidden; }
+#ui .dnd-roll-display.is-rolling .dnd-roll-shadow { animation: none; }

@@ -1,0 +1,67 @@
+.card-counter { width: min(1180px,100%); margin: 0 auto; padding: 26px 20px 70px; color: #efe3cf; }
+#app .card-counter *, #app .counter-dialog * { text-align: left; }
+.card-counter button,.counter-dialog button { cursor: pointer; min-height: 44px; border: 1px solid #745282; background: #2c2038; color: #eee0f5; border-radius: 8px; padding: 10px 16px; font: inherit; }
+.card-counter button:hover,.counter-dialog button:hover { background: #533763; }
+.card-counter button:disabled { opacity: .4; cursor: default; }
+.card-counter :is(button,input,select):focus-visible,.counter-dialog :is(button,input):focus-visible { outline: 2px solid #d3a0f3; outline-offset: 3px; }
+.counter-header { position: relative; padding: 0 0 30px; border-bottom: 1px solid #6a526f; }
+.counter-header .crystal-eyebrow { margin: 38px 0 14px; }
+#app .counter-header h1 { font-family: var(--fantasy-display); font-size: clamp(50px,7vw,84px); margin: 0; line-height: 1; }
+.counter-header h1 span { color: #b98bd8; }
+.counter-header > p:last-child { color: #c0aec9; line-height: 1.8; }
+.counter-seal { position: absolute; right: 28px; bottom: 42px; font-size: clamp(40px,7vw,95px); color: #c7a879; transform: rotate(-8deg); border: 1px solid #725575; padding: 18px; border-radius: 45% 40% 43% 38%; opacity: .7; }
+.counter-setup { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 14px; align-items: end; margin-top: 30px; }
+.counter-setup label,.counter-dialog label { display: grid; gap: 8px; color: #c7b4d1; font-size: 12px; }
+#app .card-counter input,#app .card-counter select,.counter-dialog input { min-width: 0; width: 100%; padding: 12px; min-height: 46px; color: #f1e2fa; background: #18111f; border: 1px solid #73577f; border-radius: 7px; font: inherit; color-scheme: dark; }
+.counter-setup button[type=submit] { background: #74508c; color: #fff1df; }
+.counter-note,.counter-save-note { font-size: 12px; color: #bba8c3; line-height: 1.8; }
+.counter-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 16px 0; margin-top: 14px; border-block: 1px solid #4b3a55; }
+.counter-toolbar strong { margin-right: auto; font-size: 14px; }
+.counter-toolbar button { font-size: 12px; }
+.counter-status { min-height: 24px; margin: 12px 0; color: #ddbee8; font-size: 13px; }
+.counter-players { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+.counter-player { min-width: 0; position: relative; padding: 24px; border: 1px solid #775584; border-radius: 4px 24px 4px 24px; background: radial-gradient(ellipse at top right,#53335c66,transparent 60%),#1b1421; box-shadow: inset 0 0 0 5px #110c17, 5px 6px 0 #09060d; }
+.counter-player.is-active { border-color: #c7a779; box-shadow: inset 0 0 0 5px #110c17,0 0 0 1px #c7a77955,5px 6px 0 #09060d; }
+.counter-player-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.counter-player-top label { flex: 1; min-width: 0; }
+.counter-player-top label > span { font-size: 9px; letter-spacing: .14em; color: #c3a5d1; }
+#app .counter-player-top input { border: 0; border-bottom: 1px solid #685171; padding: 9px 0; font-size: 18px; background: transparent; border-radius: 0; }
+.counter-player-number { font-family: var(--fantasy-display); font-size: 38px; color: #ba9c76; }
+.counter-value-label { display: block; margin: 24px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: #c7b2d0; }
+#app .counter-value { display: block; font: 700 clamp(60px,7vw,86px)/1.2 var(--font-body,Manrope,sans-serif); font-variant-numeric: tabular-nums; color: #f5e7c7; letter-spacing: -.04em; margin: 4px 0 18px; }
+.counter-quick { display: flex; gap: 12px; }
+.counter-quick > div { display: flex; flex: 1; gap: 5px; }
+.counter-quick button { flex: 1; padding: 11px 3px; font-weight: 700; text-align: center !important; }
+.counter-quick button[data-delta^="-"] { background: #352134; }
+.counter-adjust { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; margin: 20px 0 26px; }
+.counter-adjust label { flex: 1; min-width: 85px; font-size: 10px; color: #c8afd6; }
+.counter-adjust input { margin-top: 6px; }
+.counter-adjust button { padding: 10px; font-size: 12px; }
+.counter-token-heading { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid #644c70; }
+.counter-token-heading h2 { font-family: var(--fantasy-display); font-size: 25px; margin: 0; }
+.counter-token-heading button { background: transparent; border: none; color: #d2a2e8; font-size: 12px; }
+.counter-tokens { list-style: none; padding: 0; margin: 8px 0 0; }
+.counter-tokens li { display: flex; align-items: center; gap: 6px; padding: 10px 0; border-bottom: 1px dashed #634b6a; }
+.counter-tokens li > span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.counter-tokens small { display: block; font-size: 9px; color: #b59ac2; margin-top: 4px; }
+.counter-tokens button { padding: 8px; min-width: 36px; }
+.counter-tokens output { min-width: 28px; font-variant-numeric: tabular-nums; text-align: center !important; }
+.counter-tokens button[data-remove-token] { border: 0; background: transparent; color: #c59cac; }
+.counter-token-empty { color: #ad99bb; font-size: 12px; line-height: 1.7; }
+.counter-history { margin-top: 30px; border-block: 1px solid #654d6e; padding: 20px 0; font-size: 13px; color: #c9b8d1; }
+.counter-history summary { cursor: pointer; min-height: 30px; }
+.counter-history li { padding: 6px 0; }
+.counter-dialog { width: min(420px,calc(100vw - 28px)); padding: 28px; color: #efe2f7; background: #21152b; border: 1px solid #b18acc; border-radius: 16px; }
+.counter-dialog::backdrop { background: #09050dd9; }
+.counter-dialog h2 { font-family: var(--fantasy-display); font-size: 32px; margin: 0 0 18px; }
+.counter-dialog p { line-height: 1.7; font-size: 14px; }
+.counter-dialog label { margin: 16px 0; }
+.counter-dialog form > div { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+@media(max-width:760px) { .counter-setup { grid-template-columns: 1fr 1fr; } .counter-players { grid-template-columns: 1fr; } .counter-seal { right: 0; bottom: 50px; font-size: 38px; padding: 12px; opacity: .35; } .counter-header > p:last-child { max-width: 230px; } .counter-toolbar strong { width: 100%; margin-bottom: 6px; } }
+@media(max-width:400px) { .card-counter { padding: 20px 10px 50px; } .counter-player { padding: 20px 15px; } .counter-quick { gap: 6px; } .counter-quick button { font-size: 12px; } }
+/* Shared legacy form rules use !important; keep this tool's layout and hit areas explicit. */
+#ui #app .card-counter *, #ui #app .counter-dialog * { text-align: left !important; }
+#ui #app .card-counter select { appearance: none; -webkit-appearance: none; min-height: 46px !important; height: 46px !important; padding: 10px 32px 10px 12px !important; background: #18111f url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23d2b8e2' stroke-width='1.5'/%3E%3C/svg%3E") right 12px center / 12px no-repeat !important; }
+#ui #app .counter-header h1 { font-size: clamp(50px,7vw,84px) !important; }
+#ui #app .counter-quick button, #ui #app .counter-tokens :is(output,button) { text-align: center !important; }
+#ui #app .counter-header > p:last-child { font-size: 14px; }

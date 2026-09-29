@@ -122,3 +122,29 @@
     .reading-dialog { padding: 22px 18px; }
     .reading-dialog h2 { font-size: 19px; }
 }
+
+/* The library opens onto an illustrated reading room; shelves stay quiet and usable. */
+#app .reading-header { position: relative; isolation: isolate; padding: 28px clamp(20px,4vw,48px) 30px; border: 1px solid #6d526e; border-radius: 110px 16px 16px 16px / 30px 16px 16px 16px; overflow: hidden; background: #160f1b; }
+.reading-nook-art { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg,#130e19 2%,#130e19e8 35%,#130e1950 74%), url('/assets/worlds/reading-nook.webp') center right / cover; }
+.reading-nook-art > span { position: absolute; right: 25px; top: 28px; writing-mode: vertical-rl; font-size: 9px; letter-spacing: .24em; color: #e3ccaa; }
+#app .reading-header .reading-eyebrow { margin-top: 52px; color: #d4b2e5; }
+#app .reading-heading { min-height: 175px; align-items: flex-start; flex-direction: column; justify-content: center; }
+#app .reading-heading h1 { max-width: 620px; font-size: clamp(44px,6vw,76px); line-height: 1.05; letter-spacing: .005em; color: #f4e5c5; }
+#app .reading-heading p { max-width: 350px; color: #e0cddd; line-height: 1.8; }
+#app .reading-welcome { margin-top: 32px; padding: 19px 22px; background: #180f21df; border: 1px solid #826482; border-radius: 3px 16px 3px 16px; }
+#app .reading-welcome-note { color: #d8bbdd; }
+#app .reading-shelf { border-color: #6a506c; background: linear-gradient(120deg,#25192e,#17121d); box-shadow: inset 0 0 0 5px #140e19, 0 15px 30px #0003; }
+#app .reading-book-row { border-bottom: 1px solid #72537080; padding: 22px 0; }
+#app .reading-spine { background: linear-gradient(90deg,#120d18 0 7%,#74507b 8% 11%,#34213e 12% 88%,#a88d65 89% 91%,#201428 92%); color: #eddbb3; border: 1px solid #a08266; border-radius: 3px 8px 8px 3px; box-shadow: 5px 5px 0 #09070e; padding: 14px; }
+#app .reading-trash { margin-left: auto; width: 44px; min-width: 44px; height: 44px; display: grid; place-items: center; color: #dcb5c9; background: transparent; border: 1px solid #78526b; border-radius: 8px; padding: 10px; }
+.reading-trash svg { width: 20px; height: 20px; }
+#app .reading-trash:hover { background: #51283d; color: #ffe0e6; }
+#app .reading-danger { background: #77374d; color: #fff2ed; border-color: #c88297; }
+@media(max-width:600px) {
+    #app .reading-header { padding: 22px 20px; }
+    #app .reading-header .reading-eyebrow { margin-top: 100px; }
+    .reading-nook-art { background-position: center; background-image: linear-gradient(0deg,#130e19 5%,#130e19c9 55%,#130e1930),url('/assets/worlds/reading-nook.webp'); }
+    .reading-nook-art > span { writing-mode: initial; top: 86px; right: 20px; }
+    #app .reading-heading h1 { font-size: 46px; }
+    #app .reading-welcome { padding: 16px; }
+}

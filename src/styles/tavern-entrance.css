@@ -1,0 +1,41 @@
+/* Illustrated exterior plus an independently hinged, keyboard-operable door. */
+#ui #app:has(> .tavern-entrance), #ui #app:has(> .tavern-auth-page) { padding: 0 !important; background: #100c13; }
+#ui .tavern-entrance { position: relative; width: 100%; min-height: 100svh; flex: 0 0 auto; overflow: clip; background: #100c13; isolation: isolate; }
+#ui .tavern-entrance-stage { --scene-height: max(100svh, 66.6667vw); position: absolute; width: calc(var(--scene-height) * 1.5); height: var(--scene-height); left: 50%; top: 50%; transform: translate(-50%, -50%); background: url('/assets/entrance/exterior.webp') center / 100% 100% no-repeat; }
+#ui .tavern-doorway { position: absolute; top: 10.8%; left: 34.4%; width: 30.5%; height: 74%; perspective: 1300px; background: #100a13; box-shadow: 0 0 14px 8px #08050a; }
+#ui .tavern-door-interior { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; opacity: .9; }
+#ui .tavern-door-leaf { position: absolute; inset: 0; transform-origin: 0 50%; transform-style: preserve-3d; backface-visibility: hidden; border: 9px ridge #492d32; background: repeating-linear-gradient(91deg, #0000 0 3px, #ffffff04 4px, #0000 5px 11px), repeating-linear-gradient(90deg, #2c1c26 0 16%, #120c12 16.2% 16.7%, #402832 17% 33%); box-shadow: inset 0 0 30px #000b, inset 0 0 0 3px #9d72522a, 7px 0 10px #000a; }
+#ui .tavern-door-leaf::after { content: ''; position: absolute; inset: 65% 9% 7%; border: 8px ridge #51303c; box-shadow: inset 0 0 20px #0007; pointer-events: none; }
+#ui .tavern-door-window { position: absolute; left: 12%; top: 6%; width: 76%; height: 43%; display: grid; place-items: center; border: 10px ridge #553640; border-radius: 42% 42% 5px 5px; overflow: hidden; background: linear-gradient(115deg, transparent 20%, #ddc7ff13 21%, transparent 43%), repeating-linear-gradient(45deg, transparent 0 45px, #ccabd41a 46px 48px, transparent 49px 88px), radial-gradient(ellipse at 50% 65%, #725374, #261d36 75%); box-shadow: inset 0 0 25px #000c, 0 4px 8px #0008; }
+#ui .tavern-glass-logo { width: 96%; height: 96%; object-fit: contain; filter: sepia(.2) drop-shadow(0 0 10px #c291db44); opacity: .94; }
+#ui .tavern-door-plaque { position: absolute; left: 16%; top: 70%; width: 68%; margin: 0; padding: 13px 8px; z-index: 1; border: 3px ridge #b39262; border-radius: 4px; color: #e4c99d; background: linear-gradient(120deg, #48352b, #766049 45%, #34252c); font-family: var(--fantasy-display) !important; font-size: clamp(15px, 2.2vh, 23px); line-height: 1.35; letter-spacing: .07em; text-shadow: 0 -1px #120c12, 0 1px #bdaa8355; box-shadow: 0 3px 7px #0009, inset 0 0 0 2px #17111b; }
+#ui .tavern-door-plaque::before, #ui .tavern-door-plaque::after { content: '•'; position: absolute; top: 50%; transform: translateY(-50%); color: #181119; text-shadow: 1px 1px #bd9964; }
+#ui .tavern-door-plaque::before { left: 5px; } #ui .tavern-door-plaque::after { right: 5px; }
+#ui .tavern-door-hinge { position: absolute; left: -8px; width: 21%; height: 18px; border: 2px ridge #756062; background: linear-gradient(#50424b, #211b25); clip-path: polygon(0 0, 65% 0, 100% 50%, 65% 100%, 0 100%); }
+#ui .hinge-top { top: 15%; } #ui .hinge-bottom { bottom: 14%; }
+#ui .tavern-door-handle { position: absolute; right: 3%; top: 49%; width: 24%; height: 18%; min-width: 64px; min-height: 70px; z-index: 3; border: 0; background: transparent; cursor: pointer; border-radius: 12px; -webkit-tap-highlight-color: transparent; }
+#ui .tavern-handle-plate { position: absolute; width: 34px; height: 86%; top: 7%; right: 22%; border-radius: 45% 45% 25% 25%; border: 3px ridge #b49a70; background: linear-gradient(90deg, #3e2b24, #988165 50%, #513c31); box-shadow: 2px 3px 6px #000b; }
+#ui .tavern-handle-lever { position: absolute; width: 65px; height: 15px; right: 8px; top: 29%; border: 2px ridge #d2b384; border-radius: 13px 5px 8px 11px; background: linear-gradient(#c9ad7c, #5f4836); transform-origin: right; box-shadow: 0 5px 4px #0009; transition: transform 160ms; }
+#ui .tavern-keyhole { position: absolute; bottom: 16%; left: 35%; width: 8px; height: 17px; background: #140f14; border-radius: 50% 50% 2px 2px; }
+#ui .tavern-door-handle:hover .tavern-handle-lever, #ui .is-opening .tavern-handle-lever { transform: rotate(-18deg); }
+#ui .tavern-door-handle:focus-visible { outline: 3px solid #e3c4fc !important; outline-offset: 3px; background: #b18ac522; }
+#ui .tavern-door-invitation { position: absolute; top: 51%; left: 15%; width: 53%; color: #ecdcc6; font-family: var(--fantasy-display) !important; font-size: clamp(22px, 3vh, 33px); letter-spacing: .035em; transform: rotate(-5deg); text-shadow: 2px 2px #140e1a; pointer-events: none; }
+#ui .tavern-door-invitation svg { position: absolute; width: 72px; height: 40px; right: -42px; top: 28px; fill: none; stroke: #ddc5eb; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#ui .tavern-door-status { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+#ui .tavern-auth-page { position: relative; isolation: isolate; min-height: 100svh; background: linear-gradient(#130d1b60, #130d1ba6), url('/assets/entrance/interior.webp') center / cover; }
+#ui .tavern-auth-page .auth-panel { max-width: 410px; background: #1b121eef !important; border: 2px solid #95745f77; box-shadow: 0 20px 80px #08060ce6, inset 0 0 0 5px #b7976e0d; padding: 28px 32px; }
+#ui .tavern-auth-page .auth-logo { width: 190px; margin: -18px auto -10px; }
+#ui .tavern-auth-page .auth-intro { color: #d9c1ac; }
+@media (max-width: 600px) {
+    #ui .tavern-entrance-stage { --scene-height: min(100svh, 215vw); }
+    #ui .tavern-door-leaf { border-width: 6px; }
+    #ui .tavern-door-window { border-width: 7px; }
+    #ui .tavern-door-invitation { left: 9%; top: 51%; width: 59%; font-size: 22px; }
+    #ui .tavern-door-invitation svg { width: 53px; right: -29px; top: 25px; }
+    #ui .tavern-door-plaque { font-size: 17px; }
+    #ui .tavern-auth-page { padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
+    #ui .tavern-auth-page .auth-panel { padding: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #ui .tavern-handle-lever { transition: none; }
+}

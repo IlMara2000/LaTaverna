@@ -1,0 +1,23 @@
+#ui #app:has(> .bottega-hub) { padding: 24px max(20px, env(safe-area-inset-right)) 100px !important; }
+#ui .bottega-hub { width: min(1180px, 100%); margin: 0 auto; flex: 0 0 auto; }
+#ui .bottega-hub-top { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+#ui .bottega-hub-top > span { font-size: 10px; letter-spacing: .16em; color: #b39bc5; }
+#ui .bottega-hub-intro { padding: 42px 0 38px; text-align: center; }
+#ui .bottega-hub-intro > img { width: 108px; height: 108px; margin-bottom: 20px; }
+#ui .bottega-hub-intro h1 { font-size: clamp(38px, 5vw, 68px); margin: 14px 0; }
+#ui .bottega-hub-intro > p:last-child { max-width: 580px; margin: 0 auto; font-size: 14px; line-height: 1.8; color: #bcaec8; }
+#ui .bottega-departments { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 22px; }
+#ui .bottega-department { overflow: hidden; border: 1px solid #af88c54d; border-radius: 8px 18px 9px 14px; background: #1c1525; color: #ede0ce; text-decoration: none; box-shadow: 4px 5px #09060d; }
+#ui .bottega-department-art { height: 230px; position: relative; overflow: hidden; }
+#ui .bottega-department-art img { width: 100%; height: 100%; object-fit: cover; }
+#ui .bottega-department-label { position: absolute; top: 18px; left: 18px; background: #eadbc0; color: #33203e; padding: 8px 10px; border-radius: 3px; font-size: 9px; letter-spacing: .08em; transform: rotate(-2deg); }
+#ui .bottega-department-copy { padding: 25px; }
+#ui .bottega-department-copy h2 { font-family: var(--fantasy-display) !important; font-size: 32px; font-weight: 400; text-align: left !important; margin: 0 0 14px; }
+#ui .bottega-department-copy p { text-align: left !important; color: #b9a8c4; font-size: 13px; line-height: 1.8; }
+#ui .bottega-department-copy > span:last-child { display: flex; justify-content: space-between; margin-top: 24px; padding-top: 16px; border-top: 1px dashed #b594c54d; font-size: 13px; }
+#ui .bottega-coming-art { height: 230px; display: grid; place-items: center; font-size: 70px; color: #ae8bb7; background: repeating-linear-gradient(135deg, #ae8bb705 0 1px, transparent 1px 12px), #271c31; }
+#ui .bottega-coming-label { display: block; text-align: left !important; margin-bottom: 16px; color: #b79bc7; font-size: 10px; letter-spacing: .16em; }
+#ui .bottega-department.is-available:hover { border-color: #d1aae4; }
+#ui .shop-wordmark .bottega-brand-icon { display: block; width: 50px; height: 50px; }
+@media (max-width: 800px) { #ui .bottega-departments { grid-template-columns: 1fr 1fr; } #ui .bottega-department.is-available { grid-column: 1 / -1; } }
+@media (max-width: 500px) { #ui .bottega-departments { grid-template-columns: 1fr; } #ui .bottega-hub-top > span { display: none; } #ui .bottega-coming-art { height: 120px; } }
