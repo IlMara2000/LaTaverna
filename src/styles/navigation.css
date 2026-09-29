@@ -180,3 +180,8 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
     .music-track { flex-wrap: wrap; }
     .music-track-mood { flex-basis: 100%; text-align: left; }
 }
+
+/* #app owns home scrolling. A shrinking overflow:hidden flex child swallowed
+   desktop wheel scrolling while touch could still pan its clipped contents. */
+#ui #app:has(> .taverna-home) { scroll-snap-type: none; scroll-behavior: auto; }
+#ui #app > .taverna-home { flex: 0 0 auto; overflow: clip; }

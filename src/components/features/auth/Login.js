@@ -1,3 +1,4 @@
+import { renderTavernEntrance } from './TavernEntrance.js';
 import { supabase } from '../../../services/supabase.js';
 import { getLocalDndUser } from '../../../services/dndLocalStore.js';
 
@@ -30,23 +31,14 @@ function resetAuthScroll(container) {
 
 // --- 1. SCHERMATA DI BENVENUTO (START) ---
 function renderStartScreen(container) {
-    container.innerHTML = `
-        <section class="auth-page auth-welcome" aria-label="Benvenuto nella Taverna">
-            <img src="/assets/logo.png" class="auth-logo" width="512" height="512" alt="La Taverna">
-            <p class="auth-intro">Ogni grande storia comincia insieme.</p>
-            <button id="btn-enter-tavern" class="auth-submit" type="button">Entra nella sala <span aria-hidden="true">↗</span></button>
-        </section>
-    `;
-    resetAuthScroll(container);
-
-    document.getElementById('btn-enter-tavern').onclick = () => renderLoginMethods(container);
+    renderTavernEntrance(container, () => initLogin(container));
 }
 
 // --- 2. METODI DI ACCESSO ---
 function renderLoginMethods(container) {
     container.innerHTML = `
-        <section class="auth-page" aria-label="Accedi alla Taverna">
-            <div class="auth-panel">
+        <section class="auth-page tavern-auth-page" aria-label="Accedi alla Taverna">
+            <div class="auth-panel" tabindex="-1">
                 <img src="/assets/logo.png" class="auth-logo" width="512" height="512" alt="La Taverna" fetchpriority="high" decoding="async">
                 <p class="auth-intro">Il tuo posto al tavolo ti aspetta.</p>
                 <form id="email-login-form" class="auth-form">

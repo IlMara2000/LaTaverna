@@ -36,3 +36,7 @@ export function saveReaderPreferences(userId, value, storage) {
     try { (storage || globalThis.localStorage).setItem(preferencesKey(userId), JSON.stringify(value)); }
     catch { /* Reading remains available when browser storage is disabled. */ }
 }
+
+export function removeReadingPosition(userId, bookId, storage) {
+    try { (storage || globalThis.localStorage).removeItem(keyFor(userId, bookId)); } catch { /* Storage may be disabled. */ }
+}

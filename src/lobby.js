@@ -57,7 +57,7 @@ export function showLobby(container) {
                     <h1 id="home-title">Ogni notte,<br><em>una nuova leggenda.</em></h1>
                     <p>Una mano di carte, una sfida tra amici, una nuova avventura.<br>Il tuo posto al tavolo ti aspetta.</p>
                 </section>
-                <div class="home-section-label"><span>Esplora la Taverna</span><span>Tre modi di vivere la notte <b aria-hidden="true">↘</b></span></div>
+                <div class="home-section-label"><span>Esplora la Taverna</span></div>
                 <section class="taverna-scene-stage" aria-label="Scegli come giocare">
                     <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
                         <img src="/assets/worlds/handwritten-triptych.webp" alt="Carte illustrate a inchiostro tra le dita di un guanto medievale" fetchpriority="high" decoding="async">
@@ -91,6 +91,7 @@ export function showLobby(container) {
                     <button type="button" id="hub-all-games">SALA GIOCHI</button>
                     <button type="button" id="hub-strategy-games">STRATEGIA</button>
                     <button type="button" id="hub-shop">BOTTEGA</button>
+                    <button type="button" id="hub-card-counter">SEGNAPUNTI CARTE</button>
                     <button type="button" id="hub-reading">LETTURA</button>
                     <button type="button" id="btn-dnd5e">D&amp;D 5E</button>
                 </nav>
@@ -125,6 +126,7 @@ export function showLobby(container) {
     container.querySelector('#hub-strategy-games').onclick = () => openDestination('minigames', { filter: 'strategy' });
     container.querySelector('#hub-all-games').onclick = () => openDestination('minigames', { filter: 'all' });
     container.querySelector('#hub-shop').onclick = () => openDestination('shop');
+    container.querySelector('#hub-card-counter').onclick = () => openDestination('cardCounter');
     container.querySelector('#hub-reading').onclick = () => openDestination('reading');
     container.querySelector('#btn-dnd5e').onclick = () => openDestination('dnd5e');
 }

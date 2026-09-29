@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '../../../services/supabase.js';
 import { createReadingLibrary, bookTitleFromFilename, readingErrorMessage, READING_PAGE_SIZE } from '../../../services/readingLibrary.js';
 import { updateSidebarContext } from '../../layout/Sidebar.js';
 import { navigateTo } from '../../../services/appNavigation.js';
-import { getReadingPosition } from '../../../services/readingProgress.js';
+import { getReadingPosition, removeReadingPosition } from '../../../services/readingProgress.js';
 import './reading.css';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -36,10 +36,11 @@ export async function showReading(container) {
 
     root.innerHTML = `
         <header class="reading-header">
+            <div class="reading-nook-art" aria-hidden="true"><span>EX LIBRIS · LA TAVERNA</span></div>
             ${renderHomeBackButton({ dataHome: true })}
-            <span class="reading-eyebrow">UN POSTO PER OGNI STORIA</span>
-            <div class="reading-heading"><div><h1>Lettura<span>.</span></h1>
-                <p>La tua biblioteca, un libro alla volta.</p></div>
+            <span class="reading-eyebrow">IL RIFUGIO DELLE STORIE</span>
+            <div class="reading-heading"><div><h1>Ancora un capitolo<span>.</span></h1>
+                <p>Lascia fuori il rumore. Qui comincia un altro mondo.</p></div>
                 <button type="button" class="reading-primary" data-upload disabled>+ Carica un PDF</button>
             </div>
             <div class="reading-welcome"><span class="reading-book-mark">${bookIcon}</span>
@@ -224,9 +225,29 @@ export async function showReading(container) {
                     ${user ? `<button type="button" class="reading-star ${favorites.has(book.id) ? 'is-favorite' : ''}" data-action="favorite"
                         aria-label="${favorites.has(book.id) ? 'Rimuovi dai' : 'Aggiungi ai'} preferiti: ${escapeHTML(book.title)}" aria-pressed="${favorites.has(book.id)}">${favorites.has(book.id) ? '★' : '☆'}</button>
                     <button type="button" class="reading-secondary" data-action="organize">Raccolte</button>` : ''}
-                    ${book.owner_id === user?.id ? `<button type="button" class="reading-text-button" data-action="visibility">${book.is_public ? 'Rendi privato' : 'Condividi'}</button>` : ''}
+                    ${book.owner_id === user?.id ? `<button type="button" class="reading-text-button" data-action="visibility">${book.is_public ? 'Rendi privato' : 'Condividi'}</button><button type="button" class="reading-trash" data-action="delete-book" aria-label="Elimina definitivamente: ${escapeHTML(book.title)}" title="Elimina definitivamente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 10v7m4-7v7"/></svg></button>` : ''}
                 </div>
             </li>`; }).join('')}</ol>`;
+    }
+
+    function deleteBook(book) {
+        if (!user || book.owner_id !== user.id) return;
+        const modal = dialog('Eliminare questo libro?', `
+            <p><strong>${escapeHTML(book.title)}</strong></p>
+            <p>Il PDF e la sua scheda saranno eliminati definitivamente, anche dalla bacheca pubblica, dai preferiti e dalle raccolte. Questa operazione non può essere annullata.</p>
+            <div class="reading-dialog-actions"><button type="button" class="reading-secondary" data-cancel>Annulla</button>
+            <button type="button" class="reading-primary reading-danger" data-confirm>Elimina definitivamente</button></div>`);
+        modal.element.querySelector('[data-cancel]').onclick = modal.close;
+        modal.element.querySelector('[data-cancel]').focus();
+        modal.element.querySelector('[data-confirm]').onclick = () => modal.run(async () => {
+            await library.deleteBook(book.id, user.id);
+            removeReadingPosition(user.id, book.id);
+            modal.close();
+            if (!aliveHere()) return;
+            page = 0;
+            await load();
+            feedback('Libro eliminato definitivamente.');
+        });
     }
 
     function renderCollections() {
@@ -411,6 +432,7 @@ export async function showReading(container) {
         if (button.dataset.delete) { deleteCollection(collections.find(item => item.id === itemId)); return; }
         const book = books.find(item => item.id === button.closest('[data-book]')?.dataset.book);
         if (!book) return;
+        if (button.dataset.action === 'delete-book') { deleteBook(book); return; }
         if (button.dataset.action === 'read') { void readBook(book); return; }
         if (button.dataset.action === 'organize') { void organize(book); return; }
         if (button.dataset.action === 'visibility') { book.is_public ? makePrivate(book) : openConsent(book); return; }

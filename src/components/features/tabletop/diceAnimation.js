@@ -1,3 +1,4 @@
+import { renderDiceMesh } from './diceMesh.js';
 const getNaturalRoll = (rolls = [], mode = 'normal') => {
     if (!Array.isArray(rolls) || !rolls.length) return null;
     if (mode === 'adv') return Math.max(...rolls);
@@ -25,7 +26,7 @@ export const animateDiceRoll = ({
     const safeFaces = Math.max(2, Math.min(1000, Number(faces) || 20));
     const naturalRoll = getNaturalRoll(rolls, mode);
     const finalFace = count === 1 ? naturalRoll : rolls[rolls.length - 1];
-    const settleDelay = reducedMotion ? 0 : 920;
+    const settleDelay = reducedMotion ? 0 : 1100;
     const randomFace = () => Math.floor(random() * safeFaces) + 1;
 
     display.setAttribute('aria-hidden', 'false');
@@ -40,6 +41,7 @@ export const animateDiceRoll = ({
     totalElement.textContent = '...';
     breakdownElement.textContent = `d${safeFaces === 100 ? '%' : safeFaces} in movimento`;
     display.classList.add('is-visible', 'is-rolling');
+    renderDiceMesh(die, safeFaces, settleDelay);
 
     window.clearInterval(display._valueTimer);
     window.clearTimeout(display._settleTimer);

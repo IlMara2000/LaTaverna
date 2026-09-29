@@ -1,3 +1,4 @@
+import { syncDestinationPath } from './publicRoutes.js';
 import { enhanceSurfaceMotion } from './motionSystem.js';
 import { loadView } from './navigationLoading.js';
 
@@ -69,8 +70,10 @@ export async function navigateTo(destination, container = document.getElementByI
         home: { label: 'la Taverna', load: () => import('../lobby.js'), render: (module) => module.showLobby(container) },
         minigames: { label: 'la sala giochi', load: () => import('../minigamelist.js'), render: (module) => module.showMinigamesList(container, options) },
         dnd5e: { label: 'D&D', load: () => import('../dashboards/dnd5e.js'), render: (module) => module.initDndDashboard(container) },
+        cardCounter: { label: 'il Segnapunti', load: () => import('../dashboards/cardCounter.js'), render: module => module.showCardCounter(container) },
         reading: { label: 'Lettura', load: () => import('../components/features/reading/Reading.js'), render: (module) => module.showReading(container) },
-        shop: { label: 'la bottega', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
+        shop: { label: 'la bottega', load: () => import('../dashboards/bottega.js'), render: (module) => module.initBottega(container) },
+        artisanShop: { label: 'L’Artigiano Rituale', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
         profile: { label: 'il profilo', deferred: true, load: () => import('../components/features/user/Profile.js'), render: (module, context) => module.showProfile(container, options.user || null, context) },
         settings: { label: 'le impostazioni', deferred: true, load: () => import('../components/features/user/Settings.js'), render: (module, context) => module.showSettings(container, options.user || null, context) },
         music: { label: 'la libreria musicale', deferred: true, load: () => import('../components/ui/AudioManager.js'), render: (module, context) => module.AudioManager.showMusicCenter(container, context) }
@@ -83,12 +86,13 @@ export async function navigateTo(destination, container = document.getElementByI
         return async context => {
             if (!route.deferred && !context.beforeRender()) return;
             await route.render(module, context);
+            if (context.isCurrent()) syncDestinationPath(destination, options);
             if (context.isCurrent() && !['home', 'shop', 'minigames'].includes(destination)) {
                 window.__routeMotionCleanup = enhanceSurfaceMotion(container, {
                     selector: '.reading-welcome, .reading-shelf, .settings-group, .profile-glass-card, .music-player, .music-playlist, .dnd-hero, .dnd-panel'
                 });
             }
-            if (context.isCurrent() && ['minigames', 'dnd5e', 'reading', 'shop'].includes(destination)) {
+            if (context.isCurrent() && ['minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
                 rememberDestination(destination, destination === 'minigames' ? options : {});
             }
         };

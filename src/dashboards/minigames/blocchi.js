@@ -162,12 +162,12 @@ function renderLayout(container, state) {
 
     container.innerHTML = `
         <div class="game-master-wrapper blocks-game fade-in">
-            <section id="blocks-start" class="game-master-wrapper blocks-start" aria-label="Menu Blocchi Arcani">
+            <section id="blocks-start" class="game-master-wrapper blocks-start" aria-label="Menu ARCANEUM (TETRIS)">
                 <div class="blocks-start-mark" aria-hidden="true">
                     <i></i><i></i><i></i><i></i><i></i><i></i>
                 </div>
                 <span class="blocks-eyebrow">PUZZLE DELLA TAVERNA</span>
-                <h1 class="main-title">Blocchi <em>Arcani</em></h1>
+                <h1 class="main-title">ARCANEUM <em>(TETRIS)</em></h1>
                 <p>Incastra i sigilli, completa le righe e resisti alla caduta.</p>
 
                 <div class="blocks-feature-row" aria-label="Funzioni del gioco">
@@ -194,8 +194,8 @@ function renderLayout(container, state) {
             </section>
 
             <header class="blocks-topbar" hidden>
-                <button id="blocks-exit" class="game-btn-action" aria-label="Esci da Blocchi Arcani">← ESCI</button>
-                <div class="blocks-brand"><span aria-hidden="true">▦</span><strong>BLOCCHI ARCANI</strong></div>
+                <button id="blocks-exit" class="game-btn-action" aria-label="Esci da ARCANEUM">← ESCI</button>
+                <div class="blocks-brand"><span aria-hidden="true">▦</span><strong>ARCANEUM</strong></div>
                 <div class="blocks-top-actions">
                     <button id="blocks-sound" type="button" aria-label="Attiva o disattiva suoni">${state.soundOn ? '♪' : '×'}</button>
                     <button id="blocks-pause" type="button" aria-label="Pausa">Ⅱ</button>

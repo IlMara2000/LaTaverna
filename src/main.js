@@ -1,3 +1,5 @@
+import { navigateTo } from './services/appNavigation.js';
+import { destinationFromPath } from './services/publicRoutes.js';
 import './components/ui/AudioManager.js';
 import './styles/global.css'; 
 import './styles/amethyst-glass.css';
@@ -5,7 +7,9 @@ import './styles/navigation.css';
 import './styles/motion-polish.css';
 import './styles/auth.css';
 import './styles/experience-worlds.css';
+import './styles/tavern-entrance.css';
 import { supabase } from './services/supabase.js';
+import { renderTavernEntrance } from './components/features/auth/TavernEntrance.js';
 import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';
 import { showLobby } from './lobby.js';
@@ -13,7 +17,7 @@ import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthIn
 import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
 import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './services/appPreferences.js';
 import { getSessionInviteFromUrl, joinSessionInvite } from './services/sessionInvites.js';
-import { enhancePortalMotion, initMotionPreferences, playLoaderExit, playPortalOpen } from './services/motionSystem.js';
+import { initMotionPreferences, playLoaderExit } from './services/motionSystem.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
@@ -53,6 +57,12 @@ async function initApp() {
             return;
         }
 
+        const publicDestination = destinationFromPath(location.pathname);
+        if (publicDestination) {
+            await navigateTo(publicDestination, appContainer, { fromHistory: true });
+            return;
+        }
+
         const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user'));
         
         // 3. LOGICA DI REDIRECT
@@ -78,37 +88,10 @@ async function initApp() {
 function renderPortal(user) {
     const appContainer = document.getElementById('app');
     
-    appContainer.innerHTML = `
-        <div class="entry-container" id="entry-screen" role="button" tabindex="0" aria-label="Entra nella Taverna">
-            <img src="/assets/logo.png" alt="La Taverna" id="main-logo" width="512" height="512" fetchpriority="high" decoding="async">
-            <p class="entry-description">Ogni grande storia comincia insieme.</p>
-            <span class="subtitle entry-cta">Entra nella Taverna <span aria-hidden="true">↗</span></span>
-        </div>
-    `;
-
-    const entryScreen = document.getElementById('entry-screen');
-    const cleanupPortalMotion = enhancePortalMotion(appContainer);
-
-    let opening = false;
-    entryScreen.onkeydown = event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            entryScreen.click();
-        }
-    };
-    entryScreen.onclick = async () => {
-        if (opening) return;
-        opening = true;
-        // Effetto "Click" sul logo
-        await playPortalOpen(entryScreen);
-        cleanupPortalMotion?.();
-        
-        if (user) {
-            checkAccess(user, appContainer);
-        } else {
-            initLogin(appContainer);
-        }
-    };
+    renderTavernEntrance(appContainer, () => {
+        if (user) checkAccess(user, appContainer);
+        else initLogin(appContainer);
+    });
 }
 
 function checkAccess(user, container) {
@@ -247,3 +230,12 @@ async function restoreRecoveredContext(container, context, user) {
 
 // Lancia l'app in modo sicuro appena il DOM è pronto
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Public shop URLs support refresh and browser Back/Forward without touching auth callbacks.
+const onPublicHistory = event => {
+    const destination = destinationFromPath(location.pathname) || event.state?.tavernaDestination;
+    if (destination) void navigateTo(destination, document.getElementById('app'), { fromHistory: true });
+    else location.reload();
+};
+window.addEventListener('popstate', onPublicHistory);
+if (import.meta.hot) import.meta.hot.dispose(() => window.removeEventListener('popstate', onPublicHistory));

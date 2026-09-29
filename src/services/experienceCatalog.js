@@ -96,7 +96,7 @@ export const MINIGAMES = [
     },
     {
         id: 'blocchi',
-        name: 'Blocchi Arcani',
+        name: 'ARCANEUM (TETRIS)',
         category: 'strategy',
         icon: '▦',
         players: '1 giocatore',
@@ -108,6 +108,7 @@ export const MINIGAMES = [
 ];
 
 export const APP_DESTINATIONS = {
+    cardCounter: { name: 'Segnapunti carte', description: 'Vite, premi e segnalini per il tuo tavolo.' },
     reading: {
         name: 'Lettura',
         description: 'Libri PDF, bacheca e raccolte personali.'
