@@ -17,7 +17,8 @@
     "chess.js": "^1.4.0",
     "howler": "^2.2.4",
     "motion": "^12.42.2",
-    "pdfjs-dist": "6.3.289"
+    "pdfjs-dist": "6.3.289",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "terser": "^5.31.0",

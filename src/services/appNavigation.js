@@ -11,12 +11,14 @@ export const resetAppSurface = () => {
     window.__shopCleanup?.();
     window.__dndSessionCleanup?.();
     window.__minigameMultiplayerCleanup?.();
+    window.__magicCleanup?.();
     window.__settingsCleanup?.();
     window.__readingCleanup?.();
     window.__homeCleanup = null;
     window.__shopCleanup = null;
     window.__settingsCleanup = null;
     window.__readingCleanup = null;
+    window.__magicCleanup = null;
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     document.body.style.overflow = '';
@@ -69,6 +71,7 @@ export async function navigateTo(destination, container = document.getElementByI
     const routes = {
         home: { label: 'la Taverna', load: () => import('../lobby.js'), render: (module) => module.showLobby(container) },
         minigames: { label: 'la sala giochi', load: () => import('../minigamelist.js'), render: (module) => module.showMinigamesList(container, options) },
+        magic: { label: 'Magic: The Gathering', load: () => import('../dashboards/magic.js'), render: (module) => module.showMagicDashboard(container, options) },
         dnd5e: { label: 'D&D', load: () => import('../dashboards/dnd5e.js'), render: (module) => module.initDndDashboard(container) },
         cardCounter: { label: 'il Segnapunti', load: () => import('../dashboards/cardCounter.js'), render: module => module.showCardCounter(container) },
         reading: { label: 'Lettura', load: () => import('../components/features/reading/Reading.js'), render: (module) => module.showReading(container) },
@@ -87,7 +90,7 @@ export async function navigateTo(destination, container = document.getElementByI
             if (!route.deferred && !context.beforeRender()) return;
             await route.render(module, context);
             if (context.isCurrent()) syncDestinationPath(destination, options);
-            if (context.isCurrent() && !['home', 'shop', 'minigames'].includes(destination)) {
+            if (context.isCurrent() && !['home', 'shop', 'minigames', 'magic'].includes(destination)) {
                 window.__routeMotionCleanup = enhanceSurfaceMotion(container, {
                     selector: '.reading-welcome, .reading-shelf, .settings-group, .profile-glass-card, .music-player, .music-playlist, .dnd-hero, .dnd-panel'
                 });
