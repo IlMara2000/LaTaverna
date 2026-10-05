@@ -205,6 +205,43 @@ export const joinMinigameRoom = async (rawCode = '') => {
     return { room, error: null, unavailable: false };
 };
 
+// MTG usa la stessa stanza realtime dei minigiochi, con tre posti ospite
+// registrati nel JSON della partita oltre al posto guest compatibile esistente.
+export const joinMagicRoom = async (rawCode = '', deck = null) => {
+    const code = String(rawCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) return { room: null, error: new Error('Inserisci un codice di 6 caratteri.'), unavailable: false };
+    const session = await ensureRoomAccess();
+    if (!session.ready) return { room: null, error: session.error, unavailable: true };
+    const clientId = getMinigameClientId();
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        const lookup = await supabase.from(ROOM_TABLE).select('*').eq('code', code)
+            .neq('status', 'closed').gt('expires_at', new Date().toISOString()).maybeSingle();
+        if (lookup.error) return { room: null, error: lookup.error, unavailable: isSchemaError(lookup.error) };
+        const row = lookup.data;
+        if (!row) return { room: null, error: new Error('Codice non trovato o scaduto.'), unavailable: false };
+        const data = row.data || {};
+        if (data.scope !== 'magic') return { room: null, error: new Error('Questo codice non appartiene a una partita di Magic.'), unavailable: false };
+        const magic = data.magic || {};
+        const participants = [...new Set([row.host_client_id, row.guest_client_id, ...(magic.participants || [])].filter(Boolean))];
+        if (participants.includes(clientId)) return { room: normalizeRoom(row), error: null, unavailable: false };
+        if (participants.length >= 4) return { room: null, error: new Error('La stanza è al completo (massimo 4 giocatori).'), unavailable: false };
+        if (magic.game) return { room: null, error: new Error('La partita è già iniziata.'), unavailable: false };
+        const nextMagic = { ...magic, participants: [...(magic.participants || []), clientId], loadouts: { ...(magic.loadouts || {}), ...(deck ? { [clientId]: deck } : {}) } };
+        const update = await supabase.from(ROOM_TABLE).update({
+            guest_client_id: row.guest_client_id || clientId,
+            status: 'connected',
+            data: { ...data, magic: nextMagic }
+        }).eq('code', code).eq('updated_at', row.updated_at).neq('status', 'closed').select('*');
+        if (update.error) return { room: null, error: update.error, unavailable: isSchemaError(update.error) };
+        if (update.data?.length) {
+            const room = normalizeRoom(update.data[0]);
+            saveRoom(room);
+            return { room, error: null, unavailable: false };
+        }
+    }
+    return { room: null, error: new Error('La stanza è cambiata. Riprova.'), unavailable: false };
+};
+
 export const getMinigameRoomByCode = async (rawCode = '') => {
     const code = String(rawCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length !== 6) return { room: null, error: new Error('Codice non valido.'), unavailable: false };
