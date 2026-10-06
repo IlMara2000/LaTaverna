@@ -12,7 +12,7 @@ export const methodNotAllowed = (response, allowed = ['POST']) => {
     });
 };
 
-export const readJsonBody = async (request) => {
+export const readJsonBody = async (request, maxBytes = MAX_BODY_BYTES) => {
     if (request.body && typeof request.body === 'object') return request.body;
     if (!request.body) return {};
 
@@ -20,7 +20,7 @@ export const readJsonBody = async (request) => {
         ? request.body
         : JSON.stringify(request.body);
 
-    if (Buffer.byteLength(raw, 'utf8') > MAX_BODY_BYTES) {
+    if (Buffer.byteLength(raw, 'utf8') > maxBytes) {
         const error = new Error('Payload troppo grande.');
         error.statusCode = 413;
         throw error;

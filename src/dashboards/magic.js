@@ -4,6 +4,7 @@ import { canPairCommanders, isCommanderEligible, validateCommanderDeck } from '.
 import { formatManabrewCommanderList } from './magicManabrew.js';
 import { rememberDestination, navigateTo } from '../services/appNavigation.js';
 import { enhanceSurfaceMotion } from '../services/motionSystem.js';
+import { scanMagicDocument } from '../services/magicDocumentScan.js';
 import { createMinigameRoom, getMinigameRoomByCode, getSavedMinigameRoom, isMinigameRoomConnected, joinMagicRoom, updateMinigameRoomData, watchMinigameRoom } from '../services/minigameMultiplayer.js';
 import './magic.css';
 
@@ -34,7 +35,7 @@ export function showMagicDashboard(container, options = {}) {
     let searchTimer = null;
     let cameraPhoto = '';
     let motionCleanup = null;
-    let ocrEnginePromise = null;
+    let scannedCards = [];
 
     const cardSummary = card => ({ id: card.id, name: card.name, image: cardFace(card), manaCost: card.mana_cost || '', typeLine: card.type_line || '', oracleText: card.oracle_text || card.card_faces?.map(face => face.oracle_text).join('\n') || '', power: card.power ?? '', toughness: card.toughness ?? '', cmc: manaValue(card), colors: card.colors || [], colorIdentity: card.color_identity || [], commanderLegality: card.legalities?.commander || 'unknown', set: card.set_name || '', rarity: card.rarity || '' });
     const persist = () => { write(COLLECTION_KEY, collection); write(DECKS_KEY, decks); };
@@ -50,8 +51,8 @@ export function showMagicDashboard(container, options = {}) {
        <button data-tab="collezione" type="button">Collezione</button><button data-tab="mazzi" type="button">Mazzi</button><button data-tab="partita" type="button">Partita online</button>
       </nav>
       <p id="magic-notice" class="magic-notice" role="status" aria-live="polite"></p>
-      <section data-panel="collezione" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">ARCHIVIO PERSONALE</span><h2>La tua bacheca</h2><p>Scatta una foto, conferma il nome e aggiungi la carta alla raccolta.</p></div><span class="magic-count" id="magic-collection-count"></span></div>
-       <div class="magic-scan-box"><div class="magic-scan-icon" aria-hidden="true">⌕</div><div class="magic-scan-copy"><strong>Scansiona una carta</strong><span>Fotografa la carta e cercane il nome nel catalogo per confermarla.</span></div><label class="magic-button" for="magic-photo">Scatta o carica foto</label><input id="magic-photo" type="file" accept="image/*" capture="environment" hidden></div>
+      <section data-panel="collezione" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">ARCHIVIO PERSONALE</span><h2>La tua bacheca</h2><p>Scansiona carte o liste da immagini e PDF, poi conferma le carte trovate nel catalogo.</p></div><span class="magic-count" id="magic-collection-count"></span></div>
+       <div class="magic-scan-box"><div class="magic-scan-icon" aria-hidden="true">⌕</div><div class="magic-scan-copy"><strong>Scansiona carte o un mazzo</strong><span>Carica foto, pagine scannerizzate o liste PDF. L’estrazione AI passa dal server Groq.</span></div><label class="magic-button" for="magic-photo">Scegli immagini o PDF</label><input id="magic-photo" type="file" accept="image/*,.pdf,application/pdf" multiple capture="environment" hidden></div>
        <div class="magic-search-row"><label class="magic-search"><span aria-hidden="true">⌕</span><input id="magic-search" type="search" placeholder="Cerca una carta nel catalogo…" autocomplete="off"><span class="magic-search-hint">Catalogo Scryfall</span></label></div><div id="magic-photo-preview"></div><div id="magic-search-results" class="magic-search-results" aria-live="polite"></div>
        <div class="magic-collection-head"><h3>Carte possedute</h3><label class="magic-search magic-collection-search"><span aria-hidden="true">⌕</span><input id="magic-filter" type="search" placeholder="Filtra per nome…"></label></div><div id="magic-collection" class="magic-card-grid"></div>
       </section>
@@ -119,9 +120,9 @@ export function showMagicDashboard(container, options = {}) {
             cardResults = payload.data.slice(0, 12); renderResults();
         } catch (error) { if (root) root.innerHTML = `<p class="magic-error">${esc(error.message)}</p>`; }
     };
-    const addCollectionCard = card => {
+    const addCollectionCard = (card, quantity = 1) => {
         const existing = collection.find(item => item.id === card.id);
-        if (existing) existing.quantity += 1; else collection.unshift({ ...cardSummary(card), quantity: 1 });
+        if (existing) existing.quantity += quantity; else collection.unshift({ ...cardSummary(card), quantity });
         persist(); render(); renderResults(); setNotice(`${card.name} aggiunta alla bacheca.`);
     };
     const createGame = async deck => {
@@ -148,36 +149,47 @@ export function showMagicDashboard(container, options = {}) {
     container.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => { activeTab = button.dataset.tab; render(); container.querySelector(`[data-panel="${activeTab}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     container.querySelector('#magic-search').addEventListener('input', event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => searchCards(event.target.value), 300); });
     container.querySelector('#magic-filter').addEventListener('input', event => { collectionFilter = event.target.value; renderCollection(); });
-    container.querySelector('#magic-photo').onchange = async event => {
-        const file = event.target.files?.[0]; if (!file) return; cameraPhoto = URL.createObjectURL(file);
-        container.querySelector('#magic-photo-preview').innerHTML = `<div class="magic-photo-card"><img src="${cameraPhoto}" alt="Foto della carta da identificare"><div><strong>Analizzo la foto…</strong><span>Il riconoscimento gira nel browser. La prima scansione scarica il modello OCR.</span></div><button type="button" class="magic-text-button" id="magic-clear-photo">Rimuovi foto</button></div>`;
-        container.querySelector('#magic-clear-photo').onclick = () => { URL.revokeObjectURL(cameraPhoto); cameraPhoto=''; container.querySelector('#magic-photo-preview').innerHTML=''; event.target.value=''; };
+    const scanAndResolve = async files => {
         const preview = container.querySelector('#magic-photo-preview');
+        preview.innerHTML = '<div class="magic-photo-card"><div><strong>Scansione in corso…</strong><span>Invio dei documenti a Groq per riconoscere nomi e quantità.</span></div></div>';
         try {
-            ocrEnginePromise ||= import('tesseract.js').then(({ createWorker }) => createWorker('eng'));
-            const ocr = await ocrEnginePromise;
-            const { data } = await ocr.recognize(file);
-            const likelyName = (data.lines || []).slice(0, 2).map(line => line.text)
-                .join(' ').replace(/[^\p{L}\p{N}'’ -]/gu, ' ').replace(/\s+/g, ' ').trim();
-            if (preview.isConnected) {
-                preview.querySelector('.magic-photo-card strong').textContent = likelyName ? 'Testo riconosciuto' : 'Non riesco a leggere il nome';
-                preview.querySelector('.magic-photo-card span').textContent = likelyName
-                    ? `Possibile nome: “${likelyName}”. Lo cerco nel catalogo: controlla il risultato prima di aggiungerlo.`
-                    : 'Prova una foto più nitida o scrivi il nome nel campo di ricerca.';
+            const recognized = [];
+            for (const file of files) recognized.push(...await scanMagicDocument(file, message => {
+                const label = preview.querySelector('.magic-photo-card span'); if (label) label.textContent = message;
+            }));
+            const quantities = new Map();
+            for (const card of recognized) quantities.set(card.name, (quantities.get(card.name) || 0) + card.quantity);
+            const entries = [...quantities.entries()];
+            if (!entries.length) throw new Error('Non ho riconosciuto carte. Prova con una scansione più nitida.');
+            scannedCards = [];
+            for (let index = 0; index < entries.length; index += 5) {
+                const batch = await Promise.all(entries.slice(index, index + 5).map(async ([name, quantity]) => {
+                    try {
+                        const response = await fetch('https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(name), { headers: { Accept: 'application/json' } });
+                        return response.ok ? { name, quantity, card: await response.json() } : { name, quantity, card: null };
+                    } catch { return { name, quantity, card: null }; }
+                }));
+                scannedCards.push(...batch);
             }
-            if (likelyName) {
-                const input = container.querySelector('#magic-search');
-                if (input) input.value = likelyName;
-                await searchCards(likelyName);
-            }
+            const found = scannedCards.filter(entry => entry.card);
+            preview.innerHTML = '<div class="magic-photo-card"><div><strong>Riconosciute ' + found.length + ' carte su ' + entries.length + '</strong><span>Controlla nomi e quantità prima di aggiungerle alla bacheca.</span></div><button type="button" class="magic-button" id="magic-add-scanned" ' + (found.length ? '' : 'disabled') + '>Aggiungi tutte</button></div><div class="magic-scan-lines">' + scannedCards.map((entry, index) => '<div>' + esc(entry.name) + ' · ×' + entry.quantity + (entry.card ? ' → ' + esc(entry.card.name) : ' · non trovata nel catalogo') + '<button type="button" class="magic-text-button" data-scan-index="' + index + '" ' + (entry.card ? '' : 'disabled') + '>Aggiungi</button></div>').join('') + '</div>';
+            preview.querySelector('#magic-add-scanned')?.addEventListener('click', () => {
+                for (const entry of scannedCards) if (entry.card) addCollectionCard(entry.card, entry.quantity);
+                scannedCards = []; preview.innerHTML = ''; setNotice('Carte riconosciute aggiunte alla bacheca.');
+            });
+            preview.querySelectorAll('[data-scan-index]').forEach(button => button.addEventListener('click', () => {
+                const entry = scannedCards[Number(button.dataset.scanIndex)];
+                if (entry?.card) { addCollectionCard(entry.card, entry.quantity); button.disabled = true; button.textContent = 'Aggiunta'; }
+            }));
         } catch (error) {
-            if (preview.isConnected) {
-                const strong = preview.querySelector('.magic-photo-card strong');
-                const text = preview.querySelector('.magic-photo-card span');
-                if (strong) strong.textContent = 'Scansione OCR non disponibile';
-                if (text) text.textContent = `${error.message || 'Errore del modello OCR.'} Puoi comunque cercare il nome manualmente.`;
-            }
+            preview.innerHTML = '<div class="magic-photo-card"><div><strong>Scansione non riuscita</strong><span>' + esc(error.message) + ' Puoi cercare il nome manualmente.</span></div></div>';
         }
+    };
+    container.querySelector('#magic-photo').onchange = async event => {
+        const files = [...(event.target.files || [])];
+        if (files.length > 30) { setNotice('Puoi selezionare al massimo 30 immagini per volta.'); event.target.value = ''; return; }
+        if (files.length) await scanAndResolve(files);
+        event.target.value = '';
     };
     container.querySelector('#magic-search-results').onclick = event => { const button = event.target.closest('[data-add-result]'); if (button) { const card = cardResults.find(item=>item.id===button.dataset.addResult); if(card) addCollectionCard(card); } };
     container.querySelector('#magic-collection').onclick = event => {
