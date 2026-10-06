@@ -1,18 +1,16 @@
 import { compactObject, sanitizeText } from './http.js';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 export const getGroqConfig = () => ({
     apiKey: process.env.GROQ_LLM_API_KEY
         || process.env.GROQ_API_KEY
-        || process.env.VITE_GROQ_LLM_API_KEY
         || '',
     model: process.env.GROQ_LLM_MODEL
-        || process.env.VITE_GROQ_LLM_MODEL
         || DEFAULT_MODEL,
-    temperature: Number(process.env.GROQ_LLM_TEMPERATURE || process.env.VITE_GROQ_LLM_TEMPERATURE || 0.75),
-    maxTokens: Number(process.env.GROQ_LLM_MAX_TOKENS || process.env.VITE_GROQ_LLM_MAX_TOKENS || 420)
+    temperature: Number(process.env.GROQ_LLM_TEMPERATURE || 0.75),
+    maxTokens: Number(process.env.GROQ_LLM_MAX_TOKENS || 420)
 });
 
 const modeInstruction = (mode = 'master') => {
@@ -25,8 +23,37 @@ const modeInstruction = (mode = 'master') => {
     return 'Agisci come master: narra, interpreta PNG, proponi conseguenze e chiedi tiri quando serve, senza togliere agency ai giocatori.';
 };
 
+export const callGroqVision = async ({ images = [], text = '' }) => {
+    const config = getGroqConfig();
+    if (!config.apiKey) {
+        const error = new Error('GROQ_LLM_API_KEY non configurata nelle variabili server.');
+        error.statusCode = 503;
+        error.code = 'missing_groq_key';
+        throw error;
+    }
+    const visionModel = process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b';
+    const content = [{ type: 'text', text: `Estrai SOLO le carte Magic: The Gathering. Rispondi con JSON valido nel formato {"cards":[{"name":"nome ufficiale della carta","quantity":1}]}. Per liste testuali mantieni quantità e ignora intestazioni, terre/base count non interpretabili e testo estraneo. Per immagini leggi i nomi e le quantità visibili. Non inventare carte. Testo da analizzare:\n${sanitizeText(text, 24000)}` }];
+    for (const image of images.slice(0, 3)) {
+        if (typeof image !== 'string' || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) continue;
+        content.push({ type: 'image_url', image_url: { url: image } });
+    }
+    if (images.length && content.length === 1) throw Object.assign(new Error('Immagini non valide.'), { statusCode: 400 });
+    const response = await fetch(GROQ_API_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+        body: JSON.stringify({ model: visionModel, messages: [{ role: 'user', content }], temperature: 0, max_tokens: 1800, response_format: { type: 'json_object' } })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw Object.assign(new Error(data?.error?.message || `Groq non disponibile (${response.status}).`), { statusCode: response.status, code: data?.error?.code || 'groq_error' });
+    let parsed;
+    try { parsed = JSON.parse(data?.choices?.[0]?.message?.content || '{}'); }
+    catch { throw Object.assign(new Error('Risposta di scansione non valida.'), { statusCode: 502, code: 'invalid_scan_reply' }); }
+    const cards = (Array.isArray(parsed.cards) ? parsed.cards : []).slice(0, 300).map(card => ({ name: sanitizeText(card.name, 120), quantity: Math.min(99, Math.max(1, Number.parseInt(card.quantity, 10) || 1)) })).filter(card => card.name);
+    return { cards, model: visionModel, usage: data?.usage || null };
+};
+
 export const buildRpgMessages = ({ prompt, mode, systemId, context, history }) => {
-    const normalizedSystem = 'D&D 5e';
+    const systemLabels = { dnd5e: 'D&D 5e', pathfinder2e: 'Pathfinder 2e', callofcthulhu: 'Call of Cthulhu', savageworlds: 'Savage Worlds', forbiddenlands: 'Forbidden Lands' };
+    const normalizedSystem = systemLabels[systemId] || String(systemId || 'dnd5e');
     const recentHistory = Array.isArray(history) ? history.slice(-12) : [];
 
     return [
