@@ -31,8 +31,23 @@ const imageData = async (source, maxSide = 1200) => {
 };
 
 const canvasImageData = canvas => toCompressedJpeg(canvas);
+const OCR_CONNECTORS = new Set(['a', 'al', 'an', 'and', 'at', 'da', 'de', 'del', 'della', 'delle', 'dei', 'degli', 'di', 'do', 'e', 'ed', 'il', 'in', 'la', 'le', 'lo', 'of', 'or', 'the', 'to', 'un', 'una']);
+const cleanOcrTitle = value => {
+    const words = String(value || '').replace(/[^\p{L}\p{N}'’., -]/gu, ' ').replace(/\s+/g, ' ').trim().split(' ');
+    const cleaned = [];
+    for (const word of words) {
+        const alpha = word.replace(/^[^\p{L}]+|[^\p{L}]+$/gu, '').replace(/\bI(?=['’])/g, 'l');
+        if (!alpha || /^\d+$/.test(alpha) || (/^[A-Z]{2,5}$/.test(alpha))) continue;
+        const normalized = alpha.toLocaleLowerCase();
+        if (alpha.length <= 2 && !OCR_CONNECTORS.has(normalized)) continue;
+        if (cleaned.at(-1)?.toLocaleLowerCase() === normalized) continue;
+        cleaned.push(alpha);
+    }
+    return cleaned.join(' ');
+};
 
 const extractProxySheetNames = async (canvas, worker) => {
+    await worker.setParameters({ tessedit_pageseg_mode: '3' });
     const { data } = await worker.recognize(canvas, {}, { blocks: true });
     const words = (data.blocks || []).flatMap(block => block.paragraphs || [])
         .flatMap(paragraph => paragraph.lines || []).flatMap(line => line.words || []);
@@ -40,21 +55,55 @@ const extractProxySheetNames = async (canvas, worker) => {
     const columns = [[0.055, 0.35], [0.355, 0.65], [0.655, 0.96]];
     const rows = [[0.06, 0.096], [0.36, 0.396], [0.66, 0.696]];
     const names = [];
-    for (const [top, bottom] of rows) for (const [left, right] of columns) {
-        const title = words.filter(word => {
+    await worker.setParameters({ tessedit_pageseg_mode: '3' });
+    for (let row = 0; row < rows.length; row++) for (let column = 0; column < columns.length; column++) {
+        const [top] = rows[row], [left, right] = columns[column];
+        const sourceX = Math.round(left * width), sourceY = Math.round(top * height);
+        const sourceWidth = Math.round((right - left) * width), sourceHeight = Math.round(0.035 * height);
+        const crop = document.createElement('canvas');
+        crop.width = sourceWidth * 3; crop.height = sourceHeight * 3;
+        crop.getContext('2d').drawImage(canvas, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, crop.width, crop.height);
+        const { data: cropData } = await worker.recognize(crop, {}, { blocks: true });
+        const cropWords = (cropData.blocks || []).flatMap(block => block.paragraphs || [])
+            .flatMap(paragraph => paragraph.lines || []).flatMap(line => line.words || []);
+        const primary = cropWords.filter(word => {
+            const x = (word.bbox.x0 + word.bbox.x1) / 2 / crop.width;
+            const y = (word.bbox.y0 + word.bbox.y1) / 2 / crop.height;
+            return x >= 0.05 && x <= 0.78 && y >= 0.12 && y <= 0.88
+                && word.confidence >= 25 && /[\p{L}\p{N}]/u.test(word.text);
+        }).sort((a, b) => a.bbox.x0 - b.bbox.x0).map(word =>
+            (word.text.match(/[\p{L}][\p{L}'’.-]{1,}/gu) || []).join(' ')
+        ).filter(Boolean).join(' ');
+
+        const [topBand, bottomBand] = rows[row], [leftBand, rightBand] = columns[column];
+        const fallback = words.filter(word => {
             const x = (word.bbox.x0 + word.bbox.x1) / 2 / width;
             const y = (word.bbox.y0 + word.bbox.y1) / 2 / height;
-            return x >= left && x <= right && y >= top && y <= bottom && /[\p{L}\p{N}]/u.test(word.text);
+            return x >= leftBand && x <= leftBand + (rightBand - leftBand) * 0.79
+                && y >= topBand && y <= bottomBand && word.confidence >= 10 && /[\p{L}\p{N}]/u.test(word.text);
         }).sort((a, b) => a.bbox.x0 - b.bbox.x0).map(word => {
             const parts = word.text.match(/[\p{L}][\p{L}'’.-]{1,}/gu) || [];
             return word.confidence < 35 ? (parts.at(-1) || '') : parts.join(' ');
-        }).filter(Boolean).join(' ')
-            .replace(/[^\p{L}\p{N}'’., -]/gu, ' ').replace(/\s+/g, ' ').trim();
-        if (title.length >= 3 && title.length <= 100) names.push({ name: title, quantity: 1 });
+        }).filter(Boolean).join(' ');
+        const primaryName = cleanOcrTitle(primary), fallbackName = cleanOcrTitle(fallback);
+        const name = primaryName.length >= 3 ? primaryName : fallbackName;
+        if (name.length >= 3 && name.length <= 100) names.push({
+            name,
+            quantity: 1,
+            alternatives: fallbackName && fallbackName.toLocaleLowerCase() !== name.toLocaleLowerCase() ? [fallbackName] : []
+        });
     }
     const merged = new Map();
-    for (const { name } of names) merged.set(name, (merged.get(name) || 0) + 1);
-    return [...merged].map(([name, quantity]) => ({ name, quantity }));
+    for (const candidate of names) {
+        const key = candidate.name.toLocaleLowerCase();
+        const entry = merged.get(key) || { ...candidate, quantity: 0, alternatives: [] };
+        entry.quantity++;
+        for (const alternative of candidate.alternatives) {
+            if (!entry.alternatives.some(value => value.toLocaleLowerCase() === alternative.toLocaleLowerCase())) entry.alternatives.push(alternative);
+        }
+        merged.set(key, entry);
+    }
+    return [...merged.values()];
 };
 
 const groqScanRequest = async (body, onProgress) => {
@@ -156,8 +205,16 @@ export async function scanMagicDocument(file, onProgress = () => {}) {
         }
         if (all.length) {
             const unique = new Map();
-            for (const { name, quantity } of all) unique.set(name, (unique.get(name) || 0) + quantity);
-            const cards = [...unique].map(([name, quantity]) => ({ name, quantity }));
+            for (const card of all) {
+                const key = card.name.toLocaleLowerCase();
+                const entry = unique.get(key) || { name: card.name, quantity: 0, alternatives: [] };
+                entry.quantity += card.quantity || 1;
+                for (const alternative of card.alternatives || []) {
+                    if (!entry.alternatives.some(value => value.toLocaleLowerCase() === alternative.toLocaleLowerCase())) entry.alternatives.push(alternative);
+                }
+                unique.set(key, entry);
+            }
+            const cards = [...unique.values()];
             onProgress(`Riconosciute ${cards.length} carte in locale, senza inviare le pagine a Groq.`);
             return cards;
         }
