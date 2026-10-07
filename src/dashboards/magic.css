@@ -45,4 +45,4 @@
 #ui .magic-public-share-content>.magic-button{justify-self:start}
 @media(max-width:700px){#ui .magic-deck-title{align-items:flex-start}.magic-sharing-toggle{white-space:normal}}
 
-#ui .magic-scan-lines{display:grid;gap:5px;padding:9px 0;color:#d9cbdc;font-size:11px}.magic-scan-lines>div{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:8px;border-bottom:1px solid #78608033}
+#ui .magic-scan-lines{display:grid;gap:5px;padding:9px 0;color:#d9cbdc;font-size:11px}.magic-scan-lines>div{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:8px;border-bottom:1px solid #78608033;flex-wrap:wrap}#ui .magic-scan-correction{flex:1;min-width:180px;padding:7px 9px;border:1px solid #78608066;border-radius:5px;background:#100d15;color:#eee5ef;font:inherit}
