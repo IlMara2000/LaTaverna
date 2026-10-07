@@ -1,5 +1,6 @@
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { createWorker } from 'tesseract.js';
 
 GlobalWorkerOptions.workerSrc = pdfWorker;
 let scanQueue = Promise.resolve();
@@ -31,11 +32,38 @@ const imageData = async (source, maxSide = 1200) => {
 
 const canvasImageData = canvas => toCompressedJpeg(canvas);
 
+const extractProxySheetNames = async (canvas, worker) => {
+    const { data } = await worker.recognize(canvas, {}, { blocks: true });
+    const words = (data.blocks || []).flatMap(block => block.paragraphs || [])
+        .flatMap(paragraph => paragraph.lines || []).flatMap(line => line.words || []);
+    const width = canvas.width, height = canvas.height;
+    const columns = [[0.055, 0.35], [0.355, 0.65], [0.655, 0.96]];
+    const rows = [[0.06, 0.096], [0.36, 0.396], [0.66, 0.696]];
+    const names = [];
+    for (const [top, bottom] of rows) for (const [left, right] of columns) {
+        const title = words.filter(word => {
+            const x = (word.bbox.x0 + word.bbox.x1) / 2 / width;
+            const y = (word.bbox.y0 + word.bbox.y1) / 2 / height;
+            return x >= left && x <= right && y >= top && y <= bottom && /[\p{L}\p{N}]/u.test(word.text);
+        }).sort((a, b) => a.bbox.x0 - b.bbox.x0).map(word => {
+            const parts = word.text.match(/[\p{L}][\p{L}'’.-]{1,}/gu) || [];
+            return word.confidence < 35 ? (parts.at(-1) || '') : parts.join(' ');
+        }).filter(Boolean).join(' ')
+            .replace(/[^\p{L}\p{N}'’., -]/gu, ' ').replace(/\s+/g, ' ').trim();
+        if (title.length >= 3 && title.length <= 100) names.push({ name: title, quantity: 1 });
+    }
+    const merged = new Map();
+    for (const { name } of names) merged.set(name, (merged.get(name) || 0) + 1);
+    return [...merged].map(([name, quantity]) => ({ name, quantity }));
+};
+
 const groqScanRequest = async (body, onProgress) => {
     for (let attempt = 0; attempt < 3; attempt++) {
         const cooldown = Math.max(0, nextGroqRequestAt - Date.now());
         if (cooldown) await wait(cooldown);
-        nextGroqRequestAt = Date.now() + 2200;
+        // Groq's free vision tier counts each image as 2,048 input tokens. Leave
+        // a full minute after multi-page requests to stay under its TPM ceiling.
+        nextGroqRequestAt = Date.now() + ((body.images?.length || 0) > 1 ? 60000 : 20000);
         const response = await fetch('/api/magic/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const payload = await response.json().catch(() => ({}));
         if (response.ok) return payload.cards || [];
@@ -112,19 +140,36 @@ export async function scanMagicDocument(file, onProgress = () => {}) {
             onProgress('Interpreto la lista PDF…');
             return groqScan({ text: text.slice(0, 24000) }, onProgress);
         }
+        onProgress('Leggo localmente i titoli delle carte…');
+        const worker = await createWorker('eng');
         const all = [];
-        for (let start = 1; start <= pdf.numPages; start += 3) {
-            const images = [];
-            for (let pageNo = start; pageNo < Math.min(start + 3, pdf.numPages + 1); pageNo++) {
-                onProgress(`Scansiono pagina ${pageNo} di ${pdf.numPages}…`);
-                const page = await pdf.getPage(pageNo), viewport = page.getViewport({ scale: 1.25 });
+        try {
+            for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
+                onProgress(`Riconosco i nomi nella pagina ${pageNo} di ${pdf.numPages}…`);
+                const page = await pdf.getPage(pageNo), viewport = page.getViewport({ scale: 2 });
                 const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
                 await page.render({ canvas, viewport }).promise;
-                images.push(canvasImageData(canvas));
+                all.push(...await extractProxySheetNames(canvas, worker));
             }
-            all.push(...await groqScanImages(images, onProgress));
+        } finally {
+            await worker.terminate();
         }
-        return all;
+        if (all.length) {
+            const unique = new Map();
+            for (const { name, quantity } of all) unique.set(name, (unique.get(name) || 0) + quantity);
+            const cards = [...unique].map(([name, quantity]) => ({ name, quantity }));
+            onProgress(`Riconosciute ${cards.length} carte in locale, senza inviare le pagine a Groq.`);
+            return cards;
+        }
+        onProgress('OCR locale senza risultati; provo la scansione AI di una pagina alla volta…');
+        const images = [];
+        for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
+            const page = await pdf.getPage(pageNo), viewport = page.getViewport({ scale: 1.25 });
+            const canvas = document.createElement('canvas'); canvas.width = viewport.width; canvas.height = viewport.height;
+            await page.render({ canvas, viewport }).promise;
+            images.push(canvasImageData(canvas));
+        }
+        return groqScanImages(images, onProgress);
     }
     if (!file.type.startsWith('image/')) throw new Error('Formato non supportato. Scegli immagini o PDF.');
     onProgress('Analizzo l’immagine con Groq…');
