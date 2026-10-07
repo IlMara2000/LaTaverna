@@ -4,7 +4,8 @@ import { canPairCommanders, isCommanderEligible, validateCommanderDeck } from '.
 import { formatManabrewCommanderList } from './magicManabrew.js';
 import { rememberDestination, navigateTo } from '../services/appNavigation.js';
 import { enhanceSurfaceMotion } from '../services/motionSystem.js';
-import { scanMagicDocument } from '../services/magicDocumentScan.js';
+import { parseMagicCardList, scanMagicDocument } from '../services/magicDocumentScan.js';
+import { MAGIC_DEMO_DECKS } from '../data/magicDemoDecks.js';
 import { getMagicAccount, loadMagicLibrary, loadPublicMagicShare, saveMagicLibrary, setMagicCollectionPublic, setMagicDeckPublic } from '../services/magicLibrary.js';
 import { createMinigameRoom, getMinigameRoomByCode, getSavedMinigameRoom, isMinigameRoomConnected, joinMagicRoom, updateMinigameRoomData, watchMinigameRoom } from '../services/minigameMultiplayer.js';
 import './magic.css';
@@ -25,14 +26,14 @@ let catalogQueue = Promise.resolve();
 let nextCatalogRequestAt = 0;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const fetchScryfallJson = url => {
+const fetchScryfallJson = (url, options = {}) => {
     const request = catalogQueue.then(async () => {
         for (let attempt = 0; attempt < 4; attempt++) {
             const cooldown = Math.max(0, nextCatalogRequestAt - Date.now());
             if (cooldown) await pause(cooldown);
             nextCatalogRequestAt = Date.now() + 125;
             try {
-                const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                const response = await fetch(url, { ...options, headers: { Accept: 'application/json', ...options.headers } });
                 const payload = await response.json().catch(() => ({}));
                 if (response.status !== 429 && response.status !== 503) return { response, payload };
                 if (attempt === 3) return { response, payload };
@@ -61,6 +62,30 @@ const resolveScannedCard = async entry => {
         }
     }
     return { ...entry, card: null };
+};
+
+const normalizeCardName = value => String(value || '').normalize('NFKD').replace(/\p{Diacritic}/gu, '').replace(/[’‘]/g, "'").trim().toLocaleLowerCase();
+const resolveScannedCards = async (entries, onProgress = () => {}) => {
+    const found = new Map();
+    const unique = [...new Map(entries.map(entry => [normalizeCardName(entry.name), entry])).values()];
+    for (let index = 0; index < unique.length; index += 75) {
+        const batch = unique.slice(index, index + 75);
+        onProgress(`Cerco ${Math.min(index + batch.length, unique.length)} nomi su ${unique.length} nel catalogo…`);
+        const { response, payload } = await fetchScryfallJson('https://api.scryfall.com/cards/collection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifiers: batch.map(entry => ({ name: entry.name })) })
+        });
+        if (!response?.ok) throw new Error(payload.details || 'Catalogo Scryfall non disponibile.');
+        for (const card of payload.data || []) found.set(normalizeCardName(card.name), card);
+    }
+    const unresolved = [];
+    for (const entry of entries) {
+        const card = found.get(normalizeCardName(entry.name));
+        if (card) unresolved.push({ ...entry, card });
+        else unresolved.push(await resolveScannedCard(entry).catch(() => ({ ...entry, card: null })));
+    }
+    return unresolved;
 };
 
 async function openMagicProxyPrinter(cards) {
@@ -171,7 +196,7 @@ export function showMagicDashboard(container, options = {}) {
        <div class="magic-search-row"><label class="magic-search"><span aria-hidden="true">⌕</span><input id="magic-search" type="search" placeholder="Cerca una carta nel catalogo…" autocomplete="off"><span class="magic-search-hint">Catalogo Scryfall</span></label></div><div id="magic-photo-preview"></div><div id="magic-search-results" class="magic-search-results" aria-live="polite"></div>
        <div class="magic-collection-head"><h3>Carte possedute</h3><label class="magic-sharing-toggle"><input type="checkbox" id="magic-collection-public" ${collectionPublic ? 'checked' : ''} disabled><span>${collectionPublic ? 'Collezione pubblica' : 'Collezione privata'}</span></label><button type="button" id="magic-share-collection" class="magic-text-button" ${collectionPublic ? '' : 'hidden'}>Copia link</button><label class="magic-search magic-collection-search"><span aria-hidden="true">⌕</span><input id="magic-filter" type="search" placeholder="Filtra per nome…"></label></div><div id="magic-collection" class="magic-card-grid"></div>
       </section>
-      <section data-panel="mazzi" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">COSTRUISCI LA TUA STRATEGIA</span><h2>I tuoi mazzi</h2><p>Organizza le carte presenti nella tua bacheca e prepara il duello.</p></div><button id="magic-new-deck" class="magic-button" type="button">＋ Crea un mazzo</button></div><div class="magic-deck-layout"><aside id="magic-deck-list" class="magic-deck-list"></aside><div id="magic-deck-editor" class="magic-deck-editor"></div></div></section>
+      <section data-panel="mazzi" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">COSTRUISCI LA TUA STRATEGIA</span><h2>I tuoi mazzi</h2><p>Organizza le carte presenti nella tua bacheca e prepara il duello.</p></div><button id="magic-new-deck" class="magic-button" type="button">＋ Crea un mazzo</button></div><div class="magic-demo-pack"><img src="/images/magic-test-booster.webp" alt="Illustrazione originale della Bustina Prova La Taverna" loading="lazy"><div><span class="magic-overline">KIT DI PROVA · COMMANDER</span><strong>Pronto a giocare?</strong><p>Carica i quattro mazzi demo nella tua bacheca privata. Cerco i nomi tutti insieme, senza usare Groq.</p><button id="magic-load-demos" class="magic-button" type="button">Carica i 4 mazzi demo</button></div></div><div class="magic-deck-layout"><aside id="magic-deck-list" class="magic-deck-list"></aside><div id="magic-deck-editor" class="magic-deck-editor"></div></div></section>
       <section data-panel="partita" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">GIOCA CON UN AMICO</span><h2>Il tuo tavolo</h2><p>Apri una stanza o inserisci il codice ricevuto dall’avversario.</p></div></div>
        <div class="magic-room-bar"><button id="magic-host" type="button" class="magic-button">Crea una partita</button><form id="magic-join-form" class="magic-join-form"><select id="magic-join-deck" aria-label="Scegli il mazzo con cui giocare">${decks.map(deck => `<option value="${esc(deck.id)}">${esc(deck.name)}</option>`).join('')}</select><input id="magic-room-code" maxlength="6" autocomplete="off" placeholder="CODICE STANZA" aria-label="Codice stanza"><button class="magic-button magic-button-secondary" type="submit">Entra</button></form></div>
        <div id="magic-room-status" class="magic-room-status">${room?.code ? `Stanza ${esc(room.code)} · ${room.status === 'connected' ? 'Avversario connesso' : 'In attesa di un avversario'}` : 'Nessuna partita attiva'}</div><div id="magic-table"></div>
@@ -300,11 +325,9 @@ export function showMagicDashboard(container, options = {}) {
             }
             const entries = [...quantities.values()];
             if (!entries.length) throw new Error('Non ho riconosciuto carte. Prova con una scansione più nitida.');
-            scannedCards = [];
-            for (let index = 0; index < entries.length; index += 5) {
-                const batch = await Promise.all(entries.slice(index, index + 5).map(entry => resolveScannedCard(entry).catch(() => ({ ...entry, card: null }))));
-                scannedCards.push(...batch);
-            }
+            scannedCards = await resolveScannedCards(entries, message => {
+                const label = preview.querySelector('.magic-photo-card span'); if (label) label.textContent = message;
+            });
             const consolidate = () => {
                 const merged = new Map();
                 for (const entry of scannedCards) {
@@ -345,6 +368,56 @@ export function showMagicDashboard(container, options = {}) {
             preview.innerHTML = '<div class="magic-photo-card"><div><strong>Scansione non riuscita</strong><span>' + esc(error.message) + ' Puoi cercare il nome manualmente.</span></div></div>';
         }
     };
+    const loadDemoDecks = async button => {
+        const pending = MAGIC_DEMO_DECKS.filter(demo => !decks.some(deck => deck.name === demo.name));
+        if (!pending.length) { setNotice('I quattro mazzi demo sono già nella tua lista.'); return; }
+        button.disabled = true;
+        const originalLabel = button.textContent;
+        button.textContent = 'Carico…';
+        try {
+            const parsedDecks = pending.map(demo => {
+                const parsed = parseMagicCardList(demo.source);
+                const total = parsed.cards.reduce((sum, card) => sum + card.quantity, 0);
+                if (total !== 100) throw new Error(`${demo.name}: la lista contiene ${total} carte invece di 100.`);
+                return { ...demo, cards: parsed.cards };
+            });
+            const allEntries = [...new Map(parsedDecks.flatMap(deck => deck.cards).map(card => [normalizeCardName(card.name), { name: card.name, quantity: 1 }])).values()];
+            const resolved = await resolveScannedCards(allEntries, message => setNotice(`Carico i mazzi demo · ${message}`));
+            const cardsByName = new Map(resolved.filter(entry => entry.card).map(entry => [normalizeCardName(entry.name), entry.card]));
+            const missingNames = allEntries.filter(entry => !cardsByName.has(normalizeCardName(entry.name))).map(entry => entry.name);
+            if (missingNames.length) throw new Error(`Non trovo nel catalogo: ${missingNames.slice(0, 5).join(', ')}${missingNames.length > 5 ? '…' : ''}. Nessun mazzo è stato aggiunto.`);
+
+            const stagedDecks = parsedDecks.map(demo => {
+                const deckCardsList = demo.cards.map(entry => ({ card: cardsByName.get(normalizeCardName(entry.name)), quantity: entry.quantity }));
+                const commander = cardsByName.get(normalizeCardName(demo.commander));
+                if (!commander) throw new Error(`Comandante non trovato per ${demo.name}.`);
+                const validation = validateCommanderDeck(deckCardsList.flatMap(({ card, quantity }) => Array.from({ length: quantity }, () => cardSummary(card))), [commander.id]);
+                if (!validation.valid) throw new Error(`${demo.name}: ${validation.errors[0]}`);
+                return { name: demo.name, commander, cards: deckCardsList.map(({ card, quantity }) => ({ cardId: card.id, quantity })) };
+            });
+
+            const quantityById = new Map();
+            for (const deck of stagedDecks) for (const item of deck.cards) quantityById.set(item.cardId, (quantityById.get(item.cardId) || 0) + item.quantity);
+            for (const [id, quantity] of quantityById) {
+                const source = resolved.find(entry => entry.card?.id === id)?.card;
+                if (!source) continue;
+                const existing = collection.find(card => card.id === id);
+                if (existing) existing.quantity = Math.min(999, existing.quantity + quantity);
+                else collection.unshift({ ...cardSummary(source), quantity });
+            }
+            for (const deck of stagedDecks) decks.push({ id: crypto.randomUUID(), name: deck.name, cards: deck.cards, commanders: [deck.commander.id] });
+            selectedDeck = stagedDecks.at(-1)?.name ? decks.find(deck => deck.name === stagedDecks.at(-1).name)?.id || selectedDeck : selectedDeck;
+            activeTab = 'mazzi';
+            persist();
+            render();
+            setNotice(`${stagedDecks.length} mazzi Commander demo caricati. Le liste e le carte restano private nel tuo account.`);
+        } catch (error) {
+            setNotice(`Caricamento demo non riuscito: ${error.message}`);
+        } finally {
+            button.disabled = false;
+            button.textContent = originalLabel;
+        }
+    };
     container.querySelector('#magic-photo').onchange = async event => {
         const input = event.target;
         const file = input.files?.[0];
@@ -354,6 +427,7 @@ export function showMagicDashboard(container, options = {}) {
         try { await scanAndResolve([file]); }
         finally { scanInProgress = false; input.disabled = false; input.value = ''; }
     };
+    container.querySelector('#magic-load-demos').onclick = event => { void loadDemoDecks(event.currentTarget); };
     container.querySelector('#magic-search-results').onclick = event => { const button = event.target.closest('[data-add-result]'); if (button) { const card = cardResults.find(item=>item.id===button.dataset.addResult); if(card) addCollectionCard(card); } };
     container.querySelector('#magic-collection').onclick = event => {
         const button=event.target.closest('[data-owned-action]'); if(!button) return; const card=collection.find(item=>item.id===button.dataset.card); if(!card)return;
