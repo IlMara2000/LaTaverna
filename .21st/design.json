@@ -83,6 +83,11 @@
     {
       "date": "2026-09-29",
       "decision": "Extend the handwritten amethyst identity with an illustrated tavern entrance and reading nook, a dedicated Bottega department hub, and a shared-device card match counter. Use quiet high-contrast controls around gameplay and keep motion finite."
+    },
+    {
+      "area": "Magic gameplay / tavern tabletop",
+      "decision": "The Magic match view is a storybook tavern table: warm illustrated oak play surface, green felt player mats, full card faces placed on the table, playful hand-lettered labels and brass-like outlines. Preserve the existing gameplay controls and rules. Keep mobile card lanes swipeable, use finite interaction motion, and do not reproduce the official Magic card back or logos.",
+      "source": "User request, 2026-10-08"
     }
   ],
   "evidence": [
