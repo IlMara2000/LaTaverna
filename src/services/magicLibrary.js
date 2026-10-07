@@ -109,6 +109,11 @@ export async function setMagicDeckPublic(userId, deckId, isPublic) {
     return data;
 }
 
+export async function listPublicMagicDecks() {
+    if (!isSupabaseConfigured) throw new Error('Il catalogo dei mazzi pubblici non è disponibile in questa installazione.');
+    return (await checked(supabase.from('magic_decks').select('id,name,commanders').eq('is_public', true).order('name').limit(100))) || [];
+}
+
 export async function loadPublicMagicShare({ collectionId, deckId }) {
     if (collectionId) {
         const collection = await checked(supabase.from('magic_collections').select('id,is_public').eq('id', collectionId).eq('is_public', true).maybeSingle());

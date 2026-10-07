@@ -57,3 +57,71 @@
 @media(max-width:700px){#ui .magic-deck-title{align-items:flex-start}.magic-sharing-toggle{white-space:normal}}
 
 #ui .magic-scan-lines{display:grid;gap:5px;padding:9px 0;color:#d9cbdc;font-size:11px}.magic-scan-lines>div{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:8px;border-bottom:1px solid #78608033;flex-wrap:wrap}#ui .magic-scan-correction{flex:1;min-width:180px;padding:7px 9px;border:1px solid #78608066;border-radius:5px;background:#100d15;color:#eee5ef;font:inherit}
+
+/* Magic tabletop: storybook tavern wood, felt player mats and full card faces. */
+#ui .magic-game-banner{position:relative;overflow:hidden;padding:16px 18px;border:2px solid #e5b65d;border-radius:18px;background:linear-gradient(110deg,#342019ed,#59331be8),url('/images/magic-tavern-table.webp') center 34%/cover;color:#fff0d0;box-shadow:0 5px 0 #24130d,0 9px 20px #09050a88}
+#ui .magic-game-banner .magic-overline{color:#f3ce7f;font-family:Bangers,Manrope,sans-serif;font-size:15px;letter-spacing:.08em}
+#ui .magic-game-banner>div>strong{font-family:Bangers,Manrope,sans-serif;font-size:25px;letter-spacing:.03em;color:#fff0cd;text-shadow:1px 2px #30190f}
+#ui .magic-game-banner small{color:#f3dfbd;font-size:11px}
+#ui .magic-game-banner>#magic-concede{border-color:#e0b96f;color:#ffeac4}
+#ui .magic-life-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:9px;padding:13px 4px}
+#ui .magic-life,#ui .magic-life-opponent{justify-content:center;flex-wrap:wrap;min-height:61px;padding:8px 11px;border:2px solid #d8ad5d;border-radius:16px;background:linear-gradient(180deg,#f1dbab,#cfaa69);color:#392318;box-shadow:0 4px 0 #5c3821,0 7px 12px #0005}
+#ui .magic-life>span,#ui .magic-life-opponent>span{color:#5d381f;font:700 12px Bangers,Manrope,sans-serif;letter-spacing:.08em}
+#ui .magic-life>strong,#ui .magic-life-opponent>strong{color:#3a2115;font:700 25px Bangers,Manrope,sans-serif;text-shadow:1px 1px #fff1ce}
+#ui .magic-life-opponent small{flex-basis:100%;text-align:center;color:#684b32;font-size:9px}
+#ui .magic-life button{border:1px solid #7d4b2b;border-radius:8px;background:#794426;color:#fff1d3;font-weight:900;box-shadow:0 2px #442718}
+#ui .magic-battlefield{position:relative;isolation:isolate;display:grid;gap:15px;overflow:hidden;padding:22px;border:7px solid #4c291b;border-radius:26px;background:#56351e url('/images/magic-tavern-table.webp') center/cover no-repeat;box-shadow:inset 0 0 0 2px #edbf68,inset 0 0 0 6px #7d4c27,0 12px 24px #07040899}
+#ui .magic-battlefield::before{position:absolute;z-index:-1;inset:0;content:'';background:linear-gradient(90deg,#24150a33,transparent 14%,transparent 86%,#24150a33)}
+#ui .magic-opponents-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:12px}
+#ui .magic-opponent-zone,#ui .magic-own-zone{position:relative;min-width:0;min-height:158px;padding:12px;border:2px solid #e6bd6b;border-radius:18px;background:linear-gradient(145deg,#233c31ed,#14271fec);box-shadow:0 5px 0 #41251a,inset 0 0 0 1px #fff2bd55,0 10px 18px #1b100c77}
+#ui .magic-own-zone{border-color:#f4d27f;background:linear-gradient(145deg,#304a37f2,#1c3228f0)}
+#ui .magic-zone-label{gap:10px;color:#ffebbd;font:700 13px Bangers,Manrope,sans-serif;letter-spacing:.07em;text-shadow:1px 2px #1a100b}
+#ui .magic-pile{color:#ffe5ac;font:600 10px Manrope,system-ui,sans-serif}
+#ui .magic-card-back{width:29px;height:40px;border:2px solid #f0cc75;border-radius:6px;background:linear-gradient(145deg,#7d4c95,#331b45);color:#fff1ca;box-shadow:0 2px 5px #09040b}
+#ui .magic-board-cards{min-height:148px;align-items:center;gap:12px;overflow-x:auto;padding:10px 3px 9px;scrollbar-color:#c39148 #3c291d;scrollbar-width:thin}
+#ui .magic-board-card{position:relative;isolation:isolate;flex:0 0 104px;min-width:104px;max-width:104px;min-height:146px;aspect-ratio:2.5/3.5;overflow:hidden;padding:0;border:2px solid #e8cc8c;border-radius:9px;background:linear-gradient(145deg,#723f86,#34203a 58%,#172c25);color:#fff7df;box-shadow:0 5px 0 #382016,0 8px 13px #080509aa;transition:transform .18s ease,box-shadow .18s ease}
+#ui .magic-board-card>img{position:absolute;z-index:-1;inset:0;width:100%;height:100%;object-fit:cover}
+#ui .magic-board-card-copy{position:absolute;inset:auto 0 0;display:grid;gap:3px;min-height:43px;padding:16px 6px 7px;background:linear-gradient(transparent,#130d0bf2 34%);text-align:left}
+#ui .magic-board-name{display:-webkit-box;overflow:hidden;color:#fff3d8;font:700 11px Bangers,Manrope,sans-serif;letter-spacing:.035em;line-height:1.1;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+#ui .magic-board-card-copy small{overflow:hidden;color:#e8d3b2;font-size:8px;line-height:1.2;text-overflow:ellipsis;white-space:nowrap}
+#ui .magic-board-card>b{right:5px;bottom:5px;padding:3px 5px;border:1px solid #ffe3a5;border-radius:9px;background:#342018eF;color:#fff1cf;font:700 11px Bangers,Manrope,sans-serif}
+#ui .magic-board-card>i{top:6px;right:5px;padding:4px 6px;border:1px solid #f4d57d;border-radius:8px;background:#59326deF;color:#fff3cf;font:700 10px Bangers,Manrope,sans-serif}
+#ui .magic-board-card.is-tapped{transform:rotate(7deg) translateY(-2px);background-color:#241628;box-shadow:0 7px 0 #382016,0 12px 14px #080509bb}
+#ui .magic-board-card[data-board-action="tap"]:hover{transform:translateY(-5px) rotate(-2deg);box-shadow:0 10px 0 #382016,0 14px 18px #080509cc}
+#ui .magic-board-card.is-tapped:hover{transform:rotate(7deg) translateY(-2px)}
+#ui .magic-empty-board{align-self:center;padding:9px 12px;border:1px dashed #e8cc8c77;border-radius:10px;color:#f5e1bc;font:600 12px Manrope,system-ui,sans-serif}
+#ui .magic-game-actions{flex-wrap:wrap;gap:9px;padding:15px 4px}
+#ui .magic-game-actions .magic-button,#ui .magic-game-actions select{min-height:42px;border:2px solid #dfb85f;border-radius:12px;background:linear-gradient(180deg,#81502e,#57321f);color:#fff0cd;box-shadow:0 3px 0 #342016}
+#ui .magic-game-actions select{padding:0 12px;font:600 11px Manrope,system-ui,sans-serif}
+#ui .magic-hand-heading{padding:10px 13px;border:2px solid #e2b961;border-radius:14px 14px 0 0;background:linear-gradient(100deg,#633b25,#3a261a);color:#ffe8b4;font:700 18px Bangers,Manrope,sans-serif;letter-spacing:.07em;box-shadow:0 4px 0 #21140e}
+#ui .magic-hand-heading small{color:#f1d7a5;font:600 10px Manrope,system-ui,sans-serif;letter-spacing:0}
+#ui .magic-hand{gap:8px;margin-top:3px;padding:17px 8px 24px;border:2px solid #a9793c;border-top:0;border-radius:0 0 16px 16px;background:linear-gradient(180deg,#2a1b17ed,#1b1414f2);perspective:900px}
+#ui .magic-hand-card{flex-basis:clamp(94px,12vw,142px);border:2px solid #e3ca91;border-radius:10px;box-shadow:0 7px 0 #452a19,0 11px 17px #0008;transform:rotate(-1deg);transition:transform .18s ease,box-shadow .18s ease}
+#ui .magic-hand-card:nth-child(3n+1){transform:rotate(-2deg)}
+#ui .magic-hand-card:nth-child(3n){transform:rotate(1.7deg)}
+#ui .magic-hand-card:hover{z-index:2;transform:translateY(-10px) rotate(0deg);box-shadow:0 12px 0 #452a19,0 17px 20px #0009}
+#ui .magic-hand-overlay{background:linear-gradient(transparent,#170f0df5 19%)}
+#ui .magic-hand-overlay strong{font:700 13px Bangers,Manrope,sans-serif;letter-spacing:.03em}
+#ui .magic-hand-overlay button{border:1px solid #ffe099;border-radius:8px;background:linear-gradient(#91603b,#5c3420);color:#fff1d0;font:700 11px Bangers,Manrope,sans-serif}
+#ui .magic-command-zone{padding:13px;border:2px solid #e2b961;border-radius:16px;background:linear-gradient(120deg,#342319,#281921);box-shadow:0 5px 0 #1a110f}
+#ui .magic-command-zone>.magic-zone-label{font-size:17px}
+#ui .magic-commander-card{border:1px solid #ba9454;border-radius:12px;background:#211b1bd9;color:#fff0d0}
+#ui .magic-commander-card>button{border:1px solid #e7c16d;border-radius:8px;background:#754a2d;color:#fff0d0;font:700 12px Bangers,Manrope,sans-serif}
+#ui .magic-phase-help{padding:12px 15px;border:1px solid #bd9356;border-left:5px solid #daac5a;border-radius:8px;background:#261a16dd;color:#eddbbd;font-size:10px;line-height:1.7}
+#ui .magic-table-wait{border:2px solid #d9b466;border-radius:18px;background:linear-gradient(110deg,#352219ed,#51301de8),url('/images/magic-tavern-table.webp') center/cover;color:#fff0cd;box-shadow:0 7px 0 #28170f}
+#ui .magic-table-wait strong{font:700 22px Bangers,Manrope,sans-serif;letter-spacing:.04em}
+#ui .magic-table-wait p{color:#f2dfbd;font-size:11px}
+@media(max-width:700px){#ui .magic-battlefield{gap:10px;padding:12px;border-width:5px;border-radius:19px}#ui .magic-opponents-row{grid-template-columns:minmax(0,1fr)}#ui .magic-opponent-zone,#ui .magic-own-zone{min-height:144px;padding:9px}#ui .magic-board-cards{min-height:133px;gap:9px}#ui .magic-board-card{flex-basis:88px;min-width:88px;max-width:88px;min-height:123px}#ui .magic-board-name{font-size:10px}#ui .magic-hand{padding-inline:6px}#ui .magic-hand-card{flex-basis:105px}#ui .magic-life-row{grid-template-columns:repeat(2,minmax(0,1fr))}#ui .magic-life,#ui .magic-life-opponent{min-width:0}}
+@media(prefers-reduced-motion:reduce){#ui .magic-board-card,#ui .magic-hand-card,#ui .magic-hand-card:hover{transition:none;transform:none}}
+
+/* Tavolo di prova contro i bot */
+#ui .magic-bot-setup{margin:18px 0 22px;padding:18px;border:2px solid #d8ad5d;border-radius:20px;background:linear-gradient(145deg,#f1dfb8 0%,#dfc28a 100%);color:#392519;box-shadow:0 6px 0 #603a22,0 12px 24px #08050955}
+#ui .magic-bot-setup .magic-overline{color:#754423}
+#ui .magic-bot-intro h3{margin:3px 0 5px;color:#402518;font:700 26px Bangers,Manrope,sans-serif;letter-spacing:.035em}
+#ui .magic-bot-intro p,#ui .magic-bot-note{color:#634a34;font-size:11px;line-height:1.65}
+#ui .magic-bot-controls,#ui .magic-bot-deck-selectors{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}
+#ui .magic-bot-controls>label,#ui .magic-bot-deck-selectors>label{display:grid;gap:5px;flex:1;min-width:155px;color:#53341f;font-size:10px;font-weight:700}
+#ui .magic-bot-controls select,#ui .magic-bot-deck-selectors select{min-height:40px;padding:0 10px;border:1px solid #805535;border-radius:8px;background:#fff4d9;color:#392519;font-size:11px}
+#ui .magic-bot-setup .magic-button{border:2px solid #f1cf7b;border-radius:11px;background:linear-gradient(#84512f,#603720);color:#fff0cb;box-shadow:0 3px 0 #432718}
+#ui .magic-bot-setup .magic-button:disabled{opacity:.55}
+#ui .magic-bot-note{margin:10px 0 0}
