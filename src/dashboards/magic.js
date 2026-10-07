@@ -5,11 +5,13 @@ import { formatManabrewCommanderList } from './magicManabrew.js';
 import { rememberDestination, navigateTo } from '../services/appNavigation.js';
 import { enhanceSurfaceMotion } from '../services/motionSystem.js';
 import { scanMagicDocument } from '../services/magicDocumentScan.js';
+import { getMagicAccount, loadMagicLibrary, loadPublicMagicShare, saveMagicLibrary, setMagicCollectionPublic, setMagicDeckPublic } from '../services/magicLibrary.js';
 import { createMinigameRoom, getMinigameRoomByCode, getSavedMinigameRoom, isMinigameRoomConnected, joinMagicRoom, updateMinigameRoomData, watchMinigameRoom } from '../services/minigameMultiplayer.js';
 import './magic.css';
 
 const COLLECTION_KEY = 'taverna_magic_collection_v1';
 const DECKS_KEY = 'taverna_magic_decks_v1';
+const COLLECTION_PUBLIC_KEY = 'taverna_magic_collection_public_v1';
 const CLIENT_KEY = 'taverna_minigame_client_id';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
@@ -18,13 +20,70 @@ const playerId = () => localStorage.getItem(CLIENT_KEY) || 'local-player';
 const cardFace = card => card?.image_uris?.normal || card?.card_faces?.[0]?.image_uris?.normal || '';
 const manaValue = card => Number(card?.cmc || 0);
 const colorName = card => (card?.colors || []).join('') || 'Incolore';
+const MAGIC_PROXY_PRINTER = 'https://bastienpasdeloup.github.io/MtG-Proxy-Printer/';
+
+async function openMagicProxyPrinter(cards) {
+    const list = cards.filter(card => card?.name).map(card => `${Math.max(1, Number(card.quantity) || 1)} ${card.name}`).join('\n');
+    if (!list) return;
+    window.open(MAGIC_PROXY_PRINTER, '_blank', 'noopener,noreferrer');
+    try {
+        await navigator.clipboard.writeText(list);
+        const node = document.querySelector('#magic-notice');
+        if (node) node.textContent = 'Lista copiata: incollala nello stampatore proxy appena aperto, poi scegli italiano per le carte.';
+    } catch {
+        const blob = new Blob([list], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob), link = document.createElement('a');
+        link.href = url; link.download = 'lista-magic-per-proxy.txt'; link.click(); URL.revokeObjectURL(url);
+        const node = document.querySelector('#magic-notice');
+        if (node) node.textContent = 'Ho scaricato la lista .txt: importala nello stampatore proxy appena aperto.';
+    }
+}
+
+async function copyMagicShare(kind, id) {
+    const url = new URL('/magic', location.origin);
+    url.searchParams.set(kind === 'deck' ? 'magic-deck' : 'magic-collection', id);
+    try {
+        await navigator.clipboard.writeText(url.href);
+        const node = document.querySelector('#magic-notice'); if (node) node.textContent = 'Link pubblico copiato negli appunti.';
+    } catch {
+        window.prompt('Copia questo link pubblico:', url.href);
+    }
+}
+
+function showPublicMagicShare(container, share) {
+    container.innerHTML = `<main class="magic-page magic-public-share"><div class="magic-back"><a class="magic-button magic-button-secondary" href="/magic">← Apri Magic</a></div><header class="magic-heading"><span class="crystal-eyebrow">LA TAVERNA · CONDIVISIONE PUBBLICA</span><h1>Carte Magic</h1><p>Sto caricando le carte condivise…</p></header><div id="magic-public-share-content" class="magic-public-share-content" aria-live="polite"></div></main>`;
+    void loadPublicMagicShare(share).then(data => {
+        const root = container.querySelector('#magic-public-share-content');
+        if (!root) return;
+        const title = data.type === 'deck' ? data.name : 'Collezione condivisa';
+        const cards = data.cards || [];
+        root.innerHTML = `<h2>${esc(title)}</h2><p>${cards.reduce((sum, card) => sum + card.quantity, 0)} carte · aggiornata dal proprietario</p><div class="magic-card-grid">${cards.map(card => `<article class="magic-owned-card"><div class="magic-owned-art">${card.image ? `<img src="${esc(card.image)}" alt="${esc(card.name)}" loading="lazy">` : '<span>✦</span>'}<span class="magic-quantity">×${card.quantity}</span></div><div class="magic-owned-info"><strong>${esc(card.name)}</strong><small>${esc(card.typeLine || '')}</small></div></article>`).join('') || '<p>Questa raccolta è vuota.</p>'}</div><button type="button" id="magic-public-proxy" class="magic-button">Stampa proxy</button>`;
+        root.querySelector('#magic-public-proxy')?.addEventListener('click', () => openMagicProxyPrinter(cards));
+        container.querySelector('.magic-heading p').textContent = data.type === 'deck' ? 'Mazzo Commander condiviso pubblicamente.' : 'Collezione Magic condivisa pubblicamente.';
+        container.querySelector('.magic-heading h1').textContent = title;
+    }).catch(error => {
+        const root = container.querySelector('#magic-public-share-content');
+        if (root) root.innerHTML = `<p class="magic-error">${esc(error.message || 'Condivisione non disponibile.')}</p>`;
+    });
+}
 
 export function showMagicDashboard(container, options = {}) {
+    const shareParams = new URLSearchParams(location.search);
+    const sharedCollectionId = shareParams.get('magic-collection');
+    const sharedDeckId = shareParams.get('magic-deck');
+    if (sharedCollectionId || sharedDeckId) { showPublicMagicShare(container, { collectionId: sharedCollectionId, deckId: sharedDeckId }); return; }
     window.__magicCleanup?.();
     updateSidebarContext('magic');
     rememberDestination('magic', options);
     let collection = read(COLLECTION_KEY);
     let decks = read(DECKS_KEY);
+    let collectionPublic = localStorage.getItem(COLLECTION_PUBLIC_KEY) === 'true';
+    let collectionId = null;
+    let cloudUserId = null;
+    let cloudReady = false;
+    let cloudDeckIds = new Set();
+    let cloudSaveTimer = null;
+    let cloudSaveQueue = Promise.resolve();
     let selectedDeck = decks[0]?.id || '';
     let collectionFilter = '';
     let room = (getSavedMinigameRoom()?.scope === 'magic' || getSavedMinigameRoom()?.data?.scope === 'magic') ? getSavedMinigameRoom() : null;
@@ -36,9 +95,24 @@ export function showMagicDashboard(container, options = {}) {
     let cameraPhoto = '';
     let motionCleanup = null;
     let scannedCards = [];
+    let scanInProgress = false;
 
     const cardSummary = card => ({ id: card.id, name: card.name, image: cardFace(card), manaCost: card.mana_cost || '', typeLine: card.type_line || '', oracleText: card.oracle_text || card.card_faces?.map(face => face.oracle_text).join('\n') || '', power: card.power ?? '', toughness: card.toughness ?? '', cmc: manaValue(card), colors: card.colors || [], colorIdentity: card.color_identity || [], commanderLegality: card.legalities?.commander || 'unknown', set: card.set_name || '', rarity: card.rarity || '' });
-    const persist = () => { write(COLLECTION_KEY, collection); write(DECKS_KEY, decks); };
+    const persist = () => {
+        write(COLLECTION_KEY, collection); write(DECKS_KEY, decks);
+        localStorage.setItem(COLLECTION_PUBLIC_KEY, String(collectionPublic));
+        if (!cloudUserId) return;
+        clearTimeout(cloudSaveTimer);
+        cloudSaveTimer = setTimeout(() => {
+            const snapshot = { userId: cloudUserId, cards: structuredClone(collection), decks: structuredClone(decks) };
+            cloudSaveQueue = cloudSaveQueue.catch(() => {}).then(() => saveMagicLibrary(snapshot)).then(result => {
+                collectionId = result.collectionId;
+                cloudDeckIds = new Set(snapshot.decks.map(deck => deck.id));
+                const toggle = container.querySelector('#magic-collection-public'); if (toggle) toggle.disabled = !cloudUserId || !collectionId;
+                renderDecks();
+            }).catch(error => setNotice(`Non riesco a sincronizzare Magic ora: ${error.message}. La copia resta su questo dispositivo.`));
+        }, 500);
+    };
     const currentDeck = () => decks.find(deck => deck.id === selectedDeck) || null;
     const deckCards = deck => (deck?.cards || []).flatMap(entry => Array.from({ length: entry.quantity }, () => collection.find(card => card.id === entry.cardId)).filter(Boolean));
     const getCount = cardId => collection.find(card => card.id === cardId)?.quantity || 0;
@@ -52,9 +126,9 @@ export function showMagicDashboard(container, options = {}) {
       </nav>
       <p id="magic-notice" class="magic-notice" role="status" aria-live="polite"></p>
       <section data-panel="collezione" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">ARCHIVIO PERSONALE</span><h2>La tua bacheca</h2><p>Scansiona carte o liste da immagini e PDF, poi conferma le carte trovate nel catalogo.</p></div><span class="magic-count" id="magic-collection-count"></span></div>
-       <div class="magic-scan-box"><div class="magic-scan-icon" aria-hidden="true">⌕</div><div class="magic-scan-copy"><strong>Scansiona carte o un mazzo</strong><span>Carica foto, pagine scannerizzate o liste PDF. L’estrazione AI passa dal server Groq.</span></div><label class="magic-button" for="magic-photo">Scegli immagini o PDF</label><input id="magic-photo" type="file" accept="image/*,.pdf,application/pdf" multiple capture="environment" hidden></div>
+       <div class="magic-scan-box"><div class="magic-scan-icon" aria-hidden="true">⌕</div><div class="magic-scan-copy"><strong>Importa carte o un mazzo</strong><span>Testo .txt: riconoscimento diretto senza Groq. Immagini e PDF: un file per volta, max 30 pagine.</span></div><label class="magic-button" for="magic-photo">Scegli un file</label><input id="magic-photo" type="file" accept="image/*,.pdf,application/pdf,.txt,text/plain" capture="environment" hidden></div>
        <div class="magic-search-row"><label class="magic-search"><span aria-hidden="true">⌕</span><input id="magic-search" type="search" placeholder="Cerca una carta nel catalogo…" autocomplete="off"><span class="magic-search-hint">Catalogo Scryfall</span></label></div><div id="magic-photo-preview"></div><div id="magic-search-results" class="magic-search-results" aria-live="polite"></div>
-       <div class="magic-collection-head"><h3>Carte possedute</h3><label class="magic-search magic-collection-search"><span aria-hidden="true">⌕</span><input id="magic-filter" type="search" placeholder="Filtra per nome…"></label></div><div id="magic-collection" class="magic-card-grid"></div>
+       <div class="magic-collection-head"><h3>Carte possedute</h3><label class="magic-sharing-toggle"><input type="checkbox" id="magic-collection-public" ${collectionPublic ? 'checked' : ''} disabled><span>${collectionPublic ? 'Collezione pubblica' : 'Collezione privata'}</span></label><button type="button" id="magic-share-collection" class="magic-text-button" ${collectionPublic ? '' : 'hidden'}>Copia link</button><label class="magic-search magic-collection-search"><span aria-hidden="true">⌕</span><input id="magic-filter" type="search" placeholder="Filtra per nome…"></label></div><div id="magic-collection" class="magic-card-grid"></div>
       </section>
       <section data-panel="mazzi" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">COSTRUISCI LA TUA STRATEGIA</span><h2>I tuoi mazzi</h2><p>Organizza le carte presenti nella tua bacheca e prepara il duello.</p></div><button id="magic-new-deck" class="magic-button" type="button">＋ Crea un mazzo</button></div><div class="magic-deck-layout"><aside id="magic-deck-list" class="magic-deck-list"></aside><div id="magic-deck-editor" class="magic-deck-editor"></div></div></section>
       <section data-panel="partita" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">GIOCA CON UN AMICO</span><h2>Il tuo tavolo</h2><p>Apri una stanza o inserisci il codice ricevuto dall’avversario.</p></div></div>
@@ -66,6 +140,9 @@ export function showMagicDashboard(container, options = {}) {
 
     const render = () => {
         const joinDeck = container.querySelector('#magic-join-deck'); if (joinDeck) joinDeck.innerHTML = decks.map(deck => `<option value="${esc(deck.id)}">${esc(deck.name)}</option>`).join('');
+        const collectionToggle = container.querySelector('#magic-collection-public');
+        if (collectionToggle) { collectionToggle.checked = collectionPublic; collectionToggle.disabled = !cloudUserId || !collectionId; collectionToggle.nextElementSibling.textContent = collectionPublic ? 'Collezione pubblica' : 'Collezione privata'; }
+        const collectionShare = container.querySelector('#magic-share-collection'); if (collectionShare) collectionShare.hidden = !collectionPublic || !collectionId;
         container.querySelectorAll('[data-tab]').forEach(button => { button.setAttribute('aria-selected', String(button.dataset.tab === activeTab)); });
         container.querySelectorAll('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== activeTab; });
         renderCollection(); renderDecks(); renderTable();
@@ -87,7 +164,7 @@ export function showMagicDashboard(container, options = {}) {
         const eligible = collection.filter(isCommanderEligible);
         const eligibleSecond = collection.filter(card => isCommanderEligible(card) || /legendary enchantment[^.]*background/i.test(card.typeLine || ''));
         const validation = validateCommanderDeck(cards, deck.commanders);
-        editor.innerHTML = `<div class="magic-deck-title"><div><span class="magic-overline">COMMANDER · LISTA DEL MAZZO</span><h3>${esc(deck.name)}</h3></div><button type="button" class="magic-text-button" id="magic-rename-deck">Rinomina</button><button type="button" class="magic-text-button danger" id="magic-delete-deck">Elimina mazzo</button></div><div class="magic-commander-picks"><label>Comandante<select data-commander-slot="0"><option value="">Scegli dalla raccolta…</option>${eligible.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[0]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label><label>Secondo comandante partner<select data-commander-slot="1"><option value="">Nessuno</option>${eligibleSecond.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[1]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label></div><div class="magic-deck-stats"><strong>${total}</strong><span>/ 100 carte</span><span class="magic-deck-hint">Comandanti inclusi; una copia per nome, eccetto terre base.</span></div><div class="magic-deck-validation ${validation.valid?'is-valid':'is-invalid'}">${validation.valid?'✓ Mazzo Commander valido.':validation.errors.slice(0,4).map(esc).join('<br>')}</div><div class="magic-deck-cards">${deck.cards.length ? deck.cards.map(entry => { const card = collection.find(item => item.id === entry.cardId); return card ? `<div class="magic-deck-row">${card.image ? `<img src="${esc(card.image)}" alt="">` : ''}<span>${esc(card.name)}<small>${esc(card.typeLine)}${deck.commanders.includes(card.id)?' · COMANDANTE':''}</small></span><strong>×${entry.quantity}</strong><button type="button" data-deck-remove="${esc(entry.cardId)}" aria-label="Rimuovi una copia di ${esc(card.name)}">−</button><button type="button" data-deck-add="${esc(card.id)}" aria-label="Aggiungi una copia di ${esc(card.name)}">＋</button></div>` : ''; }).join('') : '<p class="magic-muted">Questo mazzo è vuoto. Aggiungi carte dalla raccolta.</p>'}</div><div class="magic-deck-play-actions"><button id="magic-play" type="button" class="magic-button magic-button-secondary" ${!validation.valid ? 'disabled' : ''}>Prova il prototipo locale</button><button id="magic-full-rules" type="button" class="magic-button" ${!validation.valid ? 'disabled' : ''}>Apri Manabrew/Forge ↗</button></div><p class="magic-muted">La lista Commander viene copiata negli appunti; incollala nell’importatore del mazzo.</p>`;
+        editor.innerHTML = `<div class="magic-deck-title"><div><span class="magic-overline">COMMANDER · LISTA DEL MAZZO</span><h3>${esc(deck.name)}</h3></div><label class="magic-sharing-toggle"><input type="checkbox" id="magic-deck-public" ${deck.isPublic ? 'checked' : ''} ${!cloudReady || !cloudDeckIds.has(deck.id) ? 'disabled' : ''}><span>${deck.isPublic ? 'Mazzo pubblico' : 'Mazzo privato'}</span></label><button type="button" class="magic-text-button" id="magic-share-deck" ${deck.isPublic ? '' : 'hidden'}>Copia link</button><button type="button" class="magic-text-button" id="magic-proxy-deck">Stampa proxy</button><button type="button" class="magic-text-button" id="magic-rename-deck">Rinomina</button><button type="button" class="magic-text-button danger" id="magic-delete-deck">Elimina mazzo</button></div><div class="magic-commander-picks"><label>Comandante<select data-commander-slot="0"><option value="">Scegli dalla raccolta…</option>${eligible.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[0]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label><label>Secondo comandante partner<select data-commander-slot="1"><option value="">Nessuno</option>${eligibleSecond.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[1]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label></div><div class="magic-deck-stats"><strong>${total}</strong><span>/ 100 carte</span><span class="magic-deck-hint">Comandanti inclusi; una copia per nome, eccetto terre base.</span></div><div class="magic-deck-validation ${validation.valid?'is-valid':'is-invalid'}">${validation.valid?'✓ Mazzo Commander valido.':validation.errors.slice(0,4).map(esc).join('<br>')}</div><div class="magic-deck-cards">${deck.cards.length ? deck.cards.map(entry => { const card = collection.find(item => item.id === entry.cardId); return card ? `<div class="magic-deck-row">${card.image ? `<img src="${esc(card.image)}" alt="">` : ''}<span>${esc(card.name)}<small>${esc(card.typeLine)}${deck.commanders.includes(card.id)?' · COMANDANTE':''}</small></span><strong>×${entry.quantity}</strong><button type="button" data-deck-remove="${esc(entry.cardId)}" aria-label="Rimuovi una copia di ${esc(card.name)}">−</button><button type="button" data-deck-add="${esc(card.id)}" aria-label="Aggiungi una copia di ${esc(card.name)}">＋</button></div>` : ''; }).join('') : '<p class="magic-muted">Questo mazzo è vuoto. Aggiungi carte dalla raccolta.</p>'}</div><div class="magic-deck-play-actions"><button id="magic-play" type="button" class="magic-button magic-button-secondary" ${!validation.valid ? 'disabled' : ''}>Prova il prototipo locale</button><button id="magic-full-rules" type="button" class="magic-button" ${!validation.valid ? 'disabled' : ''}>Apri Manabrew/Forge ↗</button></div><p class="magic-muted">La lista Commander viene copiata negli appunti; incollala nell’importatore del mazzo.</p>`;
     };
     const game = () => room?.data?.magic?.game || null;
     const myTurn = state => state?.activePlayer === playerId() && !state?.winner;
@@ -149,9 +226,21 @@ export function showMagicDashboard(container, options = {}) {
     container.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => { activeTab = button.dataset.tab; render(); container.querySelector(`[data-panel="${activeTab}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     container.querySelector('#magic-search').addEventListener('input', event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => searchCards(event.target.value), 300); });
     container.querySelector('#magic-filter').addEventListener('input', event => { collectionFilter = event.target.value; renderCollection(); });
+    container.querySelector('#magic-collection-public').onchange = async event => {
+        const desired = event.target.checked;
+        if (!cloudUserId || !collectionId) { event.target.checked = collectionPublic; setNotice('La raccolta pubblica richiede la sincronizzazione con un account.'); return; }
+        event.target.disabled = true;
+        try {
+            await setMagicCollectionPublic(cloudUserId, collectionId, desired);
+            collectionPublic = desired; persist(); render();
+            setNotice(desired ? 'Collezione pubblica: chiunque abbia il link può vederla.' : 'Collezione privata.');
+        } catch (error) { event.target.checked = collectionPublic; setNotice(`Non riesco a cambiare la visibilità: ${error.message}`); }
+        finally { event.target.disabled = !cloudUserId || !collectionId; }
+    };
+    container.querySelector('#magic-share-collection').onclick = () => collectionId && copyMagicShare('collection', collectionId);
     const scanAndResolve = async files => {
         const preview = container.querySelector('#magic-photo-preview');
-        preview.innerHTML = '<div class="magic-photo-card"><div><strong>Scansione in corso…</strong><span>Invio dei documenti a Groq per riconoscere nomi e quantità.</span></div></div>';
+        preview.innerHTML = '<div class="magic-photo-card"><div><strong>Importazione in corso…</strong><span>Leggo il file e riconosco i nomi delle carte.</span></div></div>';
         try {
             const recognized = [];
             for (const file of files) recognized.push(...await scanMagicDocument(file, message => {
@@ -172,7 +261,8 @@ export function showMagicDashboard(container, options = {}) {
                 scannedCards.push(...batch);
             }
             const found = scannedCards.filter(entry => entry.card);
-            preview.innerHTML = '<div class="magic-photo-card"><div><strong>Riconosciute ' + found.length + ' carte su ' + entries.length + '</strong><span>Controlla nomi e quantità prima di aggiungerle alla bacheca.</span></div><button type="button" class="magic-button" id="magic-add-scanned" ' + (found.length ? '' : 'disabled') + '>Aggiungi tutte</button></div><div class="magic-scan-lines">' + scannedCards.map((entry, index) => '<div>' + esc(entry.name) + ' · ×' + entry.quantity + (entry.card ? ' → ' + esc(entry.card.name) : ' · non trovata nel catalogo') + '<button type="button" class="magic-text-button" data-scan-index="' + index + '" ' + (entry.card ? '' : 'disabled') + '>Aggiungi</button></div>').join('') + '</div>';
+            preview.innerHTML = '<div class="magic-photo-card"><div><strong>Riconosciute ' + found.length + ' carte su ' + entries.length + '</strong><span>Controlla nomi e quantità prima di aggiungerle alla bacheca.</span></div><button type="button" class="magic-button" id="magic-add-scanned" ' + (found.length ? '' : 'disabled') + '>Aggiungi tutte</button>' + (found.length ? '<button type="button" class="magic-button magic-button-secondary" id="magic-print-scanned">Stampa proxy</button>' : '') + '</div><div class="magic-scan-lines">' + scannedCards.map((entry, index) => '<div>' + esc(entry.name) + ' · ×' + entry.quantity + (entry.card ? ' → ' + esc(entry.card.name) : ' · non trovata nel catalogo') + '<button type="button" class="magic-text-button" data-scan-index="' + index + '" ' + (entry.card ? '' : 'disabled') + '>Aggiungi</button></div>').join('') + '</div>';
+            preview.querySelector('#magic-print-scanned')?.addEventListener('click', () => openMagicProxyPrinter(found.map(entry => ({ name: entry.card.name, quantity: entry.quantity }))));
             preview.querySelector('#magic-add-scanned')?.addEventListener('click', () => {
                 for (const entry of scannedCards) if (entry.card) addCollectionCard(entry.card, entry.quantity);
                 scannedCards = []; preview.innerHTML = ''; setNotice('Carte riconosciute aggiunte alla bacheca.');
@@ -186,10 +276,13 @@ export function showMagicDashboard(container, options = {}) {
         }
     };
     container.querySelector('#magic-photo').onchange = async event => {
-        const files = [...(event.target.files || [])];
-        if (files.length > 30) { setNotice('Puoi selezionare al massimo 30 immagini per volta.'); event.target.value = ''; return; }
-        if (files.length) await scanAndResolve(files);
-        event.target.value = '';
+        const input = event.target;
+        const file = input.files?.[0];
+        if (!file || scanInProgress) return;
+        scanInProgress = true;
+        input.disabled = true;
+        try { await scanAndResolve([file]); }
+        finally { scanInProgress = false; input.disabled = false; input.value = ''; }
     };
     container.querySelector('#magic-search-results').onclick = event => { const button = event.target.closest('[data-add-result]'); if (button) { const card = cardResults.find(item=>item.id===button.dataset.addResult); if(card) addCollectionCard(card); } };
     container.querySelector('#magic-collection').onclick = event => {
@@ -203,6 +296,8 @@ export function showMagicDashboard(container, options = {}) {
     container.querySelector('#magic-deck-list').onclick = event => { const button=event.target.closest('[data-select-deck]'); if(button){selectedDeck=button.dataset.selectDeck;renderDecks();} };
     container.querySelector('#magic-deck-editor').onclick = async event => {
         const deck=currentDeck(); if(!deck)return;
+        if(event.target.closest('#magic-share-deck')) { await copyMagicShare('deck', deck.id); return; }
+        if(event.target.closest('#magic-proxy-deck')) { await openMagicProxyPrinter(deck.cards.map(entry=>({name:collection.find(card=>card.id===entry.cardId)?.name,quantity:entry.quantity})).filter(card=>card.name)); return; }
         if(event.target.closest('#magic-full-rules')) {
             const list = formatManabrewCommanderList(deck, deckCards(deck));
             window.open('https://play.manabrew.app', '_blank', 'noopener,noreferrer');
@@ -221,7 +316,15 @@ export function showMagicDashboard(container, options = {}) {
         else if(event.target.closest('#magic-play')) { activeTab='partita';render(); }
         else { const add=event.target.closest('[data-deck-add]'), remove=event.target.closest('[data-deck-remove]'); const id=(add||remove)?.dataset[add?'deckAdd':'deckRemove']; if(id){let entry=deck.cards.find(item=>item.cardId===id); if(add&&getCount(id)>(entry?.quantity||0)){if(entry)entry.quantity++;else deck.cards.push({cardId:id,quantity:1});} else if(remove&&entry){entry.quantity--;if(!entry.quantity)deck.cards=deck.cards.filter(item=>item!==entry);} persist();renderDecks();} }
     };
-    container.querySelector('#magic-deck-editor').onchange = event => {
+    container.querySelector('#magic-deck-editor').onchange = async event => {
+        const publicToggle = event.target.closest('#magic-deck-public');
+        if (publicToggle) {
+            const deck = currentDeck(); if (!deck || !cloudUserId || !cloudDeckIds.has(deck.id)) { publicToggle.checked = deck?.isPublic === true; return; }
+            const desired = publicToggle.checked; publicToggle.disabled = true;
+            try { await setMagicDeckPublic(cloudUserId, deck.id, desired); deck.isPublic = desired; renderDecks(); persist(); setNotice(desired ? 'Mazzo pubblico: chiunque abbia il link può vederlo.' : 'Mazzo privato.'); }
+            catch (error) { publicToggle.checked = deck.isPublic === true; setNotice(`Non riesco a cambiare la visibilità: ${error.message}`); }
+            return;
+        }
         const selector = event.target.closest('[data-commander-slot]'); if (!selector) return;
         const deck = currentDeck(); if (!deck) return;
         deck.commanders ||= [];
@@ -253,8 +356,36 @@ export function showMagicDashboard(container, options = {}) {
         const board=event.target.closest('[data-board-action="tap"]'); if(board){await saveState(current=>{const card=current.playersData[playerId()].battlefield[Number(board.dataset.boardIndex)];if(card)card.tapped=!card.tapped;return current;});return;}
         const play=event.target.closest('[data-play-card]'); if(play){const index=Number(play.dataset.playCard);await saveState(current=>{const own=current.playersData[playerId()],card=own.hand[index];if(!card)return current;if((card.typeLine||'').toLowerCase().includes('land')){if(own.landsPlayed>=1)return current;own.landsPlayed++;own.hand.splice(index,1);own.battlefield.push({...card,tapped:false});current.log.unshift(`Hai giocato ${card.name}.`);}else{const cost=card.cmc||0;const available=own.battlefield.filter(item=>item.tapped && (item.typeLine||'').toLowerCase().includes('land')).length;if(available<cost){setNotice(`Mana insufficiente: ${card.name} costa ${cost}. Tappa le terre prima di lanciarla.`);return current;}own.battlefield.filter(item=>item.tapped && (item.typeLine||'').toLowerCase().includes('land')).slice(0,cost);own.hand.splice(index,1);if((card.typeLine||'').toLowerCase().includes('creature'))own.battlefield.push({...card,tapped:false,summoningSick:true});else own.graveyard.push(card);current.log.unshift(`Hai lanciato ${card.name}.`);}return current;});return;}
     };
+    const initializeCloud = async () => {
+        try {
+            const user = await getMagicAccount();
+            if (!user?.id) return;
+            cloudUserId = user.id;
+            const remote = await loadMagicLibrary(user.id);
+            collectionId = remote.collectionId;
+            collectionPublic = remote.collectionPublic;
+            cloudDeckIds = new Set(remote.decks.map(deck => deck.id));
+            if (remote.hasCloudData) {
+                collection = remote.cards;
+                decks = remote.decks;
+            } else {
+                const migrated = await saveMagicLibrary({ userId: user.id, cards: collection, decks });
+                collectionId = migrated.collectionId;
+                cloudDeckIds = new Set(decks.map(deck => deck.id));
+            }
+            cloudReady = true;
+            write(COLLECTION_KEY, collection); write(DECKS_KEY, decks);
+            localStorage.setItem(COLLECTION_PUBLIC_KEY, String(collectionPublic));
+            render();
+            setNotice('Collezione e mazzi sincronizzati con il tuo account.');
+        } catch (error) {
+            cloudReady = false;
+            setNotice(`Archivio online non disponibile: ${error.message}. Le modifiche restano salvate su questo dispositivo.`);
+        }
+    };
     if(room?.code) watchRoom(room);
     motionCleanup=enhanceSurfaceMotion(container,{selector:'.magic-panel,.magic-scan-box,.magic-room-bar'});
-    window.__magicCleanup=()=>{stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
+    window.__magicCleanup=()=>{stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
     render();
+    void initializeCloud();
 }

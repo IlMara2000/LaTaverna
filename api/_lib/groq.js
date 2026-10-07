@@ -32,7 +32,7 @@ export const callGroqVision = async ({ images = [], text = '' }) => {
         throw error;
     }
     const visionModel = process.env.GROQ_VISION_MODEL || 'qwen/qwen3.8-27b';
-    const content = [{ type: 'text', text: `Estrai SOLO le carte Magic: The Gathering. Rispondi con JSON valido nel formato {"cards":[{"name":"nome ufficiale della carta","quantity":1}]}. Per liste testuali mantieni quantità e ignora intestazioni, terre/base count non interpretabili e testo estraneo. Per immagini leggi i nomi e le quantità visibili. Non inventare carte. Testo da analizzare:\n${sanitizeText(text, 24000)}` }];
+    const content = [{ type: 'text', text: `Riconosci le carte Magic visibili o elencate. Restituisci solo JSON: {"cards":[{"name":"nome carta","quantity":1}]}. Scrivi solo nome e quantità; niente descrizioni, regole, traduzioni o spiegazioni. Riporta solo carte leggibili, senza indovinare. Se la quantità manca usa 1. Testo:\n${sanitizeText(text, 24000)}` }];
     for (const image of images.slice(0, 3)) {
         if (typeof image !== 'string' || !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(image)) continue;
         content.push({ type: 'image_url', image_url: { url: image } });
@@ -40,10 +40,20 @@ export const callGroqVision = async ({ images = [], text = '' }) => {
     if (images.length && content.length === 1) throw Object.assign(new Error('Immagini non valide.'), { statusCode: 400 });
     const response = await fetch(GROQ_API_URL, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
-        body: JSON.stringify({ model: visionModel, messages: [{ role: 'user', content }], temperature: 0, max_tokens: 1800, response_format: { type: 'json_object' } })
+        body: JSON.stringify({ model: visionModel, messages: [{ role: 'user', content }], temperature: 0, max_tokens: 800, response_format: { type: 'json_object' } })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw Object.assign(new Error(data?.error?.message || `Groq non disponibile (${response.status}).`), { statusCode: response.status, code: data?.error?.code || 'groq_error' });
+    if (!response.ok) {
+        const message = data?.error?.message || `Groq non disponibile (${response.status}).`;
+        const headerDelay = Number(response.headers.get('retry-after'));
+        const messageDelay = message.match(/try again in\s+(\d+(?:\.\d+)?)\s*(ms|s|m)/i);
+        const retryAfterMs = Number.isFinite(headerDelay) && headerDelay > 0
+            ? Math.min(86400000, headerDelay * 1000)
+            : messageDelay
+                ? Math.min(86400000, Number(messageDelay[1]) * ({ ms: 1, s: 1000, m: 60000 })[messageDelay[2].toLowerCase()])
+                : null;
+        throw Object.assign(new Error(message), { statusCode: response.status, code: data?.error?.code || 'groq_error', retryAfterMs });
+    }
     let parsed;
     try { parsed = JSON.parse(data?.choices?.[0]?.message?.content || '{}'); }
     catch { throw Object.assign(new Error('Risposta di scansione non valida.'), { statusCode: 502, code: 'invalid_scan_reply' }); }

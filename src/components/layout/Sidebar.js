@@ -40,31 +40,31 @@ function renderSidebarContent(container, context) {
             </div>
 
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
-                <button class="btn-glass sidebar-nav-item" id="nav-home" data-context="home" style="font-size: 0.8rem; padding: 12px;">
+                <a class="btn-glass sidebar-nav-item" id="nav-home" data-context="home" href="/" style="font-size: 0.8rem; padding: 12px;">
                     TAVERNA
-                </button>
+                </a>
 
-                <button class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" style="font-size: 0.8rem; padding: 12px;">
+                <a class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" href="/minigames" style="font-size: 0.8rem; padding: 12px;">
                     SALA GIOCHI
-                </button>
+                </a>
 
-                <button class="btn-glass sidebar-nav-item" id="nav-magic" data-context="magic" style="font-size: 0.8rem; padding: 12px;">
+                <a class="btn-glass sidebar-nav-item" id="nav-magic" data-context="magic" href="/magic" style="font-size: 0.8rem; padding: 12px;">
                     MAGIC: THE GATHERING
-                </button>
+                </a>
 
                 <button class="btn-glass sidebar-nav-item" id="nav-card-counter" data-context="cardCounter" style="font-size: 0.8rem; padding: 12px;">SEGNAPUNTI CARTE</button>
 
-                <button class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" style="font-size: 0.8rem; padding: 12px;">
+                <a class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" href="/library" style="font-size: 0.8rem; padding: 12px;">
                     LETTURA
-                </button>
+                </a>
 
-                <button class="btn-glass sidebar-nav-item" id="nav-shop" data-context="shop" style="font-size: 0.8rem; padding: 12px;">
+                <a class="btn-glass sidebar-nav-item" id="nav-shop" data-context="shop" href="/shop" style="font-size: 0.8rem; padding: 12px;">
                     BOTTEGA
-                </button>
+                </a>
 
-                <button class="btn-glass sidebar-nav-item" id="nav-dnd5e" data-context="dnd5e" style="font-size: 0.8rem; padding: 12px;">
+                <a class="btn-glass sidebar-nav-item" id="nav-dnd5e" data-context="dnd5e" href="/dnd" style="font-size: 0.8rem; padding: 12px;">
                     D&D 5E
-                </button>
+                </a>
 
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
 

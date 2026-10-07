@@ -12,6 +12,7 @@ export default async function handler(request, response) {
         const result = await callGroqVision({ images, text });
         return sendJson(response, 200, { ok: true, cards: result.cards, provider: 'groq', model: result.model, usage: result.usage });
     } catch (error) {
-        return sendJson(response, error.statusCode || 500, { ok: false, code: error.code || 'magic_scan_failed', error: error.message || 'Scansione non riuscita.' });
+        if (error.statusCode === 429) response.setHeader('Retry-After', String(Math.ceil((error.retryAfterMs || 5000) / 1000)));
+        return sendJson(response, error.statusCode || 500, { ok: false, code: error.code || 'magic_scan_failed', error: error.message || 'Scansione non riuscita.', retryAfterMs: error.retryAfterMs || undefined });
     }
 }
