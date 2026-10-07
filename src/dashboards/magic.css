@@ -18,6 +18,12 @@
 #ui .magic-scan-box .magic-button{flex-shrink:0}
 #ui .magic-mobile-hint{display:block}
 #ui .magic-scan-box .magic-button:focus-visible{outline:2px solid #d0a5e1;outline-offset:3px}
+#ui .magic-demo-pack{display:grid;grid-template-columns:118px minmax(0,1fr);align-items:center;gap:18px;margin:16px 0 20px;padding:14px;border:1px solid #a17cb566;background:radial-gradient(ellipse at 10% 50%,#70458033,transparent 58%),#17121d}
+#ui .magic-demo-pack>img{display:block;width:118px;aspect-ratio:2/3;object-fit:cover;border:1px solid #c39bd188;box-shadow:0 7px 25px #08050b99}
+#ui .magic-demo-pack>div{display:grid;justify-items:start;gap:7px}
+#ui .magic-demo-pack strong{color:#f0e4f3;font:600 17px Manrope,system-ui,sans-serif}
+#ui .magic-demo-pack p{max-width:560px;margin:0 0 4px;color:#b6aaba;font-size:11px;line-height:1.7}
+#ui .magic-demo-pack .magic-overline{margin:0;font-size:9px}
 #ui .magic-scan-icon{width:42px;height:42px;display:grid;place-items:center;border:1px solid #a181ac66;color:#d2b3df;font-size:27px}
 #ui .magic-scan-copy{display:grid;gap:4px;flex:1}.magic-scan-copy strong{font-size:13px;color:#eee5ef}.magic-scan-copy span,.magic-photo-card span{font-size:11px;line-height:1.6;color:#b6aaba}
 #ui .magic-search-row{margin-bottom:12px}.magic-search{display:flex;align-items:center;gap:9px;min-height:48px;padding:0 13px;border:1px solid #77608066;background:#120e17;color:#bba5c8}.magic-search>span:first-child{font-size:20px}.magic-search input{flex:1;min-width:0;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:#eee!important;font-size:13px!important}.magic-search-hint{white-space:nowrap;color:#908294;font-size:9px;letter-spacing:.1em;text-transform:uppercase}
@@ -36,6 +42,7 @@
 #ui .magic-deck-play-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.magic-deck-play-actions+.magic-muted{margin:8px 0 0;font-size:9px}
 @media(max-width:700px){#ui .magic-commander-picks{grid-template-columns:1fr}}
 @media(max-width:560px){#ui .magic-scan-box{align-items:stretch;flex-wrap:wrap;padding:16px;gap:12px}#ui .magic-scan-box .magic-scan-icon{flex:0 0 42px}#ui .magic-scan-copy{min-width:0;flex:1 1 calc(100% - 58px)}#ui .magic-scan-box .magic-button{width:100%;min-height:48px}}
+@media(max-width:560px){#ui .magic-demo-pack{grid-template-columns:82px minmax(0,1fr);gap:13px;padding:11px}#ui .magic-demo-pack>img{width:82px}#ui .magic-demo-pack strong{font-size:14px}#ui .magic-demo-pack .magic-button{width:100%;min-height:42px;padding:0 10px;font-size:9px}}
 #ui .magic-command-zone{margin:10px 0;padding:12px;border:1px solid #a5898a77;background:#211720}.magic-commanders{display:grid;gap:8px;margin-top:8px}.magic-commander-card{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #876d7855;background:#18131b}.magic-commander-card>img{width:38px;height:51px;object-fit:cover;border-radius:4px}.magic-commander-card>span{display:grid;gap:4px;flex:1}.magic-commander-card>span strong{font-size:11px}.magic-commander-card>span small{font-size:9px;color:#baa9b9}.magic-commander-card>button{padding:8px;border:1px solid #997a88;background:#382431;color:#eadde3;font-size:9px;cursor:pointer}.magic-commander-card>button:disabled{opacity:.4}.magic-game-actions select{min-height:40px;padding:0 9px;background:#1b1420;color:#eaddec;border:1px solid #806789;font-size:10px}
 @media(max-width:700px){.magic-commander-card{align-items:flex-start;flex-wrap:wrap}.magic-commander-card>span{min-width:calc(100% - 60px)}.magic-game-actions{flex-wrap:wrap}.magic-game-actions select{max-width:100%}}
 
