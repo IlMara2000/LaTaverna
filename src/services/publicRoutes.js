@@ -1,15 +1,21 @@
 export const PUBLIC_ROUTES = Object.freeze({
-    shop: '/bottega',
+    minigames: '/minigames',
+    dnd5e: '/dnd',
+    shop: '/shop',
+    reading: '/library',
+    magic: '/magic',
     artisanShop: '/bottega/artigiano-rituale'
 });
+const LEGACY_ROUTES = Object.freeze({ '/bottega': 'shop' });
 export function destinationFromPath(pathname) {
-    const path = pathname.replace(/\/+$/, '') || '/';
-    return Object.entries(PUBLIC_ROUTES).find(([, value]) => value === path)?.[0] || null;
+    const path = pathname.toLocaleLowerCase().replace(/\/+$/, '') || '/';
+    return Object.entries(PUBLIC_ROUTES).find(([, value]) => value === path)?.[0]
+        || LEGACY_ROUTES[path]
+        || null;
 }
 export function syncDestinationPath(destination, options = {}) {
     if (options.fromHistory) return;
     const path = PUBLIC_ROUTES[destination] || '/';
-    // Only introduce URLs for the public shop; other app destinations keep /.
     if (!PUBLIC_ROUTES[destination] && !destinationFromPath(location.pathname)) return;
     const state = { tavernaDestination: destination };
     if (location.pathname === path) history.replaceState(state, '', path);

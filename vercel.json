@@ -40,6 +40,26 @@
     {
       "source": "/bottega/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/minigames/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dnd/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/shop/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/library/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/magic/:path*",
+      "destination": "/index.html"
     }
   ]
 }
