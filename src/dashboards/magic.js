@@ -21,6 +21,47 @@ const cardFace = card => card?.image_uris?.normal || card?.card_faces?.[0]?.imag
 const manaValue = card => Number(card?.cmc || 0);
 const colorName = card => (card?.colors || []).join('') || 'Incolore';
 const MAGIC_PROXY_PRINTER = 'https://bastienpasdeloup.github.io/MtG-Proxy-Printer/';
+let catalogQueue = Promise.resolve();
+let nextCatalogRequestAt = 0;
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetchScryfallJson = url => {
+    const request = catalogQueue.then(async () => {
+        for (let attempt = 0; attempt < 4; attempt++) {
+            const cooldown = Math.max(0, nextCatalogRequestAt - Date.now());
+            if (cooldown) await pause(cooldown);
+            nextCatalogRequestAt = Date.now() + 125;
+            try {
+                const response = await fetch(url, { headers: { Accept: 'application/json' } });
+                const payload = await response.json().catch(() => ({}));
+                if (response.status !== 429 && response.status !== 503) return { response, payload };
+                if (attempt === 3) return { response, payload };
+                const retryAfter = Number(response.headers.get('Retry-After')) * 1000;
+                await pause(Math.max(retryAfter || 0, 1000 * (attempt + 1)));
+            } catch (error) {
+                if (attempt === 3) throw error;
+                await pause(1000 * (attempt + 1));
+            }
+        }
+        return { response: null, payload: {} };
+    });
+    catalogQueue = request.then(() => {}, () => {});
+    return request;
+};
+
+const resolveScannedCard = async entry => {
+    const candidates = [...new Set([entry.name, ...(entry.alternatives || [])].filter(Boolean))];
+    for (const candidate of candidates) {
+        const variants = [candidate, candidate.replace(/\bI(?=['’])/g, 'l').replace(/[’]/g, "'")];
+        if (/^y(?=[a-z])/i.test(candidate)) variants.push(candidate.replace(/^y/i, 'V'));
+        for (const name of new Set(variants)) {
+            const { response, payload } = await fetchScryfallJson(`https://api.scryfall.com/cards/named?fuzzy=${encodeURIComponent(name)}`);
+            if (response?.ok) return { ...entry, card: payload };
+            if (response && response.status !== 404) break;
+        }
+    }
+    return { ...entry, card: null };
+};
 
 async function openMagicProxyPrinter(cards) {
     const list = cards.filter(card => card?.name).map(card => `${Math.max(1, Number(card.quantity) || 1)} ${card.name}`).join('\n');
@@ -247,30 +288,59 @@ export function showMagicDashboard(container, options = {}) {
                 const label = preview.querySelector('.magic-photo-card span'); if (label) label.textContent = message;
             }));
             const quantities = new Map();
-            for (const card of recognized) quantities.set(card.name, (quantities.get(card.name) || 0) + card.quantity);
-            const entries = [...quantities.entries()];
+            for (const card of recognized) {
+                const key = String(card.name || '').trim().toLocaleLowerCase();
+                if (!key) continue;
+                const entry = quantities.get(key) || { name: String(card.name).trim(), quantity: 0, alternatives: [] };
+                entry.quantity += card.quantity || 1;
+                for (const alternative of card.alternatives || []) {
+                    if (alternative && !entry.alternatives.some(value => value.toLocaleLowerCase() === alternative.toLocaleLowerCase())) entry.alternatives.push(alternative);
+                }
+                quantities.set(key, entry);
+            }
+            const entries = [...quantities.values()];
             if (!entries.length) throw new Error('Non ho riconosciuto carte. Prova con una scansione più nitida.');
             scannedCards = [];
             for (let index = 0; index < entries.length; index += 5) {
-                const batch = await Promise.all(entries.slice(index, index + 5).map(async ([name, quantity]) => {
-                    try {
-                        const response = await fetch('https://api.scryfall.com/cards/named?fuzzy=' + encodeURIComponent(name), { headers: { Accept: 'application/json' } });
-                        return response.ok ? { name, quantity, card: await response.json() } : { name, quantity, card: null };
-                    } catch { return { name, quantity, card: null }; }
-                }));
+                const batch = await Promise.all(entries.slice(index, index + 5).map(entry => resolveScannedCard(entry).catch(() => ({ ...entry, card: null }))));
                 scannedCards.push(...batch);
             }
-            const found = scannedCards.filter(entry => entry.card);
-            preview.innerHTML = '<div class="magic-photo-card"><div><strong>Riconosciute ' + found.length + ' carte su ' + entries.length + '</strong><span>Controlla nomi e quantità prima di aggiungerle alla bacheca.</span></div><button type="button" class="magic-button" id="magic-add-scanned" ' + (found.length ? '' : 'disabled') + '>Aggiungi tutte</button>' + (found.length ? '<button type="button" class="magic-button magic-button-secondary" id="magic-print-scanned">Stampa proxy</button>' : '') + '</div><div class="magic-scan-lines">' + scannedCards.map((entry, index) => '<div>' + esc(entry.name) + ' · ×' + entry.quantity + (entry.card ? ' → ' + esc(entry.card.name) : ' · non trovata nel catalogo') + '<button type="button" class="magic-text-button" data-scan-index="' + index + '" ' + (entry.card ? '' : 'disabled') + '>Aggiungi</button></div>').join('') + '</div>';
-            preview.querySelector('#magic-print-scanned')?.addEventListener('click', () => openMagicProxyPrinter(found.map(entry => ({ name: entry.card.name, quantity: entry.quantity }))));
-            preview.querySelector('#magic-add-scanned')?.addEventListener('click', () => {
-                for (const entry of scannedCards) if (entry.card) addCollectionCard(entry.card, entry.quantity);
-                scannedCards = []; preview.innerHTML = ''; setNotice('Carte riconosciute aggiunte alla bacheca.');
-            });
-            preview.querySelectorAll('[data-scan-index]').forEach(button => button.addEventListener('click', () => {
-                const entry = scannedCards[Number(button.dataset.scanIndex)];
-                if (entry?.card) { addCollectionCard(entry.card, entry.quantity); button.disabled = true; button.textContent = 'Aggiunta'; }
-            }));
+            const consolidate = () => {
+                const merged = new Map();
+                for (const entry of scannedCards) {
+                    const key = entry.card ? `card:${entry.card.id}` : `name:${entry.name.toLocaleLowerCase()}`;
+                    const saved = merged.get(key);
+                    if (saved) saved.quantity += entry.quantity;
+                    else merged.set(key, entry);
+                }
+                scannedCards = [...merged.values()];
+            };
+            const renderScanPreview = () => {
+                const found = scannedCards.filter(entry => entry.card);
+                preview.innerHTML = '<div class="magic-photo-card"><div><strong>Trovate ' + found.length + ' carte su ' + scannedCards.length + '</strong><span>Controlla i risultati; correggi il nome delle carte non abbinate.</span></div><button type="button" class="magic-button" id="magic-add-scanned" ' + (found.length ? '' : 'disabled') + '>Aggiungi tutte</button>' + (found.length ? '<button type="button" class="magic-button magic-button-secondary" id="magic-print-scanned">Stampa proxy</button>' : '') + '</div><div class="magic-scan-lines">' + scannedCards.map((entry, index) => '<div><span>' + esc(entry.name) + ' · ×' + entry.quantity + (entry.card ? ' → ' + esc(entry.card.name) : ' · da correggere') + '</span>' + (entry.card ? '' : '<input type="search" data-scan-correction="' + index + '" value="' + esc(entry.name) + '" aria-label="Correggi il nome di ' + esc(entry.name) + '"><button type="button" class="magic-text-button" data-scan-find="' + index + '">Cerca</button>') + '<button type="button" class="magic-text-button" data-scan-index="' + index + '" ' + (entry.card ? '' : 'disabled') + '>Aggiungi</button></div>').join('') + '</div>';
+                preview.querySelector('#magic-print-scanned')?.addEventListener('click', () => openMagicProxyPrinter(found.map(entry => ({ name: entry.card.name, quantity: entry.quantity }))));
+                preview.querySelector('#magic-add-scanned')?.addEventListener('click', () => {
+                    for (const entry of scannedCards) if (entry.card) addCollectionCard(entry.card, entry.quantity);
+                    scannedCards = []; preview.innerHTML = ''; setNotice('Carte riconosciute aggiunte alla bacheca.');
+                });
+                preview.querySelectorAll('[data-scan-index]').forEach(button => button.addEventListener('click', () => {
+                    const entry = scannedCards[Number(button.dataset.scanIndex)];
+                    if (entry?.card) { addCollectionCard(entry.card, entry.quantity); button.disabled = true; button.textContent = 'Aggiunta'; }
+                }));
+                preview.querySelectorAll('[data-scan-find]').forEach(button => button.addEventListener('click', async () => {
+                    const index = Number(button.dataset.scanFind), entry = scannedCards[index];
+                    const input = preview.querySelector(`[data-scan-correction="${index}"]`), name = input?.value.trim();
+                    if (!entry || !name) return;
+                    button.disabled = true; button.textContent = 'Cerco…';
+                    try {
+                        const result = await resolveScannedCard({ name, quantity: entry.quantity });
+                        if (!result.card) { button.disabled = false; button.textContent = 'Non trovata'; return; }
+                        entry.name = name; entry.card = result.card; consolidate(); renderScanPreview();
+                    } catch { button.disabled = false; button.textContent = 'Riprova'; }
+                }));
+            };
+            consolidate();
+            renderScanPreview();
         } catch (error) {
             preview.innerHTML = '<div class="magic-photo-card"><div><strong>Scansione non riuscita</strong><span>' + esc(error.message) + ' Puoi cercare il nome manualmente.</span></div></div>';
         }
