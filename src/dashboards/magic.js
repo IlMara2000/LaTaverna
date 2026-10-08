@@ -362,6 +362,10 @@ export function showMagicDashboard(container, options = {}) {
         const opponentIds = state.players.filter(id => id !== myId && !state.playersData[id]?.eliminated);
         const ownState = state.playersData?.[myId] || { hand: [], battlefield: [], graveyard: [], library: [] };
         const isMyTurn = myTurn(state);
+        const mulliganActive = Boolean(state.mulliganActive);
+        const needsOpeningChoice = mulliganActive && !ownState.keptOpeningHand;
+        const mulliganBottomCount = Math.min(ownState.hand.length, Math.max(0, ownState.mulligans || 0));
+        const selectedBottomCards = new Set(ownState.mulliganBottom || []);
         const commanders = ownState.commandZone || [];
         const drawContext = `${room.code}:${myId}`;
         let drawnCount = 0;
@@ -411,6 +415,7 @@ export function showMagicDashboard(container, options = {}) {
                     <div class="magic-match-heading"><span class="magic-match-emblem" aria-hidden="true">✦</span><div><span class="magic-overline">COMMANDER · ${state.players.length} GIOCATORI · ${esc(room.code)}</span><strong>${state.winner ? `Vince ${esc(state.playerNames?.[state.winner] || `Giocatore ${state.players.indexOf(state.winner) + 1}`)}` : `Turno ${state.turn} · ${esc(state.turnName || 'Taverna')}`}</strong><small>${state.winner ? 'Partita conclusa' : (isMyTurn ? 'Il tuo turno' : `Turno di ${esc(state.playerNames?.[state.activePlayer] || `Giocatore ${state.players.indexOf(state.activePlayer) + 1}`)}`)}</small></div></div>
                     <div class="magic-match-tools"><button type="button" id="magic-fullscreen" aria-pressed="${fullscreenActive}" title="Schermo intero">⛶ <span>${fullscreenActive ? 'Esci' : 'Schermo intero'}</span></button><button type="button" id="magic-concede" title="Abbandona la partita">Lascia il tavolo</button></div>
                 </header>
+                ${mulliganActive ? `<section class="magic-opening-mulligan" aria-live="polite"><span class="magic-overline">MULLIGAN DI LONDRA · COMMANDER</span>${needsOpeningChoice ? `<strong>${ownState.mulligans ? `Mano ${7 - mulliganBottomCount} · ${mulliganBottomCount} ${mulliganBottomCount === 1 ? 'carta' : 'carte'} da mettere in fondo` : 'Controlla la tua mano iniziale'}</strong><p>${ownState.mulligans ? `Seleziona ${mulliganBottomCount} ${mulliganBottomCount === 1 ? 'carta' : 'carte'} da mettere in fondo al grimorio, poi tieni la mano.` : 'Puoi tenere queste sette carte oppure rimescolarle e pescarne sette. Se fai mulligan, dopo aver pescato sette ne metterai una in fondo al grimorio.'}</p><div class="magic-mulligan-actions"><button type="button" class="magic-button" data-mulligan-action="redraw">${ownState.mulligans ? 'Rimescola e pesca di nuovo' : 'Fai mulligan'}</button><button type="button" class="magic-button magic-button-secondary" data-mulligan-action="keep" ${selectedBottomCards.size !== mulliganBottomCount ? 'disabled' : ''}>${mulliganBottomCount ? `Conferma · fondo ${mulliganBottomCount}` : 'Tieni questa mano'}</button></div>` : '<strong>In attesa degli altri giocatori…</strong><p>La partita inizierà quando tutti avranno tenuto la propria mano.</p>'}</section>` : ''}
                 <div class="magic-life-row" aria-label="Punti vita">
                     <div class="magic-life magic-life-self"><span>Tu</span><strong>${ownState.life ?? 40}</strong><button type="button" data-life="-1" aria-label="Togli un punto vita" ${!isMyTurn ? 'disabled' : ''}>−</button><button type="button" data-life="1" aria-label="Aggiungi un punto vita" ${!isMyTurn ? 'disabled' : ''}>＋</button></div>
                     ${opponentIds.map(id => `<div class="magic-life-opponent"><span>${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span><strong>${state.playersData[id]?.life ?? 40}</strong><small>${state.playersData[id]?.hand?.length ?? 0} carte · comandante ${Math.max(0, ...Object.values(ownState.commanderDamage?.[id] || {}))}/21</small></div>`).join('')}
@@ -432,7 +437,7 @@ export function showMagicDashboard(container, options = {}) {
                 </div>
                 <details class="magic-game-log"><summary>Diario della partita</summary><ol>${(state.log || []).slice(0, 6).map(line => `<li>${magicRulesText(line)}</li>`).join('') || '<li>La partita è pronta.</li>'}</ol></details>
                 <div class="magic-hand-heading"><span>LA TUA MANO</span><small>${ownState.hand.length} carte · tieni premuto per leggere</small></div>
-                <div class="magic-hand">${(ownState.hand || []).map((card, index) => { const drawn = drawnCount && index >= ownState.hand.length - drawnCount; const land = /\bland\b/i.test(card.typeLine || ''); const hasMana = canPayMana(ownState.manaPool, card.manaCost || '', 0); const blockedReason = !isMyTurn ? 'Puoi lanciare carte solo durante il tuo turno.' : (land && ownState.landsPlayed >= 1 ? 'Hai già giocato una terra in questo turno.' : (!land && !hasMana ? `Mana insufficiente o colori errati. Costo ${card.manaCost || '0'}; riserva: ${manaPoolLabel(ownState.manaPool)}.` : '')); return `<article class="magic-hand-card ${drawn ? 'is-drawn' : ''}" data-card-inspect="hand:${index}" style="--card-index:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : ''}<div class="magic-hand-overlay"><strong>${esc(card.name)}</strong><small class="magic-hand-card-cost">${manaCostIcons(card.manaCost)}<span>${esc(card.typeLine)}</span></small><button type="button" data-play-card="${index}" title="${esc(blockedReason)}" ${!isMyTurn || state.winner || (land && ownState.landsPlayed >= 1) || (!land && !hasMana) ? 'disabled' : ''}>${land ? 'Gioca terra' : `Lancia · ${manaCostIcons(card.manaCost || '{0}')}`}</button></div></article>`; }).join('') || '<p class="magic-muted">Nessuna carta in mano.</p>'}</div>
+                <div class="magic-hand">${(ownState.hand || []).map((card, index) => { const drawn = drawnCount && index >= ownState.hand.length - drawnCount; const land = /\bland\b/i.test(card.typeLine || ''); const hasMana = canPayMana(ownState.manaPool, card.manaCost || '', 0); const blockedReason = !isMyTurn ? 'Puoi lanciare carte solo durante il tuo turno.' : (land && ownState.landsPlayed >= 1 ? 'Hai già giocato una terra in questo turno.' : (!land && !hasMana ? `Mana insufficiente o colori errati. Costo ${card.manaCost || '0'}; riserva: ${manaPoolLabel(ownState.manaPool)}.` : '')); return `<article class="magic-hand-card ${drawn ? 'is-drawn' : ''} ${selectedBottomCards.has(index) ? 'is-mulligan-selected' : ''}" data-card-inspect="hand:${index}" style="--card-index:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : ''}<div class="magic-hand-overlay"><strong>${esc(card.name)}</strong><small class="magic-hand-card-cost">${manaCostIcons(card.manaCost)}<span>${esc(card.typeLine)}</span></small>${needsOpeningChoice ? `<button type="button" data-mulligan-index="${index}" ${!mulliganBottomCount ? 'disabled' : ''}>${selectedBottomCards.has(index) ? '✓ In fondo' : 'Seleziona per il fondo'}</button>` : `<button type="button" data-play-card="${index}" title="${esc(blockedReason)}" ${mulliganActive || !isMyTurn || state.winner || (land && ownState.landsPlayed >= 1) || (!land && !hasMana) ? 'disabled' : ''}>${land ? 'Gioca terra' : `Lancia · ${manaCostIcons(card.manaCost || '{0}')}`}</button>`}</div></article>`; }).join('') || '<p class="magic-muted">Nessuna carta in mano.</p>'}</div>
                 <details class="magic-phase-help"><summary>Regole e azioni della partita</summary><p>Il tavolo paga i costi colorati e applica la tassa Commander. Gli effetti non riconosciuti sono indicati nel diario; pila, priorità, blocchi e abilità avanzate restano da automatizzare.</p></details>
             </section>`;
         root.insertAdjacentHTML('beforeend', `<div class="magic-card-inspector" id="magic-card-inspector" hidden><section role="dialog" aria-modal="true" aria-labelledby="magic-inspector-title"><button type="button" class="magic-inspector-close" data-close-card aria-label="Chiudi dettagli carta">×</button><div id="magic-inspector-content"></div></section></div>`);
@@ -495,11 +500,56 @@ export function showMagicDashboard(container, options = {}) {
         if (players.length < 2 || players.length > 4) { setNotice('Per avviare la partita servono da 2 a 4 giocatori.'); return; }
         const loadouts = room.data?.magic?.loadouts || {};
         const playersData = {};
-        for (const id of players) { const loadout=loadouts[id]; if (!loadout?.cards || !validateCommanderDeck(loadout.cards,loadout.commanders||[]).valid) { setNotice('Ogni giocatore deve confermare un mazzo Commander legale da 100 carte.'); return; } const commanders=(loadout.commanders||[]).map(commanderId=>loadout.cards.find(card=>card.id===commanderId));const cards=loadout.cards.filter(card=>!loadout.commanders.includes(card.id));for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];} playersData[id]={hand:cards.splice(0,7),library:cards,battlefield:[],graveyard:[],exile:[],commandZone:commanders,commanderCasts:{},commanderDamage:{},manaPool:emptyManaPool(),colorIdentity:[...new Set(commanders.flatMap(card=>card.colorIdentity||[]))],life:40,landsPlayed:0}; }
-        if (players.length > 2 && playersData[hostId]?.library.length) playersData[hostId].hand.push(playersData[hostId].library.shift());
-        const state = { version: 2, turn: 1, activePlayer: hostId, startingPlayer: hostId, players, playersData, log: [`Partita iniziata con ${players.length} giocatori`], turnName: 'Fase principale' };
+        for (const id of players) { const loadout=loadouts[id]; if (!loadout?.cards || !validateCommanderDeck(loadout.cards,loadout.commanders||[]).valid) { setNotice('Ogni giocatore deve confermare un mazzo Commander legale da 100 carte.'); return; } const commanders=(loadout.commanders||[]).map(commanderId=>loadout.cards.find(card=>card.id===commanderId));const cards=loadout.cards.filter(card=>!loadout.commanders.includes(card.id));for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];} playersData[id]={hand:cards.splice(0,7),library:cards,battlefield:[],graveyard:[],exile:[],commandZone:commanders,commanderCasts:{},commanderDamage:{},manaPool:emptyManaPool(),colorIdentity:[...new Set(commanders.flatMap(card=>card.colorIdentity||[]))],life:40,landsPlayed:0,mulligans:0,keptOpeningHand:false,mulliganBottom:[]}; }
+        const state = { version: 2, turn: 1, activePlayer: hostId, startingPlayer: hostId, players, playersData, mulliganActive: true, log: [`Partita iniziata con ${players.length} giocatori · ognuno può fare un mulligan gratuito`], turnName: 'Mulligan iniziale' };
         const result = await updateMinigameRoomData(room.code, data => ({ ...data, scope:'magic', magic: { ...(data.magic||{}), game: state } }));
         if (result.error) { setNotice(result.error.message); return; } room = result.room || room; render();
+    };
+    const openingMulliganAction = (current, action, selectedIndex = -1) => {
+        if (!current?.mulliganActive) return current;
+        const own = current.playersData?.[playerId()];
+        if (!own || own.keptOpeningHand) return current;
+        if (action === 'select') {
+            const required = Math.min(own.hand.length, own.mulligans || 0);
+            if (!required) return current;
+            const selected = new Set(own.mulliganBottom || []);
+            if (selected.has(selectedIndex)) selected.delete(selectedIndex);
+            else if (selected.size < required) selected.add(selectedIndex);
+            else { setNotice(`Con la regola di Londra devi mettere in fondo esattamente ${required} carte.`); return current; }
+            own.mulliganBottom = [...selected].sort((a, b) => a - b);
+            return current;
+        }
+        if (action === 'redraw') {
+            own.library.push(...own.hand);
+            for (let i = own.library.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [own.library[i], own.library[j]] = [own.library[j], own.library[i]];
+            }
+            own.hand = own.library.splice(0, 7);
+            own.mulligans = (own.mulligans || 0) + 1;
+            own.mulliganBottom = [];
+            current.log.unshift(`${current.playerNames?.[playerId()] || 'Un giocatore'} rimescola la mano e fa mulligan (${own.mulligans}).`);
+            return current;
+        }
+        if (action === 'keep') {
+            const required = Math.min(own.hand.length, own.mulligans || 0);
+            const indexes = [...new Set(own.mulliganBottom || [])].sort((a, b) => b - a);
+            if (indexes.length !== required) {
+                setNotice(`Seleziona esattamente ${required} ${required === 1 ? 'carta' : 'carte'} da mettere in fondo al grimorio.`);
+                return current;
+            }
+            const bottom = indexes.map(index => own.hand.splice(index, 1)[0]).filter(Boolean);
+            own.library.push(...bottom);
+            own.mulliganBottom = [];
+            own.keptOpeningHand = true;
+            current.log.unshift(`${current.playerNames?.[playerId()] || 'Un giocatore'} tiene una mano da ${own.hand.length} carte.`);
+            if (current.players.every(id => current.playersData[id]?.keptOpeningHand)) {
+                current.mulliganActive = false;
+                current.turnName = current.playerNames?.[current.activePlayer] || 'Fase principale';
+                current.log.unshift('Tutti hanno tenuto la mano iniziale. La partita comincia.');
+            }
+        }
+        return current;
     };
     const resolvePlayedCard = (state, ownerId, card, target = '', xValue = 0, fromCommandZone = false) => {
         const owner = state.playersData[ownerId];
@@ -601,7 +651,7 @@ export function showMagicDashboard(container, options = {}) {
         });
     };
     const scheduleBotTurn = state => {
-        if (!room?.data?.magic?.botMatch || !state || state.winner || !state.botPlayers?.[state.activePlayer]) return;
+        if (!room?.data?.magic?.botMatch || !state || state.winner || state.mulliganActive || !state.botPlayers?.[state.activePlayer]) return;
         const token = `${state.turn}:${state.activePlayer}`;
         if (botTurnScheduled === token) return;
         botTurnScheduled = token;
@@ -646,17 +696,17 @@ export function showMagicDashboard(container, options = {}) {
                 const commandZone = commandIds.map(id => cards.find(card => card.id === id)).filter(Boolean).map(card => ({ ...card, isCommander: true }));
                 const library = cards.filter(card => !commandIds.includes(card.id)).map(card => ({ ...card }));
                 for (let i = library.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [library[i], library[j]] = [library[j], library[i]]; }
-                return { hand: library.splice(0, 7), library, battlefield: [], graveyard: [], exile: [], commandZone, commanderCasts: {}, commanderDamage: {}, manaPool: emptyManaPool(), colorIdentity: [...new Set(commandZone.flatMap(card => card.colorIdentity || []))], life: 40, landsPlayed: 0 };
+                return { hand: library.splice(0, 7), library, battlefield: [], graveyard: [], exile: [], commandZone, commanderCasts: {}, commanderDamage: {}, manaPool: emptyManaPool(), colorIdentity: [...new Set(commandZone.flatMap(card => card.colorIdentity || []))], life: 40, landsPlayed: 0, mulligans: 0, keptOpeningHand: false, mulliganBottom: [] };
             };
             playersData[humanId] = prepare(playerCards, playerDeck.commanders || []);
             botDecks.forEach((deck, index) => {
                 const id = `bot-${crypto.randomUUID()}`;
                 players.push(id); playersData[id] = prepare(deck.cards, deck.commanders);
+                playersData[id].keptOpeningHand = true;
                 playerNames[id] = `Bot ${index + 1} · ${deck.name}`;
                 botPlayers[id] = { difficulty: 'media', deckName: deck.name };
             });
-            if (players.length > 2 && playersData[humanId].library.length) playersData[humanId].hand.push(playersData[humanId].library.shift());
-            const state = { version: 2, turn: 1, activePlayer: humanId, startingPlayer: humanId, players, playersData, playerNames, botPlayers, log: ['Partita di prova iniziata · Commander · 40 vite'], turnName: 'Il tuo turno' };
+            const state = { version: 2, turn: 1, activePlayer: humanId, startingPlayer: humanId, players, playersData, playerNames, botPlayers, mulliganActive: true, log: ['Partita di prova iniziata · Commander · 40 vite · mulligan gratuito disponibile'], turnName: 'Mulligan iniziale' };
             clearTimeout(botTurnTimer); botTurnScheduled = '';
             stopWatching?.(); if (pollTimer) clearInterval(pollTimer); stopWatching = null; pollTimer = null;
             room = { code: 'BOT', hostClientId: humanId, status: 'connected', scope: 'magic', data: { scope: 'magic', magic: { botMatch: true, game: state } } };
@@ -951,6 +1001,11 @@ export function showMagicDashboard(container, options = {}) {
             } else { pseudoFullscreen=true; tableRoot.classList.add('magic-pseudo-fullscreen'); }
             syncFullscreenButton(); return;
         }
+        const mulliganAction = event.target.closest('[data-mulligan-action]')?.dataset.mulliganAction;
+        if (mulliganAction) { await saveState(current => openingMulliganAction(current, mulliganAction)); return; }
+        const mulliganIndex = event.target.closest('[data-mulligan-index]')?.dataset.mulliganIndex;
+        if (mulliganIndex !== undefined) { await saveState(current => openingMulliganAction(current, 'select', Number(mulliganIndex))); return; }
+        if (state.mulliganActive && !event.target.closest('#magic-concede')) return;
         if(event.target.closest('#magic-ready')) {const deck=decks.find(item=>item.id===container.querySelector('#magic-start-deck')?.value);if(!deck){setNotice('Crea prima un mazzo.');return;}const cards=deckCards(deck).map(card=>({...card}));const validation=validateCommanderDeck(cards,deck.commanders||[]);if(!validation.valid){setNotice(validation.errors[0]);return;}const loadout={cards,commanders:deck.commanders||[],name:deck.name};const result=await updateMinigameRoomData(room.code,data=>({...data,scope:'magic',magic:{...(data.magic||{}),loadouts:{...(data.magic?.loadouts||{}),[playerId()]:loadout}}}));if(result.error){setNotice(result.error.message);return;}room=result.room||room;render();return;}
         if(event.target.closest('#magic-start')) {if(room.hostClientId!==playerId())return;await createGame(null);return;}
         if(event.target.closest('#magic-concede')) {if(confirm('Abbandonare la partita?')){if(document.fullscreenElement===tableRoot)await document.exitFullscreen?.();pseudoFullscreen=false;tableRoot.classList.remove('magic-pseudo-fullscreen');if(room?.data?.magic?.botMatch){localStorage.removeItem(BOT_GAME_KEY);clearTimeout(botTurnTimer);botTurnScheduled='';}room=null;render();}return;}
