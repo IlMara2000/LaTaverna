@@ -17,6 +17,17 @@ const COLLECTION_PUBLIC_KEY = 'taverna_magic_collection_public_v1';
 const BOT_GAME_KEY = 'taverna_magic_bot_game_v1';
 const CLIENT_KEY = 'taverna_minigame_client_id';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+const MANA_SYMBOL_NAMES = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde', C: 'Incolore' };
+const manaSymbolIcon = symbol => {
+    const value = String(symbol || '').toUpperCase();
+    const slug = value.replace(/[{}]/g, '').replaceAll('/', '');
+    if (!/^[0-9WUBRGCXSTQPE]+$/.test(slug)) return esc(symbol);
+    const accessibleName = MANA_SYMBOL_NAMES[slug] || (slug === 'X' ? 'Mana X' : `${slug} mana`);
+    return `<img class="magic-mana-symbol" src="https://svgs.scryfall.io/card-symbols/${slug}.svg" alt="${esc(accessibleName)}" title="${esc(accessibleName)}" loading="lazy" decoding="async">`;
+};
+const manaCostIcons = cost => [...String(cost || '').matchAll(/\{([^}]+)\}/g)].map(match => manaSymbolIcon(match[0])).join('') || '<span class="magic-no-mana-cost">—</span>';
+const manaPoolIcons = pool => ['W', 'U', 'B', 'R', 'G', 'C'].filter(color => Number(pool?.[color]) > 0).map(color => `<span class="magic-mana-count" title="${esc(MANA_SYMBOL_NAMES[color])}">${manaSymbolIcon(`{${color}}`)}<strong>${Number(pool[color])}</strong></span>`).join('') || '<span class="magic-pool-empty">vuota</span>';
+const magicRulesText = text => String(text || '').split(/(\{[^}]+\})/g).map(part => /^\{[^}]+\}$/.test(part) ? manaSymbolIcon(part) : esc(part)).join('');
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
 const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 const playerId = () => localStorage.getItem(CLIENT_KEY) || 'local-player';
@@ -174,6 +185,10 @@ export function showMagicDashboard(container, options = {}) {
     let scanInProgress = false;
     let cardHoldTimer = null;
     let cardHoldTriggered = false;
+    let observedHandContext = '';
+    let observedHandCount = null;
+    let drawAnimationTimer = null;
+    let pseudoFullscreen = false;
 
     const cardSummary = card => ({ id: card.id, name: card.name, image: cardFace(card), manaCost: card.mana_cost || card.card_faces?.[0]?.mana_cost || '', typeLine: card.type_line || '', oracleText: card.oracle_text || card.card_faces?.map(face => face.oracle_text).join('\n') || '', power: card.power ?? '', toughness: card.toughness ?? '', cmc: manaValue(card), colors: card.colors || [], colorIdentity: card.color_identity || [], producedMana: card.produced_mana || [], keywords: card.keywords || [], commanderLegality: card.legalities?.commander || 'unknown', set: card.set_name || '', rarity: card.rarity || '' });
     const renderBotSetup = () => {
@@ -300,18 +315,99 @@ export function showMagicDashboard(container, options = {}) {
         return current;
     };
     const renderTable = () => {
-        const root = container.querySelector('#magic-table'); if (!root) return;
-        if (!room?.code) { root.innerHTML = ''; return; }
-        const state = game(); const connected = isMinigameRoomConnected(room);
-        if (!state) { const players=[...new Set([room.hostClientId,room.guestClientId,...(room.data?.magic?.participants||[])].filter(Boolean))]; const loadouts=room.data?.magic?.loadouts||{}; const ready=players.length>=2 && players.every(id=>loadouts[id]?.cards && validateCommanderDeck(loadouts[id].cards,loadouts[id].commanders||[]).valid); root.innerHTML = `<div class="magic-table-wait"><div class="magic-table-sigil">✧</div><div><strong>${players.length}/4 giocatori · ${connected ? 'Tavolo aperto' : 'In attesa del secondo giocatore'}</strong><p>${players.map((id,index)=>`${index===0?'Oste':`Giocatore ${index+1}`}${loadouts[id]?.cards?' · mazzo Commander pronto':' · deve confermare un mazzo legale'}`).join('<br>')}<br>${players.length<4?'La stanza resta aperta fino a 4 giocatori.':'Tavolo al completo.'}</p></div>${players.includes(playerId()) && !loadouts[playerId()] ? `<select id="magic-start-deck" aria-label="Scegli il mazzo">${decks.map(deck => `<option value="${esc(deck.id)}" ${selectedDeck === deck.id ? 'selected' : ''}>${esc(deck.name)} · ${deck.cards.reduce((n,c)=>n+c.quantity,0)} carte</option>`).join('')}</select><button id="magic-ready" class="magic-button" type="button" ${decks.length===0?'disabled':''}>Conferma mazzo</button>` : ''}${room.hostClientId===playerId() && players.length>=2 ? `<button id="magic-start" class="magic-button" type="button" ${!ready?'disabled':''}>${ready?'Inizia partita':'In attesa dei mazzi legali'}</button>` : ''}</div>`; return; }
-        const myId = playerId(), opponentIds = state.players.filter(id => id !== myId && !state.playersData[id]?.eliminated);
+        const root = container.querySelector('#magic-table');
+        if (!root) return;
+        if (!room?.code) {
+            root.innerHTML = '';
+            root.classList.remove('magic-table-root', 'magic-pseudo-fullscreen');
+            observedHandContext = '';
+            observedHandCount = null;
+            return;
+        }
+        const state = game();
+        const connected = isMinigameRoomConnected(room);
+        if (!state) {
+            root.classList.remove('magic-table-root');
+            observedHandContext = '';
+            observedHandCount = null;
+            const players = [...new Set([room.hostClientId, room.guestClientId, ...(room.data?.magic?.participants || [])].filter(Boolean))];
+            const loadouts = room.data?.magic?.loadouts || {};
+            const ready = players.length >= 2 && players.every(id => loadouts[id]?.cards && validateCommanderDeck(loadouts[id].cards, loadouts[id].commanders || []).valid);
+            root.innerHTML = `<div class="magic-table-wait"><div class="magic-table-sigil">✧</div><div><strong>${players.length}/4 giocatori · ${connected ? 'Tavolo aperto' : 'In attesa del secondo giocatore'}</strong><p>${players.map((id, index) => `${index === 0 ? 'Oste' : `Giocatore ${index + 1}`}${loadouts[id]?.cards ? ' · mazzo Commander pronto' : ' · deve confermare un mazzo legale'}`).join('<br>')}<br>${players.length < 4 ? 'La stanza resta aperta fino a 4 giocatori.' : 'Tavolo al completo.'}</p></div>${players.includes(playerId()) && !loadouts[playerId()] ? `<select id="magic-start-deck" aria-label="Scegli il mazzo">${decks.map(deck => `<option value="${esc(deck.id)}" ${selectedDeck === deck.id ? 'selected' : ''}>${esc(deck.name)} · ${deck.cards.reduce((n, c) => n + c.quantity, 0)} carte</option>`).join('')}</select><button id="magic-ready" class="magic-button" type="button" ${decks.length === 0 ? 'disabled' : ''}>Conferma mazzo</button>` : ''}${room.hostClientId === playerId() && players.length >= 2 ? `<button id="magic-start" class="magic-button" type="button" ${!ready ? 'disabled' : ''}>${ready ? 'Inizia partita' : 'In attesa dei mazzi legali'}</button>` : ''}</div>`;
+            return;
+        }
+
+        root.classList.add('magic-table-root');
+        const myId = playerId();
+        const opponentIds = state.players.filter(id => id !== myId && !state.playersData[id]?.eliminated);
         const ownState = state.playersData?.[myId] || { hand: [], battlefield: [], graveyard: [], library: [] };
         const isMyTurn = myTurn(state);
-        const drawPile = cards => `<div class="magic-pile"><div class="magic-card-back">✧</div><span>${cards.length} nel grimorio</span></div>`;
-        const renderBattlefield = (cards, mine) => cards.length ? cards.map((card, index) => { const sickManaCreature = card.summoningSick && /creature/i.test(card.typeLine || ''); return `<button type="button" class="magic-board-card ${card.tapped ? 'is-tapped' : ''}" data-board-action="${mine && isManaSource(card, ownState.colorIdentity) && !sickManaCreature ? 'mana' : 'none'}" data-card-inspect="board:${mine ? myId : opponentIds.find(id => state.playersData[id]?.battlefield === cards)}:${index}" data-board-index="${index}" aria-label="${esc(card.name)} · ${esc(card.typeLine)}${card.tapped ? ' · tappata' : ''}" title="${esc(card.name)} · ${esc(card.typeLine)}">${card.image ? `<img src="${esc(card.image)}" alt="" loading="lazy">` : ''}<span class="magic-board-card-copy"><strong class="magic-board-name">${esc(card.name)}</strong><small>${esc(card.typeLine)}</small></span>${card.power !== '' ? `<b>${(Number.parseInt(card.power,10)||0)+(card.counters?.plusOne||0)+(card.turnBoost?.power||0)}/${(Number.parseInt(card.toughness,10)||0)+(card.counters?.plusOne||0)+(card.turnBoost?.toughness||0)}</b>` : ''}${mine && isManaSource(card, ownState.colorIdentity) && !card.tapped && !sickManaCreature ? `<i class="magic-mana-hint">TAPPA · ${esc(manaProductionOptions(card, ownState.colorIdentity).flat().join('/'))}</i>` : ''}${card.tapped ? '<i>TAPPATA</i>' : ''}</button>`; }).join('') : '<span class="magic-empty-board">Il legno attende le carte…</span>';
-        const commanders=ownState.commandZone||[];
-        root.innerHTML = `<div class="magic-game-banner"><div><span class="magic-overline">COMMANDER · PARTITA IN CORSO · ${esc(room.code)} · ${state.players.length} GIOCATORI</span><strong>${state.winner?`Vittoria · ${esc(state.playerNames?.[state.winner] || `Giocatore ${state.players.indexOf(state.winner)+1}`)}`:esc(state.turnName || 'Turno di gioco')}</strong><small>${state.winner?'Partita conclusa':`${isMyTurn ? 'È il tuo turno' : `Turno del giocatore ${state.players.indexOf(state.activePlayer)+1}`} · turno ${state.turn}`}</small></div><button type="button" class="magic-text-button" id="magic-concede">Abbandona</button></div><div class="magic-life-row"><div class="magic-life"><span>TE</span><strong>${ownState.life ?? 40}</strong><button type="button" data-life="-1" ${!isMyTurn?'disabled':''}>−</button><button type="button" data-life="1" ${!isMyTurn?'disabled':''}>＋</button></div>${opponentIds.map(id=>`<div class="magic-life-opponent"><span>${esc(state.playerNames?.[id] || `GIOCATORE ${state.players.indexOf(id)+1}`)}</span><strong>${state.playersData[id]?.life ?? 40}</strong><small>${state.playersData[id]?.hand?.length ?? 0} carte · comandante: ${Math.max(0,...Object.values(ownState.commanderDamage?.[id]||{}))}/21</small></div>`).join('')}</div><div class="magic-mana-bar"><strong>Riserva: ${esc(manaPoolLabel(ownState.manaPool))}</strong><label>Colore per le terre<select id="magic-mana-choice"><option value="auto">Automatico</option>${['W','U','B','R','G','C'].map(color=>`<option value="${color}" ${ownState.manaChoice===color?'selected':''}>${color}</option>`).join('')}</select></label><button type="button" id="magic-clear-mana" ${!isMyTurn||!Object.values(ownState.manaPool||{}).some(Number)?'disabled':''}>Svuota mana</button></div><div class="magic-battlefield"><div class="magic-opponents-row">${opponentIds.map(id=>{const foe=state.playersData[id]||{};return `<div class="magic-opponent-zone"><div class="magic-zone-label"><span>CAMPO · ${esc(state.playerNames?.[id] || `GIOCATORE ${state.players.indexOf(id)+1}`)}</span>${drawPile(foe.library||[])}</div><div class="magic-board-cards">${renderBattlefield(foe.battlefield||[],false)}</div></div>`;}).join('')}</div><div class="magic-own-zone"><div class="magic-zone-label"><span>IL TUO CAMPO DI BATTAGLIA</span>${drawPile(ownState.library || [])}</div><div class="magic-board-cards">${renderBattlefield(ownState.battlefield || [], true)}</div></div></div>${commanders.length?`<section class="magic-command-zone"><span class="magic-zone-label">ZONA DI COMANDO</span><div class="magic-commanders">${commanders.map((card,index)=>`<article class="magic-commander-card" data-card-inspect="command:${index}">${card.image?`<img src="${esc(card.image)}" alt="">`:''}<span><strong>${esc(card.name)}</strong><small>${(ownState.commanderCasts?.[card.id]||0)*2} mana extra · ${ownState.commanderCasts?.[card.id]||0} lanci</small></span><button type="button" data-cast-commander="${esc(card.id)}" ${!isMyTurn||state.winner||!canPayMana(ownState.manaPool,card.manaCost||'',0,2*(ownState.commanderCasts?.[card.id]||0))?'disabled':''}>Lancia · ${esc(card.manaCost||'0')} + ${2*(ownState.commanderCasts?.[card.id]||0)}</button></article>`).join('')}</div></section>`:''}<div class="magic-game-actions"><select id="magic-effect-target" aria-label="Scegli il bersaglio delle magie"><option value="">Scegli bersaglio (se richiesto)…</option>${state.players.filter(id=>!state.playersData[id]?.eliminated).flatMap(id=>[`<option value="player:${esc(id)}">Giocatore · ${esc(state.playerNames?.[id]||`Giocatore ${state.players.indexOf(id)+1}`)}</option>`,...(state.playersData[id]?.battlefield||[]).map(card=>`<option value="card:${esc(id)}:${esc(card.id)}">Creatura/Permanente · ${esc(card.name)} (${esc(state.playerNames?.[id]||`Giocatore ${state.players.indexOf(id)+1}`)})</option>`)]).join('')}</select><select id="magic-attack-target" aria-label="Scegli il bersaglio dell’attacco" ${!isMyTurn||state.winner?'disabled':''}>${opponentIds.map((id)=>`<option value="${esc(id)}">Attacca giocatore ${state.players.indexOf(id)+1}</option>`).join('')}</select><button type="button" class="magic-button magic-button-secondary" id="magic-attack" ${!isMyTurn||state.winner?'disabled':''}>Attacca</button><button type="button" class="magic-button" id="magic-end-turn" ${!isMyTurn||state.winner?'disabled':''}>Termina il turno →</button></div><div class="magic-game-log"><strong>Ultime azioni</strong><ul>${(state.log||[]).slice(0,5).map(line=>`<li>${esc(line)}</li>`).join('')||'<li>La partita è pronta.</li>'}</ul></div><div class="magic-hand-heading"><span>LA TUA MANO</span><small>${ownState.hand.length} carte · tieni premuto per leggere</small></div><div class="magic-hand">${(ownState.hand || []).map((card,index)=>`<article class="magic-hand-card" data-card-inspect="hand:${index}" style="--card-index:${index}">${card.image?`<img src="${esc(card.image)}" alt="${esc(card.name)}">`:''}<div class="magic-hand-overlay"><strong>${esc(card.name)}</strong><small>${esc(card.manaCost || '—')} · ${esc(card.typeLine)}</small><button type="button" data-play-card="${index}" ${!isMyTurn||state.winner || (!(card.typeLine||'').toLowerCase().includes('land') && !canPayMana(ownState.manaPool,card.manaCost||'',0)) ? 'disabled' : ''}>${(card.typeLine||'').toLowerCase().includes('land') ? 'Gioca terra' : 'Lancia · ' + esc(card.manaCost || '0')}</button></div></article>`).join('') || '<p class="magic-muted">Nessuna carta in mano.</p>'}</div><p class="magic-muted magic-phase-help">Il tavolo paga i costi colorati dal mana prodotto, applica la tassa Commander e risolve alcuni effetti Oracle comuni. Per effetti complessi o non riconosciuti mostra un promemoria per la risoluzione manuale; fasi, priorità, blocchi e abilità avanzate non sono ancora completi.</p>`;
+        const commanders = ownState.commandZone || [];
+        const drawContext = `${room.code}:${myId}`;
+        let drawnCount = 0;
+        if (drawContext !== observedHandContext) {
+            observedHandContext = drawContext;
+            observedHandCount = ownState.hand.length;
+        } else if (observedHandCount !== null && ownState.hand.length > observedHandCount) {
+            drawnCount = ownState.hand.length - observedHandCount;
+            observedHandCount = ownState.hand.length;
+        } else observedHandCount = ownState.hand.length;
+
+        const drawPile = (cards, mine = false) => `<div class="magic-pile ${mine ? 'magic-own-pile' : ''}"><div class="magic-card-back" aria-hidden="true">✧</div><span><strong>${cards.length}</strong> nel grimorio</span></div>`;
+        const renderBattlefield = (cards, mine) => cards.length ? cards.map((card, index) => {
+            const sickManaCreature = card.summoningSick && /creature/i.test(card.typeLine || '');
+            const manaSource = mine && isManaSource(card, ownState.colorIdentity) && !sickManaCreature;
+            const power = (Number.parseInt(card.power, 10) || 0) + (card.counters?.plusOne || 0) + (card.turnBoost?.power || 0);
+            const toughness = (Number.parseInt(card.toughness, 10) || 0) + (card.counters?.plusOne || 0) + (card.turnBoost?.toughness || 0);
+            return `<button type="button" class="magic-board-card ${card.tapped ? 'is-tapped' : ''}" data-board-action="${manaSource ? 'mana' : 'none'}" data-card-inspect="board:${mine ? myId : opponentIds.find(id => state.playersData[id]?.battlefield === cards)}:${index}" data-board-index="${index}" aria-label="${esc(card.name)} · ${esc(card.typeLine)}${card.tapped ? ' · tappata' : ''}" title="Tieni premuto per leggere ${esc(card.name)}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : `<span class="magic-board-fallback">${esc(card.name)}</span>`}<span class="magic-board-card-copy"><strong class="magic-board-name">${esc(card.name)}</strong><small>${manaCostIcons(card.manaCost)}</small></span>${card.power !== '' ? `<b>${power}/${toughness}</b>` : ''}${manaSource && !card.tapped ? `<i class="magic-mana-hint">TAPPA · ${manaProductionOptions(card, ownState.colorIdentity).map(option => option.map(color => manaSymbolIcon(`{${color}}`)).join('')).join('<span class="magic-mana-or">o</span>')}</i>` : ''}${card.tapped ? '<i>TAPPATA</i>' : ''}</button>`;
+        }).join('') : '<span class="magic-empty-board">Il legno attende le carte…</span>';
+        const playersInGame = state.players.filter(id => !state.playersData[id]?.eliminated);
+        const effectTargets = playersInGame.flatMap(id => [
+            `<option value="player:${esc(id)}">${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</option>`,
+            ...(state.playersData[id]?.battlefield || []).map(card => `<option value="card:${esc(id)}:${esc(card.id)}">${esc(card.name)}</option>`)
+        ]).join('');
+        const attackTargets = opponentIds.map(id => `<option value="${esc(id)}">${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</option>`).join('');
+        const fullscreenActive = document.fullscreenElement === root || pseudoFullscreen;
+        root.innerHTML = `
+            <section class="magic-match-screen" aria-label="Partita Commander">
+                <header class="magic-match-hud">
+                    <div class="magic-match-heading"><span class="magic-match-emblem" aria-hidden="true">✦</span><div><span class="magic-overline">COMMANDER · ${state.players.length} GIOCATORI · ${esc(room.code)}</span><strong>${state.winner ? `Vince ${esc(state.playerNames?.[state.winner] || `Giocatore ${state.players.indexOf(state.winner) + 1}`)}` : `Turno ${state.turn} · ${esc(state.turnName || 'Taverna')}`}</strong><small>${state.winner ? 'Partita conclusa' : (isMyTurn ? 'Il tuo turno' : `Turno di ${esc(state.playerNames?.[state.activePlayer] || `Giocatore ${state.players.indexOf(state.activePlayer) + 1}`)}`)}</small></div></div>
+                    <div class="magic-match-tools"><button type="button" id="magic-fullscreen" aria-pressed="${fullscreenActive}" title="Schermo intero">⛶ <span>${fullscreenActive ? 'Esci' : 'Schermo intero'}</span></button><button type="button" id="magic-concede" title="Abbandona la partita">Lascia il tavolo</button></div>
+                </header>
+                <div class="magic-life-row" aria-label="Punti vita">
+                    <div class="magic-life magic-life-self"><span>Tu</span><strong>${ownState.life ?? 40}</strong><button type="button" data-life="-1" aria-label="Togli un punto vita" ${!isMyTurn ? 'disabled' : ''}>−</button><button type="button" data-life="1" aria-label="Aggiungi un punto vita" ${!isMyTurn ? 'disabled' : ''}>＋</button></div>
+                    ${opponentIds.map(id => `<div class="magic-life-opponent"><span>${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span><strong>${state.playersData[id]?.life ?? 40}</strong><small>${state.playersData[id]?.hand?.length ?? 0} carte · comandante ${Math.max(0, ...Object.values(ownState.commanderDamage?.[id] || {}))}/21</small></div>`).join('')}
+                </div>
+                <div class="magic-mana-dock">
+                    <div class="magic-mana-reserve"><span>Riserva</span><div>${manaPoolIcons(ownState.manaPool)}</div><button type="button" id="magic-clear-mana" title="Svuota la riserva" ${!isMyTurn || !Object.values(ownState.manaPool || {}).some(Number) ? 'disabled' : ''}>Svuota</button></div>
+                    <div class="magic-mana-choice" role="group" aria-label="Colore prodotto dalle terre"><span>Produci mana</span><button type="button" data-mana-choice="auto" aria-pressed="${!ownState.manaChoice || ownState.manaChoice === 'auto'}" ${!isMyTurn ? 'disabled' : ''}><span aria-hidden="true">✦</span><small>Auto</small></button>${['W', 'U', 'B', 'R', 'G', 'C'].map(color => `<button type="button" data-mana-choice="${color}" aria-label="${MANA_SYMBOL_NAMES[color]}" aria-pressed="${ownState.manaChoice === color}" ${!isMyTurn ? 'disabled' : ''}>${manaSymbolIcon(`{${color}}`)}</button>`).join('')}</div>
+                </div>
+                <div class="magic-battlefield">
+                    <div class="magic-opponents-row">${opponentIds.map(id => { const foe = state.playersData[id] || {}; return `<div class="magic-opponent-zone"><div class="magic-zone-label"><span>CAMPO · ${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span>${drawPile(foe.library || [])}</div><div class="magic-board-cards">${renderBattlefield(foe.battlefield || [], false)}</div></div>`; }).join('')}</div>
+                    <div class="magic-own-zone"><div class="magic-zone-label"><span>IL TUO CAMPO</span>${drawPile(ownState.library || [], true)}</div><div class="magic-board-cards">${renderBattlefield(ownState.battlefield || [], true)}</div></div>
+                </div>
+                ${commanders.length ? `<details class="magic-command-zone"><summary><span>ZONA COMANDANTE</span><small>${commanders.map(card => esc(card.name)).join(' · ')}</small></summary><div class="magic-commanders">${commanders.map((card, index) => { const casts = ownState.commanderCasts?.[card.id] || 0; const tax = casts * 2; return `<article class="magic-commander-card" data-card-inspect="command:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}">` : ''}<span><strong>${esc(card.name)}</strong><small>${casts} lanci dalla zona di comando</small></span><div class="magic-commander-cost">${manaCostIcons(card.manaCost)}${tax ? `<span class="magic-tax-cost">+ ${manaCostIcons(`{${tax}}`)}</span>` : ''}</div><button type="button" data-cast-commander="${esc(card.id)}" ${!isMyTurn || state.winner || !canPayMana(ownState.manaPool, card.manaCost || '', 0, tax) ? 'disabled' : ''}>Lancia</button></article>`; }).join('')}</div></details>` : ''}
+                <div class="magic-action-dock">
+                    <label class="magic-action-target"><span>BERSAGLIO</span><select id="magic-effect-target" aria-label="Scegli il bersaglio delle magie"><option value="">Scegli bersaglio…</option>${effectTargets}</select></label>
+                    <label class="magic-action-opponent"><span>ATTACCA</span><select id="magic-attack-target" aria-label="Scegli il giocatore da attaccare" ${!isMyTurn || state.winner ? 'disabled' : ''}>${attackTargets}</select></label>
+                    <button type="button" class="magic-button magic-attack-button" id="magic-attack" ${!isMyTurn || state.winner ? 'disabled' : ''}>⚔ <span>Attacca</span></button>
+                    <button type="button" class="magic-button magic-end-turn" id="magic-end-turn" ${!isMyTurn || state.winner ? 'disabled' : ''}>Fine turno <span aria-hidden="true">→</span></button>
+                </div>
+                <details class="magic-game-log"><summary>Diario della partita</summary><ol>${(state.log || []).slice(0, 6).map(line => `<li>${magicRulesText(line)}</li>`).join('') || '<li>La partita è pronta.</li>'}</ol></details>
+                <div class="magic-hand-heading"><span>LA TUA MANO</span><small>${ownState.hand.length} carte · tieni premuto per leggere</small></div>
+                <div class="magic-hand">${(ownState.hand || []).map((card, index) => { const drawn = drawnCount && index >= ownState.hand.length - drawnCount; return `<article class="magic-hand-card ${drawn ? 'is-drawn' : ''}" data-card-inspect="hand:${index}" style="--card-index:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : ''}<div class="magic-hand-overlay"><strong>${esc(card.name)}</strong><small class="magic-hand-card-cost">${manaCostIcons(card.manaCost)}<span>${esc(card.typeLine)}</span></small><button type="button" data-play-card="${index}" ${!isMyTurn || state.winner || (!(card.typeLine || '').toLowerCase().includes('land') && !canPayMana(ownState.manaPool, card.manaCost || '', 0)) ? 'disabled' : ''}>${(card.typeLine || '').toLowerCase().includes('land') ? 'Gioca terra' : `Lancia · ${manaCostIcons(card.manaCost || '{0}')}`}</button></div></article>`; }).join('') || '<p class="magic-muted">Nessuna carta in mano.</p>'}</div>
+                <details class="magic-phase-help"><summary>Regole e azioni della partita</summary><p>Il tavolo paga i costi colorati e applica la tassa Commander. Gli effetti non riconosciuti sono indicati nel diario; pila, priorità, blocchi e abilità avanzate restano da automatizzare.</p></details>
+            </section>`;
         root.insertAdjacentHTML('beforeend', `<div class="magic-card-inspector" id="magic-card-inspector" hidden><section role="dialog" aria-modal="true" aria-labelledby="magic-inspector-title"><button type="button" class="magic-inspector-close" data-close-card aria-label="Chiudi dettagli carta">×</button><div id="magic-inspector-content"></div></section></div>`);
+        if (drawnCount) {
+            const drawnCard = ownState.hand[ownState.hand.length - 1];
+            root.insertAdjacentHTML('beforeend', `<div class="magic-draw-toast" role="status" aria-live="polite"><span>HAI PESCATO</span>${drawnCard?.image ? `<img src="${esc(drawnCard.image)}" alt="Carta ${esc(drawnCard.name)}">` : '<span class="magic-draw-placeholder">✦</span>'}<strong>${esc(drawnCard?.name || `${drawnCount} carte`)}</strong></div>`);
+            clearTimeout(drawAnimationTimer);
+            drawAnimationTimer = setTimeout(() => {
+                root.querySelector('.magic-draw-toast')?.remove();
+                root.querySelectorAll('.magic-hand-card.is-drawn').forEach(card => card.classList.remove('is-drawn'));
+            }, 1500);
+        }
         scheduleBotTurn(state);
     };
     const saveState = async updater => {
@@ -529,11 +625,6 @@ export function showMagicDashboard(container, options = {}) {
     };
     const ensureRoomScope = next => { localStorage.removeItem(BOT_GAME_KEY); room = { ...next, scope: 'magic' }; try { localStorage.setItem('taverna_minigame_room', JSON.stringify(room)); } catch {} watchRoom(room); render(); };
 
-    container.querySelector('#magic-table').onchange = async event => {
-        if (!event.target.matches('#magic-mana-choice')) return;
-        const choice = event.target.value;
-        await saveState(current => { current.playersData[playerId()].manaChoice = choice; return current; });
-    };
     container.querySelector('#magic-home').onclick = () => navigateTo('home');
     container.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => { activeTab = button.dataset.tab; render(); container.querySelector(`[data-panel="${activeTab}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     container.querySelector('#magic-search').addEventListener('input', event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => searchCards(event.target.value), 300); });
@@ -752,10 +843,30 @@ export function showMagicDashboard(container, options = {}) {
         const modal = container.querySelector('#magic-card-inspector');
         const content = container.querySelector('#magic-inspector-content');
         if (!modal || !content) return;
-        content.innerHTML = `<div class="magic-inspector-card">${card.image ? `<img src="${esc(card.image)}" alt="Illustrazione di ${esc(card.name)}">` : ''}<div><span class="magic-overline">CARTA · ${esc(card.typeLine || 'Magic')}</span><h3 id="magic-inspector-title">${esc(card.name)}</h3><p class="magic-inspector-cost">Costo mana: <strong>${esc(card.manaCost || '—')}</strong>${card.isCommander ? ` · Tassa comandante: +${2 * (state.playersData[playerId()]?.commanderCasts?.[card.id] || 0)}` : ''}</p>${card.power !== '' ? `<p class="magic-inspector-stats">Forza/Costituzione ${esc(card.power)}/${esc(card.toughness)}</p>` : ''}<h4>Testo Oracle</h4><p class="magic-inspector-oracle">${esc(card.oracleText || 'Nessun testo Oracle.')}</p></div></div>`;
+        content.innerHTML = `<div class="magic-inspector-card">${card.image ? `<img src="${esc(card.image)}" alt="Illustrazione di ${esc(card.name)}">` : ''}<div><span class="magic-overline">CARTA · ${esc(card.typeLine || 'Magic')}</span><h3 id="magic-inspector-title">${esc(card.name)}</h3><p class="magic-inspector-cost"><span>Costo mana</span><strong>${manaCostIcons(card.manaCost)}</strong>${card.isCommander ? `<span>· Tassa comandante</span><strong>${manaCostIcons(`{${2 * (state.playersData[playerId()]?.commanderCasts?.[card.id] || 0)}}`)}</strong>` : ''}</p>${card.power !== '' ? `<p class="magic-inspector-stats">Forza/Costituzione ${esc(card.power)}/${esc(card.toughness)}</p>` : ''}<h4>Testo Oracle</h4><p class="magic-inspector-oracle">${magicRulesText(card.oracleText || 'Nessun testo Oracle.')}</p></div></div>`;
         modal.hidden = false;
     };
     const tableRoot = container.querySelector('#magic-table');
+    const syncFullscreenButton = () => {
+        const button = tableRoot.querySelector('#magic-fullscreen');
+        if (!button) return;
+        const active = document.fullscreenElement === tableRoot || pseudoFullscreen;
+        button.setAttribute('aria-pressed', String(active));
+        button.title = active ? 'Esci dallo schermo intero' : 'Entra a schermo intero';
+        button.innerHTML = `⛶ <span>${active ? 'Esci' : 'Schermo intero'}</span>`;
+    };
+    const handleFullscreenChange = () => {
+        if (!document.fullscreenElement) pseudoFullscreen = false;
+        syncFullscreenButton();
+    };
+    const handleFullscreenEscape = event => {
+        if (event.key !== 'Escape' || !pseudoFullscreen) return;
+        pseudoFullscreen = false;
+        tableRoot.classList.remove('magic-pseudo-fullscreen');
+        syncFullscreenButton();
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleFullscreenEscape);
     tableRoot.addEventListener('pointerdown', event => {
         const cardNode = event.target.closest('[data-card-inspect]'); if (!cardNode || event.button > 0) return;
         clearTimeout(cardHoldTimer); cardHoldTriggered = false;
@@ -768,10 +879,21 @@ export function showMagicDashboard(container, options = {}) {
         if (event.target.closest('[data-close-card]')) return;
         if (cardHoldTriggered) { cardHoldTriggered = false; return; }
         const state=game(); if(!state)return;
+        if(event.target.closest('#magic-fullscreen')) {
+            if(document.fullscreenElement===tableRoot) { await document.exitFullscreen?.(); }
+            else if(pseudoFullscreen) { pseudoFullscreen=false; tableRoot.classList.remove('magic-pseudo-fullscreen'); }
+            else if(document.fullscreenElement) { await document.exitFullscreen?.(); }
+            else if(tableRoot.requestFullscreen) {
+                try { await tableRoot.requestFullscreen({ navigationUI: 'hide' }); pseudoFullscreen=false; tableRoot.classList.remove('magic-pseudo-fullscreen'); }
+                catch { pseudoFullscreen=true; tableRoot.classList.add('magic-pseudo-fullscreen'); }
+            } else { pseudoFullscreen=true; tableRoot.classList.add('magic-pseudo-fullscreen'); }
+            syncFullscreenButton(); return;
+        }
         if(event.target.closest('#magic-ready')) {const deck=decks.find(item=>item.id===container.querySelector('#magic-start-deck')?.value);if(!deck){setNotice('Crea prima un mazzo.');return;}const cards=deckCards(deck).map(card=>({...card}));const validation=validateCommanderDeck(cards,deck.commanders||[]);if(!validation.valid){setNotice(validation.errors[0]);return;}const loadout={cards,commanders:deck.commanders||[],name:deck.name};const result=await updateMinigameRoomData(room.code,data=>({...data,scope:'magic',magic:{...(data.magic||{}),loadouts:{...(data.magic?.loadouts||{}),[playerId()]:loadout}}}));if(result.error){setNotice(result.error.message);return;}room=result.room||room;render();return;}
         if(event.target.closest('#magic-start')) {if(room.hostClientId!==playerId())return;await createGame(null);return;}
-        if(event.target.closest('#magic-concede')) {if(confirm('Abbandonare la partita?')){if(room?.data?.magic?.botMatch){localStorage.removeItem(BOT_GAME_KEY);clearTimeout(botTurnTimer);botTurnScheduled='';}room=null;render();}return;}
+        if(event.target.closest('#magic-concede')) {if(confirm('Abbandonare la partita?')){if(document.fullscreenElement===tableRoot)await document.exitFullscreen?.();pseudoFullscreen=false;tableRoot.classList.remove('magic-pseudo-fullscreen');if(room?.data?.magic?.botMatch){localStorage.removeItem(BOT_GAME_KEY);clearTimeout(botTurnTimer);botTurnScheduled='';}room=null;render();}return;}
         if(!myTurn(state))return;
+        const manaChoice=event.target.closest('[data-mana-choice]');if(manaChoice){const choice=manaChoice.dataset.manaChoice;await saveState(current=>{current.playersData[playerId()].manaChoice=choice;return current;});return;}
         if(event.target.closest('#magic-end-turn')) { await saveState(advanceTurn); return; }
         if(event.target.closest('[data-cast-commander]')) {const id=event.target.closest('[data-cast-commander]')?.dataset.castCommander;await saveState(current=>{const own=current.playersData[playerId()],index=own.commandZone.findIndex(card=>card.id===id);if(index<0)return current;const card=own.commandZone[index],tax=(own.commanderCasts[id]||0)*2;own.manaPool ||= emptyManaPool();const paid=payMana(own.manaPool,card.manaCost||'',0,tax);if(!paid){setNotice(`Mana insufficiente per ${card.name}: costo ${card.manaCost||'0'} più tassa comandante di ${tax}. Tappa altre fonti o scegli colori diversi.`);return current;}own.manaPool=paid;own.commandZone.splice(index,1);own.commanderCasts[id]=(own.commanderCasts[id]||0)+1;const cast={...card,isCommander:true};resolvePlayedCard(current,playerId(),cast,container.querySelector('#magic-effect-target')?.value||'',0,true);current.log.unshift(`${card.name} lanciato dalla zona di comando pagando ${manaPoolLabel(paid)} residuo.`);return current;});return;}
         if(event.target.closest('#magic-attack')) {const target=container.querySelector('#magic-attack-target')?.value;if(!target)return;await saveState(current=>{const own=current.playersData[playerId()],foe=current.playersData[target];if(!foe)return current;const attackers=own.battlefield.filter(card=>!card.tapped&&!card.summoningSick&&!(card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='defender')&&!/\bdefender\b/i.test(card.oracleText||'')&&(card.typeLine||'').toLowerCase().includes('creature'));const damage=attackers.reduce((sum,card)=>sum+(Number.parseInt(card.power,10)||0),0);attackers.forEach(card=>{if(!((card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='vigilance')||/\bvigilance\b/i.test(card.oracleText||'')))card.tapped=true;if(card.isCommander){own.commanderDamage[target] ||= {};own.commanderDamage[target][card.id]=(own.commanderDamage[target][card.id]||0)+(Number.parseInt(card.power,10)||0);}});foe.life=Math.max(0,foe.life-damage);const lifeGain=attackers.filter(card=>(card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='lifelink')||/\blifelink\b/i.test(card.oracleText||'')).reduce((sum,card)=>sum+(Number.parseInt(card.power,10)||0),0);if(lifeGain)own.life+=lifeGain;const commanderLethal=Object.values(own.commanderDamage[target]||{}).some(value=>value>=21);if(foe.life<=0||commanderLethal)foe.eliminated=true;const survivors=current.players.filter(id=>!current.playersData[id].eliminated);if(survivors.length===1)current.winner=survivors[0];current.log.unshift(`Attacco: ${damage} danni al giocatore ${current.players.indexOf(target)+1}${commanderLethal?' · 21 danni da comandante':''}.`);return current;});return;}
@@ -809,7 +931,7 @@ export function showMagicDashboard(container, options = {}) {
     };
     if(room?.code && !room?.data?.magic?.botMatch) watchRoom(room);
     motionCleanup=enhanceSurfaceMotion(container,{selector:'.magic-panel,.magic-scan-box,.magic-room-bar'});
-    window.__magicCleanup=()=>{clearTimeout(botTurnTimer);stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
+    window.__magicCleanup=()=>{clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();tableRoot.classList.remove('magic-pseudo-fullscreen');stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
     render();
     void initializeCloud();
 }
