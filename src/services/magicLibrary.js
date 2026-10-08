@@ -17,6 +17,8 @@ const cardData = card => ({
     cmc: Number(card.cmc || 0),
     colors: Array.isArray(card.colors) ? card.colors : [],
     colorIdentity: Array.isArray(card.colorIdentity) ? card.colorIdentity : [],
+    producedMana: Array.isArray(card.producedMana) ? card.producedMana : [],
+    keywords: Array.isArray(card.keywords) ? card.keywords : [],
     commanderLegality: card.commanderLegality || 'unknown',
     set: card.set || '',
     rarity: card.rarity || ''
