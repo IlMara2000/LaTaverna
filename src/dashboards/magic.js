@@ -364,7 +364,7 @@ export function showMagicDashboard(container, options = {}) {
         const isMyTurn = myTurn(state);
         const mulliganActive = Boolean(state.mulliganActive);
         const needsOpeningChoice = mulliganActive && !ownState.keptOpeningHand;
-        const mulliganBottomCount = Math.min(ownState.hand.length, Math.max(0, (ownState.mulligans || 0) - 1));
+        const mulliganBottomCount = Math.min(ownState.hand.length, Math.max(0, ownState.cardsToBottom ?? Math.max(0, (ownState.mulligans || 0) - 1)));
         const selectedBottomCards = new Set(ownState.mulliganBottom || []);
         const commanders = ownState.commandZone || [];
         const drawContext = `${room.code}:${myId}`;
@@ -500,7 +500,7 @@ export function showMagicDashboard(container, options = {}) {
         if (players.length < 2 || players.length > 4) { setNotice('Per avviare la partita servono da 2 a 4 giocatori.'); return; }
         const loadouts = room.data?.magic?.loadouts || {};
         const playersData = {};
-        for (const id of players) { const loadout=loadouts[id]; if (!loadout?.cards || !validateCommanderDeck(loadout.cards,loadout.commanders||[]).valid) { setNotice('Ogni giocatore deve confermare un mazzo Commander legale da 100 carte.'); return; } const commanders=(loadout.commanders||[]).map(commanderId=>loadout.cards.find(card=>card.id===commanderId));const cards=loadout.cards.filter(card=>!loadout.commanders.includes(card.id));for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];} playersData[id]={hand:cards.splice(0,7),library:cards,battlefield:[],graveyard:[],exile:[],commandZone:commanders,commanderCasts:{},commanderDamage:{},manaPool:emptyManaPool(),colorIdentity:[...new Set(commanders.flatMap(card=>card.colorIdentity||[]))],life:40,landsPlayed:0,mulligans:0,keptOpeningHand:false,mulliganBottom:[]}; }
+        for (const id of players) { const loadout=loadouts[id]; if (!loadout?.cards || !validateCommanderDeck(loadout.cards,loadout.commanders||[]).valid) { setNotice('Ogni giocatore deve confermare un mazzo Commander legale da 100 carte.'); return; } const commanders=(loadout.commanders||[]).map(commanderId=>loadout.cards.find(card=>card.id===commanderId));const cards=loadout.cards.filter(card=>!loadout.commanders.includes(card.id));for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];} playersData[id]={hand:cards.splice(0,7),library:cards,battlefield:[],graveyard:[],exile:[],commandZone:commanders,commanderCasts:{},commanderDamage:{},manaPool:emptyManaPool(),colorIdentity:[...new Set(commanders.flatMap(card=>card.colorIdentity||[]))],life:40,landsPlayed:0,mulligans:0,freeMulliganUsed:false,cardsToBottom:0,keptOpeningHand:false,mulliganBottom:[]}; }
         const state = { version: 2, turn: 1, activePlayer: hostId, startingPlayer: hostId, players, playersData, mulliganActive: true, log: [`Partita iniziata con ${players.length} giocatori · primo mulligan gratuito`], turnName: 'Mulligan iniziale' };
         const result = await updateMinigameRoomData(room.code, data => ({ ...data, scope:'magic', magic: { ...(data.magic||{}), game: state } }));
         if (result.error) { setNotice(result.error.message); return; } room = result.room || room; render();
@@ -510,7 +510,7 @@ export function showMagicDashboard(container, options = {}) {
         const own = current.playersData?.[playerId()];
         if (!own || own.keptOpeningHand) return current;
         if (action === 'select') {
-            const required = Math.min(own.hand.length, Math.max(0, (own.mulligans || 0) - 1));
+            const required = Math.min(own.hand.length, Math.max(0, own.cardsToBottom ?? Math.max(0, (own.mulligans || 0) - 1)));
             if (!required) return current;
             const selected = new Set(own.mulliganBottom || []);
             if (selected.has(selectedIndex)) selected.delete(selectedIndex);
@@ -526,13 +526,16 @@ export function showMagicDashboard(container, options = {}) {
                 [own.library[i], own.library[j]] = [own.library[j], own.library[i]];
             }
             own.hand = own.library.splice(0, 7);
+            own.freeMulliganUsed ??= (own.mulligans || 0) > 0;
             own.mulligans = (own.mulligans || 0) + 1;
+            own.cardsToBottom = own.freeMulliganUsed ? own.mulligans - 1 : 0;
+            own.freeMulliganUsed = true;
             own.mulliganBottom = [];
             current.log.unshift(`${current.playerNames?.[playerId()] || 'Un giocatore'} rimescola la mano e fa mulligan (${own.mulligans}).`);
             return current;
         }
         if (action === 'keep') {
-            const required = Math.min(own.hand.length, Math.max(0, (own.mulligans || 0) - 1));
+            const required = Math.min(own.hand.length, Math.max(0, own.cardsToBottom ?? Math.max(0, (own.mulligans || 0) - 1)));
             const indexes = [...new Set(own.mulliganBottom || [])].sort((a, b) => b - a);
             if (indexes.length !== required) {
                 setNotice(`Seleziona esattamente ${required} ${required === 1 ? 'carta' : 'carte'} da mettere in fondo al grimorio.`);
@@ -696,7 +699,7 @@ export function showMagicDashboard(container, options = {}) {
                 const commandZone = commandIds.map(id => cards.find(card => card.id === id)).filter(Boolean).map(card => ({ ...card, isCommander: true }));
                 const library = cards.filter(card => !commandIds.includes(card.id)).map(card => ({ ...card }));
                 for (let i = library.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [library[i], library[j]] = [library[j], library[i]]; }
-                return { hand: library.splice(0, 7), library, battlefield: [], graveyard: [], exile: [], commandZone, commanderCasts: {}, commanderDamage: {}, manaPool: emptyManaPool(), colorIdentity: [...new Set(commandZone.flatMap(card => card.colorIdentity || []))], life: 40, landsPlayed: 0, mulligans: 0, keptOpeningHand: false, mulliganBottom: [] };
+                return { hand: library.splice(0, 7), library, battlefield: [], graveyard: [], exile: [], commandZone, commanderCasts: {}, commanderDamage: {}, manaPool: emptyManaPool(), colorIdentity: [...new Set(commandZone.flatMap(card => card.colorIdentity || []))], life: 40, landsPlayed: 0, mulligans: 0, freeMulliganUsed: false, cardsToBottom: 0, keptOpeningHand: false, mulliganBottom: [] };
             };
             playersData[humanId] = prepare(playerCards, playerDeck.commanders || []);
             botDecks.forEach((deck, index) => {
