@@ -100,6 +100,7 @@
 #ui .magic-hand-card:nth-child(3n+1){transform:rotate(-2deg)}
 #ui .magic-hand-card:nth-child(3n){transform:rotate(1.7deg)}
 #ui .magic-hand-card:hover{z-index:2;transform:translateY(-10px) rotate(0deg);box-shadow:0 12px 0 #452a19,0 17px 20px #0009}
+#ui .magic-hand-card.is-mulligan-selected{z-index:3;transform:translateY(-12px) rotate(0deg);outline:4px solid #f5cf6e;box-shadow:0 0 0 7px #efb54855,0 14px 20px #000b}
 #ui .magic-hand-overlay{background:linear-gradient(transparent,#170f0df5 19%)}
 #ui .magic-hand-overlay strong{font:700 13px Bangers,Manrope,sans-serif;letter-spacing:.03em}
 #ui .magic-hand-overlay button{border:1px solid #ffe099;border-radius:8px;background:linear-gradient(#91603b,#5c3420);color:#fff1d0;font:700 11px Bangers,Manrope,sans-serif}
@@ -157,6 +158,12 @@
 /* Game-first Commander table HUD, fullscreen and official mana glyphs */
 #ui .magic-table-root{position:relative;width:100%;max-width:1480px;margin:0 auto;color:#fff0d0}
 #ui .magic-match-screen{position:relative;display:grid;gap:12px;padding:12px 14px 20px;border:2px solid #d6ad64;border-radius:20px;background:linear-gradient(145deg,#3b261beF,#171212 66%);box-shadow:0 9px 0 #25150e,0 16px 32px #09050799}
+#ui .magic-opening-mulligan{display:grid;justify-items:center;gap:5px;padding:13px;border:2px solid #e5c477;border-radius:14px;background:radial-gradient(ellipse at top,#72502a,#2b2017 72%);text-align:center;box-shadow:inset 0 1px #fff3c044,0 4px 0 #2b1b10}
+#ui .magic-opening-mulligan>.magic-overline{margin:0;color:#ffdf93}
+#ui .magic-opening-mulligan>strong{color:#fff0c8;font:700 21px Bangers,Manrope,sans-serif}
+#ui .magic-opening-mulligan>p{max-width:680px;margin:0;color:#ead9b8;font-size:11px;line-height:1.5}
+#ui .magic-mulligan-actions{display:flex;justify-content:center;gap:8px;margin-top:5px}
+#ui .magic-mulligan-actions button{min-height:36px;border-radius:9px;font-size:14px}
 #ui .magic-match-hud{position:sticky;top:0;z-index:8;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border:1px solid #e4c276;border-radius:14px;background:linear-gradient(100deg,#271811f5,#55331ff2);box-shadow:0 4px 0 #27160e}
 #ui .magic-match-heading{display:flex;align-items:center;gap:10px;min-width:0}
 #ui .magic-match-emblem{display:grid;place-items:center;flex:0 0 42px;height:42px;border:2px solid #edca7c;border-radius:50%;background:#673f26;color:#ffe6a6;font-size:24px;box-shadow:0 2px 0 #2b1a11}
