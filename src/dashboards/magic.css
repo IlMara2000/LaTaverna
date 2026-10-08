@@ -173,6 +173,13 @@
 #ui .magic-life>strong,#ui .magic-life-opponent>strong{font-size:22px}
 #ui .magic-life-opponent small{font-size:8px}
 #ui .magic-mana-dock{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 11px;border:1px solid #bc9255;border-radius:14px;background:linear-gradient(100deg,#32231b,#21191a);box-shadow:0 3px 0 #24170f}
+#ui .magic-mana-dock{position:relative}
+#ui .magic-mana-pulse{position:absolute;z-index:9;top:calc(100% + 7px);left:50%;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:2px 8px;min-width:150px;padding:8px 12px;border:1px solid #f2d283;border-radius:12px;background:linear-gradient(130deg,#31573e,#1d3529);color:#fff2c9;box-shadow:0 5px 14px #080605aa;pointer-events:none;animation:magic-mana-arrive .28s ease-out both;transform:translateX(-50%)}
+#ui .magic-mana-pulse>span{grid-row:1/3;color:#fee49a;font:700 13px Bangers,Manrope,sans-serif}
+#ui .magic-mana-pulse>strong{display:flex;gap:3px}
+#ui .magic-mana-pulse .magic-mana-symbol{width:23px;height:23px}
+#ui .magic-mana-pulse>small{color:#e4d7b1;font-size:9px}
+@keyframes magic-mana-arrive{from{opacity:0;transform:translate(-50%,-7px) scale(.92)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
 #ui .magic-mana-reserve,#ui .magic-mana-choice{display:flex;align-items:center;gap:7px;min-width:0}
 #ui .magic-mana-reserve>span,#ui .magic-mana-choice>span{color:#e6c98e;font:700 12px Bangers,Manrope,sans-serif;letter-spacing:.04em}
 #ui .magic-mana-reserve>div{display:flex;align-items:center;gap:4px;min-height:28px;padding:2px 7px;border-radius:12px;background:#110e0be8}
@@ -196,6 +203,10 @@
 #ui .magic-pile>span{display:grid;gap:1px;text-align:center;font-size:8px}
 #ui .magic-pile>span>strong{color:#fff0cd;font:700 15px Bangers,Manrope,sans-serif}
 #ui .magic-board-cards{min-height:0;gap:9px;padding:8px 3px 5px}
+#ui .magic-board-group{min-width:0;padding:7px 8px;border:1px solid #dfbc7166;border-radius:11px;background:linear-gradient(100deg,#18251ed9,#132019b8);box-shadow:inset 0 1px #fff2b522}
+#ui .magic-board-group>h3{display:flex;align-items:center;gap:7px;margin:0;padding:0 3px;color:#f0d99a;font:700 12px Bangers,Manrope,sans-serif;letter-spacing:.08em}
+#ui .magic-board-group>h3 small{display:grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:#63482c;color:#fff0c4;font:700 10px Manrope,system-ui,sans-serif}
+#ui .magic-board-group .magic-board-cards{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#bd9456 #17211b}
 #ui .magic-board-card{flex:0 0 clamp(102px,9vw,134px);width:clamp(102px,9vw,134px);height:clamp(143px,18vh,188px);min-width:0;max-width:none;min-height:0;aspect-ratio:2.5/3.5;border-width:2px;border-radius:9px;cursor:help}
 #ui .magic-board-card>img{z-index:0;display:block;object-fit:fill}
 #ui .magic-board-card-copy{z-index:1;min-height:38px;padding:13px 5px 5px;pointer-events:none}
@@ -257,3 +268,4 @@
 @keyframes magic-card-land{0%{transform:translateY(45px) rotate(8deg) scale(.82);filter:brightness(1.6)}60%{transform:translateY(-9px) rotate(-2deg) scale(1.04)}100%{transform:translateY(0) rotate(0) scale(1);filter:brightness(1)}}
 @media(max-width:760px){#ui .magic-match-screen{gap:8px;padding:7px;border-radius:14px}#ui .magic-match-hud{padding:7px 8px}.magic-match-emblem{flex-basis:33px!important;height:33px!important;font-size:19px!important}#ui .magic-match-heading .magic-overline{font-size:10px}#ui .magic-match-heading strong{font-size:16px}#ui .magic-match-tools{gap:4px}#ui .magic-match-tools button{min-height:32px;padding:4px 7px;font-size:11px}#ui #magic-fullscreen span{font-size:0}#ui .magic-life-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}#ui .magic-life,#ui .magic-life-opponent{min-height:44px;padding:4px 6px;border-radius:10px}#ui .magic-life>span,#ui .magic-life-opponent>span{font-size:10px}#ui .magic-life>strong,#ui .magic-life-opponent>strong{font-size:19px}#ui .magic-life-opponent small{font-size:7px}#ui .magic-mana-dock{align-items:flex-start;flex-direction:column;gap:6px;padding:7px}#ui .magic-mana-reserve,#ui .magic-mana-choice{width:100%;justify-content:flex-start;gap:5px}#ui .magic-mana-reserve>span,#ui .magic-mana-choice>span{width:65px;font-size:10px}#ui .magic-mana-choice>button{min-width:30px;min-height:30px}#ui .magic-mana-choice>button .magic-mana-symbol{width:23px;height:23px}#ui .magic-battlefield{padding:8px;border-width:4px}#ui .magic-opponents-row{grid-template-columns:minmax(0,1fr)}#ui .magic-board-card{flex-basis:clamp(96px,24vw,120px);width:clamp(96px,24vw,120px);height:clamp(135px,34vw,168px)}#ui .magic-action-dock{bottom:4px;display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px;border-radius:12px}#ui .magic-action-dock>label{gap:2px}#ui .magic-action-dock select{width:100%;min-height:34px;padding:3px;font-size:10px}#ui .magic-action-dock .magic-button{min-height:34px;padding:4px 7px;font-size:13px}#ui .magic-hand-card{flex-basis:clamp(115px,34vw,142px)}#ui .magic-command-zone>summary{align-items:center}#ui .magic-command-zone>summary>small{max-width:60%;text-align:right}#ui .magic-commander-card{flex-wrap:wrap}#ui .magic-commander-card>span{min-width:calc(100% - 65px)}#ui .magic-draw-toast{top:100px;right:10px;width:122px;padding:7px}#ui .magic-draw-toast>img,#ui .magic-draw-placeholder{width:60px;height:84px}}
 @media(prefers-reduced-motion:reduce){#ui .magic-draw-toast,#ui .magic-hand-card.is-drawn{animation:none;transform:none;filter:none}}
+@media(prefers-reduced-motion:reduce){#ui .magic-mana-pulse{animation:none}}
