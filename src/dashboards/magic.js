@@ -207,6 +207,7 @@ export function showMagicDashboard(container, options = {}) {
     let observedHandContext = '';
     let observedHandCount = null;
     let drawAnimationTimer = null;
+    let manaPulseTimer = null;
     let pseudoFullscreen = false;
 
     const cardSummary = card => ({ id: card.id, name: card.name, image: cardFace(card), manaCost: card.mana_cost || card.card_faces?.[0]?.mana_cost || '', typeLine: card.type_line || '', oracleText: card.oracle_text || card.card_faces?.map(face => face.oracle_text).join('\n') || '', printedText: card.printed_text || card.card_faces?.map(face => face.printed_text).filter(Boolean).join('\n') || '', language: card.lang || 'en', power: card.power ?? '', toughness: card.toughness ?? '', cmc: manaValue(card), colors: card.colors || [], colorIdentity: card.color_identity || [], producedMana: card.produced_mana || [], keywords: card.keywords || [], commanderLegality: card.legalities?.commander || 'unknown', set: card.set_name || '', rarity: card.rarity || '' });
@@ -373,13 +374,30 @@ export function showMagicDashboard(container, options = {}) {
         } else observedHandCount = ownState.hand.length;
 
         const drawPile = (cards, mine = false) => `<div class="magic-pile ${mine ? 'magic-own-pile' : ''}"><div class="magic-card-back" aria-hidden="true">✧</div><span><strong>${cards.length}</strong> nel grimorio</span></div>`;
-        const renderBattlefield = (cards, mine) => cards.length ? cards.map((card, index) => {
+        const renderBattlefield = (cards, mine, originalCards = cards) => cards.length ? cards.map(card => {
+            const index = originalCards.indexOf(card);
             const sickManaCreature = card.summoningSick && /creature/i.test(card.typeLine || '');
             const manaSource = mine && isManaSource(card, ownState.colorIdentity) && !sickManaCreature;
             const power = (Number.parseInt(card.power, 10) || 0) + (card.counters?.plusOne || 0) + (card.turnBoost?.power || 0);
             const toughness = (Number.parseInt(card.toughness, 10) || 0) + (card.counters?.plusOne || 0) + (card.turnBoost?.toughness || 0);
             return `<button type="button" class="magic-board-card ${card.tapped ? 'is-tapped' : ''}" data-board-action="${manaSource ? 'mana' : 'none'}" data-card-inspect="board:${mine ? myId : opponentIds.find(id => state.playersData[id]?.battlefield === cards)}:${index}" data-board-index="${index}" aria-label="${esc(card.name)} · ${esc(card.typeLine)}${card.tapped ? ' · tappata' : ''}" title="Tieni premuto per leggere ${esc(card.name)}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : `<span class="magic-board-fallback">${esc(card.name)}</span>`}<span class="magic-board-card-copy"><strong class="magic-board-name">${esc(card.name)}</strong><small>${manaCostIcons(card.manaCost)}</small></span>${card.power !== '' ? `<b>${power}/${toughness}</b>` : ''}${manaSource && !card.tapped ? `<i class="magic-mana-hint">TAPPA · ${manaProductionOptions(card, ownState.colorIdentity).map(option => option.map(color => manaSymbolIcon(`{${color}}`)).join('')).join('<span class="magic-mana-or">o</span>')}</i>` : ''}${card.tapped ? '<i>TAPPATA</i>' : ''}</button>`;
         }).join('') : '<span class="magic-empty-board">Il legno attende le carte…</span>';
+        const battlefieldMarkup = (cards, mine, ownerId) => {
+            const categories = [
+                ['creature', 'CREATURE', /\bcreature\b/i], ['planeswalker', 'PLANESWALKER', /\bplaneswalker\b/i],
+                ['enchantment', 'INCANTESIMI', /\benchantment\b/i], ['artifact', 'ARTEFATTI', /\bartifact\b/i],
+                ['land', 'TERRE', /\bland\b/i], ['battle', 'BATTAGLIE', /\bbattle\b/i]
+            ];
+            const categorized = new Set();
+            const groups = categories.map(([key, label, test]) => ({ key, label, cards: cards.filter(card => {
+                if (categorized.has(card) || !test.test(card.typeLine || '')) return false;
+                categorized.add(card);
+                return true;
+            }) })).filter(group => group.cards.length);
+            const other = cards.filter(card => !categorized.has(card));
+            if (other.length) groups.push({ key: 'other', label: 'ALTRI PERMANENTI', cards: other });
+            return groups.length ? groups.map(group => `<section class="magic-board-group magic-board-group-${group.key}"><h3><span>${group.label}</span><small>${group.cards.length}</small></h3><div class="magic-board-cards">${renderBattlefield(group.cards, mine, cards)}</div></section>`).join('') : renderBattlefield([], mine, cards);
+        };
         const playersInGame = state.players.filter(id => !state.playersData[id]?.eliminated);
         const effectTargets = playersInGame.flatMap(id => [
             `<option value="player:${esc(id)}">${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</option>`,
@@ -397,13 +415,13 @@ export function showMagicDashboard(container, options = {}) {
                     <div class="magic-life magic-life-self"><span>Tu</span><strong>${ownState.life ?? 40}</strong><button type="button" data-life="-1" aria-label="Togli un punto vita" ${!isMyTurn ? 'disabled' : ''}>−</button><button type="button" data-life="1" aria-label="Aggiungi un punto vita" ${!isMyTurn ? 'disabled' : ''}>＋</button></div>
                     ${opponentIds.map(id => `<div class="magic-life-opponent"><span>${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span><strong>${state.playersData[id]?.life ?? 40}</strong><small>${state.playersData[id]?.hand?.length ?? 0} carte · comandante ${Math.max(0, ...Object.values(ownState.commanderDamage?.[id] || {}))}/21</small></div>`).join('')}
                 </div>
-                <div class="magic-mana-dock">
+                <div class="magic-mana-dock" id="magic-mana-dock">
                     <div class="magic-mana-reserve"><span>Riserva</span><div>${manaPoolIcons(ownState.manaPool)}</div><button type="button" id="magic-clear-mana" title="Svuota la riserva" ${!isMyTurn || !Object.values(ownState.manaPool || {}).some(Number) ? 'disabled' : ''}>Svuota</button></div>
                     <div class="magic-mana-choice" role="group" aria-label="Colore prodotto dalle terre"><span>Produci mana</span><button type="button" data-mana-choice="auto" aria-pressed="${!ownState.manaChoice || ownState.manaChoice === 'auto'}" ${!isMyTurn ? 'disabled' : ''}><span aria-hidden="true">✦</span><small>Auto</small></button>${['W', 'U', 'B', 'R', 'G', 'C'].map(color => `<button type="button" data-mana-choice="${color}" aria-label="${MANA_SYMBOL_NAMES[color]}" aria-pressed="${ownState.manaChoice === color}" ${!isMyTurn ? 'disabled' : ''}>${manaSymbolIcon(`{${color}}`)}</button>`).join('')}</div>
                 </div>
                 <div class="magic-battlefield">
-                    <div class="magic-opponents-row">${opponentIds.map(id => { const foe = state.playersData[id] || {}; return `<div class="magic-opponent-zone"><div class="magic-zone-label"><span>CAMPO · ${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span>${drawPile(foe.library || [])}</div><div class="magic-board-cards">${renderBattlefield(foe.battlefield || [], false)}</div></div>`; }).join('')}</div>
-                    <div class="magic-own-zone"><div class="magic-zone-label"><span>IL TUO CAMPO</span>${drawPile(ownState.library || [], true)}</div><div class="magic-board-cards">${renderBattlefield(ownState.battlefield || [], true)}</div></div>
+                    <div class="magic-opponents-row">${opponentIds.map(id => { const foe = state.playersData[id] || {}; return `<div class="magic-opponent-zone"><div class="magic-zone-label"><span>CAMPO · ${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span>${drawPile(foe.library || [])}</div>${battlefieldMarkup(foe.battlefield || [], false, id)}</div>`; }).join('')}</div>
+                    <div class="magic-own-zone"><div class="magic-zone-label"><span>IL TUO CAMPO</span>${drawPile(ownState.library || [], true)}</div>${battlefieldMarkup(ownState.battlefield || [], true, myId)}</div>
                 </div>
                 ${commanders.length ? `<details class="magic-command-zone"><summary><span>ZONA COMANDANTE</span><small>${commanders.map(card => esc(card.name)).join(' · ')}</small></summary><div class="magic-commanders">${commanders.map((card, index) => { const casts = ownState.commanderCasts?.[card.id] || 0; const tax = casts * 2; return `<article class="magic-commander-card" data-card-inspect="command:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}">` : ''}<span><strong>${esc(card.name)}</strong><small>${casts} lanci dalla zona di comando</small></span><div class="magic-commander-cost">${manaCostIcons(card.manaCost)}${tax ? `<span class="magic-tax-cost">+ ${manaCostIcons(`{${tax}}`)}</span>` : ''}</div><button type="button" data-cast-commander="${esc(card.id)}" ${!isMyTurn || state.winner || !canPayMana(ownState.manaPool, card.manaCost || '', 0, tax) ? 'disabled' : ''}>Lancia</button></article>`; }).join('')}</div></details>` : ''}
                 <div class="magic-action-dock">
@@ -414,7 +432,7 @@ export function showMagicDashboard(container, options = {}) {
                 </div>
                 <details class="magic-game-log"><summary>Diario della partita</summary><ol>${(state.log || []).slice(0, 6).map(line => `<li>${magicRulesText(line)}</li>`).join('') || '<li>La partita è pronta.</li>'}</ol></details>
                 <div class="magic-hand-heading"><span>LA TUA MANO</span><small>${ownState.hand.length} carte · tieni premuto per leggere</small></div>
-                <div class="magic-hand">${(ownState.hand || []).map((card, index) => { const drawn = drawnCount && index >= ownState.hand.length - drawnCount; return `<article class="magic-hand-card ${drawn ? 'is-drawn' : ''}" data-card-inspect="hand:${index}" style="--card-index:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : ''}<div class="magic-hand-overlay"><strong>${esc(card.name)}</strong><small class="magic-hand-card-cost">${manaCostIcons(card.manaCost)}<span>${esc(card.typeLine)}</span></small><button type="button" data-play-card="${index}" ${!isMyTurn || state.winner || (!(card.typeLine || '').toLowerCase().includes('land') && !canPayMana(ownState.manaPool, card.manaCost || '', 0)) ? 'disabled' : ''}>${(card.typeLine || '').toLowerCase().includes('land') ? 'Gioca terra' : `Lancia · ${manaCostIcons(card.manaCost || '{0}')}`}</button></div></article>`; }).join('') || '<p class="magic-muted">Nessuna carta in mano.</p>'}</div>
+                <div class="magic-hand">${(ownState.hand || []).map((card, index) => { const drawn = drawnCount && index >= ownState.hand.length - drawnCount; const land = /\bland\b/i.test(card.typeLine || ''); const hasMana = canPayMana(ownState.manaPool, card.manaCost || '', 0); const blockedReason = !isMyTurn ? 'Puoi lanciare carte solo durante il tuo turno.' : (land && ownState.landsPlayed >= 1 ? 'Hai già giocato una terra in questo turno.' : (!land && !hasMana ? `Mana insufficiente o colori errati. Costo ${card.manaCost || '0'}; riserva: ${manaPoolLabel(ownState.manaPool)}.` : '')); return `<article class="magic-hand-card ${drawn ? 'is-drawn' : ''}" data-card-inspect="hand:${index}" style="--card-index:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : ''}<div class="magic-hand-overlay"><strong>${esc(card.name)}</strong><small class="magic-hand-card-cost">${manaCostIcons(card.manaCost)}<span>${esc(card.typeLine)}</span></small><button type="button" data-play-card="${index}" title="${esc(blockedReason)}" ${!isMyTurn || state.winner || (land && ownState.landsPlayed >= 1) || (!land && !hasMana) ? 'disabled' : ''}>${land ? 'Gioca terra' : `Lancia · ${manaCostIcons(card.manaCost || '{0}')}`}</button></div></article>`; }).join('') || '<p class="magic-muted">Nessuna carta in mano.</p>'}</div>
                 <details class="magic-phase-help"><summary>Regole e azioni della partita</summary><p>Il tavolo paga i costi colorati e applica la tassa Commander. Gli effetti non riconosciuti sono indicati nel diario; pila, priorità, blocchi e abilità avanzate restano da automatizzare.</p></details>
             </section>`;
         root.insertAdjacentHTML('beforeend', `<div class="magic-card-inspector" id="magic-card-inspector" hidden><section role="dialog" aria-modal="true" aria-labelledby="magic-inspector-title"><button type="button" class="magic-inspector-close" data-close-card aria-label="Chiudi dettagli carta">×</button><div id="magic-inspector-content"></div></section></div>`);
@@ -429,19 +447,32 @@ export function showMagicDashboard(container, options = {}) {
         }
         scheduleBotTurn(state);
     };
+    const showManaPulse = (colors, sourceName) => {
+        const dock = container.querySelector('#magic-mana-dock');
+        if (!dock || !colors?.length) return;
+        dock.querySelector('.magic-mana-pulse')?.remove();
+        const pulse = document.createElement('div');
+        pulse.className = 'magic-mana-pulse';
+        pulse.setAttribute('role', 'status');
+        pulse.setAttribute('aria-live', 'polite');
+        pulse.innerHTML = `<span>+ MANA</span><strong>${colors.map(color => manaSymbolIcon(`{${color}}`)).join('')}</strong><small>${esc(sourceName)}</small>`;
+        dock.append(pulse);
+        clearTimeout(manaPulseTimer);
+        manaPulseTimer = setTimeout(() => pulse.remove(), 1900);
+    };
     const saveState = async updater => {
-        if (!room?.code) return;
+        if (!room?.code) return false;
         if (room.data?.magic?.botMatch) {
             const next = updater(structuredClone(game()));
-            if (!next) return;
+            if (!next) return false;
             room = { ...room, data: { ...room.data, magic: { ...room.data.magic, game: next } } };
             try { localStorage.setItem(BOT_GAME_KEY, JSON.stringify(room)); } catch { setNotice('La partita non può essere salvata su questo dispositivo.'); }
             render();
-            return;
+            return true;
         }
         const result = await updateMinigameRoomData(room.code, data => ({ ...data, scope: 'magic', magic: { ...(data.magic || {}), game: updater(data.magic?.game || null) } }));
-        if (result.error) { setNotice(`Non è stato possibile aggiornare la partita: ${result.error.message}`); return; }
-        room = result.room || room; render();
+        if (result.error) { setNotice(`Non è stato possibile aggiornare la partita: ${result.error.message}`); return false; }
+        room = result.room || room; render(); return true;
     };
     const searchCards = async query => {
         if (!query.trim()) { cardResults = []; renderResults(); return; }
@@ -930,7 +961,7 @@ export function showMagicDashboard(container, options = {}) {
         if(event.target.closest('#magic-attack')) {const target=container.querySelector('#magic-attack-target')?.value;if(!target)return;await saveState(current=>{const own=current.playersData[playerId()],foe=current.playersData[target];if(!foe)return current;const attackers=own.battlefield.filter(card=>!card.tapped&&!card.summoningSick&&!(card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='defender')&&!/\bdefender\b/i.test(card.oracleText||'')&&(card.typeLine||'').toLowerCase().includes('creature'));const damage=attackers.reduce((sum,card)=>sum+(Number.parseInt(card.power,10)||0),0);attackers.forEach(card=>{if(!((card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='vigilance')||/\bvigilance\b/i.test(card.oracleText||'')))card.tapped=true;if(card.isCommander){own.commanderDamage[target] ||= {};own.commanderDamage[target][card.id]=(own.commanderDamage[target][card.id]||0)+(Number.parseInt(card.power,10)||0);}});foe.life=Math.max(0,foe.life-damage);const lifeGain=attackers.filter(card=>(card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='lifelink')||/\blifelink\b/i.test(card.oracleText||'')).reduce((sum,card)=>sum+(Number.parseInt(card.power,10)||0),0);if(lifeGain)own.life+=lifeGain;const commanderLethal=Object.values(own.commanderDamage[target]||{}).some(value=>value>=21);if(foe.life<=0||commanderLethal)foe.eliminated=true;const survivors=current.players.filter(id=>!current.playersData[id].eliminated);if(survivors.length===1)current.winner=survivors[0];current.log.unshift(`Attacco: ${damage} danni al giocatore ${current.players.indexOf(target)+1}${commanderLethal?' · 21 danni da comandante':''}.`);return current;});return;}
         const life=event.target.closest('[data-life]'); if(life){await saveState(current=>{current.playersData[playerId()].life=Math.max(0,current.playersData[playerId()].life+Number(life.dataset.life));return current;});return;}
         if(event.target.closest('#magic-clear-mana')) { await saveState(current=>{current.playersData[playerId()].manaPool=emptyManaPool();current.log.unshift('La riserva di mana viene svuotata.');return current;});return;}
-        const manaSource=event.target.closest('[data-board-action="mana"]'); if(manaSource){await saveState(current=>{const own=current.playersData[playerId()],card=own.battlefield[Number(manaSource.dataset.boardIndex)];if(!card||card.tapped)return current;const options=manaProductionOptions(card,own.colorIdentity),choice=own.manaChoice||'auto';const optionIndex=choice==='auto'?0:options.findIndex(option=>option.includes(choice));if(optionIndex<0){setNotice(`${card.name} non può produrre mana ${choice}; scegli un colore consentito o usa Automatico.`);return current;}const added=addManaProduction(own,card,optionIndex);if(!added.length){setNotice(`${card.name} non ha una fonte di mana automatizzata.`);return current;}card.tapped=true;current.log.unshift(`${card.name}: aggiunge ${added.map(color=>({W:'{W}',U:'{U}',B:'{B}',R:'{R}',G:'{G}',C:'{C}'})[color]).join(' ')}.`);return current;});return;}
+        const manaSource=event.target.closest('[data-board-action="mana"]'); if(manaSource){let addedColors=[],sourceName='';const saved=await saveState(current=>{const own=current.playersData[playerId()],card=own.battlefield[Number(manaSource.dataset.boardIndex)];if(!card||card.tapped)return current;const options=manaProductionOptions(card,own.colorIdentity),choice=own.manaChoice||'auto';const optionIndex=choice==='auto'?0:options.findIndex(option=>option.includes(choice));if(optionIndex<0){setNotice(`${card.name} non può produrre mana ${choice}; scegli un colore consentito o usa Automatico.`);return current;}addedColors=addManaProduction(own,card,optionIndex);if(!addedColors.length){setNotice(`${card.name} non ha una fonte di mana automatizzata.`);return current;}sourceName=card.name;card.tapped=true;current.log.unshift(`${card.name}: aggiunge ${addedColors.map(color=>({W:'{W}',U:'{U}',B:'{B}',R:'{R}',G:'{G}',C:'{C}'})[color]).join(' ')}.`);return current;});if(saved)showManaPulse(addedColors,sourceName);return;}
         const play=event.target.closest('[data-play-card]'); if(play){const index=Number(play.dataset.playCard),candidate=game()?.playersData?.[playerId()]?.hand?.[index];let xValue=0;if(candidate?.manaCost?.includes('{X}')){const choice=prompt(`Quanto vuoi pagare per X nel costo di ${candidate.name}?`,'0');if(choice===null)return;xValue=Math.max(0,Number.parseInt(choice,10)||0);}const target=container.querySelector('#magic-effect-target')?.value||'';await saveState(current=>{const own=current.playersData[playerId()],card=own.hand[index];if(!card)return current;if((card.typeLine||'').toLowerCase().includes('land')){if(own.landsPlayed>=1){setNotice('Puoi giocare una sola terra per turno.');return current;}own.landsPlayed++;own.hand.splice(index,1);const land={...card,tapped:/enters(?: the battlefield)? tapped(?:[.;,]|$)/i.test(card.oracleText||''),damageMarked:0};own.battlefield.push(land);const entryEffects=resolveOracleText(land,current,playerId(),'',0,true);current.log.unshift(...entryEffects.log);current.log.unshift(`Hai giocato ${card.name}.`);return current;}if(/\btarget\b|any target/i.test(card.oracleText||'')&&!target){setNotice(`Scegli prima il bersaglio per ${card.name}.`);return current;}own.manaPool ||= emptyManaPool();const paid=payMana(own.manaPool,card.manaCost||'',xValue);if(!paid){setNotice(`Mana insufficiente o colori non corretti per ${card.name} (${card.manaCost||'0'}). Tappa le fonti richieste e riprova.`);return current;}own.manaPool=paid;own.hand.splice(index,1);resolvePlayedCard(current,playerId(),{...card},target,xValue,false);current.log.unshift(`${card.name} lanciata pagando ${card.manaCost||'0'}${xValue?` con X=${xValue}`:''}.`);return current;});return;}
     };
     const initializeCloud = async () => {
@@ -962,7 +993,7 @@ export function showMagicDashboard(container, options = {}) {
     };
     if(room?.code && !room?.data?.magic?.botMatch) watchRoom(room);
     motionCleanup=enhanceSurfaceMotion(container,{selector:'.magic-panel,.magic-scan-box,.magic-room-bar'});
-    window.__magicCleanup=()=>{clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();tableRoot.classList.remove('magic-pseudo-fullscreen');stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
+    window.__magicCleanup=()=>{clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);clearTimeout(manaPulseTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();tableRoot.classList.remove('magic-pseudo-fullscreen');stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
     render();
     void initializeCloud();
 }
