@@ -364,7 +364,7 @@ export function showMagicDashboard(container, options = {}) {
         const isMyTurn = myTurn(state);
         const mulliganActive = Boolean(state.mulliganActive);
         const needsOpeningChoice = mulliganActive && !ownState.keptOpeningHand;
-        const mulliganBottomCount = Math.min(ownState.hand.length, Math.max(0, ownState.mulligans || 0));
+        const mulliganBottomCount = Math.min(ownState.hand.length, Math.max(0, (ownState.mulligans || 0) - 1));
         const selectedBottomCards = new Set(ownState.mulliganBottom || []);
         const commanders = ownState.commandZone || [];
         const drawContext = `${room.code}:${myId}`;
@@ -415,7 +415,7 @@ export function showMagicDashboard(container, options = {}) {
                     <div class="magic-match-heading"><span class="magic-match-emblem" aria-hidden="true">✦</span><div><span class="magic-overline">COMMANDER · ${state.players.length} GIOCATORI · ${esc(room.code)}</span><strong>${state.winner ? `Vince ${esc(state.playerNames?.[state.winner] || `Giocatore ${state.players.indexOf(state.winner) + 1}`)}` : `Turno ${state.turn} · ${esc(state.turnName || 'Taverna')}`}</strong><small>${state.winner ? 'Partita conclusa' : (isMyTurn ? 'Il tuo turno' : `Turno di ${esc(state.playerNames?.[state.activePlayer] || `Giocatore ${state.players.indexOf(state.activePlayer) + 1}`)}`)}</small></div></div>
                     <div class="magic-match-tools"><button type="button" id="magic-fullscreen" aria-pressed="${fullscreenActive}" title="Schermo intero">⛶ <span>${fullscreenActive ? 'Esci' : 'Schermo intero'}</span></button><button type="button" id="magic-concede" title="Abbandona la partita">Lascia il tavolo</button></div>
                 </header>
-                ${mulliganActive ? `<section class="magic-opening-mulligan" aria-live="polite"><span class="magic-overline">MULLIGAN DI LONDRA · COMMANDER</span>${needsOpeningChoice ? `<strong>${ownState.mulligans ? `Mano ${7 - mulliganBottomCount} · ${mulliganBottomCount} ${mulliganBottomCount === 1 ? 'carta' : 'carte'} da mettere in fondo` : 'Controlla la tua mano iniziale'}</strong><p>${ownState.mulligans ? `Seleziona ${mulliganBottomCount} ${mulliganBottomCount === 1 ? 'carta' : 'carte'} da mettere in fondo al grimorio, poi tieni la mano.` : 'Puoi tenere queste sette carte oppure rimescolarle e pescarne sette. Se fai mulligan, dopo aver pescato sette ne metterai una in fondo al grimorio.'}</p><div class="magic-mulligan-actions"><button type="button" class="magic-button" data-mulligan-action="redraw">${ownState.mulligans ? 'Rimescola e pesca di nuovo' : 'Fai mulligan'}</button><button type="button" class="magic-button magic-button-secondary" data-mulligan-action="keep" ${selectedBottomCards.size !== mulliganBottomCount ? 'disabled' : ''}>${mulliganBottomCount ? `Conferma · fondo ${mulliganBottomCount}` : 'Tieni questa mano'}</button></div>` : '<strong>In attesa degli altri giocatori…</strong><p>La partita inizierà quando tutti avranno tenuto la propria mano.</p>'}</section>` : ''}
+                ${mulliganActive ? `<section class="magic-opening-mulligan" aria-live="polite"><span class="magic-overline">MULLIGAN · COMMANDER</span>${needsOpeningChoice ? `<strong>${ownState.mulligans ? `Hai pescato 7 carte${mulliganBottomCount ? ` · ${mulliganBottomCount} ${mulliganBottomCount === 1 ? 'carta' : 'carte'} da mettere in fondo` : ' · nessuna carta da rimettere'}` : 'Controlla la tua mano iniziale'}</strong><p>${ownState.mulligans ? (mulliganBottomCount ? `Seleziona ${mulliganBottomCount} ${mulliganBottomCount === 1 ? 'carta' : 'carte'} da mettere in fondo al grimorio, poi tieni la mano.` : 'Il primo mulligan è gratuito: puoi tenere queste sette carte oppure rimescolarle ancora.') : 'Puoi tenere queste sette carte oppure rimescolarle e pescarne sette. Il primo mulligan è gratuito; dal secondo rimescolamento dovrai mettere in fondo una carta per ogni mulligan successivo.'}</p><div class="magic-mulligan-actions"><button type="button" class="magic-button" data-mulligan-action="redraw">${ownState.mulligans ? 'Rimescola e pesca di nuovo' : 'Mulligan gratuito'}</button><button type="button" class="magic-button magic-button-secondary" data-mulligan-action="keep" ${selectedBottomCards.size !== mulliganBottomCount ? 'disabled' : ''}>${mulliganBottomCount ? `Conferma · fondo ${mulliganBottomCount}` : 'Tieni questa mano'}</button></div>` : '<strong>In attesa degli altri giocatori…</strong><p>La partita inizierà quando tutti avranno tenuto la propria mano.</p>'}</section>` : ''}
                 <div class="magic-life-row" aria-label="Punti vita">
                     <div class="magic-life magic-life-self"><span>Tu</span><strong>${ownState.life ?? 40}</strong><button type="button" data-life="-1" aria-label="Togli un punto vita" ${!isMyTurn ? 'disabled' : ''}>−</button><button type="button" data-life="1" aria-label="Aggiungi un punto vita" ${!isMyTurn ? 'disabled' : ''}>＋</button></div>
                     ${opponentIds.map(id => `<div class="magic-life-opponent"><span>${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span><strong>${state.playersData[id]?.life ?? 40}</strong><small>${state.playersData[id]?.hand?.length ?? 0} carte · comandante ${Math.max(0, ...Object.values(ownState.commanderDamage?.[id] || {}))}/21</small></div>`).join('')}
@@ -501,7 +501,7 @@ export function showMagicDashboard(container, options = {}) {
         const loadouts = room.data?.magic?.loadouts || {};
         const playersData = {};
         for (const id of players) { const loadout=loadouts[id]; if (!loadout?.cards || !validateCommanderDeck(loadout.cards,loadout.commanders||[]).valid) { setNotice('Ogni giocatore deve confermare un mazzo Commander legale da 100 carte.'); return; } const commanders=(loadout.commanders||[]).map(commanderId=>loadout.cards.find(card=>card.id===commanderId));const cards=loadout.cards.filter(card=>!loadout.commanders.includes(card.id));for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];} playersData[id]={hand:cards.splice(0,7),library:cards,battlefield:[],graveyard:[],exile:[],commandZone:commanders,commanderCasts:{},commanderDamage:{},manaPool:emptyManaPool(),colorIdentity:[...new Set(commanders.flatMap(card=>card.colorIdentity||[]))],life:40,landsPlayed:0,mulligans:0,keptOpeningHand:false,mulliganBottom:[]}; }
-        const state = { version: 2, turn: 1, activePlayer: hostId, startingPlayer: hostId, players, playersData, mulliganActive: true, log: [`Partita iniziata con ${players.length} giocatori · ognuno può fare un mulligan gratuito`], turnName: 'Mulligan iniziale' };
+        const state = { version: 2, turn: 1, activePlayer: hostId, startingPlayer: hostId, players, playersData, mulliganActive: true, log: [`Partita iniziata con ${players.length} giocatori · primo mulligan gratuito`], turnName: 'Mulligan iniziale' };
         const result = await updateMinigameRoomData(room.code, data => ({ ...data, scope:'magic', magic: { ...(data.magic||{}), game: state } }));
         if (result.error) { setNotice(result.error.message); return; } room = result.room || room; render();
     };
@@ -510,7 +510,7 @@ export function showMagicDashboard(container, options = {}) {
         const own = current.playersData?.[playerId()];
         if (!own || own.keptOpeningHand) return current;
         if (action === 'select') {
-            const required = Math.min(own.hand.length, own.mulligans || 0);
+            const required = Math.min(own.hand.length, Math.max(0, (own.mulligans || 0) - 1));
             if (!required) return current;
             const selected = new Set(own.mulliganBottom || []);
             if (selected.has(selectedIndex)) selected.delete(selectedIndex);
@@ -532,7 +532,7 @@ export function showMagicDashboard(container, options = {}) {
             return current;
         }
         if (action === 'keep') {
-            const required = Math.min(own.hand.length, own.mulligans || 0);
+            const required = Math.min(own.hand.length, Math.max(0, (own.mulligans || 0) - 1));
             const indexes = [...new Set(own.mulliganBottom || [])].sort((a, b) => b - a);
             if (indexes.length !== required) {
                 setNotice(`Seleziona esattamente ${required} ${required === 1 ? 'carta' : 'carte'} da mettere in fondo al grimorio.`);
