@@ -37,7 +37,9 @@ const colorName = card => (card?.colors || []).join('') || 'Incolore';
 const MAGIC_PROXY_PRINTER = 'https://bastienpasdeloup.github.io/MtG-Proxy-Printer/';
 let catalogQueue = Promise.resolve();
 let nextCatalogRequestAt = 0;
+const localizedOracleCache = new Map();
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+const prefersItalianCards = () => /^it(?:-|$)/i.test(navigator.language || navigator.languages?.[0] || '');
 
 const fetchScryfallJson = (url, options = {}) => {
     const request = catalogQueue.then(async () => {
@@ -99,6 +101,23 @@ const resolveScannedCards = async (entries, onProgress = () => {}) => {
         else unresolved.push(await resolveScannedCard(entry).catch(() => ({ ...entry, card: null })));
     }
     return unresolved;
+};
+
+const italianPrintedText = async card => {
+    if (card?.printedText && card.language === 'it') return card.printedText;
+    const key = normalizeCardName(card?.name);
+    if (!key) return '';
+    if (!localizedOracleCache.has(key)) {
+        const query = `!"${String(card.name).replace(/"/g, '\\"')}" lang:it`;
+        localizedOracleCache.set(key, fetchScryfallJson(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=prints&order=released&dir=desc`)
+            .then(({ response, payload }) => {
+                if (!response?.ok) return '';
+                const localized = (payload.data || []).find(print => print.lang === 'it' && (print.printed_text || print.card_faces?.some(face => face.printed_text)));
+                return localized?.printed_text || localized?.card_faces?.map(face => face.printed_text).filter(Boolean).join('\n') || '';
+            })
+            .catch(() => ''));
+    }
+    return localizedOracleCache.get(key);
 };
 
 async function openMagicProxyPrinter(cards) {
@@ -190,7 +209,7 @@ export function showMagicDashboard(container, options = {}) {
     let drawAnimationTimer = null;
     let pseudoFullscreen = false;
 
-    const cardSummary = card => ({ id: card.id, name: card.name, image: cardFace(card), manaCost: card.mana_cost || card.card_faces?.[0]?.mana_cost || '', typeLine: card.type_line || '', oracleText: card.oracle_text || card.card_faces?.map(face => face.oracle_text).join('\n') || '', power: card.power ?? '', toughness: card.toughness ?? '', cmc: manaValue(card), colors: card.colors || [], colorIdentity: card.color_identity || [], producedMana: card.produced_mana || [], keywords: card.keywords || [], commanderLegality: card.legalities?.commander || 'unknown', set: card.set_name || '', rarity: card.rarity || '' });
+    const cardSummary = card => ({ id: card.id, name: card.name, image: cardFace(card), manaCost: card.mana_cost || card.card_faces?.[0]?.mana_cost || '', typeLine: card.type_line || '', oracleText: card.oracle_text || card.card_faces?.map(face => face.oracle_text).join('\n') || '', printedText: card.printed_text || card.card_faces?.map(face => face.printed_text).filter(Boolean).join('\n') || '', language: card.lang || 'en', power: card.power ?? '', toughness: card.toughness ?? '', cmc: manaValue(card), colors: card.colors || [], colorIdentity: card.color_identity || [], producedMana: card.produced_mana || [], keywords: card.keywords || [], commanderLegality: card.legalities?.commander || 'unknown', set: card.set_name || '', rarity: card.rarity || '' });
     const renderBotSetup = () => {
         const playerDeckSelect = container.querySelector('#magic-bot-player-deck');
         const countSelect = container.querySelector('#magic-bot-count');
@@ -832,7 +851,7 @@ export function showMagicDashboard(container, options = {}) {
     container.querySelector('#magic-start-bot-game').onclick = event => { void startBotGame(event.currentTarget); };
     container.querySelector('#magic-host').onclick = async event => { const button=event.currentTarget;button.disabled=true;setNotice('Creo la stanza…'); localStorage.removeItem(BOT_GAME_KEY);const result=await createMinigameRoom();button.disabled=false; if(result.error){setNotice(result.unavailable?'Multiplayer non configurato. Verifica Supabase e lo schema minigame_rooms.':result.error.message);return;} const initialized=await updateMinigameRoomData(result.room.code, data=>({...data,scope:'magic',magic:{participants:[],loadouts:{}}}));if(initialized.error){setNotice(initialized.error.message);return;}ensureRoomScope(initialized.room);setNotice('Stanza pronta. Condividi il codice: da 2 a 4 giocatori.'); };
     container.querySelector('#magic-join-form').onsubmit = async event => { event.preventDefault(); const selected=decks.find(deck=>deck.id===container.querySelector('#magic-join-deck').value);if(!selected){setNotice('Crea un mazzo e aggiungilo alla tua bacheca prima di entrare.');return;}const cards=deckCards(selected).map(card=>({...card}));const validation=validateCommanderDeck(cards,selected.commanders||[]);if(!validation.valid){setNotice(validation.errors[0]);return;} const result=await joinMagicRoom(container.querySelector('#magic-room-code').value,{cards,commanders:selected.commanders||[],name:selected.name});if(result.error){setNotice(result.error.message);return;} ensureRoomScope(result.room);setNotice('Sei al tavolo.'); };
-    const showCardDetails = target => {
+    const showCardDetails = async target => {
         const state = game(); if (!state || !target) return;
         const [zone, ownerId, position] = target.split(':');
         let card;
@@ -843,8 +862,20 @@ export function showMagicDashboard(container, options = {}) {
         const modal = container.querySelector('#magic-card-inspector');
         const content = container.querySelector('#magic-inspector-content');
         if (!modal || !content) return;
-        content.innerHTML = `<div class="magic-inspector-card">${card.image ? `<img src="${esc(card.image)}" alt="Illustrazione di ${esc(card.name)}">` : ''}<div><span class="magic-overline">CARTA · ${esc(card.typeLine || 'Magic')}</span><h3 id="magic-inspector-title">${esc(card.name)}</h3><p class="magic-inspector-cost"><span>Costo mana</span><strong>${manaCostIcons(card.manaCost)}</strong>${card.isCommander ? `<span>· Tassa comandante</span><strong>${manaCostIcons(`{${2 * (state.playersData[playerId()]?.commanderCasts?.[card.id] || 0)}}`)}</strong>` : ''}</p>${card.power !== '' ? `<p class="magic-inspector-stats">Forza/Costituzione ${esc(card.power)}/${esc(card.toughness)}</p>` : ''}<h4>Testo Oracle</h4><p class="magic-inspector-oracle">${magicRulesText(card.oracleText || 'Nessun testo Oracle.')}</p></div></div>`;
+        const italian = prefersItalianCards();
+        const requestKey = `${card.id}:${Date.now()}`;
+        modal.dataset.localizationRequest = requestKey;
+        const renderInspector = (rulesText, label) => {
+            if (!modal.isConnected || modal.dataset.localizationRequest !== requestKey) return;
+            content.innerHTML = `<div class="magic-inspector-card">${card.image ? `<img src="${esc(card.image)}" alt="Illustrazione di ${esc(card.name)}">` : ''}<div><span class="magic-overline">CARTA · ${esc(card.typeLine || 'Magic')}</span><h3 id="magic-inspector-title">${esc(card.name)}</h3><p class="magic-inspector-cost"><span>Costo mana</span><strong>${manaCostIcons(card.manaCost)}</strong>${card.isCommander ? `<span>· Tassa comandante</span><strong>${manaCostIcons(`{${2 * (state.playersData[playerId()]?.commanderCasts?.[card.id] || 0)}}`)}</strong>` : ''}</p>${card.power !== '' ? `<p class="magic-inspector-stats">Forza/Costituzione ${esc(card.power)}/${esc(card.toughness)}</p>` : ''}<h4>${label}</h4><p class="magic-inspector-oracle">${magicRulesText(rulesText || 'Nessun testo Oracle disponibile.')}</p></div></div>`;
+        };
+        const englishRulesText = card.oracleText || 'Nessun testo Oracle.';
+        renderInspector(italian && !card.printedText ? 'Cerco la stampa italiana…' : (italian ? card.printedText : englishRulesText), italian ? 'Testo Oracle · Italiano' : 'Testo Oracle');
         modal.hidden = false;
+        if (italian && !card.printedText && card.language !== 'it') {
+            const localizedText = await italianPrintedText(card);
+            if (modal.dataset.localizationRequest === requestKey) renderInspector(localizedText || englishRulesText, localizedText ? 'Testo Oracle · Italiano' : 'Testo Oracle · Italiano non disponibile; mostrato in inglese');
+        }
     };
     const tableRoot = container.querySelector('#magic-table');
     const syncFullscreenButton = () => {
