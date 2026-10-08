@@ -88,6 +88,11 @@
       "area": "Magic gameplay / tavern tabletop",
       "decision": "The Magic match view is a storybook tavern table: warm illustrated oak play surface, green felt player mats, full card faces placed on the table, playful hand-lettered labels and brass-like outlines. Preserve the existing gameplay controls and rules. Keep mobile card lanes swipeable, use finite interaction motion, and do not reproduce the official Magic card back or logos.",
       "source": "User request, 2026-10-08"
+    },
+    {
+      "area": "Commander match experience",
+      "decision": "Favor a full-screen tavern tabletop over catalog-style panels: compact player-life HUD, one persistent turn dock, expandable game log and commander zone, full card faces at table size, a finite draw-to-hand animation, and mana icons from Scryfall Symbology. Keep hands horizontally swipeable, fullscreen escapable, and motion reduced when requested.",
+      "source": "User request, 2026-10-08"
     }
   ],
   "evidence": [

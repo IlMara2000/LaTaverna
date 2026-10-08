@@ -153,3 +153,107 @@
 #ui .magic-inspector-oracle{white-space:pre-wrap;margin:0;padding:13px;border:1px solid #997344;border-radius:10px;background:#fff4dcee;color:#32261d;font:500 14px/1.65 Manrope,system-ui,sans-serif}
 #ui .magic-hand-heading small{font-size:10px}
 @media(max-width:580px){#ui .magic-inspector-card{grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:12px}#ui .magic-card-inspector>section{padding:13px}#ui .magic-inspector-card>div{padding-right:20px}#ui .magic-inspector-oracle{padding:9px;font-size:12px}#ui .magic-mana-bar{gap:8px}#ui .magic-mana-bar>strong{flex-basis:100%;text-align:center}}
+
+/* Game-first Commander table HUD, fullscreen and official mana glyphs */
+#ui .magic-table-root{position:relative;width:100%;max-width:1480px;margin:0 auto;color:#fff0d0}
+#ui .magic-match-screen{position:relative;display:grid;gap:12px;padding:12px 14px 20px;border:2px solid #d6ad64;border-radius:20px;background:linear-gradient(145deg,#3b261beF,#171212 66%);box-shadow:0 9px 0 #25150e,0 16px 32px #09050799}
+#ui .magic-match-hud{position:sticky;top:0;z-index:8;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border:1px solid #e4c276;border-radius:14px;background:linear-gradient(100deg,#271811f5,#55331ff2);box-shadow:0 4px 0 #27160e}
+#ui .magic-match-heading{display:flex;align-items:center;gap:10px;min-width:0}
+#ui .magic-match-emblem{display:grid;place-items:center;flex:0 0 42px;height:42px;border:2px solid #edca7c;border-radius:50%;background:#673f26;color:#ffe6a6;font-size:24px;box-shadow:0 2px 0 #2b1a11}
+#ui .magic-match-heading>div{display:grid;gap:2px;min-width:0}
+#ui .magic-match-heading .magic-overline{color:#f4d68d;font:700 12px Bangers,Manrope,sans-serif;letter-spacing:.08em}
+#ui .magic-match-heading strong{overflow:hidden;color:#fff2d5;font:700 20px Bangers,Manrope,sans-serif;text-overflow:ellipsis;white-space:nowrap}
+#ui .magic-match-heading small{color:#dfc8a0;font-size:10px}
+#ui .magic-match-tools{display:flex;gap:7px;align-items:center}
+#ui .magic-match-tools button{min-height:36px;padding:6px 10px;border:1px solid #d6b66b;border-radius:10px;background:#3e281c;color:#fff0cb;font:700 12px Bangers,Manrope,sans-serif;cursor:pointer}
+#ui #magic-fullscreen{background:linear-gradient(#825838,#57351e);font-size:17px}
+#ui #magic-fullscreen span{font-size:11px}
+#ui .magic-life-row{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;padding:0}
+#ui .magic-life,#ui .magic-life-opponent{min-height:50px;padding:5px 8px;border-radius:13px}
+#ui .magic-life>strong,#ui .magic-life-opponent>strong{font-size:22px}
+#ui .magic-life-opponent small{font-size:8px}
+#ui .magic-mana-dock{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:8px 11px;border:1px solid #bc9255;border-radius:14px;background:linear-gradient(100deg,#32231b,#21191a);box-shadow:0 3px 0 #24170f}
+#ui .magic-mana-reserve,#ui .magic-mana-choice{display:flex;align-items:center;gap:7px;min-width:0}
+#ui .magic-mana-reserve>span,#ui .magic-mana-choice>span{color:#e6c98e;font:700 12px Bangers,Manrope,sans-serif;letter-spacing:.04em}
+#ui .magic-mana-reserve>div{display:flex;align-items:center;gap:4px;min-height:28px;padding:2px 7px;border-radius:12px;background:#110e0be8}
+#ui .magic-mana-count{display:inline-flex;align-items:center;gap:2px;color:#fff0cd;font:700 11px Manrope,system-ui,sans-serif}
+#ui .magic-pool-empty{color:#ae9a7d;font-size:10px}
+#ui .magic-mana-symbol{display:inline-block;width:21px;height:21px;vertical-align:middle;object-fit:contain;filter:drop-shadow(0 1px 1px #140d0b99)}
+#ui .magic-mana-count .magic-mana-symbol{width:22px;height:22px}
+#ui .magic-mana-choice>button{display:grid;place-items:center;min-width:34px;min-height:34px;padding:3px;border:1px solid #755638;border-radius:50%;background:#181412;color:#f3dca9;cursor:pointer}
+#ui .magic-mana-choice>button[aria-pressed=true]{border:2px solid #f2d27e;background:#67442c;box-shadow:0 0 0 2px #f2d27e33}
+#ui .magic-mana-choice>button:disabled{opacity:.48;cursor:default}
+#ui .magic-mana-choice>button .magic-mana-symbol{width:25px;height:25px}
+#ui .magic-mana-choice>button>span{font-size:18px}
+#ui .magic-mana-choice>button>small{font-size:8px;line-height:1}
+#ui #magic-clear-mana{padding:6px 8px;border:1px solid #755638;border-radius:9px;background:#39271c;color:#ead3a6;font:700 10px Bangers,Manrope,sans-serif;cursor:pointer}
+#ui #magic-clear-mana:disabled{opacity:.42;cursor:default}
+#ui .magic-battlefield{gap:10px;padding:13px;border-width:5px;border-radius:20px}
+#ui .magic-opponents-row{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:9px}
+#ui .magic-opponent-zone,#ui .magic-own-zone{min-height:unset;padding:9px 10px;border-radius:14px}
+#ui .magic-zone-label{font-size:12px}
+#ui .magic-pile{gap:5px}
+#ui .magic-pile>span{display:grid;gap:1px;text-align:center;font-size:8px}
+#ui .magic-pile>span>strong{color:#fff0cd;font:700 15px Bangers,Manrope,sans-serif}
+#ui .magic-board-cards{min-height:0;gap:9px;padding:8px 3px 5px}
+#ui .magic-board-card{flex:0 0 clamp(102px,9vw,134px);width:clamp(102px,9vw,134px);height:clamp(143px,18vh,188px);min-width:0;max-width:none;min-height:0;aspect-ratio:2.5/3.5;border-width:2px;border-radius:9px;cursor:help}
+#ui .magic-board-card>img{z-index:0;display:block;object-fit:fill}
+#ui .magic-board-card-copy{z-index:1;min-height:38px;padding:13px 5px 5px;pointer-events:none}
+#ui .magic-board-card-copy small{display:flex;gap:1px}
+#ui .magic-board-card-copy .magic-mana-symbol{width:14px;height:14px}
+#ui .magic-board-card>i{z-index:2;top:5px;right:4px;display:flex;align-items:center;gap:2px;padding:3px 4px}
+#ui .magic-mana-hint .magic-mana-symbol{width:15px;height:15px}
+#ui .magic-mana-or{padding:0 1px;color:#ffebbd;font-size:8px}
+#ui .magic-board-card>b{z-index:2;bottom:5px;right:4px}
+#ui .magic-board-card[data-board-action=mana]{cursor:pointer}
+#ui .magic-board-card:focus-visible,#ui .magic-hand-card:focus-visible,#ui .magic-match-tools button:focus-visible,#ui .magic-action-dock button:focus-visible{outline:3px solid #fff0a6;outline-offset:3px}
+#ui .magic-board-fallback{display:grid;height:100%;place-items:center;padding:10px;color:#fff0cd;font:700 15px Bangers,Manrope,sans-serif;text-align:center}
+#ui .magic-command-zone{margin:0;padding:8px 12px;border-radius:13px}
+#ui .magic-command-zone>summary{display:flex;justify-content:space-between;gap:10px;cursor:pointer;list-style:none}
+#ui .magic-command-zone>summary::-webkit-details-marker,#ui .magic-game-log>summary::-webkit-details-marker,#ui .magic-phase-help>summary::-webkit-details-marker{display:none}
+#ui .magic-command-zone>summary>span{color:#ffe3a6;font:700 15px Bangers,Manrope,sans-serif}
+#ui .magic-command-zone>summary>small{color:#d3bf9d;font-size:10px}
+#ui .magic-commander-card{display:flex;gap:8px;align-items:center}
+#ui .magic-commander-card>img{width:42px;height:58px}
+#ui .magic-commander-cost{display:flex;align-items:center;gap:4px}
+#ui .magic-commander-cost .magic-mana-symbol{width:20px;height:20px}
+#ui .magic-tax-cost{display:flex;align-items:center;gap:2px;padding-left:3px;border-left:1px solid #927148}
+#ui .magic-action-dock{position:sticky;bottom:8px;z-index:7;display:flex;align-items:end;justify-content:center;gap:8px;padding:8px;border:1px solid #edcb79;border-radius:15px;background:#201815f5;box-shadow:0 5px 0 #24160f,0 9px 18px #07040799}
+#ui .magic-action-dock>label{display:grid;gap:3px;min-width:0;color:#dfc292;font:700 9px Bangers,Manrope,sans-serif;letter-spacing:.07em}
+#ui .magic-action-dock select{width:min(185px,22vw);min-height:38px;padding:4px 8px;border:1px solid #87613b;border-radius:8px;background:#34231a;color:#fff0d0;font:500 11px Manrope,system-ui,sans-serif}
+#ui .magic-action-dock .magic-button{min-height:38px;padding:6px 12px;border:1px solid #e5c372;border-radius:9px;background:linear-gradient(#835534,#58371f);color:#fff0cd;font:700 15px Bangers,Manrope,sans-serif}
+#ui .magic-action-dock .magic-end-turn{background:linear-gradient(#6d4930,#422b1d)}
+#ui .magic-action-dock .magic-button:disabled{opacity:.45}
+#ui .magic-game-log,.magic-phase-help{padding:7px 10px;border:1px solid #8c693e;border-radius:10px;background:#211914;color:#ead7b5;font-size:10px}
+#ui .magic-game-log>summary,#ui .magic-phase-help>summary{cursor:pointer;font:700 12px Bangers,Manrope,sans-serif}
+#ui .magic-game-log ol{display:grid;gap:3px;margin:7px 0 0;padding-left:19px;color:#d6c3a3}
+#ui .magic-phase-help p{margin:6px 0 0;line-height:1.5}
+#ui .magic-hand-heading{display:flex;justify-content:space-between;align-items:center;margin-top:2px;padding:8px 12px;border:1px solid #d6ad64;border-radius:11px;background:#3b261b;color:#ffe9b6;font:700 16px Bangers,Manrope,sans-serif}
+#ui .magic-hand-heading small{color:#e0c99e;font:500 9px Manrope,system-ui,sans-serif;letter-spacing:0}
+#ui .magic-hand{gap:10px;padding:10px 4px 18px;scrollbar-color:#d0a65d #261a14;scrollbar-width:thin;touch-action:pan-x pan-y}
+#ui .magic-hand-card{flex:0 0 clamp(118px,11vw,158px);height:auto;aspect-ratio:2.5/3.5;border-radius:10px}
+#ui .magic-hand-overlay strong{font-size:13px}
+#ui .magic-hand-card-cost{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+#ui .magic-hand-card-cost>span{flex-basis:100%;font-size:9px}
+#ui .magic-hand-card-cost .magic-mana-symbol{width:17px;height:17px}
+#ui .magic-hand-overlay{min-height:unset;padding:22px 7px 7px;gap:4px}
+#ui .magic-hand-overlay strong{font-size:12px}
+#ui .magic-hand-card-cost>span{display:none}
+#ui .magic-hand-overlay button{min-height:29px;font-size:11px}
+#ui .magic-hand-overlay button .magic-mana-symbol{width:16px;height:16px}
+#ui .magic-card-inspector .magic-inspector-cost{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#ui .magic-inspector-cost .magic-mana-symbol{width:27px;height:27px}
+#ui .magic-draw-toast{position:absolute;z-index:12;top:76px;right:22px;display:grid;justify-items:center;gap:5px;width:150px;padding:9px;border:2px solid #f0cf7d;border-radius:13px;background:#211812ef;color:#ffe7ae;box-shadow:0 6px 0 #321f13,0 10px 20px #080507aa;pointer-events:none;animation:magic-draw-arrive 1.45s cubic-bezier(.16,.8,.25,1) both}
+#ui .magic-draw-toast>span:first-child{font:700 13px Bangers,Manrope,sans-serif;letter-spacing:.08em}
+#ui .magic-draw-toast>img{width:76px;height:106px;border:1px solid #e7c77c;border-radius:6px;object-fit:fill}
+#ui .magic-draw-toast>strong{overflow:hidden;max-width:100%;font:700 12px Bangers,Manrope,sans-serif;text-overflow:ellipsis;white-space:nowrap}
+#ui .magic-draw-placeholder{display:grid;place-items:center;width:76px;height:106px;border:1px solid #e7c77c;border-radius:6px;background:linear-gradient(145deg,#573967,#25241c);font-size:38px}
+#ui .magic-hand-card.is-drawn{animation:magic-card-land 1.1s cubic-bezier(.16,.8,.25,1) both}
+#ui .magic-table-root:fullscreen{width:100vw;height:100dvh;max-width:none;overflow:auto;background:#18110d}
+#ui .magic-table-root:fullscreen .magic-match-screen{min-height:100%;max-width:1600px;margin:auto;border-radius:0}
+#ui .magic-table-root.magic-pseudo-fullscreen{position:fixed;inset:0;z-index:10020;width:100vw;height:100dvh;max-width:none;margin:0;overflow:auto;padding:0;background:#18110d}
+#ui .magic-pseudo-fullscreen .magic-match-screen{min-height:100%;max-width:1600px;margin:auto;border-radius:0}
+@keyframes magic-draw-arrive{0%{opacity:0;transform:translate(80px,180px) scale(.55) rotate(10deg)}16%{opacity:1}68%{transform:translate(0,0) scale(1.04) rotate(-2deg)}100%{opacity:0;transform:translate(0,-14px) scale(.96)}}
+@keyframes magic-card-land{0%{transform:translateY(45px) rotate(8deg) scale(.82);filter:brightness(1.6)}60%{transform:translateY(-9px) rotate(-2deg) scale(1.04)}100%{transform:translateY(0) rotate(0) scale(1);filter:brightness(1)}}
+@media(max-width:760px){#ui .magic-match-screen{gap:8px;padding:7px;border-radius:14px}#ui .magic-match-hud{padding:7px 8px}.magic-match-emblem{flex-basis:33px!important;height:33px!important;font-size:19px!important}#ui .magic-match-heading .magic-overline{font-size:10px}#ui .magic-match-heading strong{font-size:16px}#ui .magic-match-tools{gap:4px}#ui .magic-match-tools button{min-height:32px;padding:4px 7px;font-size:11px}#ui #magic-fullscreen span{font-size:0}#ui .magic-life-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}#ui .magic-life,#ui .magic-life-opponent{min-height:44px;padding:4px 6px;border-radius:10px}#ui .magic-life>span,#ui .magic-life-opponent>span{font-size:10px}#ui .magic-life>strong,#ui .magic-life-opponent>strong{font-size:19px}#ui .magic-life-opponent small{font-size:7px}#ui .magic-mana-dock{align-items:flex-start;flex-direction:column;gap:6px;padding:7px}#ui .magic-mana-reserve,#ui .magic-mana-choice{width:100%;justify-content:flex-start;gap:5px}#ui .magic-mana-reserve>span,#ui .magic-mana-choice>span{width:65px;font-size:10px}#ui .magic-mana-choice>button{min-width:30px;min-height:30px}#ui .magic-mana-choice>button .magic-mana-symbol{width:23px;height:23px}#ui .magic-battlefield{padding:8px;border-width:4px}#ui .magic-opponents-row{grid-template-columns:minmax(0,1fr)}#ui .magic-board-card{flex-basis:clamp(96px,24vw,120px);width:clamp(96px,24vw,120px);height:clamp(135px,34vw,168px)}#ui .magic-action-dock{bottom:4px;display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:6px;border-radius:12px}#ui .magic-action-dock>label{gap:2px}#ui .magic-action-dock select{width:100%;min-height:34px;padding:3px;font-size:10px}#ui .magic-action-dock .magic-button{min-height:34px;padding:4px 7px;font-size:13px}#ui .magic-hand-card{flex-basis:clamp(115px,34vw,142px)}#ui .magic-command-zone>summary{align-items:center}#ui .magic-command-zone>summary>small{max-width:60%;text-align:right}#ui .magic-commander-card{flex-wrap:wrap}#ui .magic-commander-card>span{min-width:calc(100% - 65px)}#ui .magic-draw-toast{top:100px;right:10px;width:122px;padding:7px}#ui .magic-draw-toast>img,#ui .magic-draw-placeholder{width:60px;height:84px}}
+@media(prefers-reduced-motion:reduce){#ui .magic-draw-toast,#ui .magic-hand-card.is-drawn{animation:none;transform:none;filter:none}}
