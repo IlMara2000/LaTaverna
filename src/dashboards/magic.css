@@ -125,3 +125,31 @@
 #ui .magic-bot-setup .magic-button{border:2px solid #f1cf7b;border-radius:11px;background:linear-gradient(#84512f,#603720);color:#fff0cb;box-shadow:0 3px 0 #432718}
 #ui .magic-bot-setup .magic-button:disabled{opacity:.55}
 #ui .magic-bot-note{margin:10px 0 0}
+
+/* Mana leggibile e consultazione delle carte al tavolo */
+#ui .magic-mana-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:6px 0;padding:11px 14px;border:2px solid #d8ad5d;border-radius:14px;background:linear-gradient(110deg,#f3e1b8,#d9bd86);color:#432a19;box-shadow:0 4px 0 #603a22}
+#ui .magic-mana-bar>strong{font:700 17px Bangers,Manrope,sans-serif;letter-spacing:.035em}
+#ui .magic-mana-bar label{display:flex;align-items:center;gap:7px;color:#573a24;font-size:10px;font-weight:700}
+#ui .magic-mana-bar select,#ui .magic-mana-bar button{min-height:32px;padding:4px 9px;border:1px solid #835631;border-radius:8px;background:#fff3d4;color:#3d281a;font-size:10px}
+#ui .magic-mana-bar button{background:linear-gradient(#82502e,#5a351f);color:#fff0cc;font-weight:700;cursor:pointer}
+#ui .magic-mana-bar button:disabled{opacity:.5;cursor:default}
+#ui .magic-mana-hint{inset:6px auto auto 5px!important;left:5px!important;right:auto!important;padding:4px 6px;border:1px solid #ffe099;border-radius:7px;background:#265b3eef;color:#eaffd6!important;font-size:8px!important}
+#ui .magic-board-card{cursor:help}
+#ui .magic-board-card[data-board-action="mana"]{cursor:pointer}
+#ui .magic-hand-card{cursor:help;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none}
+#ui .magic-commander-card[data-card-inspect]{cursor:help}
+#ui .magic-card-inspector{position:fixed;z-index:10050;inset:0;display:grid;place-items:center;padding:18px;background:#0c080ee8;backdrop-filter:blur(5px)}
+#ui .magic-card-inspector[hidden]{display:none}
+#ui .magic-card-inspector>section{position:relative;width:min(720px,100%);max-height:min(88dvh,760px);overflow:auto;padding:22px;border:3px solid #e0b75f;border-radius:20px;background:linear-gradient(145deg,#f3e1b8,#d7b980);color:#3a2619;box-shadow:0 8px 0 #52311e,0 20px 55px #000b}
+#ui .magic-inspector-close{position:absolute;z-index:1;right:10px;top:8px;width:38px;height:38px;border:1px solid #805332;border-radius:50%;background:#623b24;color:#fff0ca;font-size:27px;line-height:1;cursor:pointer}
+#ui .magic-inspector-card{display:grid;grid-template-columns:minmax(130px,220px) minmax(0,1fr);align-items:start;gap:20px;padding-top:18px}
+#ui .magic-inspector-card>img{display:block;width:100%;max-height:62dvh;object-fit:contain;border:2px solid #e7cd94;border-radius:12px;box-shadow:0 6px 12px #3e271c66}
+#ui .magic-inspector-card>div{min-width:0;padding-right:24px}
+#ui .magic-inspector-card .magic-overline{color:#704526}
+#ui .magic-inspector-card h3{margin:5px 0 12px;color:#392416;font:700 clamp(24px,5vw,34px) Bangers,Manrope,sans-serif}
+#ui .magic-inspector-cost,#ui .magic-inspector-stats{margin:8px 0;padding:9px 11px;border:1px solid #997344;border-radius:9px;background:#fff0cc;color:#49311e;font-size:13px}
+#ui .magic-inspector-cost strong{font-size:17px;letter-spacing:.07em}
+#ui .magic-inspector-card h4{margin:18px 0 6px;color:#57351f;font:700 17px Bangers,Manrope,sans-serif}
+#ui .magic-inspector-oracle{white-space:pre-wrap;margin:0;padding:13px;border:1px solid #997344;border-radius:10px;background:#fff4dcee;color:#32261d;font:500 14px/1.65 Manrope,system-ui,sans-serif}
+#ui .magic-hand-heading small{font-size:10px}
+@media(max-width:580px){#ui .magic-inspector-card{grid-template-columns:minmax(92px,34%) minmax(0,1fr);gap:12px}#ui .magic-card-inspector>section{padding:13px}#ui .magic-inspector-card>div{padding-right:20px}#ui .magic-inspector-oracle{padding:9px;font-size:12px}#ui .magic-mana-bar{gap:8px}#ui .magic-mana-bar>strong{flex-basis:100%;text-align:center}}
