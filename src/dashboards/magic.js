@@ -209,6 +209,9 @@ export function showMagicDashboard(container, options = {}) {
     let drawAnimationTimer = null;
     let manaPulseTimer = null;
     let pseudoFullscreen = false;
+    let pseudoFullscreenScrollY = 0;
+    let pseudoFullscreenAncestors = [];
+    let previousPageOverflow = null;
 
     const cardSummary = card => ({ id: card.id, name: card.name, image: cardFace(card), manaCost: card.mana_cost || card.card_faces?.[0]?.mana_cost || '', typeLine: card.type_line || '', oracleText: card.oracle_text || card.card_faces?.map(face => face.oracle_text).join('\n') || '', printedText: card.printed_text || card.card_faces?.map(face => face.printed_text).filter(Boolean).join('\n') || '', language: card.lang || 'en', power: card.power ?? '', toughness: card.toughness ?? '', cmc: manaValue(card), colors: card.colors || [], colorIdentity: card.color_identity || [], producedMana: card.produced_mana || [], keywords: card.keywords || [], commanderLegality: card.legalities?.commander || 'unknown', set: card.set_name || '', rarity: card.rarity || '' });
     const renderBotSetup = () => {
@@ -962,23 +965,86 @@ export function showMagicDashboard(container, options = {}) {
         }
     };
     const tableRoot = container.querySelector('#magic-table');
+    const updateFullscreenViewport = () => {
+        if (!pseudoFullscreen) return;
+        const height = window.visualViewport?.height || window.innerHeight;
+        tableRoot.style.setProperty('--magic-fullscreen-height', `${Math.ceil(height)}px`);
+    };
+    const enterPseudoFullscreen = () => {
+        if (pseudoFullscreen) return;
+        pseudoFullscreen = true;
+        pseudoFullscreenScrollY = window.scrollY;
+        previousPageOverflow = {
+            html: document.documentElement.style.overflow,
+            body: document.body.style.overflow,
+            htmlPriority: document.documentElement.style.getPropertyPriority('overflow'),
+            bodyPriority: document.body.style.getPropertyPriority('overflow')
+        };
+        document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+        document.body.style.setProperty('overflow', 'hidden', 'important');
+        document.body.classList.add('magic-game-pseudo-fullscreen');
+        pseudoFullscreenAncestors = [];
+        for (let ancestor = tableRoot.parentElement; ancestor && ancestor !== document.body; ancestor = ancestor.parentElement) {
+            const computed = getComputedStyle(ancestor);
+            const properties = ['transform', 'filter', 'perspective', 'contain', 'will-change'];
+            const active = properties.some(property => {
+                const value = computed.getPropertyValue(property);
+                return value && value !== 'none' && value !== 'auto' && value !== 'normal';
+            });
+            if (!active) continue;
+            const inline = Object.fromEntries(properties.map(property => [property, {
+                value: ancestor.style.getPropertyValue(property),
+                priority: ancestor.style.getPropertyPriority(property)
+            }]));
+            pseudoFullscreenAncestors.push({ element: ancestor, inline });
+            for (const property of properties) ancestor.style.setProperty(property, 'none', 'important');
+        }
+        tableRoot.classList.add('magic-pseudo-fullscreen');
+        updateFullscreenViewport();
+        window.visualViewport?.addEventListener('resize', updateFullscreenViewport);
+        window.addEventListener('resize', updateFullscreenViewport);
+        window.addEventListener('orientationchange', updateFullscreenViewport);
+        syncFullscreenButton();
+    };
+    const exitPseudoFullscreen = () => {
+        if (!pseudoFullscreen) return;
+        pseudoFullscreen = false;
+        tableRoot.classList.remove('magic-pseudo-fullscreen');
+        document.body.classList.remove('magic-game-pseudo-fullscreen');
+        window.visualViewport?.removeEventListener('resize', updateFullscreenViewport);
+        window.removeEventListener('resize', updateFullscreenViewport);
+        window.removeEventListener('orientationchange', updateFullscreenViewport);
+        for (const { element, inline } of pseudoFullscreenAncestors) {
+            for (const [property, saved] of Object.entries(inline)) {
+                if (saved.value) element.style.setProperty(property, saved.value, saved.priority);
+                else element.style.removeProperty(property);
+            }
+        }
+        pseudoFullscreenAncestors = [];
+        if (previousPageOverflow) {
+            document.documentElement.style.setProperty('overflow', previousPageOverflow.html, previousPageOverflow.htmlPriority);
+            document.body.style.setProperty('overflow', previousPageOverflow.body, previousPageOverflow.bodyPriority);
+            previousPageOverflow = null;
+        }
+        tableRoot.style.removeProperty('--magic-fullscreen-height');
+        window.scrollTo(0, pseudoFullscreenScrollY);
+        syncFullscreenButton();
+    };
     const syncFullscreenButton = () => {
         const button = tableRoot.querySelector('#magic-fullscreen');
         if (!button) return;
-        const active = document.fullscreenElement === tableRoot || pseudoFullscreen;
+        const active = document.fullscreenElement === tableRoot || document.webkitFullscreenElement === tableRoot || pseudoFullscreen;
         button.setAttribute('aria-pressed', String(active));
         button.title = active ? 'Esci dallo schermo intero' : 'Entra a schermo intero';
         button.innerHTML = `⛶ <span>${active ? 'Esci' : 'Schermo intero'}</span>`;
     };
     const handleFullscreenChange = () => {
-        if (!document.fullscreenElement) pseudoFullscreen = false;
+        if (!document.fullscreenElement && pseudoFullscreen) exitPseudoFullscreen();
         syncFullscreenButton();
     };
     const handleFullscreenEscape = event => {
         if (event.key !== 'Escape' || !pseudoFullscreen) return;
-        pseudoFullscreen = false;
-        tableRoot.classList.remove('magic-pseudo-fullscreen');
-        syncFullscreenButton();
+        exitPseudoFullscreen();
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('keydown', handleFullscreenEscape);
@@ -995,13 +1061,25 @@ export function showMagicDashboard(container, options = {}) {
         if (cardHoldTriggered) { cardHoldTriggered = false; return; }
         const state=game(); if(!state)return;
         if(event.target.closest('#magic-fullscreen')) {
-            if(document.fullscreenElement===tableRoot) { await document.exitFullscreen?.(); }
-            else if(pseudoFullscreen) { pseudoFullscreen=false; tableRoot.classList.remove('magic-pseudo-fullscreen'); }
-            else if(document.fullscreenElement) { await document.exitFullscreen?.(); }
-            else if(tableRoot.requestFullscreen) {
-                try { await tableRoot.requestFullscreen({ navigationUI: 'hide' }); pseudoFullscreen=false; tableRoot.classList.remove('magic-pseudo-fullscreen'); }
-                catch { pseudoFullscreen=true; tableRoot.classList.add('magic-pseudo-fullscreen'); }
-            } else { pseudoFullscreen=true; tableRoot.classList.add('magic-pseudo-fullscreen'); }
+            if(document.fullscreenElement===tableRoot || document.webkitFullscreenElement===tableRoot) {
+                if (document.exitFullscreen) await document.exitFullscreen();
+                else document.webkitExitFullscreen?.();
+            } else if(pseudoFullscreen) exitPseudoFullscreen();
+            else {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) await document.exitFullscreen();
+                    else document.webkitExitFullscreen?.();
+                }
+                let enteredNative = false;
+                if (tableRoot.requestFullscreen) {
+                    try { await tableRoot.requestFullscreen({ navigationUI: 'hide' }); enteredNative = document.fullscreenElement === tableRoot; }
+                    catch { enteredNative = false; }
+                } else if (tableRoot.webkitRequestFullscreen) {
+                    try { await tableRoot.webkitRequestFullscreen(); enteredNative = document.webkitFullscreenElement === tableRoot; }
+                    catch { enteredNative = false; }
+                }
+                if (!enteredNative) enterPseudoFullscreen();
+            }
             syncFullscreenButton(); return;
         }
         const mulliganAction = event.target.closest('[data-mulligan-action]')?.dataset.mulliganAction;
@@ -1011,7 +1089,7 @@ export function showMagicDashboard(container, options = {}) {
         if (state.mulliganActive && !event.target.closest('#magic-concede')) return;
         if(event.target.closest('#magic-ready')) {const deck=decks.find(item=>item.id===container.querySelector('#magic-start-deck')?.value);if(!deck){setNotice('Crea prima un mazzo.');return;}const cards=deckCards(deck).map(card=>({...card}));const validation=validateCommanderDeck(cards,deck.commanders||[]);if(!validation.valid){setNotice(validation.errors[0]);return;}const loadout={cards,commanders:deck.commanders||[],name:deck.name};const result=await updateMinigameRoomData(room.code,data=>({...data,scope:'magic',magic:{...(data.magic||{}),loadouts:{...(data.magic?.loadouts||{}),[playerId()]:loadout}}}));if(result.error){setNotice(result.error.message);return;}room=result.room||room;render();return;}
         if(event.target.closest('#magic-start')) {if(room.hostClientId!==playerId())return;await createGame(null);return;}
-        if(event.target.closest('#magic-concede')) {if(confirm('Abbandonare la partita?')){if(document.fullscreenElement===tableRoot)await document.exitFullscreen?.();pseudoFullscreen=false;tableRoot.classList.remove('magic-pseudo-fullscreen');if(room?.data?.magic?.botMatch){localStorage.removeItem(BOT_GAME_KEY);clearTimeout(botTurnTimer);botTurnScheduled='';}room=null;render();}return;}
+        if(event.target.closest('#magic-concede')) {if(confirm('Abbandonare la partita?')){if(document.fullscreenElement===tableRoot)await document.exitFullscreen?.();if(pseudoFullscreen)exitPseudoFullscreen();if(room?.data?.magic?.botMatch){localStorage.removeItem(BOT_GAME_KEY);clearTimeout(botTurnTimer);botTurnScheduled='';}room=null;render();}return;}
         if(!myTurn(state))return;
         const manaChoice=event.target.closest('[data-mana-choice]');if(manaChoice){const choice=manaChoice.dataset.manaChoice;await saveState(current=>{current.playersData[playerId()].manaChoice=choice;return current;});return;}
         if(event.target.closest('#magic-end-turn')) { await saveState(advanceTurn); return; }
@@ -1051,7 +1129,7 @@ export function showMagicDashboard(container, options = {}) {
     };
     if(room?.code && !room?.data?.magic?.botMatch) watchRoom(room);
     motionCleanup=enhanceSurfaceMotion(container,{selector:'.magic-panel,.magic-scan-box,.magic-room-bar'});
-    window.__magicCleanup=()=>{clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);clearTimeout(manaPulseTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();tableRoot.classList.remove('magic-pseudo-fullscreen');stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
+    window.__magicCleanup=()=>{clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);clearTimeout(manaPulseTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();if(pseudoFullscreen)exitPseudoFullscreen();stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
     render();
     void initializeCloud();
 }
