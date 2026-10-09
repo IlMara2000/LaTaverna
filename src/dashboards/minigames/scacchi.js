@@ -1,3 +1,4 @@
+import { connectOnlineGame } from './onlineGameSession.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { Chess } from 'chess.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
@@ -99,7 +100,22 @@ function renderLayout(container, state) {
             state.isAnimating = false;
             container.querySelector('#start-screen')?.remove();
             container.querySelector('#bot-label').textContent = 'AVVERSARIO ONLINE · NERI';
-            updateUI(container, state);
+            return connectOnlineGame(container, state, {
+                gameId: 'scacchi', room,
+                read: () => ({ pgn: state.game.pgn(), lastMove: state.lastMove, turn: state.game.turn() === 'w' ? 0 : 1 }),
+                apply: (snapshot, seat) => {
+                    state.playerColor = seat === 0 ? 'w' : 'b';
+                    state.game = new Chess();
+                    if (snapshot.pgn) state.game.loadPgn(snapshot.pgn);
+                    state.lastMove = snapshot.lastMove;
+                    state.selectedSquare = null;
+                    state.isAnimating = false;
+                    container.querySelector('.game-chess-side span').textContent = `TU · ${seat === 0 ? 'BIANCHI' : 'NERI'}`;
+                    container.querySelector('#bot-label').textContent = `AVVERSARIO ONLINE · ${seat === 0 ? 'NERI' : 'BIANCHI'}`;
+                    container.querySelector('#board-ui').setAttribute('aria-label', `Scacchiera, giochi con i ${seat === 0 ? 'bianchi' : 'neri'}`);
+                    updateUI(container, state);
+                }
+            });
         }
     });
 
@@ -151,10 +167,10 @@ function updateUI(container, state) {
     const boardUI = container.querySelector('#board-ui');
     if (!boardUI) return;
 
-    const playerTurn = state.game.turn() === 'w' && !state.game.isGameOver();
+    const playerTurn = state.game.turn() === (state.playerColor || 'w') && !state.game.isGameOver();
     const turnIndicator = container.querySelector('#turn-indicator');
     if (turnIndicator) {
-        turnIndicator.textContent = playerTurn ? 'IL TUO TURNO' : `BOT LV.${state.currentLevel} PENSA`;
+        turnIndicator.textContent = state.game.isGameOver() ? 'PARTITA CONCLUSA' : playerTurn ? 'IL TUO TURNO' : state.onlineMode ? 'TURNO AVVERSARIO' : `BOT LV.${state.currentLevel} PENSA`;
         turnIndicator.className = `game-turn-indicator ${playerTurn ? 'white-turn' : 'black-turn'}`;
     }
 
@@ -207,11 +223,11 @@ function updateUI(container, state) {
 }
 
 function handleSquareClick(square, state, container) {
-    if (state.isAnimating || state.game.turn() !== 'w' || state.game.isGameOver()) return;
+    if (state.isAnimating || state.game.turn() !== (state.playerColor || 'w') || state.game.isGameOver()) return;
 
     const piece = state.game.get(square);
     if (!state.selectedSquare) {
-        if (piece?.color === 'w') {
+        if (piece?.color === (state.playerColor || 'w')) {
             state.selectedSquare = square;
             updateUI(container, state);
         }
@@ -229,7 +245,7 @@ function handleSquareClick(square, state, container) {
         || legalMoves.find(item => item.to === square);
 
     if (!move) {
-        state.selectedSquare = piece?.color === 'w' ? square : null;
+        state.selectedSquare = piece?.color === (state.playerColor || 'w') ? square : null;
         updateUI(container, state);
         return;
     }
@@ -241,6 +257,7 @@ function handleSquareClick(square, state, container) {
     state.selectedSquare = null;
     updateUI(container, state);
 
+    if (state.onlineMode) { void state.onlineSync.commit(); return; }
     if (handleTerminalState(state, container)) return;
 
     state.isAnimating = true;
@@ -257,6 +274,7 @@ function normalizeMove(move) {
 }
 
 function botMove(state, container) {
+    if (state.onlineMode) return;
     const moves = state.game.moves({ verbose: true });
     if (!moves.length) {
         state.isAnimating = false;
@@ -330,6 +348,13 @@ function handleTerminalState(state, container) {
 }
 
 function getStatusText(state) {
+    if (state.onlineMode) {
+        const mine = state.game.turn() === state.playerColor;
+        if (state.game.isCheckmate()) return mine ? 'Scacco matto: vince l’avversario.' : 'Scacco matto: hai vinto.';
+        if (state.game.isDraw()) return 'Patta.';
+        if (state.game.isCheck()) return mine ? 'Sei sotto scacco.' : 'Avversario sotto scacco.';
+        return mine ? 'Scegli la tua mossa.' : 'In attesa della mossa dell’avversario.';
+    }
     if (state.game.isCheckmate()) {
         return state.game.turn() === 'b' ? 'Scacco matto: hai vinto.' : 'Scacco matto: vince il bot.';
     }

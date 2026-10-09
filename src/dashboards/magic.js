@@ -8,14 +8,13 @@ import { parseMagicCardList, scanMagicDocument } from '../services/magicDocument
 import { MAGIC_DEMO_DECKS } from '../data/magicDemoDecks.js';
 import { addManaProduction, canPayMana, emptyManaPool, isManaSource, isPermanentCard, manaPoolLabel, manaProductionOptions, payMana, resolveOracleText } from './magicRules.js';
 import { getMagicAccount, listPublicMagicDecks, loadMagicLibrary, loadPublicMagicShare, saveMagicLibrary, setMagicCollectionPublic, setMagicDeckPublic } from '../services/magicLibrary.js';
-import { createMinigameRoom, getMinigameRoomByCode, getSavedMinigameRoom, isMinigameRoomConnected, joinMagicRoom, updateMinigameRoomData, watchMinigameRoom } from '../services/minigameMultiplayer.js';
+import { createMinigameRoom, getMinigameClientId, getMinigameRoomByCode, getSavedMagicRoom, isMinigameRoomConnected, joinMagicRoom, updateMinigameRoomData, watchMinigameRoom } from '../services/minigameMultiplayer.js';
 import './magic.css';
 
 const COLLECTION_KEY = 'taverna_magic_collection_v1';
 const DECKS_KEY = 'taverna_magic_decks_v1';
 const COLLECTION_PUBLIC_KEY = 'taverna_magic_collection_public_v1';
 const BOT_GAME_KEY = 'taverna_magic_bot_game_v1';
-const CLIENT_KEY = 'taverna_minigame_client_id';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 const MANA_SYMBOL_NAMES = { W: 'Bianco', U: 'Blu', B: 'Nero', R: 'Rosso', G: 'Verde', C: 'Incolore' };
 const manaSymbolIcon = symbol => {
@@ -30,7 +29,7 @@ const manaPoolIcons = pool => ['W', 'U', 'B', 'R', 'G', 'C'].filter(color => Num
 const magicRulesText = text => String(text || '').split(/(\{[^}]+\})/g).map(part => /^\{[^}]+\}$/.test(part) ? manaSymbolIcon(part) : esc(part)).join('');
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
 const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-const playerId = () => localStorage.getItem(CLIENT_KEY) || 'local-player';
+const playerId = getMinigameClientId;
 const cardFace = card => card?.image_uris?.normal || card?.card_faces?.[0]?.image_uris?.normal || '';
 const manaValue = card => Number(card?.cmc || 0);
 const colorName = card => (card?.colors || []).join('') || 'Incolore';
@@ -192,7 +191,10 @@ export function showMagicDashboard(container, options = {}) {
     const publicBotDeckCache = new Map();
     let collectionFilter = '';
     const savedBotRoom = read(BOT_GAME_KEY);
-    let room = savedBotRoom?.data?.magic?.botMatch ? savedBotRoom : ((getSavedMinigameRoom()?.scope === 'magic' || getSavedMinigameRoom()?.data?.scope === 'magic') ? getSavedMinigameRoom() : null);
+    let room = savedBotRoom?.data?.magic?.botMatch ? savedBotRoom : ((getSavedMagicRoom()?.scope === 'magic' || getSavedMagicRoom()?.data?.scope === 'magic') ? getSavedMagicRoom() : null);
+    let multiplayerBusy = false;
+    let multiplayerHealthy = false;
+    let disposed = false;
     let cardResults = [];
     let activeTab = options.tab || 'mazzi';
     let stopWatching = null;
@@ -308,7 +310,7 @@ export function showMagicDashboard(container, options = {}) {
         editor.innerHTML = `<div class="magic-deck-title"><div><span class="magic-overline">COMMANDER · LISTA DEL MAZZO</span><h3>${esc(deck.name)}</h3></div><label class="magic-sharing-toggle"><input type="checkbox" id="magic-deck-public" ${deck.isPublic ? 'checked' : ''} ${!cloudReady || !cloudDeckIds.has(deck.id) ? 'disabled' : ''}><span>${deck.isPublic ? 'Mazzo pubblico' : 'Mazzo privato'}</span></label><button type="button" class="magic-text-button" id="magic-share-deck" ${deck.isPublic ? '' : 'hidden'}>Copia link</button><button type="button" class="magic-text-button" id="magic-proxy-deck">Stampa proxy</button><button type="button" class="magic-text-button" id="magic-rename-deck">Rinomina</button><button type="button" class="magic-text-button danger" id="magic-delete-deck">Elimina mazzo</button></div><div class="magic-commander-picks"><label>Comandante<select data-commander-slot="0"><option value="">Scegli dalla raccolta…</option>${eligible.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[0]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label><label>Secondo comandante partner<select data-commander-slot="1"><option value="">Nessuno</option>${eligibleSecond.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[1]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label></div><div class="magic-deck-stats"><strong>${total}</strong><span>/ 100 carte</span><span class="magic-deck-hint">Comandanti inclusi; una copia per nome, eccetto terre base.</span></div><div class="magic-deck-validation ${validation.valid?'is-valid':'is-invalid'}">${validation.valid?'✓ Mazzo Commander valido.':validation.errors.slice(0,4).map(esc).join('<br>')}</div><div class="magic-deck-cards">${deck.cards.length ? deck.cards.map(entry => { const card = collection.find(item => item.id === entry.cardId); return card ? `<div class="magic-deck-row">${card.image ? `<img src="${esc(card.image)}" alt="">` : ''}<span>${esc(card.name)}<small>${esc(card.typeLine)}${deck.commanders.includes(card.id)?' · COMANDANTE':''}</small></span><strong>×${entry.quantity}</strong><button type="button" data-deck-remove="${esc(entry.cardId)}" aria-label="Rimuovi una copia di ${esc(card.name)}">−</button><button type="button" data-deck-add="${esc(card.id)}" aria-label="Aggiungi una copia di ${esc(card.name)}">＋</button></div>` : ''; }).join('') : '<p class="magic-muted">Questo mazzo è vuoto. Aggiungi carte dalla raccolta.</p>'}</div><div class="magic-deck-play-actions"><button id="magic-play" type="button" class="magic-button magic-button-secondary" ${!validation.valid ? 'disabled' : ''}>Prova il prototipo locale</button><button id="magic-full-rules" type="button" class="magic-button" ${!validation.valid ? 'disabled' : ''}>Apri Manabrew/Forge ↗</button></div><p class="magic-muted">La lista Commander viene copiata negli appunti; incollala nell’importatore del mazzo.</p>`;
     };
     const game = () => room?.data?.magic?.game || null;
-    const myTurn = state => state?.activePlayer === playerId() && !state?.winner;
+    const myTurn = state => state?.activePlayer === playerId() && !state?.winner && !state?.playersData?.[playerId()]?.eliminated;
     const advanceTurn = current => {
         const currentId = current.activePlayer, currentIndex = current.players.indexOf(currentId);
         if (currentIndex < 0) return current;
@@ -469,19 +471,36 @@ export function showMagicDashboard(container, options = {}) {
         clearTimeout(manaPulseTimer);
         manaPulseTimer = setTimeout(() => pulse.remove(), 1900);
     };
-    const saveState = async updater => {
-        if (!room?.code) return false;
+    const humansPresent = current => current?.players?.filter(id => !current.playersData[id]?.eliminated)
+        .every(id => Date.now() - (room?.data?.magic?.presence?.[id] || 0) < 35000);
+    const saveState = async (updater, allowAnyTurn = false) => {
+        if (!room?.code || multiplayerBusy || disposed) return false;
         if (room.data?.magic?.botMatch) {
             const next = updater(structuredClone(game()));
             if (!next) return false;
             room = { ...room, data: { ...room.data, magic: { ...room.data.magic, game: next } } };
             try { localStorage.setItem(BOT_GAME_KEY, JSON.stringify(room)); } catch { setNotice('La partita non può essere salvata su questo dispositivo.'); }
-            render();
-            return true;
+            render(); return true;
         }
-        const result = await updateMinigameRoomData(room.code, data => ({ ...data, scope: 'magic', magic: { ...(data.magic || {}), game: updater(data.magic?.game || null) } }));
-        if (result.error) { setNotice(`Non è stato possibile aggiornare la partita: ${result.error.message}`); return false; }
-        room = result.room || room; render(); return true;
+        if (!multiplayerHealthy || (!allowAnyTurn && !humansPresent(game()))) { setNotice('In attesa dei giocatori online. La partita resta ferma, senza bot.'); return false; }
+        const code = room.code, expected = game();
+        multiplayerBusy = true;
+        try {
+            const result = await updateMinigameRoomData(code, data => {
+                const current = data.magic?.game;
+                if (!current || current.winner || !current.players.includes(playerId()) || current.playersData[playerId()]?.eliminated) throw new Error('Partita non disponibile.');
+                if (!allowAnyTurn && !current.mulliganActive && (current.activePlayer !== playerId() || current.turn !== expected.turn || current.revision !== expected.revision)) throw new Error('La partita è cambiata: attendi il tuo turno.');
+                if (!allowAnyTurn && current.players.filter(id => !current.playersData[id]?.eliminated).some(id => Date.now() - (data.magic.presence?.[id] || 0) >= 35000)) throw new Error('Un giocatore è disconnesso. In attesa di riconnessione.');
+                const next = updater(structuredClone(current));
+                if (!next) throw new Error('Mossa non valida.');
+                next.revision = (current.revision || 0) + 1;
+                return { ...data, magic: { ...data.magic, game: next } };
+            });
+            if (disposed || room?.code !== code) return false;
+            if (result.error) { if (result.room) refreshRoom(result.room); setNotice(result.error.message); return false; }
+            refreshRoom(result.room); return true;
+        } catch { multiplayerHealthy = false; setNotice('Connessione interrotta. Riprova dopo la riconnessione.'); return false; }
+        finally { multiplayerBusy = false; }
     };
     const searchCards = async query => {
         if (!query.trim()) { cardResults = []; renderResults(); return; }
@@ -498,16 +517,25 @@ export function showMagicDashboard(container, options = {}) {
         if (existing) existing.quantity += quantity; else collection.unshift({ ...cardSummary(card), quantity });
         persist(); render(); renderResults(); setNotice(`${card.name} aggiunta alla bacheca.`);
     };
-    const createGame = async deck => {
-        const hostId = playerId();
-        const players = [...new Set([room.hostClientId, room.guestClientId, ...(room.data?.magic?.participants || [])].filter(Boolean))];
-        if (players.length < 2 || players.length > 4) { setNotice('Per avviare la partita servono da 2 a 4 giocatori.'); return; }
-        const loadouts = room.data?.magic?.loadouts || {};
+    const createGame = async () => {
+        if (multiplayerBusy || !room || room.hostClientId !== playerId()) return;
+        multiplayerBusy = true;
+        try {
+            const result = await updateMinigameRoomData(room.code, (data, currentRoom) => {
+                if (data.magic?.game) throw new Error('La partita è già iniziata.');
+                const hostId = currentRoom.hostClientId;
+        const players = [...new Set([currentRoom.hostClientId, currentRoom.guestClientId, ...(data.magic?.participants || [])].filter(Boolean))];
+        if (players.length < 2 || players.length > 4) throw new Error('Per avviare la partita servono da 2 a 4 giocatori.');
+        const loadouts = data.magic?.loadouts || {};
         const playersData = {};
-        for (const id of players) { const loadout=loadouts[id]; if (!loadout?.cards || !validateCommanderDeck(loadout.cards,loadout.commanders||[]).valid) { setNotice('Ogni giocatore deve confermare un mazzo Commander legale da 100 carte.'); return; } const commanders=(loadout.commanders||[]).map(commanderId=>loadout.cards.find(card=>card.id===commanderId));const cards=loadout.cards.filter(card=>!loadout.commanders.includes(card.id));for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];} playersData[id]={hand:cards.splice(0,7),library:cards,battlefield:[],graveyard:[],exile:[],commandZone:commanders,commanderCasts:{},commanderDamage:{},manaPool:emptyManaPool(),colorIdentity:[...new Set(commanders.flatMap(card=>card.colorIdentity||[]))],life:40,landsPlayed:0,mulligans:0,freeMulliganUsed:false,cardsToBottom:0,keptOpeningHand:false,mulliganBottom:[]}; }
-        const state = { version: 2, turn: 1, activePlayer: hostId, startingPlayer: hostId, players, playersData, mulliganActive: true, log: [`Partita iniziata con ${players.length} giocatori · primo mulligan gratuito`], turnName: 'Mulligan iniziale' };
-        const result = await updateMinigameRoomData(room.code, data => ({ ...data, scope:'magic', magic: { ...(data.magic||{}), game: state } }));
-        if (result.error) { setNotice(result.error.message); return; } room = result.room || room; render();
+        for (const id of players) { const loadout=loadouts[id]; if (!loadout?.cards || !validateCommanderDeck(loadout.cards,loadout.commanders||[]).valid) throw new Error('Ogni giocatore deve confermare un mazzo Commander legale da 100 carte.'); const commanders=(loadout.commanders||[]).map(commanderId=>loadout.cards.find(card=>card.id===commanderId));const cards=loadout.cards.filter(card=>!loadout.commanders.includes(card.id));for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];} playersData[id]={hand:cards.splice(0,7),library:cards,battlefield:[],graveyard:[],exile:[],commandZone:commanders,commanderCasts:{},commanderDamage:{},manaPool:emptyManaPool(),colorIdentity:[...new Set(commanders.flatMap(card=>card.colorIdentity||[]))],life:40,landsPlayed:0,mulligans:0,freeMulliganUsed:false,cardsToBottom:0,keptOpeningHand:false,mulliganBottom:[]}; }
+        const state = { version: 2, revision: 0, turn: 1, activePlayer: hostId, startingPlayer: hostId, players, playersData, mulliganActive: true, log: [`Partita iniziata con ${players.length} giocatori · primo mulligan gratuito`], turnName: 'Mulligan iniziale' };
+                return { ...data, magic: { ...data.magic, game: state } };
+            });
+            if (result.error) { setNotice(result.error.message); return; }
+            refreshRoom(result.room);
+        } catch { setNotice('Avvio non riuscito. Verifica la connessione e riprova.'); }
+        finally { multiplayerBusy = false; }
     };
     const openingMulliganAction = (current, action, selectedIndex = -1) => {
         if (!current?.mulliganActive) return current;
@@ -717,20 +745,49 @@ export function showMagicDashboard(container, options = {}) {
             clearTimeout(botTurnTimer); botTurnScheduled = '';
             stopWatching?.(); if (pollTimer) clearInterval(pollTimer); stopWatching = null; pollTimer = null;
             room = { code: 'BOT', hostClientId: humanId, status: 'connected', scope: 'magic', data: { scope: 'magic', magic: { botMatch: true, game: state } } };
-            localStorage.removeItem('taverna_minigame_room');
+            localStorage.removeItem('taverna_magic_room');
             localStorage.setItem(BOT_GAME_KEY, JSON.stringify(room));
             activeTab = 'partita'; render(); setNotice(`Tavolo pronto: tu + ${count} bot. La partita viene salvata su questo dispositivo.`);
         } catch (error) { setNotice(`Non riesco a preparare la partita: ${error.message}`); }
         finally { button.disabled = false; }
     };
-    const refreshRoom = next => { if (next?.data?.scope !== 'magic' && next?.data?.magic === undefined) return; room = next; render(); };
-    const watchRoom = next => {
-        stopWatching?.(); if (pollTimer) clearInterval(pollTimer); stopWatching = null; pollTimer = null;
-        if (!next?.code) return;
-        stopWatching = watchMinigameRoom(next.code, refreshRoom);
-        pollTimer = setInterval(async () => { const result = await getMinigameRoomByCode(room?.code); if (result.room) refreshRoom(result.room); }, 4000);
+    const refreshRoom = next => {
+        if (disposed || !next || next.code !== room?.code || next.data?.scope !== 'magic') return;
+        if (room.updatedAt && next.updatedAt < room.updatedAt) return;
+        room = next; multiplayerHealthy = next.status !== 'closed'; render();
+        const status = container.querySelector('#magic-room-status');
+        if (status && game() && !humansPresent(game())) status.textContent = `Stanza ${room.code} · in attesa dei giocatori disconnessi, nessun bot`;
     };
-    const ensureRoomScope = next => { localStorage.removeItem(BOT_GAME_KEY); room = { ...next, scope: 'magic' }; try { localStorage.setItem('taverna_minigame_room', JSON.stringify(room)); } catch {} watchRoom(room); render(); };
+    const watchRoom = next => {
+        stopWatching?.(); clearInterval(pollTimer); stopWatching = null; pollTimer = null;
+        if (!next?.code || next.data?.magic?.botMatch) return;
+        const code = next.code;
+        let polling = false, lastHeartbeat = 0;
+        stopWatching = watchMinigameRoom(code, refreshRoom);
+        const poll = async () => {
+            if (polling || disposed || multiplayerBusy || room?.code !== code) return;
+            polling = true;
+            try {
+                const result = Date.now() - lastHeartbeat > 10000
+                    ? await updateMinigameRoomData(code, (data, currentRoom) => {
+                        const members = [currentRoom.hostClientId, currentRoom.guestClientId, ...(data.magic?.participants || [])];
+                        if (!members.includes(playerId())) throw new Error('Non fai parte di questa stanza.');
+                        return { ...data, magic: { ...data.magic, presence: { ...data.magic?.presence, [playerId()]: Date.now() } } };
+                    }) : await getMinigameRoomByCode(code);
+                if (Date.now() - lastHeartbeat > 10000) lastHeartbeat = Date.now();
+                if (result.error || !result.room) { multiplayerHealthy = false; setNotice(result.error?.message || 'La stanza non è più disponibile.'); }
+                else refreshRoom(result.room);
+            } catch { multiplayerHealthy = false; setNotice('Connessione interrotta. Riconnessione in corso…'); }
+            finally { polling = false; }
+        };
+        void poll(); pollTimer = setInterval(poll, 2500);
+    };
+    const ensureRoomScope = next => {
+        clearTimeout(botTurnTimer); botTurnScheduled = '';
+        localStorage.removeItem(BOT_GAME_KEY); room = { ...next, scope: 'magic' };
+        try { localStorage.setItem('taverna_magic_room', JSON.stringify(room)); } catch {}
+        watchRoom(room); render();
+    };
 
     container.querySelector('#magic-home').onclick = () => navigateTo('home');
     container.querySelector('#magic-open-counter').onclick = () => navigateTo('cardCounter', container);
@@ -938,7 +995,7 @@ export function showMagicDashboard(container, options = {}) {
         finally { button.disabled = false; }
     };
     container.querySelector('#magic-start-bot-game').onclick = event => { void startBotGame(event.currentTarget); };
-    container.querySelector('#magic-host').onclick = async event => { const button=event.currentTarget;button.disabled=true;setNotice('Creo la stanza…'); localStorage.removeItem(BOT_GAME_KEY);const result=await createMinigameRoom();button.disabled=false; if(result.error){setNotice(result.unavailable?'Multiplayer non configurato. Verifica Supabase e lo schema minigame_rooms.':result.error.message);return;} const initialized=await updateMinigameRoomData(result.room.code, data=>({...data,scope:'magic',magic:{participants:[],loadouts:{}}}));if(initialized.error){setNotice(initialized.error.message);return;}ensureRoomScope(initialized.room);setNotice('Stanza pronta. Condividi il codice: da 2 a 4 giocatori.'); };
+    container.querySelector('#magic-host').onclick = async event => { const button=event.currentTarget;button.disabled=true;setNotice('Creo la stanza…'); localStorage.removeItem(BOT_GAME_KEY);const result=await createMinigameRoom({scope:'magic'});button.disabled=false; if(result.error){setNotice(result.unavailable?'Multiplayer non configurato. Verifica Supabase e lo schema minigame_rooms.':result.error.message);return;} const initialized=await updateMinigameRoomData(result.room.code, data=>({...data,scope:'magic',magic:{participants:[],loadouts:{}}}));if(initialized.error){setNotice(initialized.error.message);return;}ensureRoomScope(initialized.room);setNotice('Stanza pronta. Condividi il codice: da 2 a 4 giocatori.'); };
     container.querySelector('#magic-join-form').onsubmit = async event => { event.preventDefault(); const selected=decks.find(deck=>deck.id===container.querySelector('#magic-join-deck').value);if(!selected){setNotice('Crea un mazzo e aggiungilo alla tua bacheca prima di entrare.');return;}const cards=deckCards(selected).map(card=>({...card}));const validation=validateCommanderDeck(cards,selected.commanders||[]);if(!validation.valid){setNotice(validation.errors[0]);return;} const result=await joinMagicRoom(container.querySelector('#magic-room-code').value,{cards,commanders:selected.commanders||[],name:selected.name});if(result.error){setNotice(result.error.message);return;} ensureRoomScope(result.room);setNotice('Sei al tavolo.'); };
     const showCardDetails = async target => {
         const state = game(); if (!state || !target) return;
@@ -1061,6 +1118,8 @@ export function showMagicDashboard(container, options = {}) {
     container.querySelector('#magic-table').onclick = async event => {
         if (event.target.closest('[data-close-card]')) return;
         if (cardHoldTriggered) { cardHoldTriggered = false; return; }
+        if(event.target.closest('#magic-ready')) {const deck=decks.find(item=>item.id===container.querySelector('#magic-start-deck')?.value);if(!deck){setNotice('Crea prima un mazzo.');return;}const cards=deckCards(deck).map(card=>({...card}));const validation=validateCommanderDeck(cards,deck.commanders||[]);if(!validation.valid){setNotice(validation.errors[0]);return;}const loadout={cards,commanders:deck.commanders||[],name:deck.name};const result=await updateMinigameRoomData(room.code,data=>{if(data.magic?.game)throw new Error('La partita è già iniziata.');return {...data,scope:'magic',magic:{...(data.magic||{}),loadouts:{...(data.magic?.loadouts||{}),[playerId()]:loadout}}};});if(result.error){setNotice(result.error.message);return;}room=result.room||room;render();return;}
+        if(event.target.closest('#magic-start')) {if(room.hostClientId!==playerId())return;await createGame(null);return;}
         const state=game(); if(!state)return;
         if(event.target.closest('#magic-fullscreen')) {
             if(document.fullscreenElement===tableRoot || document.webkitFullscreenElement===tableRoot) {
@@ -1089,9 +1148,26 @@ export function showMagicDashboard(container, options = {}) {
         const mulliganIndex = event.target.closest('[data-mulligan-index]')?.dataset.mulliganIndex;
         if (mulliganIndex !== undefined) { await saveState(current => openingMulliganAction(current, 'select', Number(mulliganIndex))); return; }
         if (state.mulliganActive && !event.target.closest('#magic-concede')) return;
-        if(event.target.closest('#magic-ready')) {const deck=decks.find(item=>item.id===container.querySelector('#magic-start-deck')?.value);if(!deck){setNotice('Crea prima un mazzo.');return;}const cards=deckCards(deck).map(card=>({...card}));const validation=validateCommanderDeck(cards,deck.commanders||[]);if(!validation.valid){setNotice(validation.errors[0]);return;}const loadout={cards,commanders:deck.commanders||[],name:deck.name};const result=await updateMinigameRoomData(room.code,data=>({...data,scope:'magic',magic:{...(data.magic||{}),loadouts:{...(data.magic?.loadouts||{}),[playerId()]:loadout}}}));if(result.error){setNotice(result.error.message);return;}room=result.room||room;render();return;}
-        if(event.target.closest('#magic-start')) {if(room.hostClientId!==playerId())return;await createGame(null);return;}
-        if(event.target.closest('#magic-concede')) {if(confirm('Abbandonare la partita?')){if(document.fullscreenElement===tableRoot)await document.exitFullscreen?.();if(pseudoFullscreen)exitPseudoFullscreen();if(room?.data?.magic?.botMatch){localStorage.removeItem(BOT_GAME_KEY);clearTimeout(botTurnTimer);botTurnScheduled='';}room=null;render();}return;}
+        if(event.target.closest('#magic-concede')) {
+            if (!confirm('Abbandonare la partita?')) return;
+            if (!room.data?.magic?.botMatch) {
+                const saved = state.winner || state.playersData[playerId()]?.eliminated || await saveState(current => {
+                    current.playersData[playerId()].eliminated = true;
+                    current.playersData[playerId()].keptOpeningHand = true;
+                    const survivors = current.players.filter(id => !current.playersData[id].eliminated);
+                    if (survivors.length === 1) current.winner = survivors[0];
+                    else if (current.activePlayer === playerId()) advanceTurn(current);
+                    if (current.mulliganActive && survivors.every(id => current.playersData[id].keptOpeningHand)) current.mulliganActive = false;
+                    current.log.unshift(`Giocatore ${current.players.indexOf(playerId()) + 1} ha abbandonato.`);
+                    return current;
+                }, true);
+                if (!saved) return;
+                localStorage.removeItem('taverna_magic_room');
+            } else localStorage.removeItem(BOT_GAME_KEY);
+            clearTimeout(botTurnTimer); stopWatching?.(); clearInterval(pollTimer); botTurnScheduled = '';
+            if(document.fullscreenElement===tableRoot)await document.exitFullscreen?.();
+            if(pseudoFullscreen)exitPseudoFullscreen(); room=null; render(); return;
+        }
         if(!myTurn(state))return;
         const manaChoice=event.target.closest('[data-mana-choice]');if(manaChoice){const choice=manaChoice.dataset.manaChoice;await saveState(current=>{current.playersData[playerId()].manaChoice=choice;return current;});return;}
         if(event.target.closest('#magic-end-turn')) { await saveState(advanceTurn); return; }
@@ -1105,9 +1181,10 @@ export function showMagicDashboard(container, options = {}) {
     const initializeCloud = async () => {
         try {
             const user = await getMagicAccount();
-            if (!user?.id) return;
+            if (disposed || !user?.id) return;
             cloudUserId = user.id;
             const remote = await loadMagicLibrary(user.id);
+            if (disposed) return;
             collectionId = remote.collectionId;
             collectionPublic = remote.collectionPublic;
             cloudDeckIds = new Set(remote.decks.map(deck => deck.id));
@@ -1131,7 +1208,10 @@ export function showMagicDashboard(container, options = {}) {
     };
     if(room?.code && !room?.data?.magic?.botMatch) watchRoom(room);
     motionCleanup=enhanceSurfaceMotion(container,{selector:'.magic-panel,.magic-scan-box,.magic-room-bar'});
-    window.__magicCleanup=()=>{clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);clearTimeout(manaPulseTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();if(pseudoFullscreen)exitPseudoFullscreen();stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
+    const cleanupMagic=()=>{disposed=true;lifecycle.disconnect();clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);clearTimeout(manaPulseTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();if(pseudoFullscreen)exitPseudoFullscreen();stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
+    const lifecycle = new MutationObserver(() => { if (!tableRoot.isConnected) cleanupMagic(); });
+    window.__magicCleanup = cleanupMagic;
+    lifecycle.observe(container, {childList:true});
     render();
     void initializeCloud();
 }

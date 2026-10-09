@@ -1,19 +1,14 @@
+import { bindOnlineModeButton } from './onlineModeButton.js';
+import { connectOnlineGame } from './onlineGameSession.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, renderLevelLadder, unlockNextLevel } from '../../services/levels.js';
 import {
-    createMinigameRoom,
     getMinigameClientId,
-    getMinigameRoomByCode,
-    getSavedMinigameRoom,
-    isMinigameRoomConnected,
-    updateMinigameRoomData,
-    watchMinigameRoom
 } from '../../services/minigameMultiplayer.js';
 
 const MIN_BOARD_SIZE = 3;
 const MAX_BOARD_SIZE = 9;
-const ONLINE_GAME_KEY = 'tictactoe';
 const PLAYER_SYMBOL = 'x';
 const BOT_SYMBOL = 'o';
 
@@ -201,22 +196,19 @@ function renderLayout(container, state) {
         startScreen?.remove();
     };
 
-    container.querySelector('#ttt-online-mode').onclick = async () => {
-        setOnlineStatus('Controllo stanza online...');
-        const started = await startOnlineGame(container, state);
-        if (started) {
-            startScreen?.remove();
-        } else {
-            setOnlineStatus(state.online.error || 'Crea o inserisci un codice multiplayer nella Sala Giochi, poi riapri Tic Tac Toe.');
-            if (state.online.room?.code) {
-                startOnlineWaiting(container, state, async () => {
-                    setOnlineStatus('Giocatore connesso. Avvio partita online...');
-                    const ready = await startOnlineGame(container, state);
-                    if (ready) startScreen?.remove();
-                });
-            }
+    state.stopOnlineMode = bindOnlineModeButton(container, {
+        gameId: 'ttt', gameName: 'Tic Tac Toe',
+        onConnected: room => {
+            state.mode = 'online'; state.online.room = room;
+            state.online.symbol = room.hostClientId === getMinigameClientId() ? PLAYER_SYMBOL : BOT_SYMBOL;
+            resetBoardState(state, state.boardSize); startScreen?.remove(); updateUI(container, state);
+            return connectOnlineGame(container, state, {
+                gameId: 'tictactoe', room,
+                read: () => ({turn: state.turn === PLAYER_SYMBOL ? 0 : 1, game: serializeRemoteGame(state)}),
+                apply: snapshot => { applyRemoteGame(normalizeRemoteGame(snapshot.game), state); updateUI(container, state); }
+            });
         }
-    };
+    });
 
     renderLevelLadder('tictactoe', container.querySelector('#levels-container'), (selectedLevel) => {
         state.currentLevel = selectedLevel;
@@ -253,71 +245,6 @@ function startLocalGame(container, state) {
     updateUI(container, state);
 }
 
-async function startOnlineGame(container, state) {
-    cleanupOnline(state);
-    state.online.error = '';
-    let room = getCurrentOnlineRoom();
-
-    if (!room?.code) {
-        const { room: createdRoom, error, unavailable } = await createMinigameRoom();
-        if (createdRoom) {
-            state.online.room = createdRoom;
-            state.online.error = `Codice ${createdRoom.code} creato. Condividilo e attendi il secondo giocatore.`;
-            return false;
-        }
-
-        state.online.error = unavailable
-            ? 'Multiplayer non attivo su Supabase: esegui lo schema aggiornato.'
-            : (error?.message || 'Codice online non creato.');
-        return false;
-    }
-
-    const latest = await getMinigameRoomByCode(room.code);
-    if (latest.room) room = latest.room;
-
-    if (!isMinigameRoomConnected(room)) {
-        state.online.room = room;
-        state.online.error = room?.code
-            ? `Codice ${room.code} in attesa. Fai inserire questo codice all'altro giocatore.`
-            : 'Nessuna stanza online connessa.';
-        return false;
-    }
-
-    state.mode = 'online';
-    state.online.room = room;
-    state.online.symbol = getOnlineSymbol(room);
-    state.status = 'syncing';
-
-    const remoteGame = normalizeRemoteGame(room.data?.[ONLINE_GAME_KEY]);
-    if (remoteGame) {
-        applyRemoteGame(remoteGame, state);
-    } else {
-        resetBoardState(state, state.boardSize);
-        state.status = 'playing';
-        const { error, room: nextRoom } = await pushOnlineGame(state);
-        if (error) {
-            state.online.error = error.message || 'Sincronizzazione online non riuscita.';
-            return false;
-        }
-        if (nextRoom) state.online.room = nextRoom;
-        state.online.error = '';
-    }
-
-    startOnlineWatch(container, state);
-    updateUI(container, state);
-    return true;
-}
-
-function getCurrentOnlineRoom() {
-    const exposed = window.__tavernaMultiplayerConnection?.room || null;
-    return exposed?.code ? exposed : getSavedMinigameRoom();
-}
-
-function getOnlineSymbol(room) {
-    const clientId = getMinigameClientId();
-    return room?.guestClientId === clientId ? BOT_SYMBOL : PLAYER_SYMBOL;
-}
-
 function resetBoardState(state, size) {
     const boardSize = clampBoardSize(size);
     state.boardSize = boardSize;
@@ -335,14 +262,9 @@ function resetBoardState(state, size) {
 
 function resetCurrentGame(container, state) {
     if (state.mode === 'online') {
+        if (state.onlineSeat !== 0 || state.status === 'playing') return;
         resetBoardState(state, state.boardSize);
-        pushOnlineGame(state).then(({ error, room }) => {
-            if (error) state.online.error = error.message || 'Reset online non riuscito.';
-            if (room) state.online.room = room;
-            if (!error) state.online.error = '';
-            updateUI(container, state);
-        });
-        updateUI(container, state);
+        void state.onlineSync.commit(() => ({turn:0,game:serializeRemoteGame(state)}));
         return;
     }
 
@@ -353,75 +275,9 @@ function resetCurrentGame(container, state) {
     updateUI(container, state);
 }
 
-function startOnlineWatch(container, state) {
-    const code = state.online.room?.code;
-    if (!code) return;
-
-    state.online.stopWatch = watchMinigameRoom(code, (room) => {
-        state.online.room = room;
-        const remoteGame = normalizeRemoteGame(room.data?.[ONLINE_GAME_KEY]);
-        if (remoteGame) {
-            applyRemoteGame(remoteGame, state);
-            updateUI(container, state);
-        }
-    });
-
-    state.online.pollTimer = window.setInterval(async () => {
-        const { room } = await getMinigameRoomByCode(code);
-        if (!room) return;
-        state.online.room = room;
-        const remoteGame = normalizeRemoteGame(room.data?.[ONLINE_GAME_KEY]);
-        if (remoteGame) {
-            applyRemoteGame(remoteGame, state);
-            updateUI(container, state);
-        }
-    }, 2500);
-}
-
-function startOnlineWaiting(container, state, onConnected) {
-    cleanupOnline(state);
-    const code = state.online.room?.code;
-    if (!code) return;
-
-    const handleRoom = (room) => {
-        if (!room) return;
-        state.online.room = room;
-        if (isMinigameRoomConnected(room)) {
-            cleanupOnline(state);
-            onConnected?.();
-        }
-    };
-
-    state.online.stopWatch = watchMinigameRoom(code, handleRoom);
-    state.online.pollTimer = window.setInterval(async () => {
-        const { room } = await getMinigameRoomByCode(code);
-        handleRoom(room);
-    }, 2500);
-
-    updateUI(container, state);
-}
-
 function cleanupOnline(state) {
-    if (state?.online?.stopWatch) state.online.stopWatch();
-    if (state?.online?.pollTimer) window.clearInterval(state.online.pollTimer);
-    if (state?.online) {
-        state.online.stopWatch = null;
-        state.online.pollTimer = null;
-        state.online.busy = false;
-    }
-}
-
-async function pushOnlineGame(state) {
-    if (!state.online.room?.code || state.online.busy) return { room: state.online.room, error: null };
-    state.online.busy = true;
-    const game = serializeRemoteGame(state);
-    const result = await updateMinigameRoomData(state.online.room.code, (currentData) => ({
-        ...currentData,
-        [ONLINE_GAME_KEY]: game
-    }));
-    state.online.busy = false;
-    if (!result.error) state.online.error = '';
-    return result;
+    state.stopOnlineMode?.();
+    state.onlineSync?.dispose();
 }
 
 function serializeRemoteGame(state) {
@@ -541,19 +397,14 @@ function canPlayCell(state, index) {
 }
 
 function handleCellClick(index, container, state) {
-    if (!canPlayCell(state, index)) return;
+    if ((state.mode === 'online' && !state.onlineReady) || !canPlayCell(state, index)) return;
 
     const symbol = state.mode === 'online' ? state.online.symbol : state.turn;
     playMove(state, index, symbol);
     updateUI(container, state);
 
     if (state.mode === 'online') {
-        pushOnlineGame(state).then(({ error, room }) => {
-            if (error) state.online.error = error.message || 'Mossa online non sincronizzata.';
-            if (room) state.online.room = room;
-            updateUI(container, state);
-        });
-        return;
+        void state.onlineSync.commit(); return;
     }
 
     if (state.mode === 'bot' && state.status === 'playing') {

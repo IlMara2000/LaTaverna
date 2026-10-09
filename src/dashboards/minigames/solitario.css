@@ -1,0 +1,107 @@
+.solitario-game {
+    --sol-card-width: clamp(36px, 10.4vw, 100px);
+    --sol-card-height: calc(var(--sol-card-width) * 1.46);
+    --sol-stack-gap: clamp(25px, 3.9vw, 37px);
+    --sol-grid-gap: clamp(5px, 1.5vw, 18px);
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    height: var(--visual-viewport-height, 100dvh);
+    padding: max(14px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    color: #f6f0ff;
+    background: radial-gradient(ellipse at 50% 35%, #271236 0, #10071c 58%, #07020d 100%);
+    isolation: isolate;
+    touch-action: pan-y;
+}
+
+body:has(.solitario-game) #navbar-trigger,
+body:has(.solitario-game) #nav-home-btn { display: none !important; }
+html:has(.solitario-game), body:has(.solitario-game) { overflow: hidden !important; }
+body:has(.solitario-game) { touch-action: auto !important; }
+.solitario-game *, .solitario-game *::before, .solitario-game *::after { box-sizing: border-box; }
+.solitario-game [hidden] { display: none !important; }
+.solitario-shell { max-width: 1080px; margin: 0 auto; }
+.solitario-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+.solitario-brand { display: flex; align-items: center; gap: 12px; }
+.solitario-brand > span { font-size: 2.15rem; color: #d6aeff; line-height: 1; }
+.solitario-brand small { font-size: .55rem; color: #bda7ce; letter-spacing: 2.1px; }
+.solitario-brand h1 { margin: 3px 0 0; font-family: inherit; font-size: 1.12rem; letter-spacing: 2px; line-height: 1.2; color: #faf3ff; }
+.solitario-control { min-height: 40px; min-width: 40px; border: 1px solid #725186; border-radius: 10px; padding: 8px 12px; font-family: inherit; font-weight: 700; font-size: .79rem; color: #f7efff; background: #2c1a3d; cursor: pointer; transition: background .15s, border-color .15s; }
+.solitario-control:hover:not(:disabled) { background: #482663; border-color: #c79bfa; }
+.solitario-game button:focus-visible { outline: 3px solid #f3c772; outline-offset: 3px; }
+.solitario-control:disabled { opacity: .4; cursor: default; }
+.solitario-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.solitario-game-info { display: grid; gap: 5px; }
+.solitario-game-info strong { font-size: .69rem; color: #ddbbfa; letter-spacing: 1.8px; }
+.solitario-game-info > span { color: #bba9c9; font-size: .75rem; }
+.solitario-actions { display: flex; gap: 7px; }
+.solitario-scoreline { display: flex; justify-content: space-between; gap: 12px; margin-top: 20px; font-size: .74rem; font-weight: 700; color: #ddc9ee; }
+.solitario-message { min-height: 50px; margin: 10px 0 0; color: #ddcceb; font-size: .83rem; line-height: 1.5; padding: 10px 0; }
+.solitario-victory { color: #ffe39a; font-weight: 800; }
+.solitario-table { padding: 20px clamp(8px, 2vw, 26px) 26px; border: 1px solid #6c4c7c66; border-radius: 22px; background: radial-gradient(ellipse at 50% 0%, #35204488, transparent 70%), #170c23b3; box-shadow: inset 0 1px 30px #0003, 0 18px 42px #0002; }
+.solitario-upper, .solitario-tableau { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--sol-grid-gap); }
+.solitario-upper { margin-bottom: 26px; }
+.solitario-pile-wrap { display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 0; }
+.solitario-pile-label { display: block; width: 100%; text-align: center; font-size: clamp(.45rem, 1.8vw, .6rem); letter-spacing: .6px; font-weight: 700; color: #c6b0d7; white-space: nowrap; }
+.solitario-pile-label b { font-size: inherit; margin-left: 2px; color: #f5e9ff; }
+.solitario-card { position: relative; display: block; flex-shrink: 0; width: 100%; max-width: var(--sol-card-width); height: var(--sol-card-height); margin: 0; padding: 0; border: 1px solid #bcaecd; border-radius: clamp(5px, 1vw, 9px); font-family: Georgia, 'Times New Roman', serif; user-select: none; -webkit-user-select: none; touch-action: manipulation; line-height: 1; }
+button.solitario-card { cursor: pointer; appearance: none; -webkit-appearance: none; }
+.solitario-card-face { color: #252433; background: linear-gradient(145deg, #fffefa, #f5ecdf); box-shadow: 0 3px 7px #0005; text-align: left; }
+.solitario-card-face.solitario-red { color: #c52c40; }
+.solitario-card-corner { position: absolute; top: 5%; left: 8%; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: clamp(.68rem, 2.7vw, 1.2rem); line-height: .98; }
+.solitario-card-corner b { font-weight: 700; }
+.solitario-card-corner i { font-style: normal; font-size: .88em; }
+.solitario-card-corner-bottom { inset: auto 8% 5% auto; transform: rotate(180deg); }
+.solitario-card-center { position: absolute; inset: 29% 12% 27%; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 3px; font-size: clamp(1.25rem, 4.5vw, 2.6rem); }
+.solitario-card-center small { font-family: inherit; font-size: clamp(.32rem, .94vw, .59rem); font-weight: 700; letter-spacing: .5px; }
+.solitario-card-back { display: grid; place-items: center; color: #cfaced; background: repeating-linear-gradient(45deg, transparent 0 5px, #e4bfff12 5px 6px), repeating-linear-gradient(-45deg, #38224d 0 5px, #dca5ff1c 5px 6px); border: 3px solid #d6c3e4; box-shadow: inset 0 0 0 2px #56346b, 0 2px 5px #0005; font-size: clamp(1.1rem, 3.8vw, 2.3rem); }
+.solitario-card-back::after { position: absolute; inset: 6px; border: 1px solid #b280d866; border-radius: 3px; content: ''; }
+.solitario-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border: 1px dashed #b58dc780; background: #09051038; color: #c3a6d2; box-shadow: inset 0 2px 8px #0002; font-size: clamp(1.1rem, 4vw, 2.4rem); }
+.solitario-slot small { font-family: sans-serif; font-size: clamp(.31rem, 1.1vw, .54rem); letter-spacing: .2px; }
+.solitario-slot.solitario-red { color: #e19ba6; }
+.solitario-slot:disabled { opacity: .5; cursor: default; }
+.solitario-column { min-width: 0; }
+.solitario-column > .solitario-pile-label { margin-bottom: 9px; }
+.solitario-column-cards { position: relative; width: 100%; max-width: var(--sol-card-width); min-height: calc(var(--sol-card-height) + var(--pile-length) * var(--sol-stack-gap)); margin: 0 auto; }
+.solitario-stacked { position: absolute; top: calc(var(--card-position) * var(--sol-stack-gap)); left: 0; }
+.solitario-card.is-selected { border: 2px solid #f8ca74; box-shadow: 0 0 0 2px #f8ca7499, 0 5px 12px #0005; background: #fff0ca; }
+.solitario-card.is-target:not(.is-selected) { outline: 2px solid #90ddb8; outline-offset: 2px; }
+.solitario-has-selection .is-target-column .solitario-column-cards { border-radius: 8px; outline: 2px solid #90ddb86b; outline-offset: 4px; }
+.solitario-footer { text-align: center; color: #b7a0c8; font-size: .72rem; line-height: 1.65; margin: 16px 0 0; }
+.solitario-dialog-backdrop { position: fixed; inset: 0; z-index: 3; display: grid; place-items: center; background: #07020ddb; padding: 18px; backdrop-filter: blur(8px); overflow-y: auto; }
+.solitario-dialog { position: relative; width: min(100%, 540px); max-height: calc(100dvh - 36px); overflow-y: auto; padding: 34px 30px; border: 1px solid #8d60ad; border-radius: 20px; background: linear-gradient(150deg, #2d173e, #140b20); box-shadow: 0 20px 80px #0009; }
+.solitario-close { position: absolute; right: 12px; top: 12px; font-size: 1.2rem; }
+.solitario-eyebrow { display: block; color: #c69cec; font-size: .65rem; font-weight: 800; letter-spacing: 2px; margin-right: 44px; }
+.solitario-dialog h2 { color: #f8ecff; font-size: 1.3rem; line-height: 1.25; margin: 16px 25px 20px 0; }
+.solitario-dialog p, .solitario-dialog li { font-size: .85rem; color: #decfe8; line-height: 1.6; }
+.solitario-dialog ol { padding-left: 21px; }
+.solitario-dialog li { margin-bottom: 12px; padding-left: 3px; }
+.solitario-dialog b { color: #f8eaff; }
+.solitario-primary { width: 100%; margin-top: 10px; background: #743aa1; border-color: #b172e2; }
+@media (min-width: 760px) { .solitario-game { padding-left: 28px; padding-right: 28px; } }
+@media (max-width: 600px) {
+    .solitario-topbar { margin-bottom: 18px; }
+    .solitario-toolbar { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .solitario-game-info { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; }
+    .solitario-game-info > span { font-size: .66rem; }
+    .solitario-actions { width: 100%; }
+    .solitario-actions > button { flex: 1; padding: 8px 5px; font-size: .7rem; }
+    .solitario-scoreline { margin-top: 15px; font-size: .67rem; }
+    .solitario-message { font-size: .72rem; min-height: 58px; }
+    .solitario-table { padding: 14px 7px 22px; border-radius: 14px; }
+    .solitario-upper { margin-bottom: 23px; }
+    .solitario-pile-label { letter-spacing: 0; }
+    .solitario-dialog { padding: 30px 22px; }
+    .solitario-footer { font-size: .64rem; }
+}
+@media (max-width: 370px) {
+    .solitario-game { --sol-grid-gap: 4px; --sol-card-width: 10.2vw; padding-left: 7px; padding-right: 7px; }
+    .solitario-brand h1 { font-size: .9rem; }
+    .solitario-brand { gap: 7px; }
+    .solitario-control { padding: 8px; }
+    .solitario-card-corner { left: 7%; font-size: .62rem; }
+    .solitario-card-corner-bottom { left: auto; right: 7%; }
+}
+@media (prefers-reduced-motion: reduce) { .solitario-game *, .solitario-game *::before, .solitario-game *::after { animation: none !important; transition: none !important; } }

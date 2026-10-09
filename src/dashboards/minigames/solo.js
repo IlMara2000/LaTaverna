@@ -1,3 +1,6 @@
+import { getRoomParticipants } from '../../services/minigameMultiplayer.js';
+import { connectOnlineGame } from './onlineGameSession.js';
+import { cardPerspective, pickState } from './onlineMatchProtocol.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
@@ -30,18 +33,18 @@ export function initSoloGame(container) {
     // BLOCCO SCROLL GLOBALE
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none'; 
+    document.body.style.touchAction = 'none';
     window.scrollTo(0, 0);
-    
+
     let state = {
-        deck: [], discardPile: [], players: [[], [], [], []], 
+        deck: [], discardPile: [], players: [[], [], [], []],
         turn: 0, direction: 1, currentColor: '', currentVal: '',
         gameActive: false, isAnimating: false,
         drawnCardThisTurn: false,
         currentLevel: 1,
         // Nuove variabili per la regola "SOLO!"
         playerSaidSolo: false,
-        catchableBots: [] 
+        catchableBots: []
     };
 
     renderLayout(container, state);
@@ -61,13 +64,13 @@ const quitGame = async (container) => {
 function renderLayout(container, state) {
     container.innerHTML = `
     <div class="game-master-wrapper solo-game-wrapper fade-in">
-        
+
         <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
             <h1 class="main-title" style="font-size: 3.5rem; margin-bottom: 10px;">Solo</h1>
             ${renderOnlineModeButton('solo')}
             <p class="minigame-bot-level-title" style="color: var(--amethyst-light); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 12px;">CONTRO IL BOT</p>
-            
+
             <div id="levels-container"></div>
 
             <button id="exit-btn" class="game-btn-action" style="background: transparent; border: none; margin-top: 15px; opacity: 0.6;">TORNA ALLA TAVERNA</button>
@@ -77,27 +80,27 @@ function renderLayout(container, state) {
             <button class="game-btn-action" id="btn-exit-ingame" style="padding: 10px 20px;">← ESCI</button>
             <div id="turn-indicator" class="game-turn-indicator white-turn" style="font-size: 13px; text-transform: uppercase;">CARICAMENTO...</div>
         </header>
-        
+
         <div class="game-opponents-row solo-opponents-row">
             <div id="bot-1" class="game-bot-pill"><span>BOT 1</span><br><span class="game-bot-count" id="cnt-1">7</span><span style="font-size:9px; opacity:0.5;"> CARTE</span></div>
             <div id="bot-2" class="game-bot-pill"><span>BOT 2</span><br><span class="game-bot-count" id="cnt-2">7</span><span style="font-size:9px; opacity:0.5;"> CARTE</span></div>
             <div id="bot-3" class="game-bot-pill"><span>BOT 3</span><br><span class="game-bot-count" id="cnt-3">7</span><span style="font-size:9px; opacity:0.5;"> CARTE</span></div>
         </div>
-        
+
         <main class="game-master-table solo-table">
             <div id="status-log" style="position: absolute; top: -10px; font-size: 11px; font-weight: 800; opacity: 0.7;">INIZIO PARTITA</div>
-            
+
             <div class="game-card-center">
                 <div id="deck-draw" class="game-card-unit back" style="cursor:pointer; box-shadow: 0 0 20px rgba(157,78,221,0.3) !important;">
                     <span style="font-size: 2rem;">🃏</span>
                 </div>
                 <div id="discard-pile"></div>
             </div>
-            
+
             <div style="font-size: 10px; font-weight: 900; letter-spacing: 2px; margin-bottom: 5px; opacity: 0.6;">COLORE ATTUALE</div>
             <div id="color-indicator" class="game-color-line"></div>
         </main>
-        
+
         <footer class="game-player-area solo-player-area" style="padding: 10px 0 0 0; background: transparent;">
             <div class="game-action-buttons">
                 <button class="game-btn-action" id="btn-catch" style="display:none; background: #c77dff; border: none; padding: 12px 20px; color: black; box-shadow: 0 0 15px #c77dff;">SGAMA BOT!</button>
@@ -106,7 +109,7 @@ function renderLayout(container, state) {
             </div>
             <div id="player-hand" class="game-player-hand solo-player-hand"></div>
         </footer>
-        
+
         <div id="picker-wild" class="game-color-picker">
             <div class="game-color-picker-panel">
                 <span>Scegli il colore</span>
@@ -123,14 +126,24 @@ function renderLayout(container, state) {
 
     const cleanupOnlineMode = bindOnlineModeButton(container, {
         gameId: 'solo',
-        gameName: 'Solo',
+        gameName: 'Solo', maxPlayers: 8,
         onConnected: (room) => {
             state.onlineMode = true;
             state.onlineRoom = room;
             state.currentLevel = 1;
+            container.querySelector('.game-opponents-row').innerHTML = getRoomParticipants(room).slice(1).map((_, i) => `<div id="bot-${i+1}" class="game-bot-pill"><span>GIOCATORE ${i+1}</span><br><span class="game-bot-count" id="cnt-${i+1}">7</span><span> CARTE</span></div>`).join('');
             container.querySelector('#start-screen')?.remove();
             attachInitialListeners(container, state);
             startGame(state, container);
+            return connectOnlineGame(container, state, {
+                gameId: 'solo', room, maxPlayers: 8,
+                read: seat => cardPerspective(pickState(state, ['deck', 'discardPile', 'players', 'turn', 'direction', 'currentColor', 'currentVal', 'drawnCardThisTurn', 'gameActive', 'winner']), seat, true),
+                apply: (snapshot, seat) => {
+                    Object.assign(state, cardPerspective(snapshot, seat), { isAnimating: false, playerSaidSolo: false, catchableBots: [] });
+                    updateUI(state, container);
+                    logStatus(container, state.gameActive ? (state.turn === 0 ? 'Tocca a te.' : 'In attesa dell’avversario.') : 'Partita conclusa.');
+                }
+            });
         }
     });
 
@@ -145,10 +158,12 @@ function renderLayout(container, state) {
     });
 
     container.querySelector('#exit-btn').onclick = () => {
+        state.gameActive = false;
         cleanupOnlineMode();
         quitGame(container);
     };
     container.querySelector('#btn-exit-ingame').onclick = () => {
+        state.gameActive = false;
         cleanupOnlineMode();
         quitGame(container);
     };
@@ -158,7 +173,7 @@ function renderLayout(container, state) {
 function createCardElement(card, isBack = false) {
     const el = document.createElement('div');
     el.className = 'game-card-unit';
-    
+
     if (isBack) {
         el.classList.add('back');
         return el;
@@ -171,7 +186,7 @@ function createCardElement(card, isBack = false) {
 
     el.style.borderColor = hex;
     el.style.color = hex;
-    el.style.boxShadow = `0 4px 15px ${hex}30`; 
+    el.style.boxShadow = `0 4px 15px ${hex}30`;
 
     el.innerHTML = `
         <div style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
@@ -189,20 +204,20 @@ function createCardElement(card, isBack = false) {
 async function animateCardMove(startEl, targetEl, cardData, isBack = false) {
     return new Promise(resolve => {
         if (!startEl || !targetEl) return resolve();
-        
+
         const startRect = startEl.getBoundingClientRect();
         const targetRect = targetEl.getBoundingClientRect();
-        
+
         const flyer = createCardElement(cardData, isBack);
         flyer.classList.add('flying-card');
-        
+
         flyer.style.left = `${startRect.left}px`;
         flyer.style.top = `${startRect.top}px`;
         flyer.style.width = `${startRect.width}px`;
         flyer.style.height = `${startRect.height}px`;
-        
+
         document.body.appendChild(flyer);
-        
+
         requestAnimationFrame(() => {
             flyer.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
             flyer.style.left = `${targetRect.left}px`;
@@ -217,12 +232,13 @@ async function animateCardMove(startEl, targetEl, cardData, isBack = false) {
 // --- 4. MOTORE DEL GIOCO E REGOLE ---
 function attachInitialListeners(container, state) {
     container.querySelector('#deck-draw').onclick = () => {
-        if (state.turn === 0 && !state.isAnimating && !state.drawnCardThisTurn) {
-            drawCard(0, state, container, true);
+        if (state.gameActive && !state.choosingColor && state.turn === 0 && !state.isAnimating && !state.drawnCardThisTurn) {
+            drawCard(0, state, container, true).then(() => state.onlineSync?.commit());
         }
     };
 
     container.querySelector('#btn-pass').onclick = () => {
+        if (!state.gameActive || state.turn !== 0 || state.isAnimating || !state.drawnCardThisTurn) return;
         state.drawnCardThisTurn = false;
         endTurn(state, container);
     };
@@ -247,6 +263,8 @@ function attachInitialListeners(container, state) {
 
     container.querySelectorAll('.game-color-tile').forEach(tile => {
         tile.onclick = () => {
+            if (!state.choosingColor || !state.gameActive) return;
+            state.choosingColor = false;
             state.currentColor = tile.dataset.color;
             container.querySelector('#picker-wild').style.display = 'none';
             logStatus(container, `Hai scelto: ${state.currentColor.toUpperCase()}`);
@@ -256,6 +274,9 @@ function attachInitialListeners(container, state) {
 }
 
 function startGame(state, container) {
+    state.players = state.onlineMode ? getRoomParticipants(state.onlineRoom).map(() => []) : [[], [], [], []];
+    state.winner = null;
+    state.discardPile = [];
     state.deck = [];
     COLORS.forEach(c => {
         for(let i=0; i<=9; i++) state.deck.push({color: c, val: i.toString()});
@@ -263,18 +284,18 @@ function startGame(state, container) {
     });
     for(let i=0; i<4; i++) { state.deck.push({color: 'wild', val: 'WILD'}); state.deck.push({color: 'wild', val: '+4'}); }
     state.deck.sort(() => Math.random() - 0.5);
-    
-    for(let p=0; p<4; p++) { 
-        state.players[p] = []; 
-        for(let i=0; i<7; i++) state.players[p].push(state.deck.pop()); 
+
+    for(let p=0; p<state.players.length; p++) {
+        state.players[p] = [];
+        for(let i=0; i<7; i++) state.players[p].push(state.deck.pop());
     }
 
     let first = state.deck.pop();
-    while(first.color === 'wild') { 
+    while(first.color === 'wild') {
         state.deck.unshift(first);
         first = state.deck.pop();
     }
-    
+
     state.currentColor = first.color;
     state.currentVal = first.val;
     state.discardPile.push(first);
@@ -287,7 +308,7 @@ function logStatus(container, msg) {
     if(log) {
         log.innerText = msg;
         log.classList.remove('fade-in');
-        void log.offsetWidth; 
+        void log.offsetWidth;
         log.classList.add('fade-in');
     }
 }
@@ -303,13 +324,15 @@ async function drawCard(pIdx, state, container, manual = false) {
     }
 
     const card = state.deck.pop();
+    if (!card) { state.isAnimating = false; if (manual) state.drawnCardThisTurn = true; updateUI(state, container); return; }
     const startEl = container.querySelector('#deck-draw');
     const targetEl = pIdx === 0 ? container.querySelector('#player-hand') : container.querySelector(`#bot-${pIdx}`);
-    
+
     await animateCardMove(startEl, targetEl, card, pIdx !== 0);
-    
+    if (state.onlineDisposed) return;
+
     state.players[pIdx].push(card);
-    
+
     // Se un bot era catchable e pesca, si "salva" (non è più a 1 carta)
     state.catchableBots = state.catchableBots.filter(b => b !== pIdx);
 
@@ -319,20 +342,21 @@ async function drawCard(pIdx, state, container, manual = false) {
     }
 
     state.isAnimating = false;
-    
+
     if (pIdx === 0 && manual) {
         state.drawnCardThisTurn = true;
         logStatus(container, "Hai pescato. Gioca o Passa.");
     } else if (pIdx !== 0 && !manual) { // Non logghiamo quando il bot pesca per penalità
-        logStatus(container, `BOT ${pIdx} pesca.`);
+        logStatus(container, `${state.onlineMode ? 'Avversario' : `BOT ${pIdx}`} pesca.`);
     }
-    
+
     updateUI(state, container);
 }
 
 async function playCard(pIdx, cardIdx, state, container) {
-    if (state.isAnimating) return;
+    if (state.choosingColor || !state.gameActive || state.isAnimating || pIdx !== state.turn || (state.onlineMode && pIdx !== 0)) return;
     const card = state.players[pIdx][cardIdx];
+    if (!card) return;
 
     if (card.color !== 'wild' && card.color !== state.currentColor && card.val !== state.currentVal) {
         if(pIdx === 0) logStatus(container, "Mossa non valida!");
@@ -342,8 +366,9 @@ async function playCard(pIdx, cardIdx, state, container) {
     state.isAnimating = true;
     const startEl = pIdx === 0 ? container.querySelector(`[data-idx="${cardIdx}"]`) : container.querySelector(`#bot-${pIdx}`);
     const targetEl = container.querySelector('#discard-pile');
-    
+
     await animateCardMove(startEl, targetEl, card);
+    if (state.onlineDisposed) return;
 
     state.players[pIdx].splice(cardIdx, 1);
     state.discardPile.push(card);
@@ -353,8 +378,9 @@ async function playCard(pIdx, cardIdx, state, container) {
     // Se un bot gioca una carta, non è più catchable (o ha chiuso, o non ha 1 carta)
     state.catchableBots = state.catchableBots.filter(b => b !== pIdx);
 
-    logStatus(container, pIdx === 0 ? `Hai giocato ${card.val}` : `BOT ${pIdx} gioca ${card.val}`);
+    logStatus(container, pIdx === 0 ? `Hai giocato ${card.val}` : `${state.onlineMode ? 'Avversario' : `BOT ${pIdx}`} gioca ${card.val}`);
 
+    state.isAnimating = false;
     // LOGICA REGOLA "SOLO!"
     if (state.players[pIdx].length === 1) {
         if (pIdx === 0) {
@@ -380,16 +406,16 @@ async function playCard(pIdx, cardIdx, state, container) {
 
     // Regole Speciali
     if (card.val === 'REV') state.direction *= -1;
-    let nextPlayer = (state.turn + state.direction + 4) % 4;
+    let nextPlayer = (state.turn + state.direction + state.players.length) % state.players.length;
 
-    if (card.val === 'SKIP') {
+    if (card.val === 'SKIP' || (card.val === 'REV' && state.players.length === 2)) {
         logStatus(container, `Salto turno!`);
-        state.turn = nextPlayer; 
+        state.turn = nextPlayer;
     } else if (card.val === '+2') {
         logStatus(container, `+2 Carte!`);
         await drawCard(nextPlayer, state, container);
         await drawCard(nextPlayer, state, container);
-        state.turn = nextPlayer; 
+        state.turn = nextPlayer;
     } else if (card.val === '+4') {
         logStatus(container, `+4 Carte!`);
         for(let i=0; i<4; i++) await drawCard(nextPlayer, state, container);
@@ -397,6 +423,7 @@ async function playCard(pIdx, cardIdx, state, container) {
     }
 
     if (card.color === 'wild' && pIdx === 0) {
+        state.choosingColor = true;
         container.querySelector('#picker-wild').style.display = 'grid';
     } else {
         if (card.color === 'wild' && pIdx !== 0) {
@@ -409,9 +436,17 @@ async function playCard(pIdx, cardIdx, state, container) {
 }
 
 function endTurn(state, container) {
+    if (!state.gameActive) return;
     // Controllo Vittoria
-    for(let i=0; i<4; i++) {
+    for(let i=0; i<state.players.length; i++) {
         if (state.players[i].length === 0) {
+            if (state.onlineMode) {
+                state.winner = i;
+                state.gameActive = false;
+                updateUI(state, container);
+                void state.onlineSync.commit();
+                return;
+            }
             if (i === 0) {
                 alert(`🏆 VITTORIA!\nHai superato il Livello ${state.currentLevel}!`);
                 unlockNextLevel('solo', state.currentLevel);
@@ -421,10 +456,11 @@ function endTurn(state, container) {
             return quitGame(container);
         }
     }
-    
-    state.turn = (state.turn + state.direction + 4) % 4;
+
+    state.turn = (state.turn + state.direction + state.players.length) % state.players.length;
     updateUI(state, container);
-    
+
+    if (state.onlineMode) { void state.onlineSync.commit(); return; }
     if (state.turn !== 0) {
         setTimeout(() => botLogic(state, container), 1200);
     }
@@ -432,9 +468,10 @@ function endTurn(state, container) {
 
 // --- 5. INTELLIGENZA ARTIFICIALE BOT ---
 function botLogic(state, container) {
+    if (state.onlineMode || !state.gameActive || !container.querySelector('.solo-game-wrapper')) return;
     const hand = state.players[state.turn];
     const validIdxs = [];
-    
+
     hand.forEach((c, i) => {
         if (c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal) {
             validIdxs.push(i);
@@ -466,33 +503,38 @@ function botLogic(state, container) {
 
 // --- 6. AGGIORNAMENTO INTERFACCIA ---
 function updateUI(state, container) {
-    const isPlayer = state.turn === 0;
+    const isPlayer = state.gameActive && state.turn === 0;
 
     const tInd = container.querySelector('#turn-indicator');
-    tInd.innerText = isPlayer ? "🏆 IL TUO TURNO" : `TURNO DI BOT ${state.turn}`;
+    tInd.innerText = state.onlineMode && !state.gameActive
+        ? (state.winner === 0 ? 'HAI VINTO!' : 'HA VINTO L’AVVERSARIO')
+        : isPlayer ? '🏆 IL TUO TURNO' : state.onlineMode ? 'TURNO AVVERSARIO' : `TURNO DI BOT ${state.turn}`;
     tInd.className = `game-turn-indicator ${isPlayer ? 'white-turn' : 'black-turn'}`;
 
     const top = state.discardPile[state.discardPile.length-1];
     const dp = container.querySelector('#discard-pile');
     dp.innerHTML = '';
     const dpCard = createCardElement(top);
-    dpCard.style.transform = 'scale(1.1)'; 
+    dpCard.style.transform = 'scale(1.1)';
     dp.appendChild(dpCard);
-    
+
     const cLine = container.querySelector('#color-indicator');
     cLine.style.backgroundColor = getHex(state.currentColor);
     cLine.style.boxShadow = `0 0 20px ${getHex(state.currentColor)}`;
 
     // Aggiorna Bot (Evidenzia chi sta giocando)
-    for(let i=1; i<=3; i++) {
+    for(let i=1; i<state.players.length; i++) {
         const botPill = container.querySelector(`#bot-${i}`);
+        botPill.hidden = i >= state.players.length;
+        if (i >= state.players.length) { botPill.style.display = 'none'; continue; }
+        botPill.querySelector('span').textContent = state.onlineMode ? `GIOCATORE ONLINE ${i}` : `BOT ${i}`;
         botPill.classList.toggle('active', state.turn === i);
         container.querySelector(`#cnt-${i}`).innerText = state.players[i].length;
     }
 
     // Gestione Bottoni Azione
     container.querySelector('#btn-pass').style.display = (isPlayer && state.drawnCardThisTurn) ? 'block' : 'none';
-    
+
     const btnSolo = container.querySelector('#btn-solo');
     // Mostra il tasto SOLO se il giocatore ha 2 carte (prima di giocarne una) o 1 carta (se l'ha dimenticato e non l'ha ancora premuto)
     if (isPlayer && (state.players[0].length === 2 || state.players[0].length === 1) && !state.playerSaidSolo) {
@@ -528,18 +570,18 @@ function updateUI(state, container) {
         const el = createCardElement(c);
         el.setAttribute('data-idx', i);
         el.style.marginRight = overlap;
-        
+
         const canPlay = c.color === 'wild' || c.color === state.currentColor || c.val === state.currentVal;
         if (isPlayer && canPlay) {
             // FIX: Ora la traslazione in Y avviene in sicurezza grazie allo spazio extra nel container
             el.style.transform = 'translateY(-15px)';
             el.style.boxShadow = `0 10px 25px ${getHex(c.color)}80`;
         } else if (isPlayer) {
-            el.style.opacity = '0.5'; 
+            el.style.opacity = '0.5';
         }
 
-        el.onclick = () => { 
-            if(isPlayer && !state.isAnimating) playCard(0, i, state, container); 
+        el.onclick = () => {
+            if(isPlayer && !state.isAnimating) playCard(0, i, state, container);
         };
         pArea.appendChild(el);
     });

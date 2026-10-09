@@ -1,3 +1,5 @@
+import { renderOnlineModeButton, bindOnlineModeButton } from './onlineModeButton.js';
+import { startOnlineParty } from './onlineParty.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
@@ -69,6 +71,7 @@ function renderSetup(container) {
             <h1 class="main-title" style="font-size: 3rem; margin-bottom: 5px;">Impostore</h1>
             <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 30px; letter-spacing: 2px;">LOCAL PARTY MODE</p>
 
+            ${renderOnlineModeButton('impostore')}
             <div class="config-card">
                 <div class="row-val"><span>🕵️ Impostori</span><input type="number" id="num-imp" value="${gameData.config.impostors}" min="1"></div>
                 <div class="row-val"><span>🕶️ Undercover</span><input type="number" id="num-und" value="${gameData.config.undercover}" min="0"></div>
@@ -80,6 +83,7 @@ function renderSetup(container) {
         </div>
     `;
 
+    const stopOnline = bindOnlineModeButton(container, {gameId:'impostore',gameName:'Impostore',minPlayers:3,maxPlayers:8,onConnected:room=>startOnlineParty(container,'impostore',room,{impostors:Number(container.querySelector('#num-imp').value)||1,undercover:Number(container.querySelector('#num-und').value)||0})});
     container.querySelector('#quit-btn').onclick = () => quitGame(container);
     container.querySelector('#add-p').onclick = () => {
         const area = container.querySelector('#inputs-area');
@@ -90,6 +94,7 @@ function renderSetup(container) {
     };
 
     container.querySelector('#start-btn').onclick = () => {
+        stopOnline();
         const names = Array.from(container.querySelectorAll('.player-input')).map(i => i.value.trim()).filter(n => n !== "");
         if (names.length < 3) return alert("Servono almeno 3 giocatori!");
 

@@ -1,0 +1,170 @@
+.scopa-game {
+    --scopa-card-width: clamp(64px, 7vw, 86px);
+    --scopa-card-height: calc(var(--scopa-card-width) * 1.43);
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    height: var(--visual-viewport-height, 100dvh);
+    padding: max(12px, env(safe-area-inset-top)) clamp(12px, 3vw, 32px) max(12px, env(safe-area-inset-bottom));
+    overflow: auto;
+    color: #f7efff;
+    background: radial-gradient(ellipse at 15% 0%, #352044 0%, transparent 46%), linear-gradient(145deg, #14091f, #08040f 80%);
+    font-family: inherit;
+    box-sizing: border-box;
+}
+.scopa-game *, .scopa-game *::before, .scopa-game *::after { box-sizing: border-box; }
+.scopa-game [hidden] { display: none !important; }
+body:has(.scopa-game) { overflow: hidden; }
+body:has(.scopa-game) #navbar-trigger, body:has(.scopa-game) #nav-home-btn { display: none !important; }
+.scopa-shell { width: min(1120px, 100%); height: 100%; min-height: 530px; margin: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; }
+.scopa-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+.scopa-brand { display: flex; align-items: center; gap: 10px; }
+.scopa-brand > span { color: #edb69a; font-family: Georgia, serif; font-size: 2rem; }
+.scopa-brand small { display: block; color: #baa8c8; font-size: .55rem; letter-spacing: 2.5px; }
+.scopa-brand h1 { margin: 1px 0 0; color: #fff; font-size: 1.15rem; line-height: 1.2; letter-spacing: 3px; }
+.scopa-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.scopa-button { min-width: 42px; min-height: 42px; padding: 10px 14px; border: 1px solid #725887; border-radius: 11px; color: #f5eaff; background: #ffffff09; font: inherit; font-size: .8rem; font-weight: 750; cursor: pointer; transition: background 150ms, border-color 150ms, transform 150ms; }
+.scopa-button:hover { background: #c888ef24; border-color: #ce9ced; }
+.scopa-button:focus-visible, .scopa-card:focus-visible { outline: 3px solid #edc9ff; outline-offset: 4px; }
+.scopa-exit { justify-self: start; }
+.scopa-primary { color: #26182d; background: #e7bba4; border-color: #f7d5c3; padding: 14px 28px; letter-spacing: 1px; }
+.scopa-primary:hover { color: #1c1124; background: #f7d5c3; border-color: #ffe5d7; transform: translateY(-2px); }
+.scopa-eyebrow { color: #c3a3d7; font-size: .66rem; font-weight: 800; letter-spacing: 1.9px; }
+.scopa-welcome { grid-row: 2 / 4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center; padding: 35px 8px; }
+.scopa-welcome h2 { margin: 0; color: #fff5ed; font-family: Georgia, serif; font-size: clamp(2rem, 5vw, 3.8rem); font-weight: 500; line-height: 1.1; }
+.scopa-welcome > p { max-width: 430px; margin: 0; color: #c5b7ce; font-size: .95rem; line-height: 1.65; }
+.scopa-welcome-cards { display: flex; justify-content: center; margin-bottom: 20px; }
+.scopa-welcome-cards .scopa-card { --scopa-card-width: 95px; }
+.scopa-welcome-cards .scopa-card:first-child { transform: rotate(-17deg) translate(17px, 10px); }
+.scopa-welcome-cards .scopa-card:nth-child(2) { z-index: 1; transform: translateY(-7px); }
+.scopa-welcome-cards .scopa-card:last-child { transform: rotate(17deg) translate(-17px, 10px); }
+.scopa-welcome > .scopa-rank-note { margin-top: 5px; color: #a994b8; font-size: .72rem; line-height: 1.9; }
+.scopa-scoreboard { display: grid; grid-template-columns: 1fr 1.3fr 1fr; align-items: center; padding: 12px 20px; border: 1px solid #ffffff16; border-radius: 16px; background: #ffffff04; }
+.scopa-scoreboard > div { display: grid; gap: 3px; }
+.scopa-scoreboard > div:last-child { text-align: right; }
+.scopa-scoreboard small { color: #bfaccd; font-size: .63rem; font-weight: 800; letter-spacing: 1.3px; }
+.scopa-scoreboard strong { font-family: Georgia, serif; font-size: 1.65rem; line-height: 1; }
+.scopa-scoreboard strong span { color: #a590b2; font-family: sans-serif; font-size: .7rem; font-weight: normal; }
+.scopa-round { text-align: center; }
+.scopa-round b { color: #edc7ae; font-size: .65rem; letter-spacing: .75px; }
+.scopa-board { display: grid; grid-template-rows: auto minmax(95px, 1fr) auto auto; min-height: 0; gap: 12px; padding: 17px 24px 12px; border: 1px solid #b290cc38; border-radius: 28px; background: radial-gradient(ellipse at 50% 40%, #66387829, transparent 65%), repeating-linear-gradient(120deg, #ffffff02 0 1px, transparent 1px 5px), #20102c; box-shadow: inset 0 0 0 5px #0d071944, inset 0 0 80px #08031177; }
+.scopa-opponent { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+.scopa-opponent-copy { display: grid; gap: 5px; }
+.scopa-opponent-copy b { color: #e3d5ec; font-size: .7rem; letter-spacing: 2px; }
+.scopa-opponent-copy small { color: #baa6c7; font-size: .65rem; line-height: 1.6; }
+.scopa-opponent-hand { display: flex; justify-content: center; --scopa-card-width: 37px; --scopa-card-height: 53px; min-height: 53px; }
+.scopa-opponent-hand .scopa-card + .scopa-card { margin-left: -8px; }
+.scopa-opponent-hand .scopa-card:first-child { transform: rotate(-8deg); }
+.scopa-opponent-hand .scopa-card:last-child { transform: rotate(8deg); }
+.scopa-stock { display: grid; gap: 4px; justify-self: end; text-align: right; }
+.scopa-stock small { color: #baa6c7; font-size: .55rem; letter-spacing: 1.2px; }
+.scopa-stock strong { color: #e9d0ba; font-size: 1.1rem; }
+.scopa-table-area { display: flex; flex-direction: column; min-height: 0; border-top: 1px solid #ffffff0c; border-bottom: 1px solid #ffffff0c; padding: 10px 0; }
+.scopa-table-label { margin: 0 0 8px; text-align: center; font-size: .53rem; font-weight: 700; letter-spacing: 2px; color: #bda5ca; }
+.scopa-table-cards { min-height: 0; flex: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: safe center; gap: 12px; overflow: auto; padding: 6px; scrollbar-width: thin; scrollbar-color: #a376b8 #23142d; }
+.scopa-card { position: relative; flex-shrink: 0; width: var(--scopa-card-width); height: var(--scopa-card-height); border: 1px solid #d5cdc2; border-radius: 7px; padding: 0; overflow: hidden; font-family: Georgia, 'Times New Roman', serif; user-select: none; box-shadow: 0 7px 13px #00000040; }
+.scopa-face { color: #171923; background: linear-gradient(135deg, #fff, #f6f1e9); }
+.scopa-face.is-red { color: #bd233d; }
+.scopa-back { border: 3px solid #eee5f4; background: repeating-linear-gradient(45deg, transparent 0 5px, #d3a5e726 5px 7px), repeating-linear-gradient(-45deg, transparent 0 5px, #d3a5e726 5px 7px), #3d1b57; }
+.scopa-corner { position: absolute; top: 5%; left: 7%; display: grid; justify-items: center; line-height: .9; }
+.scopa-corner b { font-size: calc(var(--scopa-card-width) * .21); }
+.scopa-corner i { font-size: calc(var(--scopa-card-width) * .19); font-style: normal; margin-top: 2px; }
+.scopa-corner-bottom { inset: auto 7% 5% auto; transform: rotate(180deg); }
+.scopa-pips { position: absolute; inset: 17% 27%; }
+.scopa-pips i { position: absolute; font-size: calc(var(--scopa-card-width) * .24); line-height: 1; font-style: normal; transform: translate(-50%, -50%); }
+.scopa-pips-1 i { left: 50%; top: 50%; font-size: calc(var(--scopa-card-width) * .53); }
+.scopa-pips-2 i, .scopa-pips-3 i { left: 50%; }
+.scopa-pips-2 .scopa-pip-0, .scopa-pips-3 .scopa-pip-0 { top: 10%; }
+.scopa-pips-2 .scopa-pip-1, .scopa-pips-3 .scopa-pip-2 { top: 90%; transform: translate(-50%, -50%) rotate(180deg); }
+.scopa-pips-3 .scopa-pip-1 { top: 50%; }
+.scopa-pips-4 .scopa-pip-0, .scopa-pips-5 .scopa-pip-0, .scopa-pips-6 .scopa-pip-0, .scopa-pips-7 .scopa-pip-0 { left: 5%; top: 10%; }
+.scopa-pips-4 .scopa-pip-1, .scopa-pips-5 .scopa-pip-1, .scopa-pips-6 .scopa-pip-1, .scopa-pips-7 .scopa-pip-1 { left: 95%; top: 10%; }
+.scopa-pips-4 .scopa-pip-2, .scopa-pips-5 .scopa-pip-2, .scopa-pips-6 .scopa-pip-2, .scopa-pips-7 .scopa-pip-2 { left: 5%; top: 90%; transform: translate(-50%, -50%) rotate(180deg); }
+.scopa-pips-4 .scopa-pip-3, .scopa-pips-5 .scopa-pip-3, .scopa-pips-6 .scopa-pip-3, .scopa-pips-7 .scopa-pip-3 { left: 95%; top: 90%; transform: translate(-50%, -50%) rotate(180deg); }
+.scopa-pips-5 .scopa-pip-4 { left: 50%; top: 50%; }
+.scopa-pips-6 .scopa-pip-4, .scopa-pips-7 .scopa-pip-4 { left: 5%; top: 50%; }
+.scopa-pips-6 .scopa-pip-5, .scopa-pips-7 .scopa-pip-5 { left: 95%; top: 50%; }
+.scopa-pips-7 .scopa-pip-6 { left: 50%; top: 30%; }
+.scopa-portrait { position: absolute; inset: 19% 25%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid currentColor; outline: 2px solid #eee5d7; background: linear-gradient(135deg, #e9d6b336 0 49%, #bb8c4420 50%); }
+.scopa-portrait b { font-size: calc(var(--scopa-card-width) * .44); line-height: 1; font-weight: 600; }
+.scopa-portrait i { font-size: calc(var(--scopa-card-width) * .24); font-style: normal; }
+.scopa-card[data-available="true"] { outline: 3px solid #d8afeb; outline-offset: 2px; }
+.scopa-empty-table { display: grid; justify-items: center; gap: 8px; color: #c9acd056; padding: 12px; }
+.scopa-empty-table span { font-size: 2rem; }
+.scopa-empty-table p { margin: 0; font-size: .75rem; }
+.scopa-feedback { text-align: center; display: grid; justify-items: center; gap: 4px; }
+.scopa-feedback p { margin: 0; max-width: 100%; line-height: 1.5; overflow-wrap: anywhere; }
+.scopa-last-move { min-height: 18px; color: #c7b2d3; font-size: .72rem; }
+.scopa-last-move.is-scopa { color: #f4d5a6; font-weight: 800; }
+.scopa-status { color: #f0deff; font-size: .8rem; }
+.scopa-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-height: 112px; overflow: auto; }
+.scopa-choices:empty { display: none; }
+.scopa-capture-choice { min-height: 38px; padding: 8px 12px; font-size: .73rem; border-color: #d5abde; color: #f5e4ff; background: #9464ad2b; }
+.scopa-cancel-choice { min-height: 38px; padding: 8px 12px; font-size: .7rem; }
+.scopa-player { display: grid; gap: 8px; justify-items: center; }
+.scopa-player-hand { display: flex; justify-content: center; gap: 14px; padding-top: 7px; min-height: calc(var(--scopa-card-height) + 7px); }
+button.scopa-card { cursor: pointer; transition: transform 160ms, box-shadow 160ms; }
+button.scopa-card:hover:not(:disabled), button.scopa-card[aria-pressed="true"] { transform: translateY(-6px); box-shadow: 0 0 0 3px #d5b0e1, 0 10px 18px #00000055; }
+button.scopa-card:disabled { cursor: default; filter: brightness(.88); }
+.scopa-player > p { margin: 0; color: #e0c8ee; font-size: .55rem; letter-spacing: 1.2px; text-align: center; }
+.scopa-player > p span { color: #b9a2c6; letter-spacing: .5px; }
+.scopa-dialog { width: min(540px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow: auto; padding: clamp(20px, 4vw, 30px); border: 1px solid #9870af; border-radius: 22px; color: #f1e4f8; background: #21112e; box-shadow: 0 25px 100px #000a; font-family: inherit; }
+.scopa-dialog::backdrop { background: #07010bbd; backdrop-filter: blur(8px); }
+.scopa-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.scopa-dialog h2 { margin: 15px 0 20px; color: #fff3e9; font-family: Georgia, serif; font-size: clamp(1.7rem, 5vw, 2.3rem); font-weight: 500; line-height: 1.15; }
+.scopa-dialog-copy { color: #cfbfd9; font-size: .86rem; line-height: 1.7; }
+.scopa-dialog-copy p { margin: 10px 0; }
+.scopa-dialog-copy ol { padding-left: 20px; margin: 10px 0 0; }
+.scopa-dialog-copy li { margin: 12px 0; padding-left: 3px; }
+.scopa-dialog-copy b { color: #f2e3f8; }
+.scopa-dialog-actions { display: flex; flex-direction: column; gap: 9px; margin-top: 20px; }
+.scopa-dialog-actions:empty { display: none; }
+.scopa-result-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+.scopa-result-table th, .scopa-result-table td { padding: 9px 8px; border-bottom: 1px solid #ffffff15; }
+.scopa-result-table th { text-align: left; font-weight: 500; }
+.scopa-result-table td, .scopa-result-table thead th:not(:first-child) { text-align: center; }
+.scopa-result-table thead th { color: #d9bbec; font-size: .65rem; text-transform: uppercase; letter-spacing: 1px; }
+.scopa-result-table small { display: block; color: #b7a0c5; font-size: .64rem; line-height: 1.4; }
+.scopa-result-total { background: #ffffff06; color: #f1ccb1; }
+.scopa-result-total td { font-weight: 800; }
+.scopa-result-note { color: #bca7c9; font-size: .76rem; }
+@media (max-width: 600px) {
+    .scopa-game { --scopa-card-width: 59px; padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)); }
+    .scopa-shell { gap: 8px; min-height: 515px; }
+    .scopa-header { gap: 6px; }
+    .scopa-brand { gap: 6px; }
+    .scopa-brand > span { font-size: 1.5rem; }
+    .scopa-brand h1 { font-size: 1rem; letter-spacing: 2px; }
+    .scopa-brand small { font-size: .45rem; }
+    .scopa-button { padding: 9px 12px; }
+    .scopa-exit span { display: none; }
+    .scopa-actions { gap: 5px; }
+    .scopa-scoreboard { padding: 10px 14px; }
+    .scopa-scoreboard strong { font-size: 1.35rem; }
+    .scopa-scoreboard small { font-size: .53rem; }
+    .scopa-round b { font-size: .57rem; }
+    .scopa-board { padding: 14px 10px 10px; border-radius: 19px; gap: 9px; }
+    .scopa-table-cards { gap: 9px; padding: 5px; }
+    .scopa-opponent { gap: 8px; }
+    .scopa-opponent-copy small { max-width: 110px; font-size: .58rem; }
+    .scopa-player-hand { gap: 13px; }
+    .scopa-status { font-size: .73rem; }
+    .scopa-last-move { font-size: .65rem; }
+    .scopa-welcome { gap: 16px; padding-top: 20px; }
+    .scopa-welcome > p { font-size: .85rem; }
+    .scopa-welcome-cards .scopa-card { --scopa-card-width: 78px; }
+    .scopa-eyebrow { font-size: .56rem; letter-spacing: 1.4px; }
+}
+@media (max-height: 620px) and (min-width: 601px) {
+    .scopa-game { --scopa-card-width: 56px; }
+    .scopa-shell { min-height: 420px; gap: 7px; }
+    .scopa-board { gap: 6px; padding-top: 10px; }
+    .scopa-opponent-hand { --scopa-card-width: 30px; --scopa-card-height: 43px; min-height: 43px; }
+    .scopa-welcome { gap: 12px; padding: 12px; }
+    .scopa-welcome-cards { margin-bottom: 5px; }
+    .scopa-welcome-cards .scopa-card { --scopa-card-width: 66px; }
+    .scopa-welcome h2 { font-size: 2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .scopa-game * { transition: none !important; animation: none !important; }
+}
