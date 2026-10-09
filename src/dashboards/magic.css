@@ -1,6 +1,9 @@
 #ui .magic-page{width:min(100%,1160px);margin:0 auto;padding:24px 28px 96px;color:var(--fantasy-ivory,#e9dfcd)}
 #ui .magic-back{margin:0 0 20px}.magic-heading{text-align:center;padding:18px 12px 28px;border-block:1px solid var(--fantasy-line,#76607966);background:linear-gradient(90deg,transparent,#37213c33,transparent)}
 #ui .magic-heading h1{font-family:var(--fantasy-display,'Bangers',Impact,sans-serif)!important;font-size:clamp(2.6rem,6vw,4.5rem);font-weight:400;line-height:1;margin:12px 0;color:var(--fantasy-ivory,#e9dfcd)}
+#ui .magic-page-tools{display:flex;justify-content:flex-end;margin:0 0 8px}
+#ui .magic-counter-link{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 13px;border:1px solid #8b709566;background:#1b1422;color:#dbc6e6;font:600 10px Manrope,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+#ui .magic-counter-link:hover{border-color:#c49bd3;background:#2b1d34}
 #ui .magic-heading p,.magic-panel-heading p{margin:0;color:#bdb1c2;font-size:14px;line-height:1.7}
 #ui .magic-tabs{display:flex;justify-content:center;gap:8px;margin:22px 0;border-bottom:1px solid #76607955}
 #ui .magic-tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:#bfb2c5;padding:12px 20px;font:600 11px Manrope,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
