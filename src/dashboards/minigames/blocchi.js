@@ -1,3 +1,5 @@
+import { renderOnlineModeButton, bindOnlineModeButton } from './onlineModeButton.js';
+import { connectOnlineChallenge, seededRandom } from './onlineChallenge.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { renderLevelLadder, unlockNextLevel } from '../../services/levels.js';
@@ -87,10 +89,10 @@ const saveLocalState = (patch = {}) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...previous, ...patch }));
 };
 
-const shuffledBag = () => {
+const shuffledBag = (random = Math.random) => {
     const bag = [...PIECE_TYPES];
     for (let index = bag.length - 1; index > 0; index -= 1) {
-        const target = Math.floor(Math.random() * (index + 1));
+        const target = Math.floor(random() * (index + 1));
         [bag[index], bag[target]] = [bag[target], bag[index]];
     }
     return bag;
@@ -170,7 +172,7 @@ function renderLayout(container, state) {
                 <h1 class="main-title">ARCANEUM <em>(TETRIS)</em></h1>
                 <p>Incastra i sigilli, completa le righe e resisti alla caduta.</p>
 
-                <div class="blocks-feature-row" aria-label="Funzioni del gioco">
+                ${renderOnlineModeButton('blocchi')}<div class="blocks-feature-row" aria-label="Funzioni del gioco">
                     <span>OMBRA</span><span>RISERVA</span><span>ANTEPRIMA</span><span>COMBO</span>
                 </div>
 
@@ -279,8 +281,25 @@ function renderLayout(container, state) {
         </div>
     `;
 
+    const stopOnline = bindOnlineModeButton(container, {
+        gameId: 'blocchi', gameName: 'ARCANEUM', maxPlayers: 8,
+        onConnected: room => {
+            state.onlineMode = true;
+            container.querySelector('#blocks-start')?.remove();
+            for (const id of ['blocks-restart','blocks-play-again','blocks-levels']) container.querySelector(`#${id}`).hidden = true;
+            return connectOnlineChallenge(container, state, {
+                gameId: 'blocchi', room, create: () => ({seed:crypto.getRandomValues(new Uint32Array(1))[0]}),
+                start: initial => { state.random = seededRandom(initial.seed); startGame(container, state, 1); },
+                result: () => ({score:state.score, moves:0, won:false, finished:state.phase === 'gameover'}),
+                finish: () => { if (state.phase !== 'gameover') finishGame(container, state); }
+            });
+        }
+    });
+    state.cleanup.push(stopOnline);
     const startScreen = container.querySelector('#blocks-start');
     renderLevelLadder('blocchi', container.querySelector('#levels-container'), selectedLevel => {
+        stopOnline();
+        state.onlineMode = false;
         startScreen?.remove();
         startGame(container, state, selectedLevel);
     }, false, { windowSize: 2 });
@@ -303,6 +322,18 @@ function renderLayout(container, state) {
 
     bindControls(container, state);
     drawAll(container, state);
+    const root = container.querySelector('.blocks-game');
+    const lifecycle = new MutationObserver(() => {
+        if (root.isConnected) return;
+        window.cancelAnimationFrame(state.animationFrame);
+        window.clearTimeout(state.clearTimer);
+        state.cleanup.forEach(cleanup => cleanup());
+        state.cleanup = [];
+        state.phase = 'menu';
+        void state.audioContext?.close();
+    });
+    lifecycle.observe(container, { childList: true });
+    state.cleanup.push(() => lifecycle.disconnect());
 }
 
 function startGame(container, state, selectedLevel = 1) {
@@ -344,7 +375,7 @@ function startGame(container, state, selectedLevel = 1) {
 
 function fillQueue(state) {
     while (state.queue.length < 6) {
-        if (!state.bag.length) state.bag = shuffledBag();
+        if (!state.bag.length) state.bag = shuffledBag(state.random || Math.random);
         state.queue.push(state.bag.shift());
     }
 }
@@ -454,7 +485,7 @@ function holdPiece(container, state) {
 }
 
 function canControl(state) {
-    return state.phase === 'playing' && !state.paused && Boolean(state.active);
+    return (!state.onlineMode || state.onlineReady) && state.phase === 'playing' && !state.paused && Boolean(state.active);
 }
 
 function gameLoop(container, state, time) {
@@ -462,7 +493,7 @@ function gameLoop(container, state, time) {
     const delta = state.lastTime ? Math.min(80, time - state.lastTime) : 0;
     state.lastTime = time;
 
-    if (state.phase === 'playing' && !state.paused && state.active) {
+    if (canControl(state)) {
         state.dropAccumulator += delta;
         if (state.dropAccumulator >= getDropInterval(state.level)) {
             state.dropAccumulator = 0;
@@ -534,7 +565,7 @@ function finishLineClear(container, state, rows) {
 
     if (!state.challengeComplete && state.lines >= state.objective) {
         state.challengeComplete = true;
-        unlockNextLevel('blocchi', state.challengeLevel);
+        if (!state.onlineMode) unlockNextLevel('blocchi', state.challengeLevel);
         showToast(container, `SFIDA ${state.challengeLevel} COMPLETATA · LIVELLO SUCCESSIVO SBLOCCATO`);
         playSuccessTone(state);
     } else {
@@ -571,7 +602,9 @@ function finishGame(container, state) {
     `;
     container.querySelector('#blocks-resume').hidden = true;
     container.querySelector('#blocks-play-again').hidden = false;
-    container.querySelector('#blocks-levels').hidden = false;
+    container.querySelector('#blocks-levels').hidden = state.onlineMode;
+    container.querySelector('#blocks-play-again').hidden = state.onlineMode;
+    if (state.onlineMode) { container.querySelector('#blocks-overlay-copy').textContent = 'Punteggio inviato. Attendi gli altri risultati.'; state.finishOnlineChallenge?.(); }
 }
 
 function togglePause(container, state, force) {
@@ -591,7 +624,7 @@ function togglePause(container, state, force) {
     container.querySelector('#blocks-final-stats').hidden = true;
     container.querySelector('#blocks-resume').hidden = false;
     container.querySelector('#blocks-play-again').hidden = true;
-    container.querySelector('#blocks-levels').hidden = false;
+    container.querySelector('#blocks-levels').hidden = state.onlineMode;
 }
 
 function hideOverlay(container) {

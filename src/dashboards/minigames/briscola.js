@@ -1,3 +1,5 @@
+import { connectOnlineGame } from './onlineGameSession.js';
+import { cardPerspective, pickState } from './onlineMatchProtocol.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
@@ -5,24 +7,34 @@ import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton
 import './briscola.css';
 
 const SUITS = [
-    { id: 'bastoni', name: 'Bastoni', icon: '♣', color: '#2f966a' },
-    { id: 'coppe', name: 'Coppe', icon: '⚱', color: '#bd3d68' },
-    { id: 'denari', name: 'Denari', icon: '◆', color: '#c48c20' },
-    { id: 'spade', name: 'Spade', icon: '⚔', color: '#397ead' }
+    { id: 'cuori', name: 'Cuori', icon: '♥', color: '#c52e3a' },
+    { id: 'quadri', name: 'Quadri', icon: '♦', color: '#c52e3a' },
+    { id: 'fiori', name: 'Fiori', icon: '♣', color: '#202331' },
+    { id: 'picche', name: 'Picche', icon: '♠', color: '#202331' }
 ];
 
 const VALUES = [
     { name: 'Asso', label: 'A', points: 11, rank: 10 },
     { name: '3', label: '3', points: 10, rank: 9 },
-    { name: 'Re', label: 'R', points: 4, rank: 8, figure: 'RE' },
-    { name: 'Cavallo', label: 'C', points: 3, rank: 7, figure: 'CAVALLO' },
-    { name: 'Fante', label: 'F', points: 2, rank: 6, figure: 'FANTE' },
+    { name: 'Re', label: 'K', points: 4, rank: 8, figure: 'RE' },
+    { name: 'Donna', label: 'Q', points: 3, rank: 7, figure: 'DONNA' },
+    { name: 'Jack', label: 'J', points: 2, rank: 6, figure: 'JACK' },
     { name: '7', label: '7', points: 0, rank: 5 },
     { name: '6', label: '6', points: 0, rank: 4 },
     { name: '5', label: '5', points: 0, rank: 3 },
     { name: '4', label: '4', points: 0, rank: 2 },
     { name: '2', label: '2', points: 0, rank: 1 }
 ];
+
+const PIP_LAYOUTS = {
+    A: [[50, 50]],
+    2: [[50, 0], [50, 100]],
+    3: [[50, 0], [50, 50], [50, 100]],
+    4: [[0, 0], [100, 0], [0, 100], [100, 100]],
+    5: [[0, 0], [100, 0], [50, 50], [0, 100], [100, 100]],
+    6: [[0, 0], [100, 0], [0, 50], [100, 50], [0, 100], [100, 100]],
+    7: [[0, 0], [100, 0], [50, 25], [0, 50], [100, 50], [0, 100], [100, 100]]
+};
 
 const createState = () => ({
     deck: [],
@@ -65,6 +77,16 @@ export function initBriscola(container) {
             state.onlineRoom = room;
             state.currentLevel = 1;
             startMatch(container, state);
+            container.querySelector('#briscola-restart').hidden = true;
+            return connectOnlineGame(container, state, {
+                gameId: 'briscola', room,
+                read: seat => cardPerspective(pickState(state, ['deck', 'players', 'table', 'briscola', 'lastBriscolaSuit', 'turn', 'scores', 'tricks', 'gameActive', 'gameOver']), seat),
+                apply: (snapshot, seat) => {
+                    Object.assign(state, cardPerspective(snapshot, seat), { isAnimating: false, message: '' });
+                    updateUI(container, state);
+                    if (state.gameOver) finishMatch(container, state);
+                }
+            });
         }
     });
 
@@ -114,10 +136,10 @@ function renderLayout() {
     return `
         <div class="game-master-wrapper briscola-game fade-in">
             <section id="briscola-start" class="briscola-start" aria-labelledby="briscola-title">
-                <div class="briscola-start-emblem" aria-hidden="true"><span>♣</span><span>◆</span></div>
-                <span class="briscola-eyebrow">CARTE ITALIANE · 120 PUNTI</span>
+                <div class="briscola-start-emblem" aria-hidden="true"><span>♠</span><span>♥</span></div>
+                <span class="briscola-eyebrow">40 CARTE DA POKER · 120 PUNTI</span>
                 <h1 id="briscola-title" class="main-title">BRISCOLA</h1>
-                <p>Conquista le prese, custodisci le carte forti e arriva per primo a 61.</p>
+                <p>Asso, 2, 3, 4, 5, 6, 7, J, Q e K di tutti i semi.<br>Conquista le prese e supera i 60 punti.</p>
                 ${renderOnlineModeButton('briscola')}
                 <section class="briscola-level-select" aria-label="Livelli contro il bot">
                     <span>CONTRO IL BOT</span>
@@ -253,19 +275,18 @@ function cardLabel(card) {
 function renderCardInner(card) {
     const suit = getSuit(card);
     const middle = card.figure
-        ? `<span class="briscola-figure"><small>${card.figure}</small><b>${suit.icon}</b></span>`
-        : `<span class="briscola-card-center-symbol">${suit.icon}<small>${card.name}</small></span>`;
+        ? `<span class="briscola-figure" aria-hidden="true"><small>${card.figure}</small><b>${card.label}</b><i>${suit.icon}</i></span>`
+        : `<span class="briscola-pips ${card.label === 'A' ? 'briscola-pips-ace' : ''}" aria-hidden="true">${PIP_LAYOUTS[card.label].map(([x, y]) => `<i class="${y > 50 ? 'is-inverted' : ''}" style="--pip-x:${x}%;--pip-y:${y}%">${suit.icon}</i>`).join('')}</span>`;
     return `
-        <span class="briscola-card-corner"><b>${card.label}</b><i>${suit.icon}</i></span>
+        <span class="briscola-card-corner" aria-hidden="true"><b>${card.label}</b><i>${suit.icon}</i></span>
         ${middle}
-        <span class="briscola-card-corner briscola-card-corner-bottom"><b>${card.label}</b><i>${suit.icon}</i></span>
-        <span class="briscola-card-suit-name">${suit.name}</span>
+        <span class="briscola-card-corner briscola-card-corner-bottom" aria-hidden="true"><b>${card.label}</b><i>${suit.icon}</i></span>
     `;
 }
 
 function renderFaceCard(card, extraClass = '') {
     const suit = getSuit(card);
-    return `<div class="briscola-card briscola-card-face suit-${suit.id} ${extraClass}" style="--suit-color:${suit.color}">${renderCardInner(card)}</div>`;
+    return `<div class="briscola-card briscola-card-face suit-${suit.id} ${extraClass}" style="--suit-color:${suit.color}" role="img" aria-label="${cardLabel(card)}">${renderCardInner(card)}</div>`;
 }
 
 function updateUI(container, state) {
@@ -331,7 +352,7 @@ function getStatusCopy(state) {
 }
 
 async function playCard(container, state, index, owner) {
-    if (!state.gameActive || state.isAnimating || state.turn !== owner || !state.players[owner][index]) return;
+    if ((state.onlineMode && (!state.onlineReady || owner !== 0)) || !state.gameActive || state.isAnimating || state.turn !== owner || !state.players[owner][index]) return;
     state.isAnimating = true;
     state.message = owner === 0 ? 'CARTA GIOCATA' : 'L’OSTE GIOCA';
     updateUI(container, state);
@@ -356,10 +377,12 @@ async function playCard(container, state, index, owner) {
     state.turn = 1 - owner;
     state.isAnimating = false;
     updateUI(container, state);
-    if (state.turn === 1) schedule(state, () => playBot(container, state), 700);
+    if (state.onlineMode) void state.onlineSync.commit();
+    else if (state.turn === 1) schedule(state, () => playBot(container, state), 700);
 }
 
 function playBot(container, state) {
+    if (state.onlineMode) return;
     if (!state.gameActive || state.turn !== 1 || state.isAnimating || !state.players[1].length) return;
     const index = chooseBotCard(state);
     playCard(container, state, index, 1);
@@ -411,13 +434,15 @@ function resolveRound(container, state) {
 
         if (!state.players[0].length && !state.players[1].length && !state.deck.length && !state.briscola) {
             finishMatch(container, state);
+            if (state.onlineMode) void state.onlineSync.commit();
             return;
         }
 
         state.message = '';
         state.isAnimating = false;
         updateUI(container, state);
-        if (state.turn === 1) schedule(state, () => playBot(container, state), 700);
+        if (state.onlineMode) void state.onlineSync.commit();
+    else if (state.turn === 1) schedule(state, () => playBot(container, state), 700);
     }, 900);
 }
 
@@ -463,6 +488,12 @@ function finishMatch(container, state) {
     container.querySelector('#briscola-modal-primary').hidden = false;
     container.querySelector('#briscola-modal-levels').hidden = false;
     container.querySelector('#briscola-modal-exit').hidden = false;
+    if (state.onlineMode) {
+        title.textContent = won ? 'HAI VINTO' : draw ? 'PAREGGIO' : 'HA VINTO L’AVVERSARIO';
+        copy.textContent = 'Partita online conclusa. Tornate alla sala giochi per una nuova partita.';
+        container.querySelector('#briscola-modal-primary').hidden = true;
+        container.querySelector('#briscola-modal-levels').hidden = true;
+    }
     container.querySelector('#briscola-modal').hidden = false;
 }
 
@@ -471,10 +502,10 @@ function showHelp(container) {
     container.querySelector('#briscola-modal-title').textContent = 'COME SI GIOCA';
     container.querySelector('#briscola-modal-copy').innerHTML = `
         <ol class="briscola-rules">
-            <li><b>Gioca una carta.</b><span>Non devi per forza rispondere allo stesso seme.</span></li>
-            <li><b>Vince la carta più alta del seme d’apertura.</b><span>Una briscola batte qualsiasi altro seme.</span></li>
-            <li><b>Chi prende pesca per primo e apre la presa dopo.</b><span>Asso e Tre valgono più di tutte le altre carte.</span></li>
-            <li><b>Obiettivo: 61 punti.</b><span>Nel mazzo ce ne sono 120 in totale.</span></li>
+            <li><b>40 carte da poker.</b><span>Asso, 2, 3, 4, 5, 6, 7, J (Jack), Q (Donna), K (Re) di Cuori ♥, Quadri ♦, Fiori ♣ e Picche ♠. Senza 8, 9, 10 o jolly.</span></li>
+            <li><b>Gioca una carta, senza obbligo di rispondere al seme.</b><span>Vince la più forte del seme d’apertura; una briscola batte gli altri semi. Ordine: A, 3, K, Q, J, 7, 6, 5, 4, 2.</span></li>
+            <li><b>Chi prende pesca per primo e apre la presa dopo.</b><span>A = 11 punti, 3 = 10, K = 4, Q = 3, J = 2. Le altre carte valgono 0.</span></li>
+            <li><b>Obiettivo: almeno 61 punti.</b><span>Il mazzo vale 120 punti. Si giocano tutte le 20 prese; 60 a testa è pareggio.</span></li>
         </ol>
     `;
     container.querySelector('#briscola-final-score').hidden = true;
@@ -498,6 +529,8 @@ function animateCardMove(source, target, card, isBack = false, state) {
     const suit = getSuit(card);
     flyer.className = `briscola-card briscola-flying-card ${isBack ? 'briscola-card-back' : `briscola-card-face suit-${suit.id}`}`;
     flyer.style.setProperty('--suit-color', suit.color);
+    flyer.style.setProperty('--briscola-card-width', `${start.width}px`);
+    flyer.style.setProperty('--briscola-card-height', `${start.height}px`);
     flyer.style.left = `${start.left}px`;
     flyer.style.top = `${start.top}px`;
     flyer.innerHTML = isBack ? '' : renderCardInner(card);

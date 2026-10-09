@@ -1,3 +1,5 @@
+import { connectOnlineGame } from './onlineGameSession.js';
+import { cardPerspective } from './onlineMatchProtocol.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
@@ -100,6 +102,27 @@ function renderLayout(container, state) {
             state.tutorMsg = 'Avversario online collegato.';
             container.querySelector('#start-screen')?.remove();
             initLogic(state, container);
+            return connectOnlineGame(container, state, {
+                gameId: 'burraco', room,
+                read: seat => {
+                    const snapshot = cardPerspective({ deck: state.deck, discardPile: state.discardPile,
+                        players: [state.hands.player, state.hands.bot1], turn: state.turn === 'player' ? 0 : 1,
+                        phase: state.phase, winner: state.winner ?? null }, seat);
+                    snapshot.tables = seat ? [state.tables.team2, state.tables.team1] : [state.tables.team1, state.tables.team2];
+                    return structuredClone(snapshot);
+                },
+                apply: (snapshot, seat) => {
+                    const local = cardPerspective(snapshot, seat);
+                    Object.assign(state, { deck: local.deck, discardPile: local.discardPile,
+                        hands: { player: local.players[0], bot1: local.players[1] },
+                        tables: { team1: snapshot.tables[seat], team2: snapshot.tables[1 - seat] },
+                        turn: local.turn === 0 ? 'player' : 'bot', phase: local.phase, winner: local.winner,
+                        selectedIndices: [], isAnimating: false });
+                    state.tutorMsg = state.winner != null ? (state.winner === 0 ? 'Hai vinto!' : 'Ha vinto l’avversario.')
+                        : state.turn === 'player' ? 'Tocca a te: pesca, cala o scarta.' : 'In attesa dell’avversario.';
+                    updateUI(state);
+                }
+            });
         }
     });
 
@@ -138,7 +161,7 @@ function initLogic(state, container) {
 
 function updateUI(state) {
     if (state.isAnimating) return;
-    const isPlayer = state.turn === 'player';
+    const isPlayer = state.turn === 'player' && state.winner == null;
     const selectedCards = state.selectedIndices.map(i => state.hands.player[i]);
     const targetPilaIndex = findTargetPila(selectedCards, state.tables.team1);
     const isNewCombo = validateCombo(selectedCards);
@@ -156,7 +179,7 @@ function updateUI(state) {
     
     if(tutorEl) tutorEl.innerText = state.tutorMsg;
     if(turnDisplay) {
-        turnDisplay.innerText = isPlayer ? "TUO TURNO" : `BOT LV.${state.currentLevel} PENSANDO...`;
+        turnDisplay.innerText = state.winner != null ? state.tutorMsg : isPlayer ? "TUO TURNO" : state.onlineMode ? "TURNO AVVERSARIO" : `BOT LV.${state.currentLevel} PENSANDO...`;
         turnDisplay.style.color = isPlayer ? "#00ffa3" : "#ff416c";
     }
 
@@ -235,7 +258,7 @@ function renderHand(state) {
         el.style.marginRight = overlap; 
         
         el.onclick = () => {
-            if (state.turn !== 'player' || state.phase === 'draw' || state.isAnimating) return;
+            if (state.winner != null || state.turn !== 'player' || state.phase === 'draw' || state.isAnimating) return;
             const pos = state.selectedIndices.indexOf(i);
             if (pos > -1) state.selectedIndices.splice(pos, 1);
             else state.selectedIndices.push(i);
@@ -336,31 +359,38 @@ async function animateCardMove(startEl, targetEl, cardData, isBack = false) {
 
 // --- 5. LOGICA AZIONI ---
 async function handlePlayerDraw(state) {
+    if (state.winner != null || state.turn !== 'player' || state.phase !== 'draw' || state.isAnimating) return;
+    if (!state.deck.length) { state.tutorMsg = 'Mazzo esaurito: raccogli gli scarti.'; updateUI(state); return; }
     state.isAnimating = true;
     const startEl = document.getElementById('main-deck');
     const targetEl = document.getElementById('player-hand');
     const card = state.deck.pop();
     await animateCardMove(startEl, targetEl, card, true);
+    if (state.onlineDisposed) return;
     state.hands.player.push(card);
     state.phase = 'play';
     state.isAnimating = false;
     updateUI(state);
+    if (state.onlineMode) await state.onlineSync.commit();
 }
 
 async function handlePlayerPickDiscard(state) {
-    if (state.turn !== 'player' || state.phase !== 'draw') return;
+    if (state.winner != null || state.isAnimating || !state.discardPile.length || state.turn !== 'player' || state.phase !== 'draw') return;
     state.isAnimating = true;
     const startEl = document.getElementById('discard-pile-ui');
     const targetEl = document.getElementById('player-hand');
     await animateCardMove(startEl, targetEl, {}, true);
+    if (state.onlineDisposed) return;
     state.hands.player.push(...state.discardPile);
     state.discardPile = [];
     state.phase = 'play';
     state.isAnimating = false;
     updateUI(state);
+    if (state.onlineMode) await state.onlineSync.commit();
 }
 
 async function handlePlayerDiscard(state) {
+    if (state.winner != null || state.isAnimating || state.turn !== 'player' || state.phase !== 'play' || state.selectedIndices.length !== 1) return;
     state.isAnimating = true;
     const idx = state.selectedIndices[0];
     const card = state.hands.player[idx];
@@ -368,12 +398,19 @@ async function handlePlayerDiscard(state) {
     const targetEl = document.getElementById('discard-pile-ui');
     
     await animateCardMove(startEl, targetEl, card);
+    if (state.onlineDisposed) return;
     
     state.hands.player.splice(idx, 1);
     state.discardPile.push(card);
     state.selectedIndices = [];
     
     if (state.hands.player.length === 0) {
+        if (state.onlineMode) {
+            state.winner = 0;
+            state.isAnimating = false;
+            await state.onlineSync.commit();
+            return;
+        }
         alert(`🏆 VITTORIA!\nHai chiuso e superato il Livello ${state.currentLevel}!`);
         unlockNextLevel('burraco', state.currentLevel);
         quitGame(state.container);
@@ -382,14 +419,24 @@ async function handlePlayerDiscard(state) {
 
     state.turn = 'bot';
     state.phase = 'draw';
-    state.tutorMsg = "Il Bot sta pensando...";
+    state.tutorMsg = state.onlineMode ? "In attesa dell’avversario." : "Il Bot sta pensando...";
     state.isAnimating = false;
     updateUI(state);
     
-    setTimeout(() => { botAction(state); }, 1000);
+    if (state.onlineMode) await state.onlineSync.commit();
+    else setTimeout(() => { botAction(state); }, 1000);
 }
 
 function handleMeld(state, targetPilaIndex) {
+    if (state.winner != null || state.isAnimating || state.turn !== 'player' || state.phase !== 'play') return;
+    const selected = state.selectedIndices.map(i => state.hands.player[i]);
+    targetPilaIndex = findTargetPila(selected, state.tables.team1);
+    if (!validateCombo(selected) && targetPilaIndex === -1) return;
+    if (state.onlineMode && selected.length === state.hands.player.length) {
+        state.tutorMsg = 'Tieni una carta da scartare per chiudere.';
+        document.getElementById('tutor-text').textContent = state.tutorMsg;
+        return;
+    }
     const cards = state.selectedIndices.sort((a,b)=>b-a).map(i => state.hands.player.splice(i,1)[0]);
     if (targetPilaIndex !== -1) {
         state.tables.team1[targetPilaIndex].push(...cards);
@@ -400,10 +447,12 @@ function handleMeld(state, targetPilaIndex) {
     }
     state.selectedIndices = [];
     updateUI(state);
+    if (state.onlineMode) void state.onlineSync.commit();
 }
 
 // --- BOT E IA PROGRESSIVA ---
 function botAction(state) {
+    if (state.onlineMode) return;
     if (state.turn !== 'bot') return;
     state.isAnimating = true;
 
@@ -417,6 +466,7 @@ function botAction(state) {
         const startEl = document.getElementById('main-deck');
         const targetEl = document.getElementById('bot-table');
         await animateCardMove(startEl, targetEl, card, true);
+    if (state.onlineDisposed) return;
         state.hands.bot1.push(card);
 
         // 2. Tenta di Calare se è "Smart"

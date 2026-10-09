@@ -8,6 +8,7 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "test:cards": "node --test scripts/tests/*.test.mjs",
     "index:manuals": "node scripts/build-manual-index.mjs all",
     "index:manuals:dnd": "node scripts/build-manual-index.mjs dnd5e",
     "lint": "echo \"Sguardo dell'Oste: Tutto in ordine!\""

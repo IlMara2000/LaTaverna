@@ -1,3 +1,5 @@
+import { renderOnlineModeButton, bindOnlineModeButton } from './onlineModeButton.js';
+import { startOnlineParty } from './onlineParty.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
@@ -59,6 +61,7 @@ function renderSetup(container) {
             <h1 class="main-title" style="font-size: 3rem; margin-bottom: 5px;">Numeri</h1>
             <p style="opacity: 0.5; text-align: center; font-size: 11px; margin-bottom: 30px; letter-spacing: 2px;">MEMORIZZA E ORDINA</p>
 
+            ${renderOnlineModeButton('numeri')}
             <div class="config-card">
                 <div id="inputs-area">${initialPlayers.map((n, i) => createPlayerInputHTML(n, i)).join('')}</div>
                 <button id="add-p" style="background: transparent; border: 1px dashed rgba(157,78,221,0.4); color: #c77dff; padding: 15px; border-radius: 16px; width: 100%; margin: 15px 0; font-weight: 800; cursor:pointer;">+ AGGIUNGI GIOCATORE</button>
@@ -68,6 +71,7 @@ function renderSetup(container) {
         </div>
     `;
 
+    const stopOnline = bindOnlineModeButton(container, {gameId:'numeri',gameName:'Numeri',minPlayers:2,maxPlayers:8,onConnected:room=>startOnlineParty(container,'numeri',room,{})});
     container.querySelector('#quit-btn').onclick = () => quitGame(container);
     container.querySelector('#add-p').onclick = () => {
         const area = container.querySelector('#inputs-area');
@@ -78,6 +82,7 @@ function renderSetup(container) {
     };
 
     container.querySelector('#start-btn').onclick = () => {
+        stopOnline();
         const names = Array.from(container.querySelectorAll('.player-input')).map(i => i.value.trim()).filter(n => n !== "");
         if (names.length < 2) return alert("Minimo 2 giocatori!");
         gameData.players = names;

@@ -67,10 +67,18 @@ const normalizeRoom = (room = null) => {
     };
 };
 
-const saveRoom = (room) => {
+const saveRoom = (room, activate = false) => {
     const storage = safeStorage();
     if (!storage || !room?.code) return;
-    storage.setItem(ROOM_KEY, JSON.stringify(room));
+    const key = room.data?.scope === 'magic' ? 'taverna_magic_room' : ROOM_KEY;
+    // A late poll or disconnect write must not switch the user's active room.
+    if (!activate) {
+        try {
+            const current = JSON.parse(storage.getItem(key) || 'null');
+            if (!current || current.code !== room.code || current.updatedAt > room.updatedAt) return;
+        } catch { return; }
+    }
+    storage.setItem(key, JSON.stringify(room));
 };
 
 export const getSavedMinigameRoom = () => {
@@ -78,10 +86,18 @@ export const getSavedMinigameRoom = () => {
     if (!storage) return null;
     try {
         const parsed = JSON.parse(storage.getItem(ROOM_KEY) || 'null');
-        return parsed?.code ? parsed : null;
+        return parsed?.code && parsed.data?.scope !== 'magic' ? parsed : null;
     } catch {
         return null;
     }
+};
+
+export const getSavedMagicRoom = () => {
+    try {
+        const saved = JSON.parse(safeStorage()?.getItem('taverna_magic_room') || 'null');
+        const legacy = JSON.parse(safeStorage()?.getItem(ROOM_KEY) || 'null');
+        return saved || (legacy?.data?.scope === 'magic' ? legacy : null);
+    } catch { return null; }
 };
 
 export const clearSavedMinigameRoom = () => {
@@ -107,7 +123,7 @@ const ensureRoomAccess = async () => {
     return { ready: true };
 };
 
-export const createMinigameRoom = async () => {
+export const createMinigameRoom = async ({scope = 'minigames'} = {}) => {
     const session = await ensureRoomAccess();
     if (!session.ready) return { room: null, error: session.error, unavailable: true };
 
@@ -122,7 +138,8 @@ export const createMinigameRoom = async () => {
             guest_client_id: '',
             status: 'waiting',
             data: {
-                scope: 'minigames',
+                scope,
+                ...(scope === 'magic' ? {magic:{participants:[],loadouts:{}}} : {}),
                 createdBy: clientId
             },
             expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString()
@@ -136,7 +153,7 @@ export const createMinigameRoom = async () => {
 
         if (!error && data) {
             const room = normalizeRoom(data);
-            saveRoom(room);
+            saveRoom(room, true);
             return { room, error: null, unavailable: false };
         }
 
@@ -148,61 +165,40 @@ export const createMinigameRoom = async () => {
     return { room: null, error: lastError || new Error('Codice multiplayer non creato.'), unavailable: false };
 };
 
-export const joinMinigameRoom = async (rawCode = '') => {
-    const code = String(rawCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (code.length !== 6) {
-        return { room: null, error: new Error('Inserisci un codice di 6 caratteri.'), unavailable: false };
+export const getRoomParticipants = room => [...new Set([
+    room?.hostClientId, room?.guestClientId, ...(room?.data?.participants || []),
+    ...(room?.data?.scope === 'magic' ? room.data.magic?.participants || [] : [])
+].filter(Boolean))];
+
+export const joinMinigameRoom = async (rawCode = '', attempt = 0) => {
+    const code = String(rawCode).trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) return { room: null, error: new Error('Inserisci un codice di 6 caratteri.') };
+    const access = await ensureRoomAccess();
+    if (!access.ready) return { room: null, error: access.error, unavailable: true };
+    const lookup = await supabase.from(ROOM_TABLE).select('*').eq('code', code)
+        .neq('status', 'closed').gt('expires_at', new Date().toISOString()).maybeSingle();
+    if (lookup.error) return { room: null, error: lookup.error, unavailable: isSchemaError(lookup.error) };
+    const row = lookup.data;
+    if (!row) return { room: null, error: new Error('Codice non trovato o scaduto.') };
+    if (row.data?.scope === 'magic') return { room: null, error: new Error('Entra in questa stanza dalla sezione Magic.') };
+    const room = normalizeRoom(row), clientId = getMinigameClientId(), participants = getRoomParticipants(room);
+    if (participants.includes(clientId)) { saveRoom(room, true); return { room, error: null }; }
+    if (participants.length >= 8) return { room: null, error: new Error('Stanza piena: massimo 8 giocatori.') };
+    if (row.data?.onlineMatch?.presence?.some(time => time && Date.now() - time < 35000)) {
+        return { room: null, error: new Error('Una partita è già aperta. Fate tornare tutti alla sala giochi prima di aggiungere partecipanti.') };
     }
-
-    const session = await ensureRoomAccess();
-    if (!session.ready) return { room: null, error: session.error, unavailable: true };
-
-    const clientId = getMinigameClientId();
-    const lookup = await supabase
-        .from(ROOM_TABLE)
-        .select('*')
-        .eq('code', code)
-        .neq('status', 'closed')
-        .maybeSingle();
-
-    if (lookup.error) {
-        return { room: null, error: lookup.error, unavailable: isSchemaError(lookup.error) };
+    const result = await supabase.from(ROOM_TABLE).update({
+        guest_client_id: row.guest_client_id || clientId, status: 'connected',
+        data: { ...row.data, participants: [...participants, clientId] }
+    }).eq('code', code).eq('updated_at', row.updated_at).neq('status', 'closed')
+        .gt('expires_at', new Date().toISOString()).select('*');
+    if (result.error) return { room: null, error: result.error, unavailable: isSchemaError(result.error) };
+    if (!result.data?.length) {
+        if (attempt < 3) return joinMinigameRoom(code, attempt + 1);
+        return { room: null, error: new Error('La stanza è cambiata. Riprova.') };
     }
-
-    if (!lookup.data) {
-        return { room: null, error: new Error('Codice non trovato o scaduto.'), unavailable: false };
-    }
-
-    if (lookup.data.host_client_id === clientId) {
-        const room = normalizeRoom(lookup.data);
-        saveRoom(room);
-        return { room, error: null, unavailable: false };
-    }
-
-    const nextData = {
-        ...(lookup.data.data || {}),
-        joinedBy: clientId,
-        joinedAt: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-        .from(ROOM_TABLE)
-        .update({
-            guest_client_id: clientId,
-            status: 'connected',
-            data: nextData
-        })
-        .eq('code', code)
-        .select('*')
-        .single();
-
-    if (error) {
-        return { room: null, error, unavailable: isSchemaError(error) };
-    }
-
-    const room = normalizeRoom(data);
-    saveRoom(room);
-    return { room, error: null, unavailable: false };
+    const joined = normalizeRoom(result.data[0]); saveRoom(joined, true);
+    return { room: joined, error: null };
 };
 
 // MTG usa la stessa stanza realtime dei minigiochi, con tre posti ospite
@@ -223,7 +219,7 @@ export const joinMagicRoom = async (rawCode = '', deck = null) => {
         if (data.scope !== 'magic') return { room: null, error: new Error('Questo codice non appartiene a una partita di Magic.'), unavailable: false };
         const magic = data.magic || {};
         const participants = [...new Set([row.host_client_id, row.guest_client_id, ...(magic.participants || [])].filter(Boolean))];
-        if (participants.includes(clientId)) return { room: normalizeRoom(row), error: null, unavailable: false };
+        if (participants.includes(clientId)) { const room = normalizeRoom(row); saveRoom(room, true); return { room, error: null, unavailable: false }; }
         if (participants.length >= 4) return { room: null, error: new Error('La stanza è al completo (massimo 4 giocatori).'), unavailable: false };
         if (magic.game) return { room: null, error: new Error('La partita è già iniziata.'), unavailable: false };
         const nextMagic = { ...magic, participants: [...(magic.participants || []), clientId], loadouts: { ...(magic.loadouts || {}), ...(deck ? { [clientId]: deck } : {}) } };
@@ -235,7 +231,7 @@ export const joinMagicRoom = async (rawCode = '', deck = null) => {
         if (update.error) return { room: null, error: update.error, unavailable: isSchemaError(update.error) };
         if (update.data?.length) {
             const room = normalizeRoom(update.data[0]);
-            saveRoom(room);
+            saveRoom(room, true);
             return { room, error: null, unavailable: false };
         }
     }
@@ -254,6 +250,7 @@ export const getMinigameRoomByCode = async (rawCode = '') => {
         .select('*')
         .eq('code', code)
         .neq('status', 'closed')
+        .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
     if (error) {
@@ -265,7 +262,7 @@ export const getMinigameRoomByCode = async (rawCode = '') => {
     return { room, error: null, unavailable: false };
 };
 
-export const updateMinigameRoomData = async (rawCode = '', updater = {}) => {
+export const updateMinigameRoomData = async (rawCode = '', updater = {}, attempt = 0) => {
     const code = String(rawCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length !== 6) {
         return { room: null, error: new Error('Codice non valido.'), unavailable: false };
@@ -279,6 +276,7 @@ export const updateMinigameRoomData = async (rawCode = '', updater = {}) => {
         .select('*')
         .eq('code', code)
         .neq('status', 'closed')
+        .gt('expires_at', new Date().toISOString())
         .maybeSingle();
 
     if (lookup.error) {
@@ -291,22 +289,31 @@ export const updateMinigameRoomData = async (rawCode = '', updater = {}) => {
 
     const currentRoom = normalizeRoom(lookup.data);
     const currentData = lookup.data.data || {};
-    const nextData = typeof updater === 'function'
-        ? updater(currentData, currentRoom)
-        : { ...currentData, ...updater };
+    let nextData;
+    try {
+        nextData = typeof updater === 'function' ? updater(currentData, currentRoom) : { ...currentData, ...updater };
+    } catch (error) {
+        return { room: currentRoom, error, unavailable: false };
+    }
 
     const { data, error } = await supabase
         .from(ROOM_TABLE)
         .update({ data: nextData })
         .eq('code', code)
-        .select('*')
-        .single();
+        .eq('updated_at', lookup.data.updated_at)
+        .neq('status', 'closed')
+        .gt('expires_at', new Date().toISOString())
+        .select('*');
 
     if (error) {
         return { room: null, error, unavailable: isSchemaError(error) };
     }
 
-    const room = normalizeRoom(data);
+    if (!data?.length) {
+        if (attempt < 3) return updateMinigameRoomData(rawCode, updater, attempt + 1);
+        return { room: null, error: new Error('La stanza è cambiata. Riprova.'), unavailable: false };
+    }
+    const room = normalizeRoom(data[0]);
     if (room) saveRoom(room);
     return { room, error: null, unavailable: false };
 };
@@ -315,6 +322,8 @@ export const isMinigameRoomConnected = (room = null) => (
     room?.status === 'connected'
     && Boolean(room.hostClientId)
     && Boolean(room.guestClientId)
+    && room.hostClientId !== room.guestClientId
+    && (!room.expiresAt || Date.parse(room.expiresAt) > Date.now())
 );
 
 export const closeMinigameRoom = async (code = '') => {

@@ -9,6 +9,7 @@ import {
     createMinigameRoom,
     getMinigameRoomByCode,
     getSavedMinigameRoom,
+    getRoomParticipants,
     isMinigameRoomConnected,
     joinMinigameRoom,
     watchMinigameRoom
@@ -42,11 +43,11 @@ export function showMinigamesList(container, options = {}) {
     // Ora è un layout puro e piatto.
     container.innerHTML = `
         <div id="lobby-wrapper" class="minigames-lobby-wrapper fade-in">
-            
+
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 30px;">
                 ${renderHomeBackButton({ id: 'btn-back-main' })}
             </div>
-            
+
             <header class="world-catalog-header" style="margin: 10px 0 28px 0; text-align: center;">
                 <span class="crystal-eyebrow">IL PIACERE DI STARE AL TAVOLO</span>
                 <h1 class="main-title">Sala giochi</h1>
@@ -80,7 +81,7 @@ export function showMinigamesList(container, options = {}) {
             </section>
 
             <div id="minigame-catalog"></div>
-            
+
         </div>
     `;
 
@@ -135,7 +136,7 @@ export function showMinigamesList(container, options = {}) {
             if (message) {
                 status.textContent = message;
             } else if (connected) {
-                status.textContent = 'Connesso';
+                status.textContent = `${getRoomParticipants(multiplayerRoom).length} giocatori nella stanza · aprite lo stesso gioco`;
             } else if (multiplayerRoom?.code) {
                 status.textContent = 'In attesa di connessione';
             } else {

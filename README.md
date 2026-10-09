@@ -42,7 +42,9 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - Login email/password, registrazione, Discord OAuth e accesso ospite via Supabase.
 - Profilo utente con avatar, titolo, conteggio personaggi e sessioni.
 - Impostazioni profilo con tema accento, glow e card compatte.
-- Minigiochi: Briscola, Solo, Impostore, Burraco, Scacchi e Numeri.
+- Minigiochi: Briscola, Scopa, Solitario, Solo, Impostore, Burraco, Scacchi, Numeri, Tic Tac Toe e Blocchi Arcani.
+- Briscola e Scopa usano 40 carte da poker: A, 2, 3, 4, 5, 6, 7, J, Q, K di cuori, quadri, fiori e picche. Nella Scopa i quadri sostituiscono i denari e il settebello è il 7 di quadri.
+- Solitario Klondike con mazzo da poker completo di 52 carte e pesca di una carta alla volta.
 - D&D 5e: Biblioteca dei Manuali con ricerca OCR, filtri per parte/capitolo/argomento, sintesi AI basata sulle fonti, lettore pagina per pagina, personaggi e sessioni.
 - AI di sessione: bot testuale in chat, attivabile con `@oste` o dal pannello AI del tavolo, servito da function Vercel e Groq.
 - Libreria musicale con playlist tematiche e upload file audio locale.

@@ -1,3 +1,5 @@
+import { connectOnlineGame } from './onlineGameSession.js';
+import { pickState } from './onlineMatchProtocol.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
@@ -81,6 +83,16 @@ function renderLayout(container, state) {
             container.querySelector('#start-screen')?.remove();
             container.querySelector('#bot-label').innerText = 'ONLINE';
             startGame(container, state);
+            return connectOnlineGame(container, state, {
+                gameId: 'dama', room,
+                read: () => pickState(state, ['board', 'turn', 'lastMove']),
+                apply: (snapshot, seat) => {
+                    Object.assign(state, snapshot, { playerColor: seat === 0 ? 'w' : 'b', selected: null, isAnimating: false });
+                    state.onlineOver = !state.board.some((row, r) => row.some((piece, c) => piece?.color === state.turn && getDamaMoves(state.board, r, c).length));
+                    container.querySelector('#bot-label').textContent = `AVVERSARIO ONLINE · TU ${seat === 0 ? 'BIANCHI' : 'NERI'}`;
+                    updateUI(container, state);
+                }
+            });
         }
     });
     state.onlineCleanup = cleanupOnlineMode;
@@ -123,7 +135,7 @@ function startGame(container, state) {
 function updateUI(container, state) {
     const tInd = container.querySelector('#turn-indicator');
     if (tInd) {
-        tInd.innerText = state.turn === 'w' ? 'IL TUO TURNO' : `BOT LV.${state.currentLevel} PENSA...`;
+        tInd.innerText = state.onlineOver ? (state.turn === state.playerColor ? 'HA VINTO L’AVVERSARIO' : 'HAI VINTO!') : state.turn === (state.playerColor || 'w') ? 'IL TUO TURNO' : state.onlineMode ? 'TURNO AVVERSARIO' : `BOT LV.${state.currentLevel} PENSA...`;
         tInd.className = `game-turn-indicator ${state.turn === 'w' ? 'white-turn' : 'black-turn'}`;
     }
 
@@ -167,7 +179,7 @@ function updateUI(container, state) {
 
 // --- 4. GESTIONE CLICK E REGOLE ---
 function handleSquareClick(r, c, state, container) {
-    if (state.turn !== 'w' || state.isAnimating) return;
+    if (state.onlineOver || state.turn !== (state.playerColor || 'w') || state.isAnimating) return;
     const piece = state.board[r][c];
 
     if (state.selected) {
@@ -188,22 +200,23 @@ function handleSquareClick(r, c, state, container) {
                 }
 
                 // Promozione a Dama per il giocatore bianco (riga 0)
-                if (state.board[r][c].color === 'w' && r === 0) state.board[r][c].type = 'dama';
+                if ((state.board[r][c].color === 'w' && r === 0) || (state.board[r][c].color === 'b' && r === 7)) state.board[r][c].type = 'dama';
 
                 state.lastMove = { fr: state.selected.r, fc: state.selected.c, tr: r, tc: c };
-                state.turn = 'b';
+                state.turn = state.turn === 'w' ? 'b' : 'w';
                 state.selected = null;
                 
                 updateUI(container, state);
-                setTimeout(() => aiDamaMove(state, container), 800);
-            } else if (piece && piece.color === 'w') {
+                if (state.onlineMode) void state.onlineSync.commit();
+                else setTimeout(() => aiDamaMove(state, container), 800);
+            } else if (piece && piece.color === (state.playerColor || 'w')) {
                 state.selected = { r, c }; // Cambia selezione
             } else {
                 state.selected = null;
             }
         }
         updateUI(container, state);
-    } else if (piece && piece.color === 'w') {
+    } else if (piece && piece.color === (state.playerColor || 'w')) {
         state.selected = { r, c };
         updateUI(container, state);
     }
@@ -238,6 +251,7 @@ function getDamaMoves(board, r, c) {
 
 // --- 5. INTELLIGENZA ARTIFICIALE BOT ---
 function aiDamaMove(state, container) {
+    if (state.onlineMode) return;
     state.isAnimating = true;
     let allMoves = [];
     
