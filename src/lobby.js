@@ -79,6 +79,13 @@ export function showLobby(container) {
                         <span class="scene-number" aria-hidden="true">III · LA LEGGENDA</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di Ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
                     </button>
+
+                    <button type="button" class="taverna-scene scene-magic" id="hub-magic-games">
+                        <img src="/images/magic-tavern-table.webp" alt="Carte di Magic sul tavolo della Taverna" loading="lazy" decoding="async">
+                        <span class="taverna-scene-scrim" aria-hidden="true"></span>
+                        <span class="scene-number" aria-hidden="true">IV · IL MULTIVERSO</span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">✦</span><span class="taverna-scene-title">Magic: The Gathering</span><span class="scene-description">Costruisci il tuo mazzo Commander e sfida la Taverna.</span><span class="scene-link">Entra nel multiverso <b aria-hidden="true">↗</b></span></span>
+                    </button>
                 </section>
 
                 <nav class="taverna-home-dock" aria-label="Destinazioni rapide">
@@ -117,12 +124,14 @@ export function showLobby(container) {
     const cardScene = container.querySelector('#hub-card-games');
     const partyScene = container.querySelector('#hub-party-games');
     const gdrScene = container.querySelector('#hub-gdr-games');
+    const magicScene = container.querySelector('#hub-magic-games');
     container.querySelector('#resume-last-destination')?.addEventListener('click', () => {
         openDestination(lastDestination.destination, lastDestination.options || {});
     });
     cardScene.onclick = () => openDestination('minigames', { filter: 'cards' });
     partyScene.onclick = () => openDestination('minigames', { filter: 'party' });
     gdrScene.onclick = () => openDestination('dnd5e');
+    magicScene.onclick = () => openDestination('magic');
     container.querySelector('#hub-strategy-games').onclick = () => openDestination('minigames', { filter: 'strategy' });
     container.querySelector('#hub-all-games').onclick = () => openDestination('minigames', { filter: 'all' });
     container.querySelector('#hub-shop').onclick = () => openDestination('shop');

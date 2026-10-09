@@ -258,6 +258,7 @@ export function showMagicDashboard(container, options = {}) {
 
     container.innerHTML = `<main class="magic-page">
       <div class="magic-back">${renderHomeBackButton({ id: 'magic-home' })}</div>
+      <div class="magic-page-tools"><button type="button" id="magic-open-counter" class="magic-counter-link" title="Apri il segnapunti carte">♧ <span>Segnapunti</span></button></div>
       <header class="magic-heading"><span class="crystal-eyebrow">IL TAVOLO DEI PLANESWALKER</span><h1>Magic: The Gathering</h1><p>La tua collezione, i tuoi mazzi, la prossima sfida.</p></header>
       <nav class="magic-tabs" aria-label="Sezioni Magic">
        <button data-tab="collezione" type="button">Collezione</button><button data-tab="mazzi" type="button">Mazzi</button><button data-tab="partita" type="button">Partita online</button>
@@ -732,6 +733,7 @@ export function showMagicDashboard(container, options = {}) {
     const ensureRoomScope = next => { localStorage.removeItem(BOT_GAME_KEY); room = { ...next, scope: 'magic' }; try { localStorage.setItem('taverna_minigame_room', JSON.stringify(room)); } catch {} watchRoom(room); render(); };
 
     container.querySelector('#magic-home').onclick = () => navigateTo('home');
+    container.querySelector('#magic-open-counter').onclick = () => navigateTo('cardCounter', container);
     container.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => { activeTab = button.dataset.tab; render(); container.querySelector(`[data-panel="${activeTab}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     container.querySelector('#magic-search').addEventListener('input', event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => searchCards(event.target.value), 300); });
     container.querySelector('#magic-filter').addEventListener('input', event => { collectionFilter = event.target.value; renderCollection(); });
