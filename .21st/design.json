@@ -93,6 +93,11 @@
       "area": "Commander match experience",
       "decision": "Favor a full-screen tavern tabletop over catalog-style panels: compact player-life HUD, one persistent turn dock, expandable game log and commander zone, full card faces at table size, a finite draw-to-hand animation, and mana icons from Scryfall Symbology. Keep hands horizontally swipeable, fullscreen escapable, and motion reduced when requested.",
       "source": "User request, 2026-10-08"
+    },
+    {
+      "area": "Magic collection, deck builder, match and scorekeeper",
+      "decision": "Give the entire Magic section a pale white-and-amethyst claymorphism skin with soft raised/inset shadows, rounded panels and the existing comic Bangers/Manrope typography. Keep card faces, readable rules text, gameplay zones and mobile tap targets clear. Use the supplied Pokémon TCG Pocket screen recording only as a reference for compact mobile spacing, stacked collection/deck blocks and gentle light-blue/lilac surfaces; do not reuse its marks or art.",
+      "source": "User request and supplied screen recording, 2026-10-10"
     }
   ],
   "evidence": [

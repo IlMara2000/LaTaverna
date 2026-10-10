@@ -78,15 +78,28 @@ export const manaPoolLabel = pool => {
 
 const parseProductionText = text => {
     const productions = [];
+    if (/spend this mana only/i.test(String(text || ''))) return productions;
     for (const line of String(text || '').split('\n')) {
         if (/^\s*\{T\}\s*:\s*Add one mana of any color(?: in your commander's color identity)?\.?\s*$/i.test(line)) {
             productions.push(...['W', 'U', 'B', 'R', 'G'].map(color => [color]));
             continue;
         }
+        // Only model an ability whose sole activation cost is tapping. Scryfall's
+        // produced_mana also lists mana from sacrifice/pay-mana abilities; using
+        // that metadata alone would incorrectly make Lotus Petal/Signets free.
         const match = line.match(/^\s*\{T\}\s*:\s*Add\s+(.+?)(?:\.|$)/i);
         if (!match) continue;
-        const alternatives = match[1].split(/\s+or\s+/i).map(part => [...part.matchAll(/\{([WUBRGC])\}/gi)].map(symbol => symbol[1].toUpperCase())).filter(group => group.length);
-        productions.push(...alternatives);
+        const expression = match[1].trim();
+        if (/^one mana of any color(?: in your commander's color identity)?$/i.test(expression)) {
+            productions.push(...['W', 'U', 'B', 'R', 'G'].map(color => [color]));
+            continue;
+        }
+        const alternatives = expression.split(/\s+or\s+/i).map(part => {
+            const stripped = part.replace(/\{([WUBRGC])\}/gi, '').replace(/\s+and\s+/gi, '');
+            if (stripped.trim()) return null;
+            return [...part.matchAll(/\{([WUBRGC])\}/gi)].map(symbol => symbol[1].toUpperCase());
+        });
+        if (alternatives.length && alternatives.every(group => group?.length)) productions.push(...alternatives);
     }
     return productions;
 };
@@ -94,8 +107,6 @@ const parseProductionText = text => {
 export const manaProductionOptions = (card, colorIdentity = []) => {
     const fromText = parseProductionText(card?.oracleText || card?.oracle_text);
     let options = fromText;
-    const produced = card?.producedMana || card?.produced_mana;
-    if (!options.length && Array.isArray(produced) && produced.length) options = produced.map(color => [String(color).toUpperCase()]);
     if (!options.length) {
         const type = String(card?.typeLine || card?.type_line || '').toLowerCase();
         if (type.includes('plains')) options.push(['W']);
@@ -103,6 +114,7 @@ export const manaProductionOptions = (card, colorIdentity = []) => {
         if (type.includes('swamp')) options.push(['B']);
         if (type.includes('mountain')) options.push(['R']);
         if (type.includes('forest')) options.push(['G']);
+        if (type.includes('wastes')) options.push(['C']);
     }
     // Only effects that explicitly refer to the commander's identity, such as Command Tower,
     // restrict their choices. Commander no longer converts other off-identity mana to {C}.
@@ -117,12 +129,35 @@ export const isManaSource = (card, colorIdentity = []) => manaProductionOptions(
 
 export const addManaProduction = (player, card, optionIndex = 0) => {
     const options = manaProductionOptions(card, player.colorIdentity || []);
-    const production = options[optionIndex] || options[0];
+    const production = options[optionIndex];
     if (!production?.length) return [];
     player.manaPool ||= emptyManaPool();
     const added = production;
     for (const color of added) if (COLORS.includes(color)) player.manaPool[color] = (Number(player.manaPool[color]) || 0) + 1;
     return added;
+};
+
+/** Pick the automatic color that best advances spells currently available to cast. */
+export const chooseManaProductionOption = (player, card, desiredCosts = []) => {
+    const options = manaProductionOptions(card, player.colorIdentity || []);
+    if (options.length < 2) return options.length ? 0 : -1;
+    const pool = normalizedPool(player.manaPool);
+    const costs = desiredCosts.map(entry => typeof entry === 'string' ? { manaCost: entry } : entry).filter(Boolean);
+    let bestIndex = 0, bestScore = -Infinity;
+    options.forEach((production, index) => {
+        const nextPool = { ...pool };
+        for (const color of production) if (COLORS.includes(color)) nextPool[color]++;
+        let score = 0;
+        for (const entry of costs) {
+            const cost = entry.manaCost || '';
+            const extra = Number(entry.extraGeneric) || 0;
+            if (!canPayMana(pool, cost, 0, extra) && canPayMana(nextPool, cost, 0, extra)) score += 1000;
+            const needed = new Set([...String(cost).matchAll(/\{([WUBRG])\}/gi)].map(match => match[1].toUpperCase()));
+            for (const color of needed) if (!pool[color] && production.includes(color)) score += 20;
+        }
+        if (score > bestScore) { bestScore = score; bestIndex = index; }
+    });
+    return bestIndex;
 };
 
 const numberFromText = value => {

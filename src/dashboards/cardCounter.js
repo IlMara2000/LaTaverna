@@ -2,6 +2,7 @@ import { PRESETS, createMatch, changeScore, loadMatch, saveMatch } from '../serv
 import { navigateTo } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import './cardCounter.css';
+import './magic-clay.css';
 const escape = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function showCardCounter(container) {
     updateSidebarContext('cardCounter');
