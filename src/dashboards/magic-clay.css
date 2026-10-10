@@ -9,9 +9,9 @@
     --magic-clay-raised: 0 5px 0 #d8cbed, 0 8px 15px #76619724, inset 0 1px 0 #fff;
 }
 
-html:has(#ui .magic-page), html:has(#ui .card-counter) { background: #eee9f7; }
+html:has(#ui .magic-page), html:has(#ui .card-counter) { background: #d8c7ed; }
 body:has(#ui .magic-page), body:has(#ui .card-counter) {
-    background: radial-gradient(ellipse at 12% 4%, #fff 0, #f6f2fc 40%, #eee8f7 100%) !important;
+    background: radial-gradient(ellipse at 12% 4%, #f5efff 0, #e5d8f5 38%, #cfbce8 100%) !important;
     color: var(--magic-clay-ink);
 }
 #ui #app:has(> .magic-page) { background: transparent !important; }
@@ -207,3 +207,90 @@ body:has(#ui .magic-page), body:has(#ui .card-counter) {
 @media (prefers-reduced-motion: reduce) {
     #ui .magic-counter-link, #ui .magic-button, #ui .magic-add-card { transition: none !important; }
 }
+
+/* Avoid the old parchment/gold treatment on gameplay controls: keep the same
+   clean white and amethyst material from collection through the active table. */
+#ui .magic-page .magic-heading,
+#ui .magic-page .magic-panel-heading,
+#ui .magic-page .magic-scan-box,
+#ui .magic-page .magic-demo-pack,
+#ui .magic-page .magic-deck-list,
+#ui .magic-page .magic-deck-editor,
+#ui .magic-page .magic-bot-setup,
+#ui .magic-page .magic-room-bar,
+#ui .magic-page .magic-room-status,
+#ui .magic-page .magic-table-wait,
+#ui .magic-page .magic-rules-note,
+#ui .magic-page .magic-opening-mulligan,
+#ui .magic-page .magic-match-screen,
+#ui .magic-page .magic-match-hud,
+#ui .magic-page .magic-life,
+#ui .magic-page .magic-life-opponent,
+#ui .magic-page .magic-mana-dock,
+#ui .magic-page .magic-mana-reserve,
+#ui .magic-page .magic-mana-choice,
+#ui .magic-page .magic-command-zone,
+#ui .magic-page .magic-game-log,
+#ui .magic-page .magic-phase-help,
+#ui .magic-page .magic-hand-heading,
+#ui .magic-page .magic-battlefield,
+#ui .magic-page .magic-opponent-zone,
+#ui .magic-page .magic-own-zone,
+#ui .magic-page .magic-board-group {
+    border-color: #d6c6e9;
+    background: linear-gradient(145deg, #fff, #f8f5fc) !important;
+    color: #463754;
+    box-shadow: 0 8px 22px #644c8120, inset 1px 1px 2px #fff;
+}
+#ui .magic-page .magic-battlefield {
+    border-width: 4px;
+    border-color: #ad91d0;
+    background: radial-gradient(ellipse at 50% 0%, #fff, #f1ebfa 90%) !important;
+}
+#ui .magic-page .magic-bot-setup .magic-button,
+#ui .magic-page .magic-mana-bar button,
+#ui .magic-page .magic-match-tools button,
+#ui .magic-page #magic-fullscreen,
+#ui .magic-page .magic-mana-choice > button,
+#ui .magic-page #magic-clear-mana,
+#ui .magic-page .magic-action-dock .magic-button,
+#ui .magic-page .magic-mulligan-actions .magic-button {
+    border: 1px solid #d1c0e7 !important;
+    border-radius: 14px !important;
+    background: linear-gradient(145deg, #fff, #eee7f8) !important;
+    color: #574270 !important;
+    box-shadow: 0 4px 0 #d9ccea, 0 7px 14px #604c7c18, inset 0 1px 0 #fff !important;
+}
+#ui .magic-page .magic-mana-bar,
+#ui .magic-page .magic-mana-bar select,
+#ui .magic-page .magic-card-inspector > section,
+#ui .magic-page .magic-inspector-cost,
+#ui .magic-page .magic-inspector-stats,
+#ui .magic-page .magic-inspector-oracle {
+    border-color: #d8cbea !important;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #fff, #f6f2fb) !important;
+    color: #463754 !important;
+    box-shadow: 0 8px 22px #644c8118, inset 1px 1px 2px #fff;
+}
+#ui .magic-page .magic-mana-bar,
+#ui .magic-page .magic-card-inspector { color: #463754 !important; }
+#ui .magic-page .magic-bot-setup .magic-overline,
+#ui .magic-page .magic-inspector-card .magic-overline,
+#ui .magic-page .magic-inspector-card h3,
+#ui .magic-page .magic-inspector-card h4 { color: #563f70 !important; }
+#ui .magic-page .magic-board-card:hover,
+#ui .magic-page .magic-hand-card:hover,
+#ui .magic-page .magic-commander-card:hover {
+    filter: none;
+    box-shadow: 0 9px 20px #513d6c40;
+}
+#ui .magic-page .magic-button:hover:not(:disabled),
+#ui .magic-page .magic-match-tools button:hover:not(:disabled),
+#ui .magic-page .magic-mana-bar button:hover:not(:disabled) {
+    border-color: #ad91d0 !important;
+    background: #fff !important;
+    color: #49365f !important;
+    transform: translateY(-1px);
+}
+#ui #app:has(> .card-counter) { background: radial-gradient(ellipse at 12% 0%, #f5efff, #e5d8f5 55%, #cfbce8) !important; }
