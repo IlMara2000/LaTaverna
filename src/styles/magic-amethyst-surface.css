@@ -1,0 +1,33 @@
+/* Keep the Magic route connected to the Taverna's amethyst page material.
+   Collection controls and score panels remain pale for legibility. */
+html:has(#ui .magic-page),
+html:has(#ui .card-counter) {
+    background: #10091d;
+}
+
+html:has(#ui .magic-page) body,
+html:has(#ui .card-counter) body {
+    background: var(--crystal-page, #10091d) !important;
+    color: var(--text-primary, #faf6ff);
+}
+
+#ui #app:has(> .magic-page),
+#ui #app:has(> .card-counter) {
+    background: transparent !important;
+}
+
+#ui #app .magic-page {
+    background: transparent;
+}
+
+#ui .magic-page .magic-match-screen {
+    border-color: var(--glass-border, rgb(224 202 255 / 20%));
+    background: var(--crystal-page, #10091d) !important;
+    color: var(--text-primary, #faf6ff);
+    box-shadow: var(--crystal-shadow, 0 14px 42px rgb(7 2 17 / 24%));
+}
+
+#ui #app .card-counter.card-counter {
+    background: var(--crystal-page, #10091d) !important;
+    color: var(--text-primary, #faf6ff);
+}

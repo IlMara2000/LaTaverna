@@ -8,6 +8,7 @@ import './styles/motion-polish.css';
 import './styles/auth.css';
 import './styles/experience-worlds.css';
 import './styles/tavern-entrance.css';
+import './styles/magic-amethyst-surface.css';
 import { supabase } from './services/supabase.js';
 import { renderTavernEntrance } from './components/features/auth/TavernEntrance.js';
 import { initLogin } from './components/features/auth/Login.js';
