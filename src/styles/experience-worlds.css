@@ -80,7 +80,7 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui .scene-cards img { left: 0; }
 #ui .scene-party img { left: -100%; }
 #ui .scene-gdr img { left: -200%; }
-#ui .scene-magic img { left: 0; width: 100%; filter: sepia(.12) saturate(1.2); }
+#ui .scene-magic img { left: 0; width: 100%; filter: none; }
 #ui .taverna-scene::before { display: block; inset: 8px; background: none; border: 1px solid #c7adc733; opacity: 1; z-index: 2; pointer-events: none; }
 #ui .taverna-scene::after { display: none; }
 #ui .taverna-scene-scrim { background: linear-gradient(180deg, #0d091322, transparent 40%, #100b15c9 72%, #100b15 100%); }

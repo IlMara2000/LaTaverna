@@ -16,7 +16,7 @@ const parseCost = (cost = '', xValue = 0, extraGeneric = 0) => {
         const hybrid = symbol.split('/');
         if (hybrid.length === 2 && hybrid.includes('P')) {
             const colored = hybrid.find(part => COLORS.includes(part));
-            if (colored) choices.push([{ color: colored, generic: 0 }, { color: null, generic: 2 }]);
+            if (colored) choices.push([{ color: colored, generic: 0 }]); // Paying life is a separate choice, never generic mana.
             else return null;
             continue;
         }
@@ -76,66 +76,67 @@ export const manaPoolLabel = pool => {
     return COLORS.filter(color => normalized[color] > 0).map(color => `${normalized[color]} ${COLOR_NAMES[color]}`).join(' · ') || 'vuota';
 };
 
-const parseProductionText = text => {
-    const productions = [];
-    if (/spend this mana only/i.test(String(text || ''))) return productions;
-    for (const line of String(text || '').split('\n')) {
-        if (/^\s*\{T\}\s*:\s*Add one mana of any color(?: in your commander's color identity)?\.?\s*$/i.test(line)) {
-            productions.push(...['W', 'U', 'B', 'R', 'G'].map(color => [color]));
-            continue;
-        }
-        // Only model an ability whose sole activation cost is tapping. Scryfall's
-        // produced_mana also lists mana from sacrifice/pay-mana abilities; using
-        // that metadata alone would incorrectly make Lotus Petal/Signets free.
-        const match = line.match(/^\s*\{T\}\s*:\s*Add\s+(.+?)(?:\.|$)/i);
+// Recognize only abilities whose complete costs and effects we can apply.
+export const manaAbilityOptions = (card, colorIdentity = []) => {
+    const options = [];
+    const text = String(card?.oracleText || card?.oracle_text || '');
+    for (const raw of text.split('\n')) {
+        const line = raw.replace(/\([^)]*\)/g, '').trim();
+        const match = line.match(/^((?:\{[0-9WUBRGC]+\}\s*)*)(?:,\s*)?\{T\}:\s*Add\s+(.+?)\.?$/i);
         if (!match) continue;
-        const expression = match[1].trim();
-        if (/^one mana of any color(?: in your commander's color identity)?$/i.test(expression)) {
-            productions.push(...['W', 'U', 'B', 'R', 'G'].map(color => [color]));
-            continue;
-        }
-        const alternatives = expression.split(/\s+or\s+/i).map(part => {
+        const cost = match[1].replace(/\s/g, '');
+        const expression = match[2].replace(/\.$/, '').trim();
+        const any = expression.match(/^one mana of any color( in your commander's color identity)?$/i);
+        let productions;
+        if (any) productions = (any[1] ? COLORS.filter(c => c !== 'C' && colorIdentity.includes(c)) : COLORS.slice(0,5)).map(c => [c]);
+        else productions = expression.split(/\s+or\s+/i).map(part => {
             const stripped = part.replace(/\{([WUBRGC])\}/gi, '').replace(/\s+and\s+/gi, '');
-            if (stripped.trim()) return null;
-            return [...part.matchAll(/\{([WUBRGC])\}/gi)].map(symbol => symbol[1].toUpperCase());
+            return stripped.trim() ? null : [...part.matchAll(/\{([WUBRGC])\}/gi)].map(m => m[1].toUpperCase());
         });
-        if (alternatives.length && alternatives.every(group => group?.length)) productions.push(...alternatives);
+        if (productions.every(p => p?.length)) options.push(...productions.map(production => ({production,cost})));
     }
-    return productions;
+    const type = String(card?.typeLine || card?.type_line || '');
+    if (/\bland\b/i.test(type)) {
+        const subtypes = type.split(/[—–]/)[1] || '';
+        for (const [subtype, color] of [['Plains','W'],['Island','U'],['Swamp','B'],['Mountain','R'],['Forest','G']]) {
+            if (new RegExp(`\\b${subtype}\\b`, 'i').test(subtypes)) options.push({production:[color],cost:''});
+        }
+        if (/\bwastes\b/i.test(type)) options.push({production:['C'],cost:''});
+    }
+    return options.filter((entry,i) => options.findIndex(other => JSON.stringify(other) === JSON.stringify(entry)) === i);
 };
 
-export const manaProductionOptions = (card, colorIdentity = []) => {
-    const fromText = parseProductionText(card?.oracleText || card?.oracle_text);
-    let options = fromText;
-    if (!options.length) {
-        const type = String(card?.typeLine || card?.type_line || '').toLowerCase();
-        if (type.includes('plains')) options.push(['W']);
-        if (type.includes('island')) options.push(['U']);
-        if (type.includes('swamp')) options.push(['B']);
-        if (type.includes('mountain')) options.push(['R']);
-        if (type.includes('forest')) options.push(['G']);
-        if (type.includes('wastes')) options.push(['C']);
-    }
-    // Only effects that explicitly refer to the commander's identity, such as Command Tower,
-    // restrict their choices. Commander no longer converts other off-identity mana to {C}.
-    if (/mana of any color in your commander's color identity/i.test(String(card?.oracleText || card?.oracle_text || ''))) {
-        const identity = new Set(colorIdentity || []);
-        options = options.filter(option => option.every(color => identity.has(color)));
-    }
-    return options;
-};
+export const manaProductionOptions = (card, colorIdentity = []) => manaAbilityOptions(card,colorIdentity).map(entry => entry.production);
 
 export const isManaSource = (card, colorIdentity = []) => manaProductionOptions(card, colorIdentity).length > 0;
 
 export const addManaProduction = (player, card, optionIndex = 0) => {
-    const options = manaProductionOptions(card, player.colorIdentity || []);
-    const production = options[optionIndex];
-    if (!production?.length) return [];
+    const ability = manaAbilityOptions(card, player.colorIdentity || [])[optionIndex];
+    if (!ability) return [];
+    const paid = payMana(player.manaPool, ability.cost);
+    if (!paid) return [];
     player.manaPool ||= emptyManaPool();
-    const added = production;
-    for (const color of added) if (COLORS.includes(color)) player.manaPool[color] = (Number(player.manaPool[color]) || 0) + 1;
+    Object.assign(player.manaPool, paid);
+    for (const color of ability.production) player.manaPool[color]++;
+    return ability.production;
+};
+
+export const tapManaSource = (player, card, choice = 'auto', desiredCosts = []) => {
+    if (!card || card.tapped) throw new Error('Questa carta è già tappata.');
+    const haste = card.keywords?.some(word => word.toLowerCase() === 'haste') || /\bhaste\b/i.test(card.oracleText || '');
+    if (card.summoningSick && /\bcreature\b/i.test(card.typeLine || '') && !haste) throw new Error('Questa creatura ha debolezza da evocazione.');
+    const options = manaProductionOptions(card, player.colorIdentity || []);
+    const index = options.length === 1 ? 0 : choice === 'auto'
+        ? chooseManaProductionOption(player, card, desiredCosts) : options.findIndex(option => option.includes(choice));
+    if (index < 0) throw new Error('Scegli un colore prodotto da questa fonte o usa Automatico.');
+    const added = addManaProduction(player, card, index);
+    if (!added.length) throw new Error('Mana insufficiente per attivare questa fonte, oppure abilità non automatizzata.');
+    card.tapped = true;
     return added;
 };
+
+// Permanent abilities mentioning a target do not make that permanent a targeted spell.
+export const spellNeedsTarget = card => /\btarget\b/i.test(card?.oracleText || '') && !isPermanentCard(card) && !/\bup to\b/i.test(card?.oracleText || '');
 
 /** Pick the automatic color that best advances spells currently available to cast. */
 export const chooseManaProductionOption = (player, card, desiredCosts = []) => {
@@ -143,9 +144,10 @@ export const chooseManaProductionOption = (player, card, desiredCosts = []) => {
     if (options.length < 2) return options.length ? 0 : -1;
     const pool = normalizedPool(player.manaPool);
     const costs = desiredCosts.map(entry => typeof entry === 'string' ? { manaCost: entry } : entry).filter(Boolean);
-    let bestIndex = 0, bestScore = -Infinity;
+    let bestIndex = -1, bestScore = -Infinity;
     options.forEach((production, index) => {
-        const nextPool = { ...pool };
+        const nextPool = payMana(pool, manaAbilityOptions(card, player.colorIdentity || [])[index].cost);
+        if (!nextPool) return;
         for (const color of production) if (COLORS.includes(color)) nextPool[color]++;
         let score = 0;
         for (const entry of costs) {
@@ -172,7 +174,7 @@ const targetObject = (state, target) => {
     if (kind === 'player') return { kind, player: state.playersData[ownerId], ownerId };
     if (kind === 'card') {
         const player = state.playersData[ownerId];
-        const card = player?.battlefield?.find(item => item.id === cardId);
+        const card = player?.battlefield?.find(item => (item.instanceId || item.id) === cardId);
         return card ? { kind, player, card, ownerId } : null;
     }
     return null;
@@ -222,7 +224,7 @@ export const resolveOracleText = (card, state, controllerId, target = '', xValue
         }
         if ((match = line.match(/^(?:This spell|.+?) deals (\d+|X) damage to (?:any target|target player|target creature|target permanent)\.?$/i))) {
             const amount = numberFromText(match[1]) ?? Math.max(0, Number(xValue) || 0);
-            if (targetData?.player && (/player/.test(match[0]) || /any target/i.test(match[0]))) {
+            if (targetData?.kind === 'player' && (/player/.test(match[0]) || /any target/i.test(match[0]))) {
                 targetData.player.life = Math.max(0, targetData.player.life - amount);
                 if (targetData.player.life === 0) targetData.player.eliminated = true;
                 log.push(`${card.name}: ${amount} danni a ${state.playerNames?.[targetData.ownerId] || 'un giocatore'}.`); resolvedCount++;
@@ -230,7 +232,7 @@ export const resolveOracleText = (card, state, controllerId, target = '', xValue
                 targetData.card.damageMarked = (targetData.card.damageMarked || 0) + amount;
                 const toughness = (Number.parseInt(targetData.card.toughness, 10) || 0) + (targetData.card.turnBoost?.toughness || 0);
                 if (toughness > 0 && targetData.card.damageMarked >= toughness) {
-                    targetData.player.battlefield = targetData.player.battlefield.filter(item => item.id !== targetData.card.id);
+                    targetData.player.battlefield = targetData.player.battlefield.filter(item => item !== targetData.card);
                     targetData.player.graveyard ||= [];
                     if (targetData.card.isCommander) { targetData.player.commandZone ||= []; targetData.player.commandZone.push(targetData.card); }
                     else targetData.player.graveyard.push(targetData.card);
@@ -244,7 +246,7 @@ export const resolveOracleText = (card, state, controllerId, target = '', xValue
             if (!targetData?.card || (match[1].toLowerCase().includes('creature') && !String(targetData.card.typeLine || '').toLowerCase().includes('creature'))) { unsupported.push(instruction); continue; }
             const zone = kind === 'exile' ? 'exile' : 'graveyard';
             targetData.player[zone] ||= [];
-            targetData.player.battlefield = targetData.player.battlefield.filter(item => item.id !== targetData.card.id);
+            targetData.player.battlefield = targetData.player.battlefield.filter(item => item !== targetData.card);
             if (targetData.card.isCommander) { targetData.player.commandZone ||= []; targetData.player.commandZone.push(targetData.card); } else targetData.player[zone].push(targetData.card);
             log.push(`${card.name}: ${targetData.card.name} ${kind === 'exile' ? 'esiliata' : 'distrutta'}.`); resolvedCount++; continue;
         }

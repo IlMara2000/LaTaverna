@@ -3,10 +3,9 @@ import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { canPairCommanders, isCommanderEligible, validateCommanderDeck } from './magicCommander.js';
 import { formatManabrewCommanderList } from './magicManabrew.js';
 import { rememberDestination, navigateTo } from '../services/appNavigation.js';
-import { enhanceSurfaceMotion } from '../services/motionSystem.js';
 import { parseMagicCardList, scanMagicDocument } from '../services/magicDocumentScan.js';
 import { MAGIC_DEMO_DECKS } from '../data/magicDemoDecks.js';
-import { addManaProduction, canPayMana, chooseManaProductionOption, emptyManaPool, isManaSource, isPermanentCard, manaPoolLabel, manaProductionOptions, payMana, resolveOracleText } from './magicRules.js';
+import { addManaProduction, tapManaSource, spellNeedsTarget, canPayMana, chooseManaProductionOption, emptyManaPool, isManaSource, isPermanentCard, manaPoolLabel, manaProductionOptions, payMana, resolveOracleText } from './magicRules.js';
 import { getMagicAccount, listPublicMagicDecks, loadMagicLibrary, loadPublicMagicShare, saveMagicLibrary, setMagicCollectionPublic, setMagicDeckPublic } from '../services/magicLibrary.js';
 import { createMinigameRoom, getMinigameClientId, getMinigameRoomByCode, getSavedMagicRoom, isMinigameRoomConnected, joinMagicRoom, updateMinigameRoomData, watchMinigameRoom } from '../services/minigameMultiplayer.js';
 import './magic.css';
@@ -183,6 +182,7 @@ export function showMagicDashboard(container, options = {}) {
     let cloudSaveTimer = null;
     let cloudSaveQueue = Promise.resolve();
     let selectedDeck = decks[0]?.id || '';
+    let deckEditorOpen = false;
     let publicBotDecks = [];
     let botDeckCatalogLoaded = false;
     let botDeckSelections = ['random'];
@@ -194,6 +194,7 @@ export function showMagicDashboard(container, options = {}) {
     const savedBotRoom = read(BOT_GAME_KEY);
     let room = savedBotRoom?.data?.magic?.botMatch ? savedBotRoom : ((getSavedMagicRoom()?.scope === 'magic' || getSavedMagicRoom()?.data?.scope === 'magic') ? getSavedMagicRoom() : null);
     let multiplayerBusy = false;
+    let manaTapQueue = Promise.resolve();
     let multiplayerHealthy = false;
     let disposed = false;
     let cardResults = [];
@@ -257,27 +258,28 @@ export function showMagicDashboard(container, options = {}) {
     const currentDeck = () => decks.find(deck => deck.id === selectedDeck) || null;
     const deckCards = deck => (deck?.cards || []).flatMap(entry => Array.from({ length: entry.quantity }, () => collection.find(card => card.id === entry.cardId)).filter(Boolean));
     const getCount = cardId => collection.find(card => card.id === cardId)?.quantity || 0;
-    const setNotice = message => { const node = container.querySelector('#magic-notice'); if (node) node.textContent = message; };
+    const setNotice = message => { container.querySelectorAll('#magic-notice, #magic-match-notice').forEach(node => { node.textContent = message; }); };
 
     container.innerHTML = `<main class="magic-page">
-      <div class="magic-back">${renderHomeBackButton({ id: 'magic-home' })}</div>
-      <div class="magic-page-tools"><button type="button" id="magic-open-counter" class="magic-counter-link" title="Apri il segnapunti carte">♧ <span>Segnapunti</span></button></div>
-      <header class="magic-heading"><span class="crystal-eyebrow">IL TAVOLO DEI PLANESWALKER</span><h1>Magic: The Gathering</h1><p>La tua collezione, i tuoi mazzi, la prossima sfida.</p></header>
+      <div class="magic-topbar"><div class="magic-back">${renderHomeBackButton({ id: 'magic-home' })}</div>
+      <div class="magic-page-tools"><button type="button" id="magic-open-counter" class="magic-counter-link" title="Apri il segnapunti carte">♧ <span>Segnapunti</span></button></div></div>
+      <header class="magic-heading"><h1>Magic</h1><p>Carte. Mazzi. Si gioca.</p></header>
       <nav class="magic-tabs" aria-label="Sezioni Magic">
-       <button data-tab="collezione" type="button">Collezione</button><button data-tab="mazzi" type="button">Mazzi</button><button data-tab="partita" type="button">Partita online</button>
+       <button data-tab="collezione" type="button">Collezione</button><button data-tab="mazzi" type="button">Mazzi</button><button data-tab="partita" type="button">Gioca</button>
       </nav>
       <p id="magic-notice" class="magic-notice" role="status" aria-live="polite"></p>
-      <section data-panel="collezione" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">ARCHIVIO PERSONALE</span><h2>La tua bacheca</h2><p>Scansiona carte o liste da immagini e PDF, poi conferma le carte trovate nel catalogo.</p></div><span class="magic-count" id="magic-collection-count"></span></div>
-       <div class="magic-scan-box"><div class="magic-scan-icon" aria-hidden="true">⌕</div><div class="magic-scan-copy"><strong>Importa carte o un mazzo</strong><span>Testo .txt: riconoscimento diretto senza Groq. Immagini e PDF: un file per volta, max 30 pagine.</span><span class="magic-mobile-hint">Da smartphone, tocca “SCEGLI FILE” per selezionare una foto o un PDF dal dispositivo.</span></div><label class="magic-button" for="magic-photo">SCEGLI FILE</label><input id="magic-photo" type="file" accept="image/*,.pdf,application/pdf,.txt,text/plain" hidden></div>
-       <div class="magic-search-row"><label class="magic-search"><span aria-hidden="true">⌕</span><input id="magic-search" type="search" placeholder="Cerca una carta nel catalogo…" autocomplete="off"><span class="magic-search-hint">Catalogo Scryfall</span></label></div><div id="magic-photo-preview"></div><div id="magic-search-results" class="magic-search-results" aria-live="polite"></div>
-       <div class="magic-collection-head"><h3>Carte possedute</h3><label class="magic-sharing-toggle"><input type="checkbox" id="magic-collection-public" ${collectionPublic ? 'checked' : ''} disabled><span>${collectionPublic ? 'Collezione pubblica' : 'Collezione privata'}</span></label><button type="button" id="magic-share-collection" class="magic-text-button" ${collectionPublic ? '' : 'hidden'}>Copia link</button><label class="magic-search magic-collection-search"><span aria-hidden="true">⌕</span><input id="magic-filter" type="search" placeholder="Filtra per nome…"></label></div><div id="magic-collection" class="magic-card-grid"></div>
+      <section data-panel="collezione" class="magic-panel"><div class="magic-panel-heading"><div><h2>Le tue carte</h2></div><span class="magic-count" id="magic-collection-count"></span></div>
+       <details class="magic-disclosure magic-add-tools"><summary>＋ Aggiungi carte</summary><div class="magic-scan-box"><div class="magic-scan-icon" aria-hidden="true">⌕</div><div class="magic-scan-copy"><strong>Importa carte o un mazzo</strong><span>Aggiungi la tua raccolta da una lista, una foto o un PDF.</span></div><label class="magic-button" for="magic-photo">Importa file</label><input id="magic-photo" type="file" accept="image/*,.pdf,application/pdf,.txt,text/plain" hidden></div>
+       <div class="magic-search-row"><label class="magic-search"><span aria-hidden="true">⌕</span><input id="magic-search" type="search" placeholder="Cerca una carta nel catalogo…" autocomplete="off"></label></div><div id="magic-photo-preview"></div><div id="magic-search-results" class="magic-search-results" aria-live="polite"></div></details>
+       <div class="magic-collection-head"><details class="magic-collection-sharing"><summary>Condivisione</summary><label class="magic-sharing-toggle"><input type="checkbox" id="magic-collection-public" ${collectionPublic ? 'checked' : ''} disabled><span>${collectionPublic ? 'Collezione pubblica' : 'Collezione privata'}</span></label><button type="button" id="magic-share-collection" class="magic-text-button" ${collectionPublic ? '' : 'hidden'}>Copia link</button></details><label class="magic-search magic-collection-search"><span aria-hidden="true">⌕</span><input id="magic-filter" type="search" placeholder="Filtra per nome…"></label></div><div id="magic-collection" class="magic-card-grid"></div>
       </section>
-      <section data-panel="mazzi" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">COSTRUISCI LA TUA STRATEGIA</span><h2>I tuoi mazzi</h2><p>Organizza le carte presenti nella tua bacheca e prepara il duello.</p></div><button id="magic-new-deck" class="magic-button" type="button">＋ Crea un mazzo</button></div><div class="magic-demo-pack"><img src="/images/magic-test-booster.webp" alt="Illustrazione originale della Bustina Prova La Taverna" loading="lazy"><div><span class="magic-overline">KIT DI PROVA · COMMANDER</span><strong>Pronto a giocare?</strong><p>Carica i quattro mazzi demo nella tua bacheca privata. Cerco i nomi tutti insieme, senza usare Groq.</p><button id="magic-load-demos" class="magic-button" type="button">Carica i 4 mazzi demo</button></div></div><div class="magic-deck-layout"><aside id="magic-deck-list" class="magic-deck-list"></aside><div id="magic-deck-editor" class="magic-deck-editor"></div></div></section>
-      <section data-panel="partita" class="magic-panel"><div class="magic-panel-heading"><div><span class="magic-overline">GIOCA CON UN AMICO O CON L’OSTE</span><h2>Il tuo tavolo</h2><p>Apri una stanza online o prepara una partita di prova contro i bot.</p></div></div>
-       <section class="magic-bot-setup" aria-labelledby="magic-bot-title"><div class="magic-bot-intro"><span class="magic-overline">PARTITA SOLITARIA · DIFFICOLTÀ MEDIA</span><h3 id="magic-bot-title">Sfida i bot della taverna</h3><p>Gioca contro 1 o 3 bot. Per ogni bot scegli un tuo mazzo, uno pubblico oppure lascia scegliere al caso tra i mazzi pubblici.</p></div><div class="magic-bot-controls"><label>Il tuo mazzo<select id="magic-bot-player-deck" aria-label="Scegli il tuo mazzo"></select></label><label>Avversari<select id="magic-bot-count" aria-label="Numero di bot"><option value="1">1 bot</option><option value="3">3 bot</option></select></label><button id="magic-load-public-bot-decks" type="button" class="magic-button magic-button-secondary">Carica i mazzi pubblici</button></div><div id="magic-bot-deck-selectors" class="magic-bot-deck-selectors"><p>Carica i mazzi pubblici per preparare la partita casuale.</p></div><button id="magic-start-bot-game" type="button" class="magic-button" ${decks.length?'':'disabled'}>Apparecchia il tavolo</button><p class="magic-bot-note">Partita locale: i turni dei bot usano mosse semplici e una valutazione tattica media; il motore di regole del prototipo resta parziale.</p></section>
-       <div class="magic-room-bar"><button id="magic-host" type="button" class="magic-button">Crea una partita</button><form id="magic-join-form" class="magic-join-form"><select id="magic-join-deck" aria-label="Scegli il mazzo con cui giocare">${decks.map(deck => `<option value="${esc(deck.id)}">${esc(deck.name)}</option>`).join('')}</select><input id="magic-room-code" maxlength="6" autocomplete="off" placeholder="CODICE STANZA" aria-label="Codice stanza"><button class="magic-button magic-button-secondary" type="submit">Entra</button></form></div>
+      <section data-panel="mazzi" class="magic-panel"><div class="magic-panel-heading"><div><h2>I tuoi mazzi</h2></div><button id="magic-new-deck" class="magic-button" type="button">＋ Nuovo mazzo</button></div><div class="magic-deck-layout"><aside id="magic-deck-list" class="magic-deck-list"></aside><div id="magic-deck-editor" class="magic-deck-editor" hidden></div></div><details class="magic-disclosure magic-demo-tools"><summary>Non hai un mazzo? Inizia da qui</summary><div class="magic-demo-pack"><div><strong>Quattro mazzi pronti</strong><p>Aggiungili alla tua raccolta e scegli quello che preferisci.</p><button id="magic-load-demos" class="magic-button" type="button">Aggiungi mazzi demo</button></div></div></details></section>
+      <section data-panel="partita" class="magic-panel"><div class="magic-panel-heading"><div><h2>Si gioca.</h2><p>Invita i tuoi amici. Da 2 a 4 giocatori.</p></div></div>
+
+       <div class="magic-room-bar"><button id="magic-host" type="button" class="magic-button">Crea una partita</button><details class="magic-join-details"><summary>Hai un codice? Entra nella partita</summary><form id="magic-join-form" class="magic-join-form"><select id="magic-join-deck" aria-label="Scegli il mazzo con cui giocare">${decks.map(deck => `<option value="${esc(deck.id)}">${esc(deck.name)}</option>`).join('')}</select><input id="magic-room-code" maxlength="6" autocomplete="off" placeholder="CODICE STANZA" aria-label="Codice stanza"><button class="magic-button magic-button-secondary" type="submit">Entra</button></form></details></div>
        <div id="magic-room-status" class="magic-room-status">${room?.code ? `Stanza ${esc(room.code)} · ${room.status === 'connected' ? 'Avversario connesso' : 'In attesa di un avversario'}` : 'Nessuna partita attiva'}</div><div id="magic-table"></div>
-       <p class="magic-rules-note"><strong>Commander:</strong> partite da 2 a 4 giocatori, 40 punti vita e tassa di {2} per ogni precedente lancio dalla zona di comando. Il tavolo paga i costi di mana colorati, risolve una selezione di effetti Oracle comuni e avvisa quando una carta richiede intervento manuale; priorità, pila e combattimento completo sono ancora in sviluppo.</p>
+       <details class="magic-practice"><summary>Allenati contro l’oste <span>Partita locale</span></summary><section class="magic-bot-setup" aria-labelledby="magic-bot-title"><div class="magic-bot-intro"><span class="magic-overline">PARTITA SOLITARIA · DIFFICOLTÀ MEDIA</span><h3 id="magic-bot-title">Sfida i bot della taverna</h3><p>Gioca contro 1 o 3 bot. Per ogni bot scegli un tuo mazzo, uno pubblico oppure lascia scegliere al caso tra i mazzi pubblici.</p></div><div class="magic-bot-controls"><label>Il tuo mazzo<select id="magic-bot-player-deck" aria-label="Scegli il tuo mazzo"></select></label><label>Avversari<select id="magic-bot-count" aria-label="Numero di bot"><option value="1">1 bot</option><option value="3">3 bot</option></select></label><button id="magic-load-public-bot-decks" type="button" class="magic-button magic-button-secondary">Carica i mazzi pubblici</button></div><div id="magic-bot-deck-selectors" class="magic-bot-deck-selectors"><p>Carica i mazzi pubblici per preparare la partita casuale.</p></div><button id="magic-start-bot-game" type="button" class="magic-button" ${decks.length?'':'disabled'}>Apparecchia il tavolo</button><p class="magic-bot-note">Partita locale: i turni dei bot usano mosse semplici e una valutazione tattica media; il motore di regole del prototipo resta parziale.</p></section></details>
+       <details class="magic-disclosure magic-rules-disclosure"><summary>Come funziona il tavolo</summary><p class="magic-rules-note"><strong>Commander:</strong> partite da 2 a 4 giocatori, 40 punti vita e tassa di {2} per ogni precedente lancio dalla zona di comando. Il tavolo paga i costi di mana colorati, risolve una selezione di effetti Oracle comuni e avvisa quando una carta richiede intervento manuale; priorità, pila e combattimento completo sono ancora in sviluppo.</p></details>
       </section>
     </main>`;
 
@@ -290,25 +292,35 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelectorAll('[data-tab]').forEach(button => { button.setAttribute('aria-selected', String(button.dataset.tab === activeTab)); });
         container.querySelectorAll('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== activeTab; });
         renderCollection(); renderDecks(); renderTable();
+        container.querySelector('.magic-page').classList.toggle('is-playing', Boolean(game()) && activeTab === 'partita');
+        container.querySelector('.magic-demo-tools').open = !decks.length;
+        container.querySelector('#magic-room-status').hidden = !room?.code;
         const n = container.querySelector('#magic-collection-count'); if (n) n.textContent = `${collection.reduce((sum, card) => sum + card.quantity, 0)} carte`;
     };
     const renderCollection = () => {
         const root = container.querySelector('#magic-collection'); if (!root) return;
         const query = collectionFilter.trim().toLocaleLowerCase();
         const cards = collection.filter(card => card.name.toLocaleLowerCase().includes(query));
-        root.innerHTML = cards.length ? cards.map(card => `<article class="magic-owned-card"><div class="magic-owned-art">${card.image ? `<img src="${esc(card.image)}" alt="${esc(card.name)}" loading="lazy">` : '<span>✦</span>'}<span class="magic-quantity">×${card.quantity}</span></div><div class="magic-owned-info"><strong>${esc(card.name)}</strong><small>${esc(card.typeLine)}</small><div class="magic-owned-actions"><button type="button" data-owned-action="remove" data-card="${esc(card.id)}" aria-label="Rimuovi una copia di ${esc(card.name)}">−</button><button type="button" data-owned-action="add" data-card="${esc(card.id)}" aria-label="Aggiungi una copia di ${esc(card.name)}">＋</button><button type="button" data-owned-action="deck" data-card="${esc(card.id)}">Al mazzo</button><button type="button" data-owned-action="delete" data-card="${esc(card.id)}">Rimuovi</button></div></div></article>`).join('') : `<div class="magic-empty"><span>✧</span><strong>${query ? 'Nessuna carta trovata' : 'La bacheca è ancora vuota'}</strong><p>${query ? 'Prova un altro nome.' : 'Scansiona la tua prima carta o cercala nel catalogo qui sopra.'}</p></div>`;
+        root.innerHTML = cards.length ? cards.map(card => `<article class="magic-owned-card"><div class="magic-owned-art">${card.image ? `<img src="${esc(card.image)}" alt="${esc(card.name)}" loading="lazy">` : '<span>✦</span>'}<span class="magic-quantity">×${card.quantity}</span></div><div class="magic-owned-info"><strong>${esc(card.name)}</strong><small>${esc(card.typeLine)}</small><details class="magic-card-actions"><summary>Gestisci carta</summary><div class="magic-owned-actions"><button type="button" data-owned-action="remove" data-card="${esc(card.id)}" aria-label="Rimuovi una copia di ${esc(card.name)}">−</button><button type="button" data-owned-action="add" data-card="${esc(card.id)}" aria-label="Aggiungi una copia di ${esc(card.name)}">＋</button><button type="button" data-owned-action="deck" data-card="${esc(card.id)}">Al mazzo</button><button type="button" data-owned-action="delete" data-card="${esc(card.id)}">Rimuovi</button></div></details></div></article>`).join('') : `<div class="magic-empty"><span>✧</span><strong>${query ? 'Nessuna carta trovata' : 'La bacheca è ancora vuota'}</strong><p>${query ? 'Prova un altro nome.' : 'Scansiona la tua prima carta o cercala nel catalogo qui sopra.'}</p></div>`;
     };
     const renderResults = () => { const root = container.querySelector('#magic-search-results'); if (!root) return; root.innerHTML = cardResults.length ? `<div class="magic-results-label">Risultati · aggiungi alla bacheca</div>${cardResults.map(card => `<article class="magic-result-card">${cardFace(card) ? `<img src="${esc(cardFace(card))}" alt="${esc(card.name)}" loading="lazy">` : '<div class="magic-result-art">✧</div>'}<div><strong>${esc(card.name)}</strong><small>${esc(card.type_line || '')}</small><small>${esc(card.set_name || '')} · ${esc(card.mana_cost || '—')}</small></div><button type="button" class="magic-add-card" data-add-result="${esc(card.id)}">${getCount(card.id) ? `Aggiungi · ×${getCount(card.id)}` : '＋ Aggiungi'}</button></article>`).join('')}` : ''; };
     const renderDecks = () => {
         const list = container.querySelector('#magic-deck-list'), editor = container.querySelector('#magic-deck-editor'); if (!list || !editor) return;
-        list.innerHTML = decks.length ? decks.map(deck => `<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id === selectedDeck ? 'true' : 'false'}"><span>${esc(deck.name)}</span><small>${deck.cards.reduce((sum, card) => sum + card.quantity, 0)} carte</small></button>`).join('') : '<div class="magic-empty"><span>✧</span><strong>Nessun mazzo</strong><p>Crea un mazzo per iniziare.</p></div>';
+        list.hidden = deckEditorOpen;
+        editor.hidden = !deckEditorOpen;
+        list.innerHTML = decks.length ? decks.map((deck,index) => {
+            const cover = collection.find(card => card.id === deck.commanders?.[0]) || collection.find(card => card.id === deck.cards[0]?.cardId);
+            const total = deck.cards.reduce((sum, card) => sum + card.quantity, 0);
+            return `<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id === selectedDeck ? 'true' : 'false'}"><span class="magic-deck-cover"><small>${String(index+1).padStart(2,'0')}</small>${cover?.image ? `<img src="${esc(cover.image)}" alt="" loading="lazy">` : '<i aria-hidden="true">✦</i>'}</span><strong>${esc(deck.name)}</strong><small>${total} / 100 carte</small></button>`;
+        }).join('') : '<div class="magic-empty"><span>✧</span><strong>Nessun mazzo</strong><p>Crea un mazzo per iniziare.</p></div>';
         const deck = currentDeck(); if (!deck) { editor.innerHTML = '<div class="magic-empty magic-editor-empty"><span>♢</span><strong>Seleziona o crea un mazzo</strong><p>Il tuo prossimo mazzo comincia da qui.</p></div>'; return; }
         const cards = deckCards(deck); const total = cards.length;
         deck.commanders ||= [];
         const eligible = collection.filter(isCommanderEligible);
         const eligibleSecond = collection.filter(card => isCommanderEligible(card) || /legendary enchantment[^.]*background/i.test(card.typeLine || ''));
         const validation = validateCommanderDeck(cards, deck.commanders);
-        editor.innerHTML = `<div class="magic-deck-title"><div><span class="magic-overline">COMMANDER · LISTA DEL MAZZO</span><h3>${esc(deck.name)}</h3></div><label class="magic-sharing-toggle"><input type="checkbox" id="magic-deck-public" ${deck.isPublic ? 'checked' : ''} ${!cloudReady || !cloudDeckIds.has(deck.id) ? 'disabled' : ''}><span>${deck.isPublic ? 'Mazzo pubblico' : 'Mazzo privato'}</span></label><button type="button" class="magic-text-button" id="magic-share-deck" ${deck.isPublic ? '' : 'hidden'}>Copia link</button><button type="button" class="magic-text-button" id="magic-proxy-deck">Stampa proxy</button><button type="button" class="magic-text-button" id="magic-rename-deck">Rinomina</button><button type="button" class="magic-text-button danger" id="magic-delete-deck">Elimina mazzo</button></div><div class="magic-commander-picks"><label>Comandante<select data-commander-slot="0"><option value="">Scegli dalla raccolta…</option>${eligible.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[0]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label><label>Secondo comandante partner<select data-commander-slot="1"><option value="">Nessuno</option>${eligibleSecond.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[1]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label></div><div class="magic-deck-stats"><strong>${total}</strong><span>/ 100 carte</span><span class="magic-deck-hint">Comandanti inclusi; una copia per nome, eccetto terre base.</span></div><div class="magic-deck-validation ${validation.valid?'is-valid':'is-invalid'}">${validation.valid?'✓ Mazzo Commander valido.':validation.errors.slice(0,4).map(esc).join('<br>')}</div><div class="magic-deck-cards">${deck.cards.length ? deck.cards.map(entry => { const card = collection.find(item => item.id === entry.cardId); return card ? `<div class="magic-deck-row">${card.image ? `<img src="${esc(card.image)}" alt="">` : ''}<span>${esc(card.name)}<small>${esc(card.typeLine)}${deck.commanders.includes(card.id)?' · COMANDANTE':''}</small></span><strong>×${entry.quantity}</strong><button type="button" data-deck-remove="${esc(entry.cardId)}" aria-label="Rimuovi una copia di ${esc(card.name)}">−</button><button type="button" data-deck-add="${esc(card.id)}" aria-label="Aggiungi una copia di ${esc(card.name)}">＋</button></div>` : ''; }).join('') : '<p class="magic-muted">Questo mazzo è vuoto. Aggiungi carte dalla raccolta.</p>'}</div><div class="magic-deck-play-actions"><button id="magic-play" type="button" class="magic-button magic-button-secondary" ${!validation.valid ? 'disabled' : ''}>Prova il prototipo locale</button><button id="magic-full-rules" type="button" class="magic-button" ${!validation.valid ? 'disabled' : ''}>Apri Manabrew/Forge ↗</button></div><p class="magic-muted">La lista Commander viene copiata negli appunti; incollala nell’importatore del mazzo.</p>`;
+        editor.innerHTML = `<button type="button" class="magic-text-button magic-deck-back" id="magic-close-deck">← Tutti i mazzi</button><div class="magic-deck-title"><div><span class="magic-overline">Commander</span><h3>${esc(deck.name)}</h3></div><details class="magic-deck-options"><summary>Opzioni mazzo</summary><label class="magic-sharing-toggle"><input type="checkbox" id="magic-deck-public" ${deck.isPublic ? 'checked' : ''} ${!cloudReady || !cloudDeckIds.has(deck.id) ? 'disabled' : ''}><span>${deck.isPublic ? 'Mazzo pubblico' : 'Mazzo privato'}</span></label><button type="button" class="magic-text-button" id="magic-share-deck" ${deck.isPublic ? '' : 'hidden'}>Copia link</button><button type="button" class="magic-text-button" id="magic-proxy-deck">Stampa proxy</button><button type="button" class="magic-text-button" id="magic-rename-deck">Rinomina</button><button type="button" class="magic-text-button danger" id="magic-delete-deck">Elimina mazzo</button></details></div><div class="magic-commander-picks"><label>Comandante<select data-commander-slot="0"><option value="">Scegli dalla raccolta…</option>${eligible.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[0]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label><details class="magic-partner-option"><summary>Aggiungi un partner</summary><label>Secondo comandante<select data-commander-slot="1"><option value="">Nessuno</option>${eligibleSecond.map(card=>`<option value="${esc(card.id)}" ${deck.commanders[1]===card.id?'selected':''}>${esc(card.name)} · ${esc(card.colorIdentity.join('')||'Incolore')}</option>`).join('')}</select></label></details></div><div class="magic-deck-stats"><strong>${total}</strong><span>/ 100 carte</span><span class="magic-deck-hint">Comandanti inclusi; una copia per nome, eccetto terre base.</span></div><div class="magic-deck-validation ${validation.valid?'is-valid':'is-invalid'}">${validation.valid?'✓ Mazzo Commander valido.':validation.errors.slice(0,4).map(esc).join('<br>')}</div><div class="magic-deck-cards">${deck.cards.length ? deck.cards.map(entry => { const card = collection.find(item => item.id === entry.cardId); return card ? `<div class="magic-deck-row">${card.image ? `<img src="${esc(card.image)}" alt="">` : ''}<span>${esc(card.name)}<small>${esc(card.typeLine)}${deck.commanders.includes(card.id)?' · COMANDANTE':''}</small></span><strong>×${entry.quantity}</strong><button type="button" data-deck-remove="${esc(entry.cardId)}" aria-label="Rimuovi una copia di ${esc(card.name)}">−</button><button type="button" data-deck-add="${esc(card.id)}" aria-label="Aggiungi una copia di ${esc(card.name)}">＋</button></div>` : ''; }).join('') : '<p class="magic-muted">Questo mazzo è vuoto. Aggiungi carte dalla raccolta.</p>'}</div><div class="magic-deck-play-actions"><button id="magic-play" type="button" class="magic-button magic-button-secondary" ${!validation.valid ? 'disabled' : ''}>Gioca con questo mazzo</button><details class="magic-export-tools"><summary>Esporta in un altro gioco</summary><button id="magic-full-rules" type="button" class="magic-button" ${!validation.valid ? 'disabled' : ''}>Apri Manabrew ↗</button><p class="magic-muted">Copia la lista e importala in Manabrew.</p></details></div>`;
+        editor.insertBefore(editor.querySelector('.magic-deck-play-actions'), editor.querySelector('.magic-deck-cards'));
     };
     const game = () => room?.data?.magic?.game || null;
     const myTurn = state => state?.activePlayer === playerId() && !state?.winner && !state?.playersData?.[playerId()]?.eliminated;
@@ -365,6 +377,7 @@ export function showMagicDashboard(container, options = {}) {
         }
 
         root.classList.add('magic-table-root');
+        const selectedTarget = root.querySelector('#magic-effect-target')?.value || '';
         const myId = playerId();
         const opponentIds = state.players.filter(id => id !== myId && !state.playersData[id]?.eliminated);
         const ownState = state.playersData?.[myId] || { hand: [], battlefield: [], graveyard: [], library: [] };
@@ -392,8 +405,8 @@ export function showMagicDashboard(container, options = {}) {
             const manaSource = mine && isManaSource(card, ownState.colorIdentity) && !sickManaCreature;
             const power = (Number.parseInt(card.power, 10) || 0) + (card.counters?.plusOne || 0) + (card.turnBoost?.power || 0);
             const toughness = (Number.parseInt(card.toughness, 10) || 0) + (card.counters?.plusOne || 0) + (card.turnBoost?.toughness || 0);
-            return `<button type="button" class="magic-board-card ${card.tapped ? 'is-tapped' : ''}" data-board-action="${manaSource ? 'mana' : 'none'}" data-card-inspect="board:${mine ? myId : opponentIds.find(id => state.playersData[id]?.battlefield === cards)}:${index}" data-board-index="${index}" aria-label="${esc(card.name)} · ${esc(card.typeLine)}${card.tapped ? ' · tappata' : ''}" title="Tieni premuto per leggere ${esc(card.name)}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : `<span class="magic-board-fallback">${esc(card.name)}</span>`}<span class="magic-board-card-copy"><strong class="magic-board-name">${esc(card.name)}</strong><small>${manaCostIcons(card.manaCost)}</small></span>${card.power !== '' ? `<b>${power}/${toughness}</b>` : ''}${manaSource && !card.tapped ? `<i class="magic-mana-hint">TAPPA · ${manaProductionOptions(card, ownState.colorIdentity).map(option => option.map(color => manaSymbolIcon(`{${color}}`)).join('')).join('<span class="magic-mana-or">o</span>')}</i>` : ''}${card.tapped ? '<i>TAPPATA</i>' : ''}</button>`;
-        }).join('') : '<span class="magic-empty-board">Il legno attende le carte…</span>';
+            return `<button type="button" class="magic-board-card ${card.tapped ? 'is-tapped' : ''}" data-board-action="${manaSource ? 'mana' : 'none'}" data-card-inspect="board:${mine ? myId : opponentIds.find(id => state.playersData[id]?.battlefield === originalCards)}:${index}" data-board-index="${index}" aria-label="${esc(card.name)} · ${esc(card.typeLine)}${card.tapped ? ' · tappata' : ''}" title="Tieni premuto per leggere ${esc(card.name)}" ${mine && (!isMyTurn || mulliganActive || card.tapped) ? 'aria-disabled="true"' : ''}>${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : `<span class="magic-board-fallback">${esc(card.name)}</span>`}<span class="magic-board-card-copy"><strong class="magic-board-name">${esc(card.name)}</strong><small>${manaCostIcons(card.manaCost)}</small></span>${card.power !== '' ? `<b>${power}/${toughness}</b>` : ''}${manaSource && !card.tapped ? `<i class="magic-mana-hint">TAPPA · ${manaProductionOptions(card, ownState.colorIdentity).map(option => option.map(color => manaSymbolIcon(`{${color}}`)).join('')).join('<span class="magic-mana-or">o</span>')}</i>` : ''}${card.tapped ? '<i>TAPPATA</i>' : ''}</button>`;
+        }).join('') : '<span class="magic-empty-board">Nessuna carta in campo</span>';
         const battlefieldMarkup = (cards, mine, ownerId) => {
             const categories = [
                 ['creature', 'CREATURE', /\bcreature\b/i], ['planeswalker', 'PLANESWALKER', /\bplaneswalker\b/i],
@@ -413,7 +426,7 @@ export function showMagicDashboard(container, options = {}) {
         const playersInGame = state.players.filter(id => !state.playersData[id]?.eliminated);
         const effectTargets = playersInGame.flatMap(id => [
             `<option value="player:${esc(id)}">${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</option>`,
-            ...(state.playersData[id]?.battlefield || []).map(card => `<option value="card:${esc(id)}:${esc(card.id)}">${esc(card.name)}</option>`)
+            ...(state.playersData[id]?.battlefield || []).map(card => `<option value="card:${esc(id)}:${esc(card.instanceId || card.id)}">${esc(card.name)}</option>`)
         ]).join('');
         const attackTargets = opponentIds.map(id => `<option value="${esc(id)}">${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</option>`).join('');
         const fullscreenActive = document.fullscreenElement === root || pseudoFullscreen;
@@ -429,17 +442,17 @@ export function showMagicDashboard(container, options = {}) {
                     ${opponentIds.map(id => `<div class="magic-life-opponent"><span>${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span><strong>${state.playersData[id]?.life ?? 40}</strong><small>${state.playersData[id]?.hand?.length ?? 0} carte · comandante ${Math.max(0, ...Object.values(ownState.commanderDamage?.[id] || {}))}/21</small></div>`).join('')}
                 </div>
                 <div class="magic-mana-dock" id="magic-mana-dock">
-                    <div class="magic-mana-reserve"><span>Riserva</span><div>${manaPoolIcons(ownState.manaPool)}</div><button type="button" id="magic-clear-mana" title="Svuota la riserva" ${!isMyTurn || !Object.values(ownState.manaPool || {}).some(Number) ? 'disabled' : ''}>Svuota</button></div>
-                    <div class="magic-mana-choice" role="group" aria-label="Colore prodotto dalle terre"><span>Produci mana</span><button type="button" data-mana-choice="auto" aria-pressed="${!ownState.manaChoice || ownState.manaChoice === 'auto'}" ${!isMyTurn ? 'disabled' : ''}><span aria-hidden="true">✦</span><small>Auto</small></button>${['W', 'U', 'B', 'R', 'G', 'C'].map(color => `<button type="button" data-mana-choice="${color}" aria-label="${MANA_SYMBOL_NAMES[color]}" aria-pressed="${ownState.manaChoice === color}" ${!isMyTurn ? 'disabled' : ''}>${manaSymbolIcon(`{${color}}`)}</button>`).join('')}</div>
+                    <div class="magic-mana-reserve"><span>Mana</span><div>${manaPoolIcons(ownState.manaPool)}</div><button type="button" id="magic-clear-mana" title="Svuota la riserva" ${!isMyTurn || !Object.values(ownState.manaPool || {}).some(Number) ? 'disabled' : ''}>Svuota</button></div>
+                    <details class="magic-mana-options"><summary>Colore del mana · ${esc(MANA_SYMBOL_NAMES[ownState.manaChoice] || 'Auto')}</summary><div class="magic-mana-choice" role="group" aria-label="Colore prodotto dalle terre"><span>Produci mana</span><button type="button" data-mana-choice="auto" aria-pressed="${!ownState.manaChoice || ownState.manaChoice === 'auto'}" ${!isMyTurn ? 'disabled' : ''}><span aria-hidden="true">✦</span><small>Auto</small></button>${['W', 'U', 'B', 'R', 'G', 'C'].map(color => `<button type="button" data-mana-choice="${color}" aria-label="${MANA_SYMBOL_NAMES[color]}" aria-pressed="${ownState.manaChoice === color}" ${!isMyTurn ? 'disabled' : ''}>${manaSymbolIcon(`{${color}}`)}</button>`).join('')}</div></details>
                 </div>
                 <div class="magic-battlefield">
                     <div class="magic-opponents-row">${opponentIds.map(id => { const foe = state.playersData[id] || {}; return `<div class="magic-opponent-zone"><div class="magic-zone-label"><span>CAMPO · ${esc(state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`)}</span>${drawPile(foe.library || [])}</div>${battlefieldMarkup(foe.battlefield || [], false, id)}</div>`; }).join('')}</div>
                     <div class="magic-own-zone"><div class="magic-zone-label"><span>IL TUO CAMPO</span>${drawPile(ownState.library || [], true)}</div>${battlefieldMarkup(ownState.battlefield || [], true, myId)}</div>
                 </div>
                 ${commanders.length ? `<details class="magic-command-zone"><summary><span>ZONA COMANDANTE</span><small>${commanders.map(card => esc(card.name)).join(' · ')}</small></summary><div class="magic-commanders">${commanders.map((card, index) => { const casts = ownState.commanderCasts?.[card.id] || 0; const tax = casts * 2; return `<article class="magic-commander-card" data-card-inspect="command:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}">` : ''}<span><strong>${esc(card.name)}</strong><small>${casts} lanci dalla zona di comando</small></span><div class="magic-commander-cost">${manaCostIcons(card.manaCost)}${tax ? `<span class="magic-tax-cost">+ ${manaCostIcons(`{${tax}}`)}</span>` : ''}</div><button type="button" data-cast-commander="${esc(card.id)}" ${!isMyTurn || state.winner || !canPayMana(ownState.manaPool, card.manaCost || '', 0, tax) ? 'disabled' : ''}>Lancia</button></article>`; }).join('')}</div></details>` : ''}
-                <div class="magic-action-dock">
-                    <label class="magic-action-target"><span>BERSAGLIO</span><select id="magic-effect-target" aria-label="Scegli il bersaglio delle magie"><option value="">Scegli bersaglio…</option>${effectTargets}</select></label>
-                    <label class="magic-action-opponent"><span>ATTACCA</span><select id="magic-attack-target" aria-label="Scegli il giocatore da attaccare" ${!isMyTurn || state.winner ? 'disabled' : ''}>${attackTargets}</select></label>
+                <p id="magic-match-notice" class="magic-notice" role="status" aria-live="polite"></p><div class="magic-action-dock">
+                    <label class="magic-action-target"><span>Bersaglio della magia</span><select id="magic-effect-target" aria-label="Scegli il bersaglio delle magie"><option value="">Scegli bersaglio…</option>${effectTargets}</select></label>
+                    <label class="magic-action-opponent" ${opponentIds.length < 2 ? 'hidden' : ''}><span>ATTACCA</span><select id="magic-attack-target" aria-label="Scegli il giocatore da attaccare" ${!isMyTurn || state.winner ? 'disabled' : ''}>${attackTargets}</select></label>
                     <button type="button" class="magic-button magic-attack-button" id="magic-attack" ${!isMyTurn || state.winner ? 'disabled' : ''}>⚔ <span>Attacca</span></button>
                     <button type="button" class="magic-button magic-end-turn" id="magic-end-turn" ${!isMyTurn || state.winner ? 'disabled' : ''}>Fine turno <span aria-hidden="true">→</span></button>
                 </div>
@@ -448,6 +461,13 @@ export function showMagicDashboard(container, options = {}) {
                 <div class="magic-hand">${(ownState.hand || []).map((card, index) => { const drawn = drawnCount && index >= ownState.hand.length - drawnCount; const land = /\bland\b/i.test(card.typeLine || ''); const hasMana = canPayMana(ownState.manaPool, card.manaCost || '', 0); const blockedReason = !isMyTurn ? 'Puoi lanciare carte solo durante il tuo turno.' : (land && ownState.landsPlayed >= 1 ? 'Hai già giocato una terra in questo turno.' : (!land && !hasMana ? `Mana insufficiente o colori errati. Costo ${card.manaCost || '0'}; riserva: ${manaPoolLabel(ownState.manaPool)}.` : '')); return `<article class="magic-hand-card ${drawn ? 'is-drawn' : ''} ${selectedBottomCards.has(index) ? 'is-mulligan-selected' : ''}" data-card-inspect="hand:${index}" style="--card-index:${index}">${card.image ? `<img src="${esc(card.image)}" alt="Carta ${esc(card.name)}" loading="lazy">` : ''}<div class="magic-hand-overlay"><strong>${esc(card.name)}</strong><small class="magic-hand-card-cost">${manaCostIcons(card.manaCost)}<span>${esc(card.typeLine)}</span></small>${needsOpeningChoice ? `<button type="button" data-mulligan-index="${index}" ${!mulliganBottomCount ? 'disabled' : ''}>${selectedBottomCards.has(index) ? '✓ In fondo' : 'Seleziona per il fondo'}</button>` : `<button type="button" data-play-card="${index}" title="${esc(blockedReason)}" ${mulliganActive || !isMyTurn || state.winner || (land && ownState.landsPlayed >= 1) || (!land && !hasMana) ? 'disabled' : ''}>${land ? 'Gioca terra' : `Lancia · ${manaCostIcons(card.manaCost || '{0}')}`}</button>`}</div></article>`; }).join('') || '<p class="magic-muted">Nessuna carta in mano.</p>'}</div>
                 <details class="magic-phase-help"><summary>Regole e azioni della partita</summary><p>Il tavolo paga i costi colorati e applica la tassa Commander. Gli effetti non riconosciuti sono indicati nel diario; pila, priorità, blocchi e abilità avanzate restano da automatizzare.</p></details>
             </section>`;
+        // Keep cards and the current action together; secondary controls follow below.
+        const screen = root.querySelector('.magic-match-screen');
+        const dock = root.querySelector('.magic-action-dock');
+        screen.insertBefore(root.querySelector('.magic-hand-heading'), dock);
+        screen.insertBefore(root.querySelector('.magic-hand'), dock);
+        const targetSelect = root.querySelector('#magic-effect-target');
+        if (targetSelect && [...targetSelect.options].some(option => option.value === selectedTarget)) targetSelect.value = selectedTarget;
         root.insertAdjacentHTML('beforeend', `<div class="magic-card-inspector" id="magic-card-inspector" hidden><section role="dialog" aria-modal="true" aria-labelledby="magic-inspector-title"><button type="button" class="magic-inspector-close" data-close-card aria-label="Chiudi dettagli carta">×</button><div id="magic-inspector-content"></div></section></div>`);
         if (drawnCount) {
             const drawnCard = ownState.hand[ownState.hand.length - 1];
@@ -476,9 +496,11 @@ export function showMagicDashboard(container, options = {}) {
     const humansPresent = current => current?.players?.filter(id => !current.playersData[id]?.eliminated)
         .every(id => Date.now() - (room?.data?.magic?.presence?.[id] || 0) < 35000);
     const saveState = async (updater, allowAnyTurn = false) => {
-        if (!room?.code || multiplayerBusy || disposed) return false;
+        if (!room?.code || disposed) return false;
+        if (multiplayerBusy) { setNotice('Sto salvando la mossa. Attendi la conferma prima della prossima azione.'); return false; }
         if (room.data?.magic?.botMatch) {
-            const next = updater(structuredClone(game()));
+            let next;
+            try { next = updater(structuredClone(game())); } catch (error) { setNotice(error.message); return false; }
             if (!next) return false;
             room = { ...room, data: { ...room.data, magic: { ...room.data.magic, game: next } } };
             try { localStorage.setItem(BOT_GAME_KEY, JSON.stringify(room)); } catch { setNotice('La partita non può essere salvata su questo dispositivo.'); }
@@ -487,6 +509,7 @@ export function showMagicDashboard(container, options = {}) {
         if (!multiplayerHealthy || (!allowAnyTurn && !humansPresent(game()))) { setNotice('In attesa dei giocatori online. La partita resta ferma, senza bot.'); return false; }
         const code = room.code, expected = game();
         multiplayerBusy = true;
+        tableRoot.setAttribute('aria-busy', 'true');
         try {
             const result = await updateMinigameRoomData(code, data => {
                 const current = data.magic?.game;
@@ -502,7 +525,7 @@ export function showMagicDashboard(container, options = {}) {
             if (result.error) { if (result.room) refreshRoom(result.room); setNotice(result.error.message); return false; }
             refreshRoom(result.room); return true;
         } catch { multiplayerHealthy = false; setNotice('Connessione interrotta. Riprova dopo la riconnessione.'); return false; }
-        finally { multiplayerBusy = false; }
+        finally { multiplayerBusy = false; tableRoot.removeAttribute('aria-busy'); }
     };
     const searchCards = async query => {
         if (!query.trim()) { cardResults = []; renderResults(); return; }
@@ -537,7 +560,7 @@ export function showMagicDashboard(container, options = {}) {
             if (result.error) { setNotice(result.error.message); return; }
             refreshRoom(result.room);
         } catch { setNotice('Avvio non riuscito. Verifica la connessione e riprova.'); }
-        finally { multiplayerBusy = false; }
+        finally { multiplayerBusy = false; tableRoot.removeAttribute('aria-busy'); }
     };
     const openingMulliganAction = (current, action, selectedIndex = -1) => {
         if (!current?.mulliganActive) return current;
@@ -592,6 +615,7 @@ export function showMagicDashboard(container, options = {}) {
         const owner = state.playersData[ownerId];
         if (!owner) return false;
         if (isPermanentCard(card)) {
+            card.instanceId = crypto.randomUUID();
             card.tapped = /enters(?: the battlefield)? tapped(?:[.;,]|$)/i.test(card.oracleText || '');
             card.summoningSick = /creature/i.test(card.typeLine || '') && !((card.keywords || []).some(keyword => String(keyword).toLowerCase() === 'haste') || /\bhaste\b/i.test(card.oracleText || ''));
             card.damageMarked = 0;
@@ -621,11 +645,11 @@ export function showMagicDashboard(container, options = {}) {
             if (landIndex >= 0 && bot.landsPlayed < 1) {
                 const land = bot.hand.splice(landIndex, 1)[0];
                 const tapped = /enters the battlefield tapped|enters tapped/i.test(land.oracleText || '');
-                bot.battlefield.push({ ...land, tapped }); bot.landsPlayed++;
+                bot.battlefield.push({ ...land, instanceId: crypto.randomUUID(), tapped }); bot.landsPlayed++;
                 state.log.unshift(`${botName} gioca ${land.name}.`);
             }
             bot.manaPool ||= emptyManaPool();
-            const sourceCount = bot.battlefield.filter(card => !card.tapped && isManaSource(card, bot.colorIdentity)).length;
+            const sourceCount = bot.battlefield.filter(card => !card.tapped && (!card.summoningSick || !/creature/i.test(card.typeLine || '') || card.keywords?.includes('Haste') || /\bhaste\b/i.test(card.oracleText || '')) && isManaSource(card, bot.colorIdentity)).length;
             const currentPool = Object.values(bot.manaPool).reduce((sum, count) => sum + (Number(count) || 0), 0);
             const spells = bot.hand.map((card, index) => ({ card, index, cost: Number(card.cmc) || 0 }))
                 .filter(entry => !isLand(entry.card) && entry.cost <= sourceCount + currentPool)
@@ -635,7 +659,7 @@ export function showMagicDashboard(container, options = {}) {
                 });
             const chosen = spells.find(entry => {
                 let pool = structuredClone(bot.manaPool);
-                const sources = bot.battlefield.filter(card => !card.tapped && isManaSource(card, bot.colorIdentity));
+                const sources = bot.battlefield.filter(card => !card.tapped && (!card.summoningSick || !/creature/i.test(card.typeLine || '') || card.keywords?.includes('Haste') || /\bhaste\b/i.test(card.oracleText || '')) && isManaSource(card, bot.colorIdentity));
                 for (const source of sources) {
                     if (canPayMana(pool, entry.card.manaCost || '')) break;
                     const options = manaProductionOptions(source, bot.colorIdentity);
@@ -647,7 +671,7 @@ export function showMagicDashboard(container, options = {}) {
                 return canPayMana(pool, entry.card.manaCost || '');
             });
             if (chosen) {
-                for (const source of bot.battlefield.filter(card => !card.tapped && isManaSource(card, bot.colorIdentity))) {
+                for (const source of bot.battlefield.filter(card => !card.tapped && (!card.summoningSick || !/creature/i.test(card.typeLine || '') || card.keywords?.includes('Haste') || /\bhaste\b/i.test(card.oracleText || '')) && isManaSource(card, bot.colorIdentity))) {
                     if (canPayMana(bot.manaPool, chosen.card.manaCost || '')) break;
                     const options = manaProductionOptions(source, bot.colorIdentity);
                     const needed = [...String(chosen.card.manaCost || '').matchAll(/\{([WUBRG])\}/g)].map(match => match[1]);
@@ -663,7 +687,7 @@ export function showMagicDashboard(container, options = {}) {
                     const targets = state.players.filter(id => id !== botId && !state.playersData[id]?.eliminated);
                     const requiredTarget = /target creature|target permanent|any target|target player/i.test(chosen.card.oracleText || '');
                     const targetPlayer = [...targets].sort((a,b)=>(state.playersData[a]?.life ?? 40)-(state.playersData[b]?.life ?? 40))[0];
-                    const targetCreature = targets.flatMap(id => (state.playersData[id]?.battlefield || []).filter(card => /creature/i.test(card.typeLine || '')).map(card => `card:${id}:${card.id}`))[0];
+                    const targetCreature = targets.flatMap(id => (state.playersData[id]?.battlefield || []).filter(card => /creature/i.test(card.typeLine || '')).map(card => `card:${id}:${card.instanceId || card.id}`))[0];
                     const spellTarget = /target creature/i.test(chosen.card.oracleText || '') ? targetCreature : (targetPlayer ? `player:${targetPlayer}` : '');
                     resolvePlayedCard(state, botId, chosen.card, requiredTarget ? (targetCreature || spellTarget) : '', 0, false);
                     state.log.unshift(`${botName} lancia ${chosen.card.name}.`);
@@ -756,9 +780,11 @@ export function showMagicDashboard(container, options = {}) {
     const refreshRoom = next => {
         if (disposed || !next || next.code !== room?.code || next.data?.scope !== 'magic') return;
         if (room.updatedAt && next.updatedAt < room.updatedAt) return;
-        room = next; multiplayerHealthy = next.status !== 'closed'; render();
+        const changed = !game() || !next.data.magic?.game || game().revision !== next.data.magic.game.revision;
+        room = next; multiplayerHealthy = next.status !== 'closed';
+        if (changed) render();
         const status = container.querySelector('#magic-room-status');
-        if (status && game() && !humansPresent(game())) status.textContent = `Stanza ${room.code} · in attesa dei giocatori disconnessi, nessun bot`;
+        if (status && game() && !humansPresent(game())) { status.textContent = `Stanza ${room.code} · in attesa dei giocatori disconnessi, nessun bot`; setNotice('Un giocatore è disconnesso. La partita riprende quando rientra.'); }
     };
     const watchRoom = next => {
         stopWatching?.(); clearInterval(pollTimer); stopWatching = null; pollTimer = null;
@@ -792,7 +818,7 @@ export function showMagicDashboard(container, options = {}) {
     };
 
     container.querySelector('#magic-home').onclick = () => navigateTo('home');
-    container.querySelector('#magic-open-counter').onclick = () => navigateTo('cardCounter', container);
+    container.querySelector('#magic-open-counter').onclick = () => navigateTo('cardCounter', container, { preset: 'commander', returnTo: 'magic' });
     container.querySelectorAll('[data-tab]').forEach(button => button.onclick = () => { activeTab = button.dataset.tab; render(); container.querySelector(`[data-panel="${activeTab}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     container.querySelector('#magic-search').addEventListener('input', event => { clearTimeout(searchTimer); searchTimer = setTimeout(() => searchCards(event.target.value), 300); });
     container.querySelector('#magic-filter').addEventListener('input', event => { collectionFilter = event.target.value; renderCollection(); });
@@ -940,9 +966,10 @@ export function showMagicDashboard(container, options = {}) {
         if(!card.quantity) { collection=collection.filter(item=>item.id!==card.id); decks=decks.map(deck=>({...deck,cards:deck.cards.filter(entry=>entry.cardId!==card.id)})); }
         persist(); render();
     };
-    container.querySelector('#magic-new-deck').onclick = () => { const name=prompt('Come vuoi chiamare il mazzo?','Nuovo mazzo'); if(!name?.trim())return; const deck={id:crypto.randomUUID(),name:name.trim(),cards:[]}; decks.push(deck); selectedDeck=deck.id; persist(); render(); };
-    container.querySelector('#magic-deck-list').onclick = event => { const button=event.target.closest('[data-select-deck]'); if(button){selectedDeck=button.dataset.selectDeck;renderDecks();} };
+    container.querySelector('#magic-new-deck').onclick = () => { const name=prompt('Come vuoi chiamare il mazzo?','Nuovo mazzo'); if(!name?.trim())return; const deck={id:crypto.randomUUID(),name:name.trim(),cards:[]}; decks.push(deck); selectedDeck=deck.id; deckEditorOpen=true; persist(); render(); };
+    container.querySelector('#magic-deck-list').onclick = event => { const button=event.target.closest('[data-select-deck]'); if(button){selectedDeck=button.dataset.selectDeck;deckEditorOpen=true;renderDecks();container.querySelector('#magic-close-deck')?.focus({preventScroll:true});} };
     container.querySelector('#magic-deck-editor').onclick = async event => {
+        if(event.target.closest('#magic-close-deck')) { deckEditorOpen=false;renderDecks();container.querySelector('[data-select-deck][aria-current="true"]')?.focus({preventScroll:true});return; }
         const deck=currentDeck(); if(!deck)return;
         if(event.target.closest('#magic-share-deck')) { await copyMagicShare('deck', deck.id); return; }
         if(event.target.closest('#magic-proxy-deck')) { await openMagicProxyPrinter(deck.cards.map(entry=>({name:collection.find(card=>card.id===entry.cardId)?.name,quantity:entry.quantity})).filter(card=>card.name)); return; }
@@ -960,8 +987,8 @@ export function showMagicDashboard(container, options = {}) {
             }
         }
         else if(event.target.closest('#magic-rename-deck')) { const name=prompt('Nome del mazzo',deck.name); if(name?.trim()){deck.name=name.trim();persist();renderDecks();} }
-        else if(event.target.closest('#magic-delete-deck')) { if(confirm(`Eliminare il mazzo “${deck.name}”?`)){decks=decks.filter(item=>item.id!==deck.id);selectedDeck=decks[0]?.id||'';persist();renderDecks();} }
-        else if(event.target.closest('#magic-play')) { activeTab='partita';render(); }
+        else if(event.target.closest('#magic-delete-deck')) { if(confirm(`Eliminare il mazzo “${deck.name}”?`)){decks=decks.filter(item=>item.id!==deck.id);selectedDeck=decks[0]?.id||'';deckEditorOpen=false;persist();renderDecks();} }
+        else if(event.target.closest('#magic-play')) { activeTab='partita';render();container.querySelector('#magic-join-deck').value=selectedDeck;container.querySelector('#magic-bot-player-deck').value=selectedDeck; }
         else { const add=event.target.closest('[data-deck-add]'), remove=event.target.closest('[data-deck-remove]'); const id=(add||remove)?.dataset[add?'deckAdd':'deckRemove']; if(id){let entry=deck.cards.find(item=>item.cardId===id); if(add&&getCount(id)>(entry?.quantity||0)){if(entry)entry.quantity++;else deck.cards.push({cardId:id,quantity:1});} else if(remove&&entry){entry.quantity--;if(!entry.quantity)deck.cards=deck.cards.filter(item=>item!==entry);} persist();renderDecks();} }
     };
     container.querySelector('#magic-deck-editor').onchange = async event => {
@@ -1173,12 +1200,36 @@ export function showMagicDashboard(container, options = {}) {
         if(!myTurn(state))return;
         const manaChoice=event.target.closest('[data-mana-choice]');if(manaChoice){const choice=manaChoice.dataset.manaChoice;await saveState(current=>{current.playersData[playerId()].manaChoice=choice;return current;});return;}
         if(event.target.closest('#magic-end-turn')) { await saveState(advanceTurn); return; }
-        if(event.target.closest('[data-cast-commander]')) {const id=event.target.closest('[data-cast-commander]')?.dataset.castCommander;await saveState(current=>{const own=current.playersData[playerId()],index=own.commandZone.findIndex(card=>card.id===id);if(index<0)return current;const card=own.commandZone[index],tax=(own.commanderCasts[id]||0)*2;own.manaPool ||= emptyManaPool();const paid=payMana(own.manaPool,card.manaCost||'',0,tax);if(!paid){setNotice(`Mana insufficiente per ${card.name}: costo ${card.manaCost||'0'} più tassa comandante di ${tax}. Tappa altre fonti o scegli colori diversi.`);return current;}own.manaPool=paid;own.commandZone.splice(index,1);own.commanderCasts[id]=(own.commanderCasts[id]||0)+1;const cast={...card,isCommander:true};resolvePlayedCard(current,playerId(),cast,container.querySelector('#magic-effect-target')?.value||'',0,true);current.log.unshift(`${card.name} lanciato dalla zona di comando pagando ${manaPoolLabel(paid)} residuo.`);return current;});return;}
+        if(event.target.closest('[data-cast-commander]')) {const id=event.target.closest('[data-cast-commander]')?.dataset.castCommander;await saveState(current=>{const own=current.playersData[playerId()],index=own.commandZone.findIndex(card=>card.id===id);if(index<0)return current;const card=own.commandZone[index],tax=(own.commanderCasts[id]||0)*2;own.manaPool ||= emptyManaPool();const paid=payMana(own.manaPool,card.manaCost||'',0,tax);if(!paid){throw new Error(`Mana insufficiente per ${card.name}: costo ${card.manaCost||'0'} più tassa comandante di ${tax}.`);}own.manaPool=paid;own.commandZone.splice(index,1);own.commanderCasts[id]=(own.commanderCasts[id]||0)+1;const cast={...card,isCommander:true};resolvePlayedCard(current,playerId(),cast,container.querySelector('#magic-effect-target')?.value||'',0,true);current.log.unshift(`${card.name} lanciato dalla zona di comando pagando ${manaPoolLabel(paid)} residuo.`);return current;});return;}
         if(event.target.closest('#magic-attack')) {const target=container.querySelector('#magic-attack-target')?.value;if(!target)return;await saveState(current=>{const own=current.playersData[playerId()],foe=current.playersData[target];if(!foe)return current;const attackers=own.battlefield.filter(card=>!card.tapped&&!card.summoningSick&&!(card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='defender')&&!/\bdefender\b/i.test(card.oracleText||'')&&(card.typeLine||'').toLowerCase().includes('creature'));const damage=attackers.reduce((sum,card)=>sum+(Number.parseInt(card.power,10)||0),0);attackers.forEach(card=>{if(!((card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='vigilance')||/\bvigilance\b/i.test(card.oracleText||'')))card.tapped=true;if(card.isCommander){own.commanderDamage[target] ||= {};own.commanderDamage[target][card.id]=(own.commanderDamage[target][card.id]||0)+(Number.parseInt(card.power,10)||0);}});foe.life=Math.max(0,foe.life-damage);const lifeGain=attackers.filter(card=>(card.keywords||[]).some(keyword=>String(keyword).toLowerCase()==='lifelink')||/\blifelink\b/i.test(card.oracleText||'')).reduce((sum,card)=>sum+(Number.parseInt(card.power,10)||0),0);if(lifeGain)own.life+=lifeGain;const commanderLethal=Object.values(own.commanderDamage[target]||{}).some(value=>value>=21);if(foe.life<=0||commanderLethal)foe.eliminated=true;const survivors=current.players.filter(id=>!current.playersData[id].eliminated);if(survivors.length===1)current.winner=survivors[0];current.log.unshift(`Attacco: ${damage} danni al giocatore ${current.players.indexOf(target)+1}${commanderLethal?' · 21 danni da comandante':''}.`);return current;});return;}
         const life=event.target.closest('[data-life]'); if(life){await saveState(current=>{current.playersData[playerId()].life=Math.max(0,current.playersData[playerId()].life+Number(life.dataset.life));return current;});return;}
         if(event.target.closest('#magic-clear-mana')) { await saveState(current=>{current.playersData[playerId()].manaPool=emptyManaPool();current.log.unshift('La riserva di mana viene svuotata.');return current;});return;}
-        const manaSource=event.target.closest('[data-board-action="mana"]'); if(manaSource){let addedColors=[],sourceName='';const saved=await saveState(current=>{const own=current.playersData[playerId()],card=own.battlefield[Number(manaSource.dataset.boardIndex)];if(!card||card.tapped)return current;const options=manaProductionOptions(card,own.colorIdentity),choice=own.manaChoice||'auto';const desiredCosts=[...(own.hand||[]).filter(item=>!String(item.typeLine||'').toLowerCase().includes('land')).map(item=>item.manaCost||''),...(own.commandZone||[]).map(item=>({manaCost:item.manaCost||'',extraGeneric:2*(own.commanderCasts?.[item.id]||0)}))];const optionIndex=choice==='auto'?chooseManaProductionOption(own,card,desiredCosts):options.findIndex(option=>option.includes(choice));if(optionIndex<0){setNotice(`${card.name} non può produrre mana ${choice}; scegli un colore consentito o usa Automatico.`);return current;}addedColors=addManaProduction(own,card,optionIndex);if(!addedColors.length){setNotice(`${card.name} non ha una fonte di mana automatizzata.`);return current;}sourceName=card.name;card.tapped=true;current.log.unshift(`${card.name}: aggiunge ${addedColors.map(color=>({W:'{W}',U:'{U}',B:'{B}',R:'{R}',G:'{G}',C:'{C}'})[color]).join(' ')}.`);return current;});if(saved)showManaPulse(addedColors,sourceName);return;}
-        const play=event.target.closest('[data-play-card]'); if(play){const index=Number(play.dataset.playCard),candidate=game()?.playersData?.[playerId()]?.hand?.[index];let xValue=0;if(candidate?.manaCost?.includes('{X}')){const choice=prompt(`Quanto vuoi pagare per X nel costo di ${candidate.name}?`,'0');if(choice===null)return;xValue=Math.max(0,Number.parseInt(choice,10)||0);}const target=container.querySelector('#magic-effect-target')?.value||'';await saveState(current=>{const own=current.playersData[playerId()],card=own.hand[index];if(!card)return current;if((card.typeLine||'').toLowerCase().includes('land')){if(own.landsPlayed>=1){setNotice('Puoi giocare una sola terra per turno.');return current;}own.landsPlayed++;own.hand.splice(index,1);const land={...card,tapped:/enters(?: the battlefield)? tapped(?:[.;,]|$)/i.test(card.oracleText||''),damageMarked:0};own.battlefield.push(land);const entryEffects=resolveOracleText(land,current,playerId(),'',0,true);current.log.unshift(...entryEffects.log);current.log.unshift(`Hai giocato ${card.name}.`);return current;}if(/\btarget\b|any target/i.test(card.oracleText||'')&&!target){setNotice(`Scegli prima il bersaglio per ${card.name}.`);return current;}own.manaPool ||= emptyManaPool();const paid=payMana(own.manaPool,card.manaCost||'',xValue);if(!paid){setNotice(`Mana insufficiente o colori non corretti per ${card.name} (${card.manaCost||'0'}). Tappa le fonti richieste e riprova.`);return current;}own.manaPool=paid;own.hand.splice(index,1);resolvePlayedCard(current,playerId(),{...card},target,xValue,false);current.log.unshift(`${card.name} lanciata pagando ${card.manaCost||'0'}${xValue?` con X=${xValue}`:''}.`);return current;});return;}
+        const manaSource = event.target.closest('[data-board-action="mana"]');
+        if (manaSource) {
+            const code = room.code, index = Number(manaSource.dataset.boardIndex);
+            const selected = state.playersData[playerId()].battlefield[index];
+            const choice = state.playersData[playerId()].manaChoice || 'auto';
+            const activate = async () => {
+                if (disposed || room?.code !== code || !myTurn(game())) return;
+                let addedColors = [], sourceName = '';
+                const saved = await saveState(current => {
+                    const own = current.playersData[playerId()];
+                    const card = selected?.instanceId ? own.battlefield.find(item => item.instanceId === selected.instanceId) : own.battlefield[index];
+                    if (!card || card.id !== selected?.id) throw new Error('La carta non è più sul campo.');
+                    const desiredCosts = [...own.hand.filter(item => !/\bland\b/i.test(item.typeLine || '')).map(item => item.manaCost || ''), ...own.commandZone.map(item => ({manaCost:item.manaCost || '', extraGeneric:2*(own.commanderCasts?.[item.id] || 0)}))];
+                    addedColors = tapManaSource(own, card, choice, desiredCosts);
+                    sourceName = card.name;
+                    current.log.unshift(`${card.name}: aggiunge ${addedColors.map(color => `{${color}}`).join(' ')}.`);
+                    return current;
+                });
+                if (saved) { showManaPulse(addedColors, sourceName); setNotice(`${sourceName}: mana aggiunto alla riserva.`); }
+            };
+            // Multiple land taps are applied in order, even before the first network write returns.
+            manaTapQueue = manaTapQueue.then(activate, activate);
+            await manaTapQueue;
+            return;
+        }
+        const play=event.target.closest('[data-play-card]'); if(play){const index=Number(play.dataset.playCard),candidate=game()?.playersData?.[playerId()]?.hand?.[index];let xValue=0;if(candidate?.manaCost?.includes('{X}')){const choice=prompt(`Quanto vuoi pagare per X nel costo di ${candidate.name}?`,'0');if(choice===null)return;xValue=Math.max(0,Number.parseInt(choice,10)||0);}const target=container.querySelector('#magic-effect-target')?.value||'';await saveState(current=>{const own=current.playersData[playerId()],card=own.hand[index];if(!card)return current;if((card.typeLine||'').toLowerCase().includes('land')){if(own.landsPlayed>=1){setNotice('Puoi giocare una sola terra per turno.');return current;}own.landsPlayed++;own.hand.splice(index,1);const land={...card,instanceId:crypto.randomUUID(),tapped:/enters(?: the battlefield)? tapped(?:[.;,]|$)/i.test(card.oracleText||''),damageMarked:0};own.battlefield.push(land);const entryEffects=resolveOracleText(land,current,playerId(),'',0,true);current.log.unshift(...entryEffects.log);current.log.unshift(`Hai giocato ${card.name}.`);return current;}if(spellNeedsTarget(card)&&!target){throw new Error(`Scegli prima il bersaglio per ${card.name}.`);}own.manaPool ||= emptyManaPool();const paid=payMana(own.manaPool,card.manaCost||'',xValue);if(!paid){throw new Error(`Mana insufficiente o colori non corretti per ${card.name} (${card.manaCost||'0'}). Tappa le fonti richieste e riprova.`);}own.manaPool=paid;own.hand.splice(index,1);resolvePlayedCard(current,playerId(),{...card},target,xValue,false);current.log.unshift(`${card.name} lanciata pagando ${card.manaCost||'0'}${xValue?` con X=${xValue}`:''}.`);return current;});return;}
     };
     const initializeCloud = async () => {
         try {
@@ -1209,7 +1260,7 @@ export function showMagicDashboard(container, options = {}) {
         }
     };
     if(room?.code && !room?.data?.magic?.botMatch) watchRoom(room);
-    motionCleanup=enhanceSurfaceMotion(container,{selector:'.magic-panel,.magic-scan-box,.magic-room-bar'});
+    // Magic panels appear immediately: no reveal animation between card views.
     const cleanupMagic=()=>{disposed=true;lifecycle.disconnect();clearTimeout(botTurnTimer);clearTimeout(drawAnimationTimer);clearTimeout(manaPulseTimer);document.removeEventListener('fullscreenchange',handleFullscreenChange);document.removeEventListener('keydown',handleFullscreenEscape);if(document.fullscreenElement===tableRoot)void document.exitFullscreen?.();if(pseudoFullscreen)exitPseudoFullscreen();stopWatching?.();if(pollTimer)clearInterval(pollTimer);clearTimeout(searchTimer);clearTimeout(cloudSaveTimer);motionCleanup?.();if(cameraPhoto)URL.revokeObjectURL(cameraPhoto);};
     const lifecycle = new MutationObserver(() => { if (!tableRoot.isConnected) cleanupMagic(); });
     window.__magicCleanup = cleanupMagic;

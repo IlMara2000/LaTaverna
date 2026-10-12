@@ -73,7 +73,7 @@ export async function navigateTo(destination, container = document.getElementByI
         minigames: { label: 'la sala giochi', load: () => import('../minigamelist.js'), render: (module) => module.showMinigamesList(container, options) },
         magic: { label: 'Magic: The Gathering', load: () => import('../dashboards/magic.js'), render: (module) => module.showMagicDashboard(container, options) },
         dnd5e: { label: 'D&D', load: () => import('../dashboards/dnd5e.js'), render: (module) => module.initDndDashboard(container) },
-        cardCounter: { label: 'il Segnapunti', load: () => import('../dashboards/cardCounter.js'), render: module => module.showCardCounter(container) },
+        cardCounter: { label: 'il Segnapunti', load: () => import('../dashboards/cardCounter.js'), render: module => module.showCardCounter(container, options) },
         reading: { label: 'Lettura', load: () => import('../components/features/reading/Reading.js'), render: (module) => module.showReading(container) },
         shop: { label: 'la bottega', load: () => import('../dashboards/bottega.js'), render: (module) => module.initBottega(container) },
         artisanShop: { label: 'L’Artigiano Rituale', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },

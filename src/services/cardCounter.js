@@ -1,12 +1,13 @@
 export const COUNTER_KEY = 'taverna_card_counter_v1';
 export const PRESETS = Object.freeze({
     yugioh: { name: 'Yu-Gi-Oh!', label: 'Life Points', initial: 8000, steps: [100,500,1000], counters: ['Segnalini'] },
-    magic: { name: 'Magic', label: 'Punti vita', initial: 20, steps: [1,5,10], counters: ['Veleno','Energia'] },
-    commander: { name: 'Magic · Commander', label: 'Punti vita', initial: 40, steps: [1,5,10], counters: ['Veleno','Lanci comandante'] },
+    commander: { name: 'Magic', label: 'Punti vita', initial: 40, steps: [1,5,10], counters: ['Veleno','Lanci comandante'] },
     pokemon: { name: 'Pokémon', label: 'Premi rimasti', initial: 6, steps: [1], counters: ['Danni · Pokémon attivo'] },
     custom: { name: 'Personalizzato', label: 'Punti', initial: 0, steps: [1,5,10], counters: [] }
 });
-export function createMatch(preset='yugioh', count=2, initial=PRESETS[preset]?.initial) {
+export function createMatch(preset='yugioh', count=2, initial) {
+    if (preset === 'magic') preset = 'commander'; // Accept old links without a duplicate UI preset.
+    if (initial === undefined) initial = PRESETS[preset]?.initial;
     if (!PRESETS[preset] || !Number.isInteger(count) || count<2 || count>6 || !Number.isSafeInteger(initial) || Math.abs(initial)>999999) throw new Error('Configurazione non valida.');
     return { version:1, preset, initial, turn:1, active:0, log:[], players:Array.from({length:count},(_,i)=>({
         name:`Giocatore ${i+1}`, value:initial,
@@ -14,6 +15,7 @@ export function createMatch(preset='yugioh', count=2, initial=PRESETS[preset]?.i
     })) };
 }
 export function validateMatch(value) {
+    if (value?.preset === 'magic') value = { ...value, preset: 'commander' }; // Preserve legacy saved scores.
     if (!value || value.version!==1 || !PRESETS[value.preset] || !Array.isArray(value.players) || value.players.length<2 || value.players.length>6) return null;
     if (!Number.isSafeInteger(value.initial) || Math.abs(value.initial)>999999 || !Number.isSafeInteger(value.turn) || value.turn<1 || !Number.isInteger(value.active) || value.active<0 || value.active>=value.players.length) return null;
     for (const p of value.players) {

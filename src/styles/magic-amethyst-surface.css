@@ -31,3 +31,37 @@ html:has(#ui .card-counter) body {
     background: var(--crystal-page, #10091d) !important;
     color: var(--text-primary, #faf6ff);
 }
+
+/* Quiet white work surfaces preserve contrast on the shared amethyst backdrop. */
+#ui #app .magic-page .magic-panel {
+    padding: clamp(16px, 3vw, 28px);
+    border: 1px solid #ffffff30;
+    border-radius: 22px;
+    background: #fafbf8;
+    color: #203b3b;
+}
+#ui #app .magic-page :is(.magic-heading h1, .magic-heading p) {
+    color: #faf6ff !important;
+    text-shadow: none;
+}
+#ui #app .magic-page .magic-topbar :is(.app-back-button, .magic-counter-link) {
+    color: #efe5fc !important;
+}
+#ui #app .magic-page .magic-tabs { border-bottom-color: #ffffff38; }
+#ui #app .magic-page .magic-tabs button { color: #dbcee8; }
+#ui #app .magic-page .magic-tabs button[aria-selected=true] {
+    color: #fff;
+    border-bottom-color: #d8b9ff;
+}
+#ui #app .magic-page > .magic-notice { color: #f2e7ff; }
+#ui #app .magic-page .magic-match-screen {
+    background: transparent !important;
+    color: #203b3b;
+    box-shadow: none;
+}
+#ui #app .card-counter .counter-header :is(h1, [data-match-label]),
+#ui #app .card-counter .counter-toolbar .counter-status { color: #f2e7ff; }
+@media (max-width: 700px) {
+    #ui #app .magic-page .magic-panel { padding: 14px; border-radius: 18px; }
+    #ui #app .magic-page.is-playing .magic-panel { padding: 8px; }
+}
