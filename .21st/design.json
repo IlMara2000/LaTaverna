@@ -98,6 +98,16 @@
       "area": "Magic collection, deck builder, match and scorekeeper",
       "decision": "Give the entire Magic section a pale white-and-amethyst claymorphism skin with soft raised/inset shadows, rounded panels and the existing comic Bangers/Manrope typography. Keep card faces, readable rules text, gameplay zones and mobile tap targets clear. Use the supplied Pokémon TCG Pocket screen recording only as a reference for compact mobile spacing, stacked collection/deck blocks and gentle light-blue/lilac surfaces; do not reuse its marks or art.",
       "source": "User request and supplied screen recording, 2026-10-10"
+    },
+    {
+      "area": "Magic simplicity",
+      "decision": "Supersede the heavy amethyst clay skin with warm ivory, ink and one teal accent. Card-first collection and deck shelf; open the deck editor only after selection. Import, sharing, exports and mana color choices use progressive disclosure. Quiet surfaces, no nested decorative panels, compact match HUD and hand adjacent to turn actions. Preserve comic titles and all gameplay functionality.",
+      "source": "User request to substantially simplify all Magic screens, 2026-10-11"
+    },
+    {
+      "area": "Magic integrated release",
+      "decision": "Keep the simplified card-first flows. Restore the shared amethyst page background per latest user direction, with pale work surfaces and light headings outside panels for contrast. Magic entry opens the 40-life format; use the illustrated card artwork on the home tile.",
+      "source": "Coordinated user requests in both Magic chats, 2026-10-12"
     }
   ],
   "evidence": [

@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createMatch,changeScore,validateMatch,loadMatch,saveMatch} from '../../src/services/cardCounter.js';
+import {PRESETS,createMatch,changeScore,validateMatch,loadMatch,saveMatch} from '../../src/services/cardCounter.js';
 test('presets initialize independent players and counters',()=>{
- for(const [preset,initial] of [['yugioh',8000],['magic',20],['commander',40],['pokemon',6],['custom',0]]){
+ for(const [preset,initial] of [['yugioh',8000],['magic',40],['commander',40],['pokemon',6],['custom',0]]){
   const s=createMatch(preset,4);assert.equal(s.players.length,4);assert.equal(s.players[0].value,initial);assert.ok(validateMatch(s));
  }
 });
 test('score changes do not mutate history and respect the preset boundaries',()=>{
  const y=createMatch();const n=changeScore(y,0,-1500);assert.equal(n.players[0].value,6500);assert.equal(y.players[0].value,8000);
  assert.equal(changeScore(y,0,-9000).players[0].value,0);
- const m=createMatch('magic');assert.equal(changeScore(m,0,-21).players[0].value,-1);
+ const m=createMatch('magic');assert.equal(changeScore(m,0,-41).players[0].value,-1);
  const p=createMatch('pokemon');assert.equal(changeScore(p,0,5).players[0].value,6);assert.equal(changeScore(p,0,-7).players[0].value,0);
 });
 test('damage counters increment separately and never become negative',()=>{
@@ -23,4 +23,15 @@ test('saved games round-trip and corrupt storage is rejected',()=>{
  assert.equal(loadMatch({getItem:()=>'{bad'}),null);assert.equal(saveMatch(s,{setItem:()=>{throw Error();}}),false);
  const bad=structuredClone(s);bad.players[0].counters[0].value=-1;assert.equal(validateMatch(bad),null);
  assert.throws(()=>createMatch('bogus'));assert.throws(()=>createMatch('magic',7));
+});
+
+test('one Magic choice starts at 40 and legacy saves keep their scores',()=>{
+ assert.equal(PRESETS.magic,undefined);
+ assert.equal(PRESETS.commander.name,'Magic');
+ assert.equal(createMatch('magic').preset,'commander');
+ const legacy=createMatch('commander',2,20);legacy.preset='magic';legacy.players[0].value=17;
+ const restored=validateMatch(legacy);
+ assert.equal(restored.preset,'commander');assert.equal(restored.players[0].value,17);
+ assert.equal(restored.initial,20);assert.equal(legacy.preset,'magic');
+ assert.equal(changeScore(createMatch('commander'),0,10).players[0].value,50);
 });

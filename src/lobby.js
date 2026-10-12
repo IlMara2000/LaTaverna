@@ -81,7 +81,7 @@ export function showLobby(container) {
                     </button>
 
                     <button type="button" class="taverna-scene scene-magic" id="hub-magic-games">
-                        <img src="/images/magic-tavern-table.webp" alt="Carte di Magic sul tavolo della Taverna" loading="lazy" decoding="async">
+                        <img src="/images/magic-home-cards.webp" alt="Carte di Magic sul tavolo della Taverna" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">IV · IL MULTIVERSO</span>
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">✦</span><span class="taverna-scene-title">Magic: The Gathering</span><span class="scene-description">Costruisci il tuo mazzo Commander e sfida la Taverna.</span><span class="scene-link">Entra nel multiverso <b aria-hidden="true">↗</b></span></span>

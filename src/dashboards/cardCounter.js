@@ -4,10 +4,14 @@ import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import './cardCounter.css';
 import './magic-clay.css';
 const escape = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-export function showCardCounter(container) {
+export function showCardCounter(container, options = {}) {
     updateSidebarContext('cardCounter');
     let storage;try{storage=localStorage;}catch{}
-    let state=loadMatch(storage)||createMatch(), undo=[];
+    const requestedPreset = PRESETS[options.preset] ? options.preset : null;
+    const savedMatch = loadMatch(storage);
+    let state = requestedPreset
+        ? (savedMatch?.preset === requestedPreset ? savedMatch : createMatch(requestedPreset))
+        : (savedMatch || createMatch()), undo=[];
     const root=document.createElement('section');root.className='card-counter';container.replaceChildren(root);
     root.innerHTML=`<header class="counter-header"><button type="button" data-home aria-label="Torna alla Taverna">←</button><div><h1>Segnapunti</h1><strong data-match-label></strong></div><button type="button" data-settings aria-label="Impostazioni della partita">⚙ <span>Partita</span></button></header>
     <div class="counter-players"></div>
@@ -30,10 +34,11 @@ export function showCardCounter(container) {
         find('.counter-players').innerHTML=state.players.map((p,i)=>`<article class="counter-player ${i===state.active?'is-active':''}" data-player="${i}">
             <div class="counter-player-top"><button type="button" data-details><span>${escape(p.name)}</span><small>${i===state.active?'DI TURNO':'GIOCATORE '+(i+1)}</small></button><span class="counter-value-label">${preset.label}</span></div>
             <div class="counter-face"><button type="button" class="counter-tap" data-delta="${-preset.steps[0]}" data-focus="p${i}minus${preset.steps[0]}" aria-label="Sottrai ${preset.steps[0]} a ${escape(p.name)}">−<small>${preset.steps[0]}</small></button><output class="counter-value" aria-label="${escape(p.name)}: ${preset.label}">${p.value.toLocaleString('it-IT')}</output><button type="button" class="counter-tap" data-delta="${preset.steps[0]}" data-focus="p${i}plus${preset.steps[0]}" aria-label="Aggiungi ${preset.steps[0]} a ${escape(p.name)}">+<small>${preset.steps[0]}</small></button></div>
-            <div class="counter-quick">${preset.steps.slice(1).map(n=>`<button type="button" data-delta="${-n}" data-focus="p${i}minus${n}" aria-label="Sottrai ${n} a ${escape(p.name)}">−${n}</button><button type="button" data-delta="${n}" data-focus="p${i}plus${n}" aria-label="Aggiungi ${n} a ${escape(p.name)}">+${n}</button>`).join('')}</div>
-            <button type="button" class="counter-details-button" data-details aria-label="Dettagli e segnalini di ${escape(p.name)}"><span>Segnalini & dettagli ↗</span><span class="counter-token-preview">${p.counters.filter(c=>c.value).slice(0,2).map(c=>`${escape(c.name)} ${c.value}`).join(' · ') || 'Importo libero, nome e contatori'}</span></button>
+
+            <button type="button" class="counter-details-button" data-details aria-label="Dettagli e segnalini di ${escape(p.name)}"><span>Altre azioni</span><span class="counter-token-preview">${p.counters.filter(c=>c.value).slice(0,2).map(c=>`${escape(c.name)} ${c.value}`).join(' · ') || ''}</span></button>
             <dialog class="counter-dialog counter-player-dialog" aria-label="Dettagli di ${escape(p.name)}"><button type="button" data-close-player class="counter-close" aria-label="Chiudi dettagli">×</button><h2>Il tuo contatore</h2><label>Nome<input data-name maxlength="40" aria-label="Nome giocatore ${i+1}" value="${escape(p.name)}"></label>
             <form class="counter-adjust"><label>Importo<input type="number" name="amount" min="1" max="999999" step="1" required placeholder="Es. ${preset.steps[0]}" aria-label="Importo per ${escape(p.name)}"></label><button type="submit" name="sign" value="-1">Sottrai</button><button type="submit" name="sign" value="1">Aggiungi</button>${state.preset==='yugioh'?'<button type="button" data-half>Dimezza LP</button>':''}</form>
+            <div class="counter-quick">${preset.steps.slice(1).map(n=>`<button type="button" data-delta="${-n}" data-focus="p${i}minus${n}" aria-label="Sottrai ${n} a ${escape(p.name)}">−${n}</button><button type="button" data-delta="${n}" data-focus="p${i}plus${n}" aria-label="Aggiungi ${n} a ${escape(p.name)}">+${n}</button>`).join('')}</div>
             <div class="counter-token-heading"><h2>Segnalini</h2><button type="button" data-add-token>+ Aggiungi</button></div>
             <ul class="counter-tokens">${p.counters.map(c=>`<li data-token="${escape(c.id)}"><span>${escape(c.name)}<small>Passo ${c.step}</small></span><button type="button" data-token-delta="${-c.step}" data-focus="p${i}${escape(c.id)}minus" aria-label="Riduci ${escape(c.name)} di ${c.step}" ${c.value===0?'disabled':''}>−</button><output>${c.value}</output><button type="button" data-token-delta="${c.step}" data-focus="p${i}${escape(c.id)}plus" aria-label="Aumenta ${escape(c.name)} di ${c.step}">+</button><button type="button" data-remove-token aria-label="Rimuovi ${escape(c.name)}" title="Rimuovi segnalino">×</button></li>`).join('')||'<li class="counter-token-empty">Mana, danni, cariche… aggiungi il tuo primo segnalino.</li>'}</ul>
         </dialog></article>`).join('');
@@ -57,7 +62,7 @@ export function showCardCounter(container) {
     form.elements.preset.onchange=()=>{form.elements.initial.value=PRESETS[form.elements.preset.value].initial;};
     form.onsubmit=e=>{e.preventDefault();const preset=form.elements.preset.value,count=Number(form.elements.players.value),initial=Number(form.elements.initial.value);
         modal('Iniziare una nuova partita?','<p>I contatori attuali saranno azzerati. Puoi recuperare la partita precedente con “Annulla”.</p>',()=>{commit(createMatch(preset,count,initial));find('.counter-settings').close();announce('Nuova partita pronta.');});};
-    find('[data-home]').onclick=()=>navigateTo('home',container);
+    find('[data-home]').onclick=()=>navigateTo(options.returnTo === 'magic' ? 'magic' : 'home',container);
     find('[data-next]').onclick=()=>{const next=structuredClone(state);next.active=(next.active+1)%next.players.length;next.turn++;next.log.push(`Turno ${next.turn} · ${next.players[next.active].name}`);next.log=next.log.slice(-50);commit(next);announce(`È il turno di ${state.players[state.active].name}.`);};
     find('[data-undo]').onclick=()=>{if(undo.length){state=undo.pop();render();announce('Ultima modifica annullata.');}};
     function randomResult(sides,label){const bytes=new Uint32Array(1);let n;const limit=Math.floor(4294967296/sides)*sides;do{crypto.getRandomValues(bytes);n=bytes[0];}while(n>=limit);const result=label(n%sides);const next=structuredClone(state);next.log.push(result);next.log=next.log.slice(-50);commit(next);announce(result);find('[data-tool-result]').textContent=result;}
