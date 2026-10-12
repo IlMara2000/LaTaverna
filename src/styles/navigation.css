@@ -61,6 +61,13 @@ body:has(.app-back-button) #nav-home-btn { display: none !important; }
     background: linear-gradient(145deg, rgb(190 132 239 / 18%), rgb(105 53 157 / 12%)), rgb(43 24 64 / 90%) !important;
     touch-action: manipulation;
 }
+#ui #navbar-trigger.is-mobile-draggable {
+    touch-action: none;
+    cursor: grab;
+    transition: none;
+    will-change: left, top;
+}
+#ui #navbar-trigger.is-mobile-draggable:active { cursor: grabbing; }
 body.dnd-session-active { --menu-bottom-gap: 100px; }
 
 /* A native scroll region independent from any game's gesture lock. */
