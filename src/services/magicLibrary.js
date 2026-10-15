@@ -21,7 +21,11 @@ const cardData = card => ({
     keywords: Array.isArray(card.keywords) ? card.keywords : [],
     commanderLegality: card.commanderLegality || 'unknown',
     set: card.set || '',
-    rarity: card.rarity || ''
+    rarity: card.rarity || '',
+    printedText: card.printedText || '',
+    printedName: card.printedName || '',
+    language: card.language || 'en',
+    oracleId: card.oracleId || ''
 });
 
 export async function getMagicAccount() {
@@ -42,11 +46,13 @@ export async function loadMagicLibrary(userId) {
     const deckCards = decks.length
         ? await checked(supabase.from('magic_deck_cards').select('deck_id,card_id,quantity').in('deck_id', decks.map(deck => deck.id)))
         : [];
+    const wantlist = await checked(supabase.from('magic_wantlist_cards').select('card_id,card_name,card_data').eq('user_id', userId).order('added_at'));
     return {
         collectionId: collection?.id || null,
         collectionPublic: collection?.is_public === true,
-        hasCloudData: Boolean(collection || decks.length),
+        hasCloudData: Boolean(collection || decks.length || wantlist?.length),
         cards: (cards || []).map(row => ({ ...(row.card_data || {}), id: row.card_id, name: row.card_name, quantity: row.quantity })),
+        wantlist: (wantlist || []).map(row => ({ ...(row.card_data || {}), id: row.card_id, name: row.card_name, quantity: 1 })),
         decks: (decks || []).map(deck => ({
             id: deck.id, name: deck.name,
             commanders: Array.isArray(deck.commanders) ? deck.commanders : [],
@@ -70,7 +76,7 @@ const replaceChildRows = async (table, parentColumn, parentId, rows, ownerColumn
     if (rows.length) await checked(supabase.from(table).upsert(rows, { onConflict: `${parentColumn},card_id` }));
 };
 
-export async function saveMagicLibrary({ userId, cards, decks }) {
+export async function saveMagicLibrary({ userId, cards, decks, wantlist = [] }) {
     const found = await checked(supabase.from('magic_collections').select('id').eq('user_id', userId).maybeSingle());
     const collection = found || await checked(supabase.from('magic_collections').insert({ user_id: userId }).select('id').single());
     const collectionRows = cards.filter(card => card?.id && card?.name).map(card => ({
@@ -96,6 +102,14 @@ export async function saveMagicLibrary({ userId, cards, decks }) {
         });
         await replaceChildRows('magic_deck_cards', 'deck_id', deck.id, rows);
     }
+    const wantlistRows = wantlist.filter(card => card?.id && card?.name).map(card => ({
+        user_id: userId, card_id: String(card.id), card_name: String(card.name).slice(0, 120), card_data: cardData(card), added_at: new Date().toISOString()
+    }));
+    const existingWantlist = await checked(supabase.from('magic_wantlist_cards').select('card_id').eq('user_id', userId));
+    const desiredIds = new Set(wantlistRows.map(row => row.card_id));
+    const removedWantlistIds = (existingWantlist || []).map(row => row.card_id).filter(cardId => !desiredIds.has(cardId));
+    if (removedWantlistIds.length) await checked(supabase.from('magic_wantlist_cards').delete().eq('user_id', userId).in('card_id', removedWantlistIds));
+    if (wantlistRows.length) await checked(supabase.from('magic_wantlist_cards').upsert(wantlistRows, { onConflict: 'user_id,card_id' }));
     return { collectionId: collection.id };
 }
 
