@@ -87,7 +87,7 @@ const extractProxySheetNames = async (canvas, worker) => {
         }).filter(Boolean).join(' ');
         const primaryName = cleanOcrTitle(primary), fallbackName = cleanOcrTitle(fallback);
         const name = primaryName.length >= 3 ? primaryName : fallbackName;
-        if (name.length >= 3 && name.length <= 100) names.push({
+        if (name.length >= 3 && name.length <= 100 && !isSectionHeading(name)) names.push({
             name,
             quantity: 1,
             alternatives: fallbackName && fallbackName.toLocaleLowerCase() !== name.toLocaleLowerCase() ? [fallbackName] : []
@@ -115,7 +115,7 @@ const groqScanRequest = async (body, onProgress) => {
         nextGroqRequestAt = Date.now() + ((body.images?.length || 0) > 1 ? 60000 : 20000);
         const response = await fetch('/api/magic/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const payload = await response.json().catch(() => ({}));
-        if (response.ok) return payload.cards || [];
+        if (response.ok) return (payload.cards || []).filter(card => !isSectionHeading(card?.name));
         if (response.status !== 429 || attempt === 2) throw new Error(payload.error || 'Scansione non disponibile.');
         const headerDelay = Number(response.headers.get('Retry-After')) * 1000;
         const delay = Math.max(Number.isFinite(headerDelay) ? headerDelay : 0, payload.retryAfterMs || 0, 2500 * (2 ** attempt));
@@ -147,16 +147,21 @@ const groqScanImages = async (images, onProgress) => {
 };
 
 const SKIP_LIST_LINES = /^(?:commander|mainboard|sideboard|maybeboard|considering|deck|cards?|terre|creature|instant|sorcery|enchantment|artifact|planeswalker|battle|total|quantità|quantita|name|nome)$/i;
+const isSectionHeading = value => {
+    const title = String(value || '').replace(/\s+/g, ' ').trim();
+    return /^(?:artifact|creature|enchantment|instant|sorcer(?:y|ies)|land|plane(?:swalker)?|battle|commander|mainboard|sideboard|maybeboard|companion|token)s?(?:\s*\(\s*\d+\s*(?:cards?)?\s*\)|\s+\d+\s*(?:cards?)?)?\s*:?$/i.test(title);
+};
+
 export function parseMagicCardList(source) {
     const quantities = new Map();
     const rows = String(source || '').split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('#'));
     let matched = 0;
     for (const row of rows) {
-        if (/^(?:sideboard|maybeboard|considering)\b/i.test(row) || SKIP_LIST_LINES.test(row)) continue;
+        if (/^(?:sideboard|maybeboard|considering)\b/i.test(row) || SKIP_LIST_LINES.test(row) || isSectionHeading(row)) continue;
         const match = row.match(/^(?:(\d{1,3})\s*[x×]?\s+)?(.+?)(?:\s+[x×]\s*(\d{1,3}))?$/i);
         if (!match) continue;
         let name = (match[2] || '').trim().replace(/\s+\([A-Z0-9]{2,8}\)\s+[A-Z0-9-]+(?:\s+\*?[A-Z]?\*?)?$/i, '').replace(/\s+#.*$/, '').trim();
-        if (name.length < 2 || name.length > 120 || SKIP_LIST_LINES.test(name) || /^\d+$/.test(name)) continue;
+        if (name.length < 2 || name.length > 120 || SKIP_LIST_LINES.test(name) || isSectionHeading(name) || /^\d+$/.test(name)) continue;
         const quantity = Math.min(99, Math.max(1, Number(match[1] || match[3] || 1)));
         quantities.set(name, Math.min(99, (quantities.get(name) || 0) + quantity));
         matched++;
