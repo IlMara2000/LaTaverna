@@ -61,6 +61,23 @@ export const callGroqVision = async ({ images = [], text = '' }) => {
     return { cards, model: visionModel, usage: data?.usage || null };
 };
 
+export const translateMagicOracle = async ({ name, typeLine, text }) => {
+    const config = getGroqConfig();
+    if (!config.apiKey) throw Object.assign(new Error('GROQ_LLM_API_KEY non configurata nelle variabili server.'), { statusCode: 503, code: 'missing_groq_key' });
+    const response = await fetch(GROQ_API_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
+        body: JSON.stringify({ model: config.model, temperature: 0, max_tokens: 1000, stream: false, messages: [
+            { role: 'system', content: 'Traduci in italiano il testo Oracle della carta Magic. Conserva nome della carta, nomi propri, simboli e notazione di mana, numeri, parole chiave e struttura delle righe. Usa terminologia ufficiale italiana di Magic quando nota. Non aggiungere spiegazioni, regole o testo assente. Restituisci esclusivamente la traduzione.' },
+            { role: 'user', content: `Carta: ${sanitizeText(name, 120)}\nTipo: ${sanitizeText(typeLine, 200)}\nTesto Oracle:\n${sanitizeText(text, 2500)}` }
+        ] })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw Object.assign(new Error(data?.error?.message || `Groq non disponibile (${response.status}).`), { statusCode: response.status, code: data?.error?.code || 'groq_error' });
+    const translation = sanitizeText(data?.choices?.[0]?.message?.content || '', 3000);
+    if (!translation) throw Object.assign(new Error('Traduzione non disponibile.'), { statusCode: 502, code: 'empty_translation' });
+    return { translation, model: config.model, usage: data?.usage || null };
+};
+
 export const buildRpgMessages = ({ prompt, mode, systemId, context, history }) => {
     const systemLabels = { dnd5e: 'D&D 5e', pathfinder2e: 'Pathfinder 2e', callofcthulhu: 'Call of Cthulhu', savageworlds: 'Savage Worlds', forbiddenlands: 'Forbidden Lands' };
     const normalizedSystem = systemLabels[systemId] || String(systemId || 'dnd5e');

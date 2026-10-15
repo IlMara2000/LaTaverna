@@ -164,7 +164,47 @@ export function parseMagicCardList(source) {
     return { cards: [...quantities].map(([name, quantity]) => ({ name, quantity })), ratio: rows.length ? matched / rows.length : 0 };
 }
 
+async function readDocx(file) {
+    if (file.size > 10 * 1024 * 1024) throw new Error('Il DOCX supera il limite di 10 MB.');
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const decoder = new TextDecoder();
+    for (let directory = 0; directory + 46 < bytes.length;) {
+        if (view.getUint32(directory, true) !== 0x02014b50) { directory++; continue; }
+        const method = view.getUint16(directory + 10, true), compressedSize = view.getUint32(directory + 20, true);
+        const nameLength = view.getUint16(directory + 28, true), extraLength = view.getUint16(directory + 30, true);
+        const commentLength = view.getUint16(directory + 32, true), localOffset = view.getUint32(directory + 42, true);
+        const nameStart = directory + 46;
+        const name = decoder.decode(bytes.subarray(nameStart, nameStart + nameLength));
+        if (name === 'word/document.xml') {
+            const localNameLength = view.getUint16(localOffset + 26, true), localExtraLength = view.getUint16(localOffset + 28, true);
+            const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+            const compressed = bytes.subarray(dataStart, dataStart + compressedSize);
+            let xmlBytes;
+            if (method === 0) xmlBytes = compressed;
+            else if (method === 8 && typeof DecompressionStream !== 'undefined') {
+                const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+                xmlBytes = new Uint8Array(await new Response(stream).arrayBuffer());
+            } else throw new Error('Questo DOCX usa una compressione non supportata dal browser.');
+            const xml = new DOMParser().parseFromString(decoder.decode(xmlBytes), 'application/xml');
+            if (xml.querySelector('parsererror')) throw new Error('Il documento DOCX non è valido.');
+            return [...xml.getElementsByTagNameNS('*', 'p')].map(paragraph =>
+                [...paragraph.getElementsByTagNameNS('*', 't')].map(node => node.textContent || '').join('')
+            ).filter(Boolean).join('\n');
+        }
+        directory = nameStart + nameLength + extraLength + commentLength;
+    }
+    throw new Error('Nel DOCX non ho trovato il testo del documento.');
+}
+
 export async function scanMagicDocument(file, onProgress = () => {}) {
+    if (file.name.toLowerCase().endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        const source = await readDocx(file);
+        const parsed = parseMagicCardList(source);
+        if (!parsed.cards.length) throw new Error('Non ho trovato nomi di carte nel DOCX. Usa una carta per riga, per esempio “1 Sol Ring”.');
+        onProgress(`Trovate ${parsed.cards.length} carte nel DOCX, senza usare Groq.`);
+        return parsed.cards;
+    }
     if (file.name.toLowerCase().endsWith('.txt') || file.type === 'text/plain') {
         if (file.size > 2 * 1024 * 1024) throw new Error('Il file di testo supera il limite di 2 MB.');
         const parsed = parseMagicCardList(await file.text());
@@ -178,7 +218,7 @@ export async function scanMagicDocument(file, onProgress = () => {}) {
         let text = '';
         for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
             const page = await pdf.getPage(pageNo), content = await page.getTextContent();
-            text += `\n${content.items.map(item => item.str || '').join(' ')}`;
+            text += `\n${content.items.map(item => `${item.str || ''}${item.hasEOL ? '\n' : ' '}`).join('')}`;
         }
         if (text.replace(/\s/g, '').length > 40) {
             const parsed = parseMagicCardList(text);
