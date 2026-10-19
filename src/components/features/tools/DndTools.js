@@ -1,3 +1,4 @@
+import { renderDungeonWorkshop, renderDonjonCatalog } from './DungeonWorkshop.js';
 import './dndTools.css';
 import {
     ABILITIES,
@@ -28,6 +29,8 @@ const MANUALS = {
 };
 
 const TOOL_CARDS = [
+    { id: 'dungeon', glyph: '▦', eyebrow: 'Mappe', title: 'Officina dei dungeon', description: 'Mappe con seed, stanze, porte, scale e appunti. Esporta o prepara una sessione.', tags: 'donjon dungeon mappa generatore stanze corridoi' },
+    { id: 'donjon', glyph: '↗', eyebrow: 'Risorse esterne', title: 'Catalogo Donjon', description: 'Strumenti ufficiali per mondi, città, nomi, meteo, calendari e altri sistemi.', tags: 'donjon generatore nomi png npc città mondo meteo calendario avventure negozi' },
     { id: 'reference', glyph: '⌕', eyebrow: 'Consultazione', title: 'Archivio rapido', description: 'Liste filtrate, ricerca e scheda dettaglio con fonte PDF.', tags: 'regole incantesimi classi creature oggetti condizioni ricerca' },
     { id: 'abilities', glyph: '✦', eyebrow: 'Personaggi', title: 'Caratteristiche', description: '4d6 scarta il minore, serie standard e point buy da 27 punti.', tags: 'stat generator punteggi personaggio dadi point buy' },
     { id: 'encounter', glyph: '⚔', eyebrow: 'Master', title: 'Costruttore incontri', description: 'Party, mostri, PE modificati e difficoltà calcolata in tempo reale.', tags: 'encounter builder combattimento mostri esperienza difficoltà' },
@@ -317,6 +320,8 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
 
     const openTool = (toolId) => {
         activeTool = toolId;
+        if (toolId === 'dungeon') renderDungeonWorkshop(root, { onBack: renderHub, onPrepareSession });
+        if (toolId === 'donjon') renderDonjonCatalog(root, { onBack: renderHub, onOpenTool: openTool });
         if (toolId === 'reference') renderReference();
         if (toolId === 'abilities') renderAbilities();
         if (toolId === 'encounter') renderEncounter();
@@ -335,7 +340,7 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
                     <div>
                         <span>Banco dell’avventuriero</span>
                         <h2>STRUMENTI DEL VIANDANTE</h2>
-                        <p>Calcola, prepara e consulta senza lasciare il tavolo. Tutto funziona in italiano e resta separato dalla Biblioteca.</p>
+                        <p>Calcola, prepara e consulta senza lasciare il tavolo. Strumenti locali in italiano e accesso al catalogo esterno Donjon.</p>
                     </div>
                     <div class="dnd-tools-orb" aria-hidden="true"><strong>d20</strong><i></i></div>
                 </header>

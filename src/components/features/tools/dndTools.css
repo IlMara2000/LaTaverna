@@ -1736,3 +1736,23 @@
         transition: none;
     }
 }
+
+.dnd-workshop-layout { display: grid; grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); gap: 24px; }
+.dnd-workshop-controls { display: grid; gap: 16px; align-content: start; padding: 20px; border: 1px solid var(--tool-border); border-radius: 20px; background: var(--tool-surface); }
+.dnd-workshop-controls label, .dnd-workshop-options label { display: grid; gap: 8px; font-size: .85rem; }
+.dnd-workshop-controls label:has([type="checkbox"]), .dnd-workshop-options label:has([type="checkbox"]) { display: flex; align-items: center; }
+.dnd-workshop-controls :is(input:not([type="checkbox"]), select), .dnd-workshop-options :is(input:not([type="checkbox"]), select) { width: 100%; min-width: 0; min-height: 44px; padding: 10px; color: var(--text-primary); background: var(--tool-surface); border: 1px solid var(--tool-border-strong); border-radius: 10px; }
+.dnd-workshop-controls button { min-height: 44px; border: 1px solid var(--tool-border-strong); border-radius: 12px; padding: 12px; background: var(--tool-surface-soft); color: var(--text-primary); cursor: pointer; }
+.dnd-workshop-controls p { font-size: .8rem; line-height: 1.6; color: var(--tool-copy); }
+.dnd-workshop-result { min-width: 0; }
+.dnd-workshop-options { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-block: 16px; }
+.dnd-workshop-map { overflow: auto; border: 1px solid var(--tool-border); border-radius: 16px; background: #242027; }
+.dnd-workshop-map svg { display: block; width: 100%; height: auto; }
+.dnd-workshop-result details { margin-block: 20px; }
+.dnd-workshop-result summary { padding: 14px 0; cursor: pointer; }
+.dnd-workshop-result article { border-top: 1px solid var(--tool-border); padding-block: 12px; }
+.dnd-donjon-catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
+.dnd-donjon-catalog a { display: grid; gap: 10px; padding: 20px; border: 1px solid var(--tool-border); border-radius: 16px; color: var(--text-primary); background: var(--tool-surface); text-decoration: none; }
+.dnd-donjon-catalog :is(small, span) { color: var(--tool-copy); font-size: .8rem; }
+.dnd-workshop-layout :is(button, input, select, a):focus-visible, .dnd-donjon-catalog a:focus-visible { outline: 2px solid var(--amethyst-light); outline-offset: 3px; }
+@media (max-width: 760px) { .dnd-workshop-layout { grid-template-columns: 1fr; } }

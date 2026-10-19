@@ -175,11 +175,7 @@ function setupEventListeners(container, context) {
     };
     window.addEventListener('keydown', window.__tavernaSidebarKeys);
 
-    if (trigger) trigger.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggle();
-    };
+    // Navbar owns the trigger click, including suppression after a drag.
     if (window.__tavernaSidebarToggle) {
         window.removeEventListener('toggleSidebar', window.__tavernaSidebarToggle);
     }
