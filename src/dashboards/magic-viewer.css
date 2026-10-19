@@ -91,3 +91,18 @@
  #ui .mv-modal-effect { font-size:14px; }
 }
 @media(prefers-reduced-motion:reduce){#ui .magic-viewer *,#ui .magic-viewer *::before,#ui .magic-viewer *::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Original TCG artwork, at text size in costs and rules text. */
+#ui .magic-viewer .tcg-symbol { display:inline-block; width:1.15em; height:1.15em; min-width:1.15em; max-width:none; margin:0 .06em; vertical-align:-.18em; object-fit:contain; border:0; border-radius:0; box-shadow:none; }
+#ui .magic-viewer .mv-card-meta .tcg-symbol { width:17px; height:17px; min-width:17px; }
+#ui .mv-modal-copy .mv-eyebrow { letter-spacing:normal; }
+#ui .mv-export > small { flex-basis:100%; color:#62536c; line-height:1.5; }
+#ui .mv-export button:disabled { opacity:.5; cursor:not-allowed; }
+/* Keep the export choices readable when global dark form styles are active. */
+#ui #app .magic-viewer .mv-export select,
+#ui #app .magic-viewer .mv-search input {
+    background:#fff !important;
+    color:#44314f !important;
+    min-height:44px;
+    color-scheme:light;
+}

@@ -192,3 +192,34 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
    desktop wheel scrolling while touch could still pan its clipped contents. */
 #ui #app:has(> .taverna-home) { scroll-snap-type: none; scroll-behavior: auto; }
 #ui #app > .taverna-home { flex: 0 0 auto; overflow: clip; }
+
+/* Free placement: hover/active transforms must not shift pointer coordinates. */
+#ui #navbar-trigger.is-mobile-draggable {
+    transform: none !important;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+}
+#ui #navbar-trigger.is-dragging { cursor: grabbing; }
+#ui #navbar-trigger .nav-edge-grip { display: none; pointer-events: none; }
+#ui #navbar-trigger.is-edge-handle { border-radius: 18px !important; }
+#ui #navbar-trigger.is-edge-handle .nav-bar { visibility: hidden; transition: none; }
+#ui #navbar-trigger.is-edge-handle .nav-edge-grip {
+    position: absolute;
+    inset: var(--handle-clip-top) var(--handle-clip-right) var(--handle-clip-bottom) var(--handle-clip-left);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#ui #navbar-trigger.is-edge-handle .nav-edge-grip::after {
+    content: '';
+    width: 4px;
+    height: 18px;
+    border-radius: 4px;
+    background: #ecd7ff;
+    box-shadow: 0 0 8px rgb(199 125 255 / 30%);
+}
+#ui #navbar-trigger:is([data-edges~="top"], [data-edges~="bottom"]) .nav-edge-grip::after { width: 18px; height: 4px; }
+#ui #navbar-trigger.is-edge-handle.is-active .nav-edge-grip::after {
+    content: '×'; width: auto; height: auto; background: none; box-shadow: none; color: #fff; font: 24px/1 sans-serif;
+}

@@ -483,8 +483,12 @@ function renderTools(container) {
             }
             renderSessionEditor(container, user, {
                 _draft: true,
+                name: patch.name || '',
+                map_url: patch.map_url || '',
                 party_level: Number(patch.party_level || 1),
                 data: {
+                    map_grid_size: Number(patch.map_grid_size || 50),
+                    map_notes: patch.map_notes || '',
                     planned_encounters: patch.planned_encounters || '',
                     loot: patch.loot || ''
                 }

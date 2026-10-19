@@ -1,0 +1,452 @@
+[
+  {
+    "group": "General",
+    "title": "Markov Name Generator",
+    "url": "https://donjon.bin.sh/name/markov.html"
+  },
+  {
+    "group": "General",
+    "title": "Fractal World Generator",
+    "url": "https://donjon.bin.sh/world/"
+  },
+  {
+    "group": "General",
+    "title": "Random Weather Generator",
+    "url": "https://donjon.bin.sh/weather/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Fantasy Name Generator",
+    "url": "https://donjon.bin.sh/fantasy/name/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/fantasy/random/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Fantasy Calendar Generator",
+    "url": "https://donjon.bin.sh/fantasy/calendar/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Fantasy World Generator",
+    "url": "https://donjon.bin.sh/fantasy/world/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Medieval Demographics Calculator",
+    "url": "https://donjon.bin.sh/fantasy/demographics/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "My Random Campaign",
+    "url": "https://donjon.bin.sh/fantasy/my_campaign/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Random Adventure Generator",
+    "url": "https://donjon.bin.sh/fantasy/adventure/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Treasure Map Generator",
+    "url": "https://donjon.bin.sh/fantasy/treasure_map/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/fantasy/dungeon/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Five Room Dungeon Generator",
+    "url": "https://donjon.bin.sh/fantasy/5_room/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "The Endless Oubliette",
+    "url": "https://oubliette.bin.sh/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Random Inn Generator",
+    "url": "https://donjon.bin.sh/fantasy/inn/"
+  },
+  {
+    "group": "Fantasy",
+    "title": "Random Town Generator",
+    "url": "https://donjon.bin.sh/fantasy/town/"
+  },
+  {
+    "group": "Avatar Legends",
+    "title": "Name Generator",
+    "url": "https://donjon.bin.sh/avatar/name/"
+  },
+  {
+    "group": "Avatar Legends",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/avatar/random/"
+  },
+  {
+    "group": "Avatar Legends",
+    "title": "NPC Generator",
+    "url": "https://donjon.bin.sh/avatar/npc/"
+  },
+  {
+    "group": "AD&D",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/adnd/random/"
+  },
+  {
+    "group": "AD&D",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/adnd/dungeon/"
+  },
+  {
+    "group": "AD&D",
+    "title": "Five Room Dungeon Generator",
+    "url": "https://donjon.bin.sh/adnd/5_room/"
+  },
+  {
+    "group": "AD&D",
+    "title": "Random Magic Shop Generator",
+    "url": "https://donjon.bin.sh/adnd/magic/shop.html"
+  },
+  {
+    "group": "AD&D",
+    "title": "Random Treasure Generator",
+    "url": "https://donjon.bin.sh/adnd/treasure/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Initiative Tracker",
+    "url": "https://donjon.bin.sh/d20/initiative/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Power Attack Calculator",
+    "url": "https://donjon.bin.sh/d20/power/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/d20/random/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "d20 Demographics Calculator",
+    "url": "https://donjon.bin.sh/d20/demographics/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/d20/dungeon/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Random Encounter Generator",
+    "url": "https://donjon.bin.sh/d20/encounter/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Random Magic Shop Generator",
+    "url": "https://donjon.bin.sh/d20/magic/shop.html"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Random Treasure Generator",
+    "url": "https://donjon.bin.sh/d20/treasure/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "Random Weather Generator",
+    "url": "https://donjon.bin.sh/d20/weather/"
+  },
+  {
+    "group": "d20/Fantasy",
+    "title": "XP Calculator",
+    "url": "https://donjon.bin.sh/d20/xp/"
+  },
+  {
+    "group": "Microlite20",
+    "title": "Microlite20",
+    "url": "https://donjon.bin.sh/m20/Microlite20.pdf"
+  },
+  {
+    "group": "Microlite20",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/m20/random/"
+  },
+  {
+    "group": "Microlite20",
+    "title": "Random Monster Generator",
+    "url": "https://donjon.bin.sh/m20/monster/"
+  },
+  {
+    "group": "Microlite20",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/m20/dungeon/"
+  },
+  {
+    "group": "Pathfinder",
+    "title": "Power Attack Calculator",
+    "url": "https://donjon.bin.sh/pathfinder/power/"
+  },
+  {
+    "group": "Pathfinder",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/pathfinder/random/"
+  },
+  {
+    "group": "Pathfinder",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/pathfinder/dungeon/"
+  },
+  {
+    "group": "Pathfinder",
+    "title": "Random Encounter Generator",
+    "url": "https://donjon.bin.sh/pathfinder/encounter/"
+  },
+  {
+    "group": "Pathfinder",
+    "title": "Random Magic Shop Generator",
+    "url": "https://donjon.bin.sh/pathfinder/magic/shop.html"
+  },
+  {
+    "group": "Pathfinder",
+    "title": "Random Treasure Generator",
+    "url": "https://donjon.bin.sh/pathfinder/treasure/"
+  },
+  {
+    "group": "D&D 4e",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/4e/random/"
+  },
+  {
+    "group": "D&D 4e",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/4e/dungeon/"
+  },
+  {
+    "group": "D&D 4e",
+    "title": "Random Encounter Generator",
+    "url": "https://donjon.bin.sh/4e/encounter/"
+  },
+  {
+    "group": "D&D 4e",
+    "title": "Random Treasure Generator",
+    "url": "https://donjon.bin.sh/4e/treasure/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Quick Reference",
+    "url": "https://donjon.bin.sh/5e/quickref"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Spell Sheet",
+    "url": "https://donjon.bin.sh/5e/spells/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Monster List",
+    "url": "https://donjon.bin.sh/5e/monsters/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Magic Items",
+    "url": "https://donjon.bin.sh/5e/magic_items/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Encounter Size Calculator",
+    "url": "https://donjon.bin.sh/5e/calc/enc_size.html"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Initiative Tracker",
+    "url": "https://donjon.bin.sh/5e/initiative/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/5e/random/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/5e/dungeon/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Five Room Dungeon Generator",
+    "url": "https://donjon.bin.sh/5e/5_room/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Random Encounter Generator",
+    "url": "https://donjon.bin.sh/5e/encounter/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Random Magic Shop Generator",
+    "url": "https://donjon.bin.sh/5e/magic/shop.html"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "Random Treasure Generator",
+    "url": "https://donjon.bin.sh/5e/treasure/"
+  },
+  {
+    "group": "D&D 5e",
+    "title": "RWBY Team Generator",
+    "url": "https://donjon.bin.sh/5e/rwby/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Quick Reference",
+    "url": "https://donjon.bin.sh/5e5/quickref/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Spell Sheet",
+    "url": "https://donjon.bin.sh/5e5/spells/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Monster List",
+    "url": "https://donjon.bin.sh/5e5/monsters/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Magic Items",
+    "url": "https://donjon.bin.sh/5e5/magic_items/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/5e5/random/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Random Dungeon Generator",
+    "url": "https://donjon.bin.sh/5e5/dungeon/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Five Room Dungeon Generator",
+    "url": "https://donjon.bin.sh/5e5/5_room/"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Random Encounter Generator",
+    "url": "https://donjon.bin.sh/5e5/random/#type=encounter"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Random Magic Shop Generator",
+    "url": "https://donjon.bin.sh/5e5/magic/shop.html"
+  },
+  {
+    "group": "D&D 5.5",
+    "title": "Random Treasure Generator",
+    "url": "https://donjon.bin.sh/5e5/random/#type=treasure"
+  },
+  {
+    "group": "Weird Fiction",
+    "title": "Weird Name Generator",
+    "url": "https://donjon.bin.sh/weird/name/"
+  },
+  {
+    "group": "Weird Fiction",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/weird/random/"
+  },
+  {
+    "group": "Weird Fiction",
+    "title": "CoC NPC Generator",
+    "url": "https://donjon.bin.sh/weird/coc_npc/"
+  },
+  {
+    "group": "Science Fiction",
+    "title": "SciFi Name Generator",
+    "url": "https://donjon.bin.sh/scifi/name/"
+  },
+  {
+    "group": "Science Fiction",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/scifi/random/"
+  },
+  {
+    "group": "Science Fiction",
+    "title": "SWd20 Freight Jobs",
+    "url": "https://donjon.bin.sh/scifi/swfj/"
+  },
+  {
+    "group": "Science Fiction",
+    "title": "SciFi World Generator",
+    "url": "https://donjon.bin.sh/scifi/world/"
+  },
+  {
+    "group": "Science Fiction",
+    "title": "Star System Generator",
+    "url": "https://donjon.bin.sh/scifi/system/"
+  },
+  {
+    "group": "Science Fiction",
+    "title": "SWd6 System Generator",
+    "url": "https://donjon.bin.sh/scifi/swsg/"
+  },
+  {
+    "group": "Science Fiction",
+    "title": "Traveller System Generator",
+    "url": "https://donjon.bin.sh/scifi/tsg/"
+  },
+  {
+    "group": "Alien RPG",
+    "title": "Name Generator",
+    "url": "https://donjon.bin.sh/alien/name/"
+  },
+  {
+    "group": "Alien RPG",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/alien/random/"
+  },
+  {
+    "group": "Alien RPG",
+    "title": "Job Generator",
+    "url": "https://donjon.bin.sh/alien/job/"
+  },
+  {
+    "group": "Alien RPG",
+    "title": "NPC Generator",
+    "url": "https://donjon.bin.sh/alien/npc/"
+  },
+  {
+    "group": "Alien RPG",
+    "title": "System Generator",
+    "url": "https://donjon.bin.sh/alien/system/"
+  },
+  {
+    "group": "Blade Runner",
+    "title": "Name Generator",
+    "url": "https://donjon.bin.sh/blade_runner/name/"
+  },
+  {
+    "group": "Blade Runner",
+    "title": "Random Generator",
+    "url": "https://donjon.bin.sh/blade_runner/random/"
+  },
+  {
+    "group": "Blade Runner",
+    "title": "Case Generator",
+    "url": "https://donjon.bin.sh/blade_runner/case/"
+  },
+  {
+    "group": "Blade Runner",
+    "title": "NPC Generator",
+    "url": "https://donjon.bin.sh/blade_runner/npc/"
+  }
+]

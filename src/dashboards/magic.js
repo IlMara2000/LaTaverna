@@ -1,3 +1,5 @@
+import { renderCardSymbols } from '../services/cardSymbols.js';
+import { buildWantlistExport, downloadWantlist } from '../services/magicWantlistExport.js';
 import { rememberDestination } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { scanMagicDocument } from '../services/magicDocumentScan.js';
@@ -66,12 +68,6 @@ async function getLocalizedText(card) {
     return { text: data.translation, name: '', translated: true };
 }
 
-function downloadFile(name, content, mime) {
-    const url = URL.createObjectURL(new Blob([content], { type: `${mime};charset=utf-8` }));
-    const link = Object.assign(document.createElement('a'), { href: url, download: name });
-    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export function showMagicDashboard(container, options = {}) {
     const shareParams = new URLSearchParams(location.search);
     const sharedCollectionId = shareParams.get('magic-collection'), sharedDeckId = shareParams.get('magic-deck');
@@ -81,6 +77,7 @@ export function showMagicDashboard(container, options = {}) {
     let cards = read(COLLECTION_KEY), decks = read(DECKS_KEY), wantlist = read(WANTLIST_KEY);
     let tab = options.tab === 'wantlist' ? 'wantlist' : ['collezione','mazzi'].includes(options.tab) ? options.tab : 'collezione';
     let activeDeckId = decks[0]?.id || '';
+    let exportLanguage = 'it', exportFormat = 'txt';
     let filter = '', notice = '', pending = [], busy = false, cloudUserId = null, disposed = false, modalCard = null;
     let cloudQueue = Promise.resolve(), searchResults = [];
 
@@ -97,7 +94,7 @@ export function showMagicDashboard(container, options = {}) {
     const cardTile = (card, area) => `<article class="mv-card" data-card-id="${esc(card.id)}">
         <button class="mv-card-open" type="button" data-open-card="${esc(card.id)}" aria-label="Apri ${esc(card.name)}">
           <span class="mv-art">${card.image ? `<img src="${esc(card.image)}" alt="${esc(card.name)}" loading="lazy">` : '<span class="mv-no-art">Carta</span>'}</span>
-          <span class="mv-card-meta"><strong>${esc(card.printedName || card.name)}</strong><small>${esc(card.manaCost)} · ${esc(card.typeLine)}</small><span>×${Math.max(1, Number(card.quantity) || 1)}</span></span>
+          <span class="mv-card-meta"><strong>${esc(card.printedName || card.name)}</strong><small>${renderCardSymbols(card.manaCost)} · ${esc(card.typeLine)}</small><span>×${Math.max(1, Number(card.quantity) || 1)}</span></span>
         </button>
         <button type="button" class="mv-want ${wantlist.some(item => String(item.id) === String(card.id)) ? 'is-wanted' : ''}" data-want="${esc(card.id)}" aria-label="${wantlist.some(item => String(item.id) === String(card.id)) ? 'Rimuovi dalla' : 'Aggiungi alla'} wantlist">${wantlist.some(item => String(item.id) === String(card.id)) ? '◆' : '◇'}</button>
         ${area === 'wantlist' ? `<button type="button" class="mv-remove" data-remove-want="${esc(card.id)}">Rimuovi</button>` : ''}
@@ -127,8 +124,8 @@ export function showMagicDashboard(container, options = {}) {
           </section>` : tab === 'mazzi' ? `<section class="mv-panel">
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button></div>
             ${decks.length ? `<div class="mv-deck-layout"><aside class="mv-deck-list">${decks.map(deck=>`<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id===activeDeck?.id}"><strong>${esc(deck.name)}</strong><small>${deck.cards.reduce((sum,item)=>sum+(Number(item.quantity)||1),0)} carte</small></button>`).join('')}</aside><div class="mv-deck-content"><div class="mv-deck-tools"><h3>${esc(activeDeck?.name||'')}</h3><button class="mv-text-button" id="mv-rename-deck" type="button">Rinomina</button><button class="mv-text-button" id="mv-delete-deck" type="button">Elimina</button></div><label class="mv-search"><span>⌕</span><input id="mv-deck-search" type="search" placeholder="Aggiungi una carta…"></label><div id="mv-search-results" class="mv-search-results">${searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div><div class="mv-grid">${deckCards.map(card=>`${cardTile(card,'deck')}<div class="mv-quantity-tools"><button data-deck-quantity="${esc(card.id)}" data-delta="-1">−</button><span>${card.quantity}</span><button data-deck-quantity="${esc(card.id)}" data-delta="1">+</button></div>`).join('')||'<p class="mv-empty">Questo mazzo è vuoto. Cerca una carta qui sopra o importane una lista.</p>'}</div></div></div>` : '<p class="mv-empty">Non hai ancora creato mazzi.</p>'}
-          </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it">Italiano</option><option value="en">English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt">TXT · lista</option><option value="csv">CSV</option><option value="json">JSON</option></select></label><button type="button" class="mv-button" id="mv-export">Esporta wantlist</button></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
-          ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><span class="mv-eyebrow">${esc(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${esc(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></section></div>` : ''}
+          </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
+          ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></section></div>` : ''}
         </main>`;
         bind();
     };
@@ -143,9 +140,9 @@ export function showMagicDashboard(container, options = {}) {
             const localized = await getLocalizedText(card);
             if (modalCard?.id !== card.id) return;
             modalCard = { ...modalCard, localizedText: localized.text, translated: localized.translated };
-            textNode.textContent = localized.text; languageNode.textContent = localized.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale';
+            textNode.innerHTML = renderCardSymbols(localized.text); languageNode.textContent = localized.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale';
         } catch {
-            textNode.textContent = card.printedText || card.oracleText || 'Nessun testo disponibile.';
+            textNode.innerHTML = renderCardSymbols(card.printedText || card.oracleText || 'Nessun testo disponibile.');
             languageNode.textContent = card.printedText ? 'Testo della stampa italiana' : 'Testo Oracle originale · traduzione non disponibile';
         }
     };
@@ -193,7 +190,7 @@ export function showMagicDashboard(container, options = {}) {
     function bind() {
         container.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { tab = button.dataset.tab; filter = ''; searchResults = []; render(); }));
         container.querySelector('#mv-file')?.addEventListener('change', event => { const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''; });
-        container.querySelector('#mv-filter')?.addEventListener('input', event => { filter = event.target.value; const start=event.target.selectionStart; render(); const input=container.querySelector('#mv-filter'); input?.focus(); input?.setSelectionRange(start,start); });
+        container.querySelector('#mv-filter')?.addEventListener('input', event => { filter = event.target.value; const start=event.target.selectionStart; render(); const input=container.querySelector('#mv-filter'); input?.focus(); try { input?.setSelectionRange(start,start); } catch { /* search inputs may not support selection */ } });
         container.querySelectorAll('[data-open-card]').forEach(button => button.addEventListener('click', () => { const card = byId().get(button.dataset.openCard) || wantlist.find(item=>String(item.id)===button.dataset.openCard); if(card) void openCard(card); }));
         container.querySelectorAll('[data-want]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); const card=byId().get(button.dataset.want)||wantlist.find(item=>String(item.id)===button.dataset.want); if(card) toggleWant(card); }));
         container.querySelectorAll('[data-remove-want]').forEach(button => button.addEventListener('click', () => { wantlist=wantlist.filter(item=>String(item.id)!==button.dataset.removeWant); persist(); render(); }));
@@ -214,16 +211,15 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelector('#mv-delete-deck')?.addEventListener('click',()=>{if(!window.confirm('Eliminare questo mazzo? Le carte resteranno nella collezione.'))return;decks=decks.filter(item=>item.id!==activeDeckId);activeDeckId=decks[0]?.id||'';persist();render();});
         container.querySelector('#mv-deck-search')?.addEventListener('input', async event=>{const value=event.target.value.trim();if(value.length<2){searchResults=[];container.querySelector('#mv-search-results').innerHTML='';return;}try{const response=await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`name:${value}`)}&unique=cards&order=name`);if(!response.ok)return;searchResults=(await response.json()).data?.slice(0,8)||[];const root=container.querySelector('#mv-search-results');if(root)root.innerHTML=searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('');root?.querySelectorAll('[data-add-deck-card]').forEach(button=>button.addEventListener('click',()=>{const found=searchResults.find(card=>card.id===button.dataset.addDeckCard);if(!found)return;let own=cards.find(card=>card.id===found.id);if(!own){own=summary(found);cards.push(own);}const deck=decks.find(item=>item.id===activeDeckId);const entry=deck.cards.find(item=>item.cardId===own.id);if(entry)entry.quantity++;else deck.cards.push({cardId:own.id,quantity:1});persist();render();setNotice(`${own.name} aggiunta al mazzo e alla collezione.`);}));}catch{setNotice('Ricerca non disponibile.');}});
         container.querySelectorAll('[data-deck-quantity]').forEach(button=>button.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId),cardId=button.dataset.deckQuantity,entry=deck?.cards.find(item=>String(item.cardId)===cardId);if(!entry)return;entry.quantity+=Number(button.dataset.delta);if(entry.quantity<=0)deck.cards=deck.cards.filter(item=>String(item.cardId)!==cardId);persist();render();}));
-        container.querySelector('#mv-export')?.addEventListener('click', async()=>{
-            const language=container.querySelector('#mv-export-language').value,format=container.querySelector('#mv-export-format').value;
-            const output=[];
-            for(const card of wanted){let name=card.name;if(language==='it'&&card.printedName)name=card.printedName;else if(language==='it'&&!card.printedName){try{const localized=await getLocalizedText(card);name=localized.name||name;}catch{}}
-                output.push({name,quantity:card.quantity,id:card.id,manaCost:card.manaCost,typeLine:card.typeLine});}
-            let content,mime,extension;
-            if(format==='json'){content=JSON.stringify(output,null,2);mime='application/json';extension='json';}
-            else if(format==='csv'){content=['nome,quantità,id,costo mana,tipo',...output.map(row=>[row.name,row.quantity,row.id,row.manaCost,row.typeLine].map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(','))].join('\n');mime='text/csv';extension='csv';}
-            else{content=output.map(row=>`${row.quantity} ${row.name}`).join('\n');mime='text/plain';extension='txt';}
-            downloadFile(`wantlist-magic-${language}.${extension}`,content,mime);setNotice('Wantlist esportata.');
+        container.querySelector('#mv-export-language')?.addEventListener('change', event => { exportLanguage = event.target.value; });
+        container.querySelector('#mv-export-format')?.addEventListener('change', event => { exportFormat = event.target.value; });
+        container.querySelector('#mv-export')?.addEventListener('click', () => {
+            try {
+                const selected = wantlist.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)));
+                const file = buildWantlistExport(selected, { language: exportLanguage, format: exportFormat });
+                downloadWantlist(file);
+                setNotice(`Download avviato: ${file.count} carte.${file.originalNames ? ` Per ${file.originalNames} carte è stato conservato il nome originale.` : ''}`);
+            } catch (error) { setNotice(`Esportazione non riuscita: ${error.message}`); }
         });
     }
 

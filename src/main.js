@@ -58,13 +58,13 @@ async function initApp() {
             return;
         }
 
+        const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user'));
         const publicDestination = destinationFromPath(location.pathname);
         if (publicDestination) {
+            initializeNavigation(user || guestUser || { isGuest: true });
             await navigateTo(publicDestination, appContainer, { fromHistory: true });
             return;
         }
-
-        const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user'));
         
         // 3. LOGICA DI REDIRECT
         const isVerifiedDiscord = user && localStorage.getItem('taverna_member_verified') === 'true';
@@ -129,11 +129,7 @@ function checkAccess(user, container) {
     }
 }
 
-function renderDashboard(user) {
-    const appContainer = document.getElementById('app');
-    loadAndApplyProfileAppearance(user).catch(err => console.warn('Tema profilo non applicato:', err));
-    loadAndApplyAppPreferences().catch(err => console.warn('Preferenze app non sincronizzate:', err));
-    
+function initializeNavigation(user) {
     // 1. Inizializza la Navbar (Gestirà anche la Sidebar)
     initNavbar(user, async () => {
         const isGuest = user?.isGuest || isAnonymousUser(user) || localStorage.getItem('taverna_guest_user');
@@ -146,6 +142,15 @@ function renderDashboard(user) {
         }
         window.location.reload();
     });
+
+}
+
+function renderDashboard(user) {
+    const appContainer = document.getElementById('app');
+    loadAndApplyProfileAppearance(user).catch(err => console.warn('Tema profilo non applicato:', err));
+    loadAndApplyAppPreferences().catch(err => console.warn('Preferenze app non sincronizzate:', err));
+
+    initializeNavigation(user);
 
     // 2. Mostra la Lobby principale
     showLobby(appContainer);
