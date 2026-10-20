@@ -48,10 +48,11 @@ function renderSidebarContent(container, context) {
                     SALA GIOCHI
                 </a>
 
-                <a class="btn-glass sidebar-nav-item" id="nav-magic" data-context="magic" href="/magic" style="font-size: 0.8rem; padding: 12px;">
-                    MAGIC: THE GATHERING
+                <a class="btn-glass sidebar-nav-item" id="nav-cards" data-context="cards" href="/carte" style="font-size: 0.8rem; padding: 12px;">
+                    CARTE
                 </a>
 
+                <a class="btn-glass sidebar-nav-item" id="nav-oracle" data-context="oracle" href="/oracolo" style="font-size:0.8rem;padding:12px">L’ORACOLO</a>
                 <button class="btn-glass sidebar-nav-item" id="nav-card-counter" data-context="cardCounter" style="font-size: 0.8rem; padding: 12px;">SEGNAPUNTI CARTE</button>
 
                 <a class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" href="/library" style="font-size: 0.8rem; padding: 12px;">
@@ -62,8 +63,8 @@ function renderSidebarContent(container, context) {
                     BOTTEGA
                 </a>
 
-                <a class="btn-glass sidebar-nav-item" id="nav-dnd5e" data-context="dnd5e" href="/dnd" style="font-size: 0.8rem; padding: 12px;">
-                    D&D 5E
+                <a class="btn-glass sidebar-nav-item" id="nav-rpg" data-context="rpg" href="/giochi-di-ruolo" style="font-size: 0.8rem; padding: 12px;">
+                    GIOCHI DI RUOLO
                 </a>
 
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
@@ -166,7 +167,7 @@ function setupEventListeners(container, context) {
             toggle();
         }
         if (event.key === 'Tab') {
-            const controls = [...sidebar.querySelectorAll('button:not(:disabled)')];
+            const controls = [...sidebar.querySelectorAll('a[href],button:not(:disabled)')];
             if (trigger) controls.push(trigger);
             const index = controls.indexOf(document.activeElement);
             event.preventDefault();
@@ -199,11 +200,12 @@ function setupEventListeners(container, context) {
 
     attachNav('nav-home', 'home');
     attachNav('nav-minigames', 'minigames');
-    attachNav('nav-magic', 'magic');
+    attachNav('nav-cards', 'cards');
+    attachNav('nav-oracle', 'oracle');
     attachNav('nav-reading', 'reading');
     attachNav('nav-card-counter', 'cardCounter');
     attachNav('nav-shop', 'shop');
-    attachNav('nav-dnd5e', 'dnd5e');
+    attachNav('nav-rpg', 'rpg');
     attachNav('nav-profile', 'profile');
     attachNav('nav-settings', 'settings');
 

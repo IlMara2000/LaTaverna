@@ -1,3 +1,4 @@
+import {recordActivity} from '../services/communityMetrics.js';
 import { renderHomeBackButton } from '../components/ui/BackButton.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { renderManualLibrary } from '../components/features/manuals/ManualLibrary.js';
@@ -1257,4 +1258,17 @@ function parseRows(value = '') {
         .map(row => row.trim())
         .filter(Boolean)
         .map(row => ({ text: row }));
+}
+
+// Create a real, persistent board with an original scenario and companion.
+export async function createStarterAdventure(campaignId) {
+    const {STARTER_CAMPAIGNS} = await import('../data/starterCampaigns.js');
+    const campaign=STARTER_CAMPAIGNS.find(c=>c.id===campaignId);
+    if(!campaign)throw new Error('Avventura non disponibile.');
+    const user=await getCurrentUser();
+    const payload={user_id:user.id,system_id:'dnd5e',name:campaign.name,status:'attiva',party_level:1,description:campaign.description,data:{scene:campaign.scene,public_summary:campaign.scene,objectives:'Completa l’avventura e torna alla Taverna.',starterCampaign:campaign.id,adventureOutline:campaign.outline,companion:campaign.companion,ai:{mode:'master',autoReply:true},gridVisible:true}};
+    const result=isLocalDndUser(user)?dndLocalStore.sessions.save(null,payload):await supabase.from(TABLES.sessions).insert(payload).select().single();
+    if(result.error)throw result.error;
+    void recordActivity('rpg_created');
+    return result.data;
 }

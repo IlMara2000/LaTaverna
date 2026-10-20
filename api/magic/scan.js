@@ -1,3 +1,4 @@
+import {authorizeOracle} from '../_lib/oracleAccess.js';
 import { callGroqVision } from '../_lib/groq.js';
 import { methodNotAllowed, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
 
@@ -9,6 +10,7 @@ export default async function handler(request, response) {
         const text = sanitizeText(body.text, 24000);
         if (!images.length && !text) return sendJson(response, 400, { ok: false, error: 'Aggiungi un’immagine o una lista di carte.' });
         if (images.length > 3) return sendJson(response, 400, { ok: false, error: 'Massimo 3 immagini per scansione.' });
+        await authorizeOracle(request);
         const result = await callGroqVision({ images, text });
         return sendJson(response, 200, { ok: true, cards: result.cards, provider: 'groq', model: result.model, usage: result.usage });
     } catch (error) {

@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { localApiPlugin } from './scripts/local-api-plugin.js';
 import { pdfAssetsPlugin } from './scripts/pdf-assets-plugin.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,7 +12,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
-    plugins: [pdfAssetsPlugin()],
+    plugins: [pdfAssetsPlugin(), localApiPlugin(env)],
     publicDir: 'public', 
     
     resolve: {

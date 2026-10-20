@@ -5,6 +5,8 @@ import { loadView } from './navigationLoading.js';
 const LAST_DESTINATION_KEY = 'taverna_last_destination';
 
 export const resetAppSurface = () => {
+    window.__communityCleanup?.();
+    window.__communityCleanup = null;
     window.__routeMotionCleanup?.();
     window.__routeMotionCleanup = null;
     window.__homeCleanup?.();
@@ -56,19 +58,11 @@ export const getLastDestination = () => {
 export async function navigateTo(destination, container = document.getElementById('app'), options = {}) {
     if (!container) return false;
 
-    if (destination === 'dnd5e') {
-        try {
-            const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user') || 'null');
-            if (guestUser && !guestUser.isLocalDnd) {
-                alert('Accedi per aprire i tavoli GDR.');
-                return false;
-            }
-        } catch {
-            // Se lo storage non e disponibile, lascia decidere al modulo GDR.
-        }
-    }
-
     const routes = {
+        management: {label:'le metriche',load:()=>import('../dashboards/management.js'),render:m=>m.showManagement(container)},
+        cards: { label: 'le carte', load: () => import('../dashboards/cards.js'), render: m => m.showCards(container) },
+        rpg: { label: 'i giochi di ruolo', load: () => import('../dashboards/rpg.js'), render: m => m.showRpg(container) },
+        oracle: { label: 'l’Oracolo', load: () => import('../dashboards/oracle.js'), render: m => m.showOracle(container, options) },
         home: { label: 'la Taverna', load: () => import('../lobby.js'), render: (module) => module.showLobby(container) },
         minigames: { label: 'la sala giochi', load: () => import('../minigamelist.js'), render: (module) => module.showMinigamesList(container, options) },
         magic: { label: 'Magic: The Gathering', load: () => import('../dashboards/magic.js'), render: (module) => module.showMagicDashboard(container, options) },
@@ -76,7 +70,7 @@ export async function navigateTo(destination, container = document.getElementByI
         cardCounter: { label: 'il Segnapunti', load: () => import('../dashboards/cardCounter.js'), render: module => module.showCardCounter(container, options) },
         reading: { label: 'Lettura', load: () => import('../components/features/reading/Reading.js'), render: (module) => module.showReading(container) },
         shop: { label: 'la bottega', load: () => import('../dashboards/bottega.js'), render: (module) => module.initBottega(container) },
-        artisanShop: { label: 'L’Artigiano Rituale', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
+        artisanShop: { label: 'la Bottega', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
         profile: { label: 'il profilo', deferred: true, load: () => import('../components/features/user/Profile.js'), render: (module, context) => module.showProfile(container, options.user || null, context) },
         settings: { label: 'le impostazioni', deferred: true, load: () => import('../components/features/user/Settings.js'), render: (module, context) => module.showSettings(container, options.user || null, context) },
         music: { label: 'la libreria musicale', deferred: true, load: () => import('../components/ui/AudioManager.js'), render: (module, context) => module.AudioManager.showMusicCenter(container, context) }
@@ -95,7 +89,7 @@ export async function navigateTo(destination, container = document.getElementByI
                     selector: '.reading-welcome, .reading-shelf, .settings-group, .profile-glass-card, .music-player, .music-playlist, .dnd-hero, .dnd-panel'
                 });
             }
-            if (context.isCurrent() && ['minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
+            if (context.isCurrent() && ['cards', 'rpg', 'oracle', 'minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
                 rememberDestination(destination, destination === 'minigames' ? options : {});
             }
         };

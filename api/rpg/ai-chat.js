@@ -1,4 +1,5 @@
-import { callGroqChat } from '../_lib/groq.js';
+import { callOracle } from '../_lib/oracle.js';
+import { authorizeOracle } from '../_lib/oracleAccess.js';
 import { methodNotAllowed, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
 
 export default async function handler(request, response) {
@@ -14,9 +15,10 @@ export default async function handler(request, response) {
             });
         }
 
-        const result = await callGroqChat({
+        await authorizeOracle(request);
+        const result = await callOracle({
             prompt,
-            mode: body.mode || 'master',
+            mode: ['master','player','rules'].includes(body.mode) ? body.mode : 'master',
             systemId: body.systemId || 'dnd5e',
             context: body.context || {},
             history: body.history || []

@@ -1,5 +1,6 @@
 import { renderCardSymbols } from '../services/cardSymbols.js';
 import { buildWantlistExport, downloadWantlist } from '../services/magicWantlistExport.js';
+import {oracleHeaders} from '../services/oracleClient.js';
 import { rememberDestination } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { scanMagicDocument } from '../services/magicDocumentScan.js';
@@ -60,7 +61,7 @@ async function getLocalizedText(card) {
         } catch { /* translation fallback below */ }
     }
     const response = await fetch('/api/magic/translate', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: await oracleHeaders(),
         body: JSON.stringify({ name: card.name, typeLine: card.typeLine, text: card.oracleText })
     });
     if (!response.ok) throw new Error('Traduzione italiana non disponibile. Mostro il testo originale.');

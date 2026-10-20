@@ -1,26 +1,8 @@
+import {postOracle} from './oracleClient.js';
 const AI_CHAT_ENDPOINT = '/api/rpg/ai-chat';
 const AI_EVENT_ENDPOINT = '/api/rpg/session-event';
 
-const safeJson = async (response) => {
-    try {
-        return await response.json();
-    } catch {
-        return {};
-    }
-};
-
-const postAI = async (url, payload) => {
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
-    const data = await safeJson(response);
-    if (!response.ok || data.ok === false) {
-        throw new Error(data.error || `AI non disponibile (${response.status}).`);
-    }
-    return data;
-};
+const postAI = postOracle;
 
 export async function getAIResponse(prompt, options = {}) {
     if (!String(prompt || '').trim()) {
@@ -37,6 +19,7 @@ export async function getAIResponse(prompt, options = {}) {
         });
         return data.reply || "L'Oste annuisce, ma non aggiunge altro.";
     } catch (error) {
+        if (options.throwOnError) throw error;
         console.error('[Taverna AI]', error);
         return `AI non disponibile: ${error.message}`;
     }

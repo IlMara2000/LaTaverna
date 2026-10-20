@@ -226,8 +226,8 @@ async function restoreRecoveredContext(container, context, user) {
         }
 
         if (context === 'shop') {
-            const { initShop } = await import('./dashboards/shop.js');
-            initShop(container);
+            const { initBottega } = await import('./dashboards/bottega.js');
+            initBottega(container);
         }
     } catch (err) {
         console.warn('Recovery soft non completata:', err);

@@ -60,6 +60,22 @@
     {
       "source": "/magic/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/carte/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/giochi-di-ruolo/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/oracolo/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/gestione/:path*",
+      "destination": "/index.html"
     }
   ]
 }

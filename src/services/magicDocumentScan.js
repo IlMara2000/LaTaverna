@@ -1,3 +1,4 @@
+import {oracleHeaders} from './oracleClient.js';
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { createWorker } from 'tesseract.js';
@@ -113,7 +114,7 @@ const groqScanRequest = async (body, onProgress) => {
         // Groq's free vision tier counts each image as 2,048 input tokens. Leave
         // a full minute after multi-page requests to stay under its TPM ceiling.
         nextGroqRequestAt = Date.now() + ((body.images?.length || 0) > 1 ? 60000 : 20000);
-        const response = await fetch('/api/magic/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const response = await fetch('/api/magic/scan', { method: 'POST', headers: await oracleHeaders(), body: JSON.stringify(body) });
         const payload = await response.json().catch(() => ({}));
         if (response.ok) return (payload.cards || []).filter(card => !isSectionHeading(card?.name));
         if (response.status !== 429 || attempt === 2) throw new Error(payload.error || 'Scansione non disponibile.');
