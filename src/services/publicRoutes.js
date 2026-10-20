@@ -1,4 +1,8 @@
 export const PUBLIC_ROUTES = Object.freeze({
+    management: '/gestione',
+    cards: '/carte',
+    rpg: '/giochi-di-ruolo',
+    oracle: '/oracolo',
     minigames: '/minigames',
     dnd5e: '/dnd',
     shop: '/shop',

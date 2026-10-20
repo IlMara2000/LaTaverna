@@ -63,14 +63,14 @@ export function showLobby(container) {
                         <img src="/assets/worlds/handwritten-triptych.webp" alt="Carte illustrate a inchiostro tra le dita di un guanto medievale" fetchpriority="high" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">I · LA SORTE</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Giochi di Carte</span><span class="scene-description">I grandi classici, il tuo prossimo asso.</span><span class="scene-link">Scopri i giochi di carte <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Carte</span><span class="scene-description">Le tue collezioni e i grandi classici.</span><span class="scene-link">Esplora le carte <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-party" id="hub-party-games">
                         <img src="/assets/worlds/handwritten-triptych.webp" alt="Cavallo degli scacchi e dadi disegnati a mano" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">II · LA SFIDA</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Giochi da Tavolo</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Minigiochi</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
@@ -80,12 +80,6 @@ export function showLobby(container) {
                         <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di Ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
                     </button>
 
-                    <button type="button" class="taverna-scene scene-magic" id="hub-magic-games">
-                        <img src="/images/magic-home-cards.webp" alt="Carte di Magic sul tavolo della Taverna" loading="lazy" decoding="async">
-                        <span class="taverna-scene-scrim" aria-hidden="true"></span>
-                        <span class="scene-number" aria-hidden="true">IV · IL MULTIVERSO</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">✦</span><span class="taverna-scene-title">Magic: The Gathering</span><span class="scene-description">Costruisci il tuo mazzo Commander e sfida la Taverna.</span><span class="scene-link">Entra nel multiverso <b aria-hidden="true">↗</b></span></span>
-                    </button>
                 </section>
 
                 <nav class="taverna-home-dock" aria-label="Destinazioni rapide">
@@ -100,7 +94,7 @@ export function showLobby(container) {
                     <button type="button" id="hub-shop">BOTTEGA</button>
                     <button type="button" id="hub-card-counter">SEGNAPUNTI CARTE</button>
                     <button type="button" id="hub-reading">LETTURA</button>
-                    <button type="button" id="btn-dnd5e">D&amp;D 5E</button>
+                    <button type="button" id="hub-oracle">L’ORACOLO</button>
                 </nav>
                 <p class="taverna-home-footer"><span aria-hidden="true">✦</span> Le storie più belle si giocano insieme.</p>
             </div>
@@ -108,11 +102,6 @@ export function showLobby(container) {
     `;
 
     const openDestination = (destination, options = {}) => {
-        const isProtectedGdr = destination === 'dnd5e';
-        if (isProtectedGdr && guest.isGuest && !guest.isLocalDndGuest) {
-            alert('Accedi per aprire i tavoli GDR.');
-            return;
-        }
         return navigateTo(destination, container, options);
     };
 
@@ -124,18 +113,16 @@ export function showLobby(container) {
     const cardScene = container.querySelector('#hub-card-games');
     const partyScene = container.querySelector('#hub-party-games');
     const gdrScene = container.querySelector('#hub-gdr-games');
-    const magicScene = container.querySelector('#hub-magic-games');
     container.querySelector('#resume-last-destination')?.addEventListener('click', () => {
         openDestination(lastDestination.destination, lastDestination.options || {});
     });
-    cardScene.onclick = () => openDestination('minigames', { filter: 'cards' });
+    cardScene.onclick = () => openDestination('cards');
     partyScene.onclick = () => openDestination('minigames', { filter: 'party' });
-    gdrScene.onclick = () => openDestination('dnd5e');
-    magicScene.onclick = () => openDestination('magic');
+    gdrScene.onclick = () => openDestination('rpg');
     container.querySelector('#hub-strategy-games').onclick = () => openDestination('minigames', { filter: 'strategy' });
     container.querySelector('#hub-all-games').onclick = () => openDestination('minigames', { filter: 'all' });
     container.querySelector('#hub-shop').onclick = () => openDestination('shop');
     container.querySelector('#hub-card-counter').onclick = () => openDestination('cardCounter');
     container.querySelector('#hub-reading').onclick = () => openDestination('reading');
-    container.querySelector('#btn-dnd5e').onclick = () => openDestination('dnd5e');
+    container.querySelector('#hub-oracle').onclick = () => openDestination('oracle');
 }

@@ -1,0 +1,33 @@
+#ui #app:has(> .community-page) {padding:28px max(20px,env(safe-area-inset-right)) 100px!important}
+#ui .community-page {width:min(1100px,100%);margin:auto;color:var(--text-main,#f2e7d7);flex:0 0 auto}
+#ui .community-page header {margin-bottom:28px}
+#ui .community-page h1 {font-size:clamp(36px,6vw,64px);margin:18px 0 12px}
+#ui .community-page h2 {font-size:28px;margin:0 0 12px;text-align:left}
+#ui .community-page p {line-height:1.7;text-align:left}
+#ui .community-page .community-intro {max-width:680px;color:#d0c3da}
+#ui .community-toolbar {display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:20px 0}
+#ui .community-page button,#ui .community-page .community-link {min-height:44px;border:1px solid #af88c56b;border-radius:8px;background:#30213d;color:#f2e7d7;padding:10px 16px;font:inherit;cursor:pointer;text-decoration:none}
+#ui .community-page button:hover {border-color:#dfc1ed}
+#ui .community-page button:disabled {opacity:.45;cursor:not-allowed}
+#ui .community-page button[aria-pressed=true] {background:#eadbc0;color:#33203e;border-color:#eadbc0}
+#ui .community-page :is(button,a,input,select,textarea):focus-visible {outline:3px solid #d0a8f1;outline-offset:3px}
+#ui .community-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:18px;margin:22px 0}
+#ui .community-panel {background:#1c1525;border:1px solid #af88c54d;border-radius:12px;padding:24px;min-width:0}
+#ui .community-panel .community-mark {font-size:38px;display:block;margin-bottom:15px}
+#ui .community-page label {display:grid;gap:8px;margin:12px 0;font-size:14px}
+#ui .community-page input,#ui .community-page select,#ui .community-page textarea {box-sizing:border-box;width:100%;min-width:0;border:1px solid #af88c580;border-radius:6px;padding:12px;background:#100c16;color:#f2e7d7;font:inherit}
+#ui .community-page input[type=checkbox] {width:auto}
+#ui .community-page .community-check {display:flex;align-items:center}
+#ui .community-page small {color:#c4b0d2}
+#ui .community-status {min-height:26px;white-space:pre-wrap;overflow-wrap:anywhere}
+#ui .community-card-image {height:230px;max-width:100%;object-fit:contain;display:block;margin:auto}
+#ui .community-chat {display:grid;gap:16px;margin:24px 0}
+#ui .community-message {padding:18px;border-left:3px solid #af88c5;background:#1c1525;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+#ui .community-message[data-role=user] {border-color:#eadbc0}
+#ui .community-message a {color:#e4c7fa;overflow-wrap:anywhere}
+#ui .community-page details {margin:18px 0}
+#ui .community-page summary {cursor:pointer;padding:12px 0}
+#ui .community-page .community-hand {display:flex;flex-wrap:wrap;gap:8px}
+#ui .community-page .playing-card {background:#f6eddf;color:#271e30;min-width:58px;min-height:82px;padding:8px}
+#ui .community-page .playing-card[aria-pressed=true] {outline:3px solid #ba85e1;transform:translateY(-5px)}
+@media(max-width:600px){#ui .community-panel{padding:18px}#ui .community-toolbar>button{flex:1}#ui .community-page h1{font-size:40px}}

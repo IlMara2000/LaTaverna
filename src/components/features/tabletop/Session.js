@@ -1,3 +1,4 @@
+import {recordActivity} from '../../../services/communityMetrics.js';
 import { setExperienceTheme } from '../../../services/experienceTheme.js';
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 import {
@@ -301,7 +302,7 @@ export async function showSession(container, sessionId, options = {}) {
                     <button type="button" data-session-tool="initiative">Iniziativa</button>
                     <button type="button" data-session-tool="environment">Ambiente</button>
                     <button type="button" data-session-tool="notes">Note</button>
-                    <button type="button" data-session-tool="ai">AI</button>
+                    <button type="button" data-session-tool="ai">ORACOLO</button>
                 </nav>
 
                 <section class="dnd-session-block session-brief" data-session-tool-panel="brief">
@@ -404,8 +405,8 @@ export async function showSession(container, sessionId, options = {}) {
                 </section>
 
                 <section class="dnd-session-block session-ai-panel" data-session-tool-panel="ai" hidden>
-                    <h3>AI di sessione</h3>
-                    <p class="dnd-muted">Usa @oste nella chat oppure chiedi direttamente qui.</p>
+                    <h3>L’Oracolo al tavolo</h3>
+                    <p class="dnd-muted">Usa @oracolo nella chat oppure chiedi direttamente qui. Le risposte sono condivise con il tavolo.</p>
                     <label>Ruolo AI
                         <select id="aiMode">
                             <option value="master" ${sessionState.aiMode === 'master' ? 'selected' : ''}>Master</option>
@@ -418,7 +419,7 @@ export async function showSession(container, sessionId, options = {}) {
                         Rispondi a ogni messaggio chat
                     </label>
                     <textarea id="aiPrompt" placeholder="Chiedi all'AI cosa succede, come interpreta un PNG o quale regola applicare."></textarea>
-                    <button id="askSessionAI" class="btn-primary" type="button">CHIEDI ALL'AI</button>
+                    <button id="askSessionAI" class="btn-primary" type="button">CHIEDI ALL’ORACOLO</button>
                     <p id="aiStatus" class="session-ai-status" aria-live="polite"></p>
                 </section>
             </aside>
@@ -501,7 +502,7 @@ export async function showSession(container, sessionId, options = {}) {
                 </details>
                 <div id="chat-msgs" class="dnd-chat-messages"></div>
                 <form id="chatForm" class="dnd-chat-form">
-                    <input id="chat-input" type="text" aria-label="Messaggio al party" placeholder="Scrivi al party... usa @oste per chiamare l'AI">
+                    <input id="chat-input" type="text" aria-label="Messaggio al party" placeholder="Scrivi al party... usa @oracolo per chiedere aiuto">
                     <button id="chatSubmit" class="btn-primary" type="button">INVIA</button>
                 </form>
             </aside>
@@ -669,11 +670,14 @@ export async function showSession(container, sessionId, options = {}) {
 
     const chatMsgs = container.querySelector('#chat-msgs');
     const recentChatDocs = [];
+    const renderedMessageIds = new Set();
     const renderMessage = (doc) => {
+        if (!doc || (doc.id && renderedMessageIds.has(doc.id))) return;
+        if (doc.id) renderedMessageIds.add(doc.id);
         const nearBottom = chatMsgs.scrollHeight - chatMsgs.scrollTop - chatMsgs.clientHeight < 80;
         const div = document.createElement('div');
         const senderName = doc.sender_name || 'Sistema';
-        const isAiMessage = /(^|\s)(AI|Oste AI|Master AI|Compagno AI)/i.test(senderName);
+        const isAiMessage = /(^|\s)(Oracolo|AI|Oste AI|Master AI|Compagno AI)/i.test(senderName);
         div.className = `dnd-chat-message ${doc.is_roll ? 'roll' : ''} ${isAiMessage ? 'ai' : ''}`;
         div.innerHTML = `
             <strong>${escapeHTML(senderName)}</strong>
@@ -775,7 +779,7 @@ export async function showSession(container, sessionId, options = {}) {
                     table: TABLES.chat,
                     filter: `session_id=eq.${sessionId}`
                 }, payload => {
-                    if (payload.new?.sender_id !== dbUserId) renderMessage(payload.new);
+                    renderMessage(payload.new);
                 })
                 .subscribe();
         } catch (err) {
@@ -1403,9 +1407,9 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     const getAIBotName = () => {
-        if (sessionState.aiMode === 'player') return 'Compagno AI';
-        if (sessionState.aiMode === 'rules') return 'Regole AI';
-        return 'Oste AI';
+        if (sessionState.aiMode === 'player') return 'Oracolo · Compagno';
+        if (sessionState.aiMode === 'rules') return 'Oracolo · Regole';
+        return 'Oracolo · Master';
     };
 
     const setAIStatus = (message = '') => {
@@ -1415,6 +1419,8 @@ export async function showSession(container, sessionId, options = {}) {
 
     const buildAIContext = (trigger = 'manual') => ({
         trigger,
+        adventureOutline: sessionData.data?.adventureOutline || '',
+        companion: sessionData.data?.companion || '',
         session: {
             id: sessionId,
             systemId: sessionSystem.id,
@@ -1448,13 +1454,13 @@ export async function showSession(container, sessionId, options = {}) {
             hp: token.data?.hp,
             hpMax: token.data?.hp_max,
             ac: token.data?.armorClass,
-            conditions: token.data?.conditions || [],
-            notes: token.data?.notes || ''
+            conditions: token.data?.conditions || []
         }))
     });
 
     const askSessionAI = async (prompt, trigger = 'manual') => {
-        if (blockReadOnly('AI di sessione controllata dal Master.')) return;
+        if (blockReadOnly('Oracolo di sessione controllato dal Master.')) return;
+        if (container.querySelector('#askSessionAI')?.disabled) return;
         const cleanPrompt = String(prompt || '').trim();
         if (!cleanPrompt) return;
 
@@ -1462,20 +1468,23 @@ export async function showSession(container, sessionId, options = {}) {
         if (aiButton) aiButton.disabled = true;
         setAIStatus("L'AI sta pensando...");
 
-        const reply = await getAIResponse(cleanPrompt, {
-            mode: sessionState.aiMode,
-            systemId: sessionSystem.id,
-            context: buildAIContext(trigger),
-            history: recentChatDocs.slice(-12)
-        });
-
-        await sendMsg(reply, false, {
-            sender_id: null,
-            sender_name: getAIBotName()
-        });
-
-        if (aiButton) aiButton.disabled = false;
-        setAIStatus('Risposta inviata in chat.');
+        try {
+            const reply = await getAIResponse(cleanPrompt, {
+                mode: sessionState.aiMode,
+                systemId: sessionSystem.id,
+                context: buildAIContext(trigger),
+                history: recentChatDocs.slice(-12),
+                throwOnError: true
+            });
+            if (!aiButton?.isConnected) return;
+            await sendMsg(reply, false, { sender_id: null, sender_name: getAIBotName() });
+            void recordActivity('oracle_answered');
+            setAIStatus('Risposta dell’Oracolo inviata in chat.');
+        } catch (error) {
+            if (aiButton?.isConnected) setAIStatus(error.message);
+        } finally {
+            if (aiButton?.isConnected) aiButton.disabled = false;
+        }
     };
 
     container.querySelector('#aiMode').onchange = (event) => {
@@ -1598,9 +1607,9 @@ export async function showSession(container, sessionId, options = {}) {
         input.value = '';
         await sendMsg(message);
 
-        const callsAI = /@(?:oste|master|ai|ia)\b/i.test(message) || sessionState.aiAutoReply;
+        const callsAI = /@(?:oracolo|oste|master|ai|ia)\b/i.test(message) || sessionState.aiAutoReply;
         if (callsAI) {
-            askSessionAI(message.replace(/@(?:oste|master|ai|ia)\b/ig, '').trim() || message, 'chat');
+            askSessionAI(message.replace(/@(?:oracolo|oste|master|ai|ia)\b/ig, '').trim() || message, 'chat');
         }
     };
 
@@ -1620,4 +1629,8 @@ export async function showSession(container, sessionId, options = {}) {
         const initDashboard = await sessionSystem.loadDashboard();
         initDashboard(container);
     };
+    if (options.startAdventure && sessionData.data?.starterCampaign && !readOnlyMode) {
+        void askSessionAI('Presenta la scena iniziale e il mio compagno. Chiedimi il nome del mio personaggio e cosa voglio fare.', 'adventure_start');
+    }
+
 }

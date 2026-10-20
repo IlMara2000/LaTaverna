@@ -1,3 +1,4 @@
+import {recordActivity} from '../../../services/communityMetrics.js';
 import { renderHomeBackButton } from '../../ui/BackButton.js';
 import { supabase, isSupabaseConfigured } from '../../../services/supabase.js';
 import { createReadingLibrary, bookTitleFromFilename, readingErrorMessage, READING_PAGE_SIZE } from '../../../services/readingLibrary.js';
@@ -414,6 +415,7 @@ export async function showReading(container) {
             loading.remove();
             const data = new Uint8Array(await blob.arrayBuffer());
             await mountPdfReader(reader, { data, bookId: book.id, userId: user?.id, signal: controller.signal, downloadLink: link });
+            void recordActivity('reading_opened');
         } catch (error) {
             if (modal.element.open) {
                 const message = modal.element.querySelector('[data-reader-loading]') || modal.element.querySelector('.reading-dialog-error');

@@ -1,5 +1,7 @@
 # La Taverna VTT
 
+La visione di prodotto, le decisioni del fondatore e la roadmap proposta sono raccolte nella [Mente della Taverna](docs/mente-della-taverna.md) (briefing del 17 ottobre 2026). Il documento distingue la direzione futura dalle funzionalità già implementate descritte qui sotto.
+
 La Taverna e una web app Vite per lobby, minigiochi e tavoli D&D 5e con Supabase per autenticazione, profili, personaggi, sessioni, token, chat e storage mappe.
 
 ## Requisiti
@@ -46,7 +48,7 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - Briscola e Scopa usano 40 carte da poker: A, 2, 3, 4, 5, 6, 7, J, Q, K di cuori, quadri, fiori e picche. Nella Scopa i quadri sostituiscono i denari e il settebello è il 7 di quadri.
 - Solitario Klondike con mazzo da poker completo di 52 carte e pesca di una carta alla volta.
 - D&D 5e: Biblioteca dei Manuali con ricerca OCR, filtri per parte/capitolo/argomento, sintesi AI basata sulle fonti, lettore pagina per pagina, personaggi e sessioni.
-- AI di sessione: bot testuale in chat, attivabile con `@oste` o dal pannello AI del tavolo, servito da function Vercel e Groq.
+- AI di sessione: bot testuale in chat, attivabile con `@oracolo` (anche `@oste`) o dal pannello Oracolo del tavolo, servito da function Vercel e Groq.
 - Libreria musicale con playlist tematiche e upload file audio locale.
 - Lettura: upload di PDF privati, consenso esplicito alla pubblicazione in Bacheca, elenco alfabetico con ricerca per titolo/autore, lettore PDF, preferiti e raccolte salvati per account.
 
@@ -69,7 +71,8 @@ Per le function AI configura su Vercel Project Settings:
 
 ```bash
 GROQ_LLM_API_KEY=...
-GROQ_LLM_MODEL=llama-3.3-70b-versatile
+GROQ_LLM_MODEL=openai/gpt-oss-120b
+GROQ_VISION_MODEL=qwen/qwen3.8-27b
 GROQ_LLM_TEMPERATURE=0.75
 GROQ_LLM_MAX_TOKENS=420
 ```
@@ -96,3 +99,13 @@ npm run index:manuals:dnd
 ```
 
 L'applicazione distribuita usa solo i JSON generati e non richiede OCR lato server o lato browser.
+
+## Community e Oracolo
+
+Percorsi: `/carte`, `/giochi-di-ruolo`, `/oracolo`, `/bottega`; `/gestione` riservato ai gestori Bottega. Visione, monetizzazione e limiti attuali sono in [La mente della Taverna](docs/mente-della-taverna.md).
+
+Per un nuovo database applicare in ordine `20261017094519_community_foundation.sql` e `20261017095644_community_metrics.sql` dopo gli schemi esistenti. Le migrazioni sono già applicate al progetto LaTaverna. Le chiavi Groq vanno solo in `.env.local` oppure nelle variabili server Vercel. Le function richiedono anche `SUPABASE_URL` e `SUPABASE_ANON_KEY` (o gli equivalenti `VITE_SUPABASE_*`).
+
+`npm run dev` serve anche gli endpoint AI locali; `npm run preview` serve soltanto il frontend compilato. Quota condivisa tra chat, board e scansioni: 5 richieste/giorno ospite, 30 registrato, massimo 300 globali (UTC). Impostare anche limiti di spesa presso il provider prima di un lancio pubblico esteso.
+
+Verifica: `npm run test:cards`, `npm run build`; `scripts/tests/sql/community.sql` verifica isolamento, quote e autorizzazione metriche in una transazione annullata. Il piano di business rimane da validare con dati reali: shop partner, pagamenti automatici, eventi, gestione autonoma e valutazione aziendale non sono già operativi.

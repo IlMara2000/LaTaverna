@@ -1,0 +1,17 @@
+node_modules
+.git
+.env
+.env.*
+.vercel
+output
+.playwright-cli
+*.traineddata
+supabase/.temp
+dist
+public/*.zip
+public/manuals/DM.pdf
+public/manuals/Giocatore.pdf
+public/manuals/Mostri.pdf
+public/manuals/DM/DM.pdf
+public/manuals/Giocatore/Giocatore.pdf
+public/manuals/Mostri/Mostri.pdf

@@ -1,3 +1,4 @@
+import {recordActivity} from './services/communityMetrics.js';
 import { setExperienceTheme } from './services/experienceTheme.js';
 import { renderHomeBackButton } from './components/ui/BackButton.js';
 import { loadView } from './services/navigationLoading.js';
@@ -190,7 +191,7 @@ export function showMinigamesList(container, options = {}) {
         const module = await import(`./dashboards/minigames/${game.id}.js`);
         if (typeof module[game.initFn] !== 'function') throw new Error('Gioco non disponibile');
         return context => {
-            if (context.beforeRender()) module[game.initFn](container);
+            if (context.beforeRender()) { module[game.initFn](container); void recordActivity('game_started'); }
         };
     }, { label: game.name, beforeRender: resetAppSurface });
 

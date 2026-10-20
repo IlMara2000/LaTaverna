@@ -11,3 +11,5 @@ public/manuals/Mostri.pdf
 public/manuals/DM/DM.pdf
 public/manuals/Giocatore/Giocatore.pdf
 public/manuals/Mostri/Mostri.pdf
+.vercel
+.env*

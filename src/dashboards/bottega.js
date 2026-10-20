@@ -1,30 +1,43 @@
 import { navigateTo } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
-import './bottega.css';
+import { shopStore, productFromRow, formatPrice } from '../services/shopStore.js';
+import { initShopCommerce } from './shopCommerce.js';
+import { esc, safeUrl } from '../services/communityUi.js';
+import '../styles/community.css';
 
 export function initBottega(container) {
     updateSidebarContext('shop');
-    container.innerHTML = `
-        <section class="bottega-hub" aria-labelledby="bottega-title">
-            <header class="bottega-hub-top"><a href="/" class="app-back-button">← Torna alla Taverna</a><span>LA TAVERNA · BOTTEGA</span></header>
-            <div class="bottega-hub-intro">
-                <img src="/assets/shop/bottega-logo.svg" alt="Emblema della Bottega del Viandante" width="120" height="120">
-                <p class="crystal-eyebrow">OGGETTI CON UNA STORIA DA RACCONTARE</p>
-                <h1 id="bottega-title">La Bottega del Viandante</h1>
-                <p>Incontri, materia e piccoli mondi da scoprire. Scegli da quale bottega cominciare.</p>
-            </div>
-            <div class="bottega-departments">
-                <a class="bottega-department is-available" href="/bottega/artigiano-rituale" id="ritual-department">
-                    <div class="bottega-department-art"><img src="/assets/shop/product-ametista-regale.jpg" alt="Creazione artigianale ametista" decoding="async"><span class="bottega-department-label">LA PRIMA BOTTEGA · 18+</span></div>
-                    <div class="bottega-department-copy"><h2>L’Artigiano Rituale</h2><p>Forme scolpite, finiture materiche e pezzi da personalizzare. Accessori artigianali per adulti.</p><span>Esplora la collezione <b aria-hidden="true">↗</b></span></div>
-                </a>
-                <article class="bottega-department is-coming"><div class="bottega-coming-art" aria-hidden="true">✦</div><div class="bottega-department-copy"><span class="bottega-coming-label">COMING SOON</span><h2>Nuove creazioni</h2><p>Un nuovo spazio sta prendendo forma. La sua storia arriverà presto.</p></div></article>
-                <article class="bottega-department is-coming"><div class="bottega-coming-art" aria-hidden="true">✧</div><div class="bottega-department-copy"><span class="bottega-coming-label">COMING SOON</span><h2>Altri mondi</h2><p>La Bottega continua a crescere. Qui troverai le prossime novità.</p></div></article>
-            </div>
-        </section>`;
-    container.querySelector('#ritual-department').addEventListener('click', event => {
-        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-        event.preventDefault();
-        navigateTo('artisanShop', container);
-    });
+    let disposed = false, version = 0;
+    const state = {cart:[], products:[], allProducts:[], placingOrder:false};
+    container.innerHTML = `<main class="community-page"><header><button data-home>← La Taverna</button><p class="crystal-eyebrow">LA COMMUNITY, ANCHE FUORI DAL TAVOLO</p><h1>La Bottega</h1><p class="community-intro">Accessori per giocare, oggetti da portare con te e creazioni della Taverna. Stiamo preparando la nuova selezione.</p></header><div class="community-grid"><article class="community-panel"><span class="community-mark" aria-hidden="true">♠</span><h2>Al tuo tavolo</h2><p>Tappetini, portamazzi e accessori per dadi: spazio alle cose che rendono più piacevole giocare.</p><small>Selezione in preparazione</small></article><article class="community-panel"><span class="community-mark" aria-hidden="true">✦</span><h2>Porta la Taverna con te</h2><p>Abbigliamento e piccoli oggetti ispirati alle storie della community.</p><small>Collezione in preparazione</small></article><article class="community-panel"><span class="community-mark" aria-hidden="true">⚑</span><h2>Incontri e partner</h2><p>Uno spazio per autori, artigiani e realtà vicine ai nostri giochi.</p><small>Collaborazioni in preparazione</small></article></div><div class="community-toolbar"><button id="shop-orders" hidden>I miei ordini</button><button id="shop-master" hidden>Gestisci bottega</button><button id="shop-metrics" hidden>Metriche e scenari</button><button id="shop-retry">Aggiorna catalogo</button></div><p class="community-status" role="status" id="shop-status">Caricamento catalogo…</p><section class="community-grid" id="shop-products" aria-label="Prodotti disponibili"></section><div id="shop-cart" class="community-panel" hidden></div></main>`;
+    const root = container.firstElementChild;
+    const status = message => { if(!disposed) root.querySelector('#shop-status').textContent=message; };
+    const render = () => {
+        root.querySelector('#shop-products').innerHTML = state.products.map(p=>`<article class="community-panel">${safeUrl(p.image)?`<img class="community-card-image" src="${esc(safeUrl(p.image))}" alt="${esc(p.name)}">`:''}<h2>${esc(p.name)}</h2><p>${esc(p.description)}</p><p>${esc(formatPrice(p.price_cents))}</p><button data-add="${esc(p.id)}" ${p.stock===0?'disabled':''}>${p.stock===0?'Non disponibile':'Aggiungi alla richiesta'}</button></article>`).join('');
+        root.querySelectorAll('[data-add]').forEach(button=>button.onclick=()=>{const p=state.products.find(p=>p.id===button.dataset.add);const entry=state.cart.find(x=>x.id===p.id);if(entry)entry.quantity=Math.min(entry.quantity+1,p.stock??9,9);else state.cart.push({id:p.id,quantity:1});renderCart();});
+        renderCart();
+    };
+    const renderCart = () => {
+        const el=root.querySelector('#shop-cart');el.hidden=!state.cart.length;
+        el.innerHTML=`<h2>La tua richiesta</h2>${state.cart.map(x=>`<p>${esc(state.products.find(p=>p.id===x.id)?.name)} × ${x.quantity} <button data-remove="${esc(x.id)}">Rimuovi</button></p>`).join('')}<p>Pagamento e consegna vengono concordati con la Bottega. Nessun addebito online.</p><button id="shop-checkout">Continua</button>`;
+        el.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{state.cart=state.cart.filter(x=>x.id!==b.dataset.remove);renderCart();});
+        el.querySelector('#shop-checkout').onclick=()=>commerce.checkout();
+    };
+    const refresh = async () => {
+        const current=++version;
+        const [rows,account]=await Promise.all([shopStore.products(),shopStore.account()]);
+        if(disposed||current!==version)return false;
+        state.allProducts=rows;state.products=rows.filter(p=>p.status==='active').map(productFromRow);
+        const previous=state.cart.length;state.cart=state.cart.filter(x=>state.products.some(p=>p.id===x.id));
+        root.querySelector('#shop-master').hidden=!account.master;root.querySelector('#shop-metrics').hidden=!account.master;root.querySelector('#shop-orders').hidden=!account.user;
+        status(state.products.length?'':'Il nuovo catalogo non è ancora aperto. Nel frattempo, ci vediamo al tavolo.');render();return previous!==state.cart.length;
+    };
+    const commerce=initShopCommerce(root,state,{refresh,onOrder:()=>{state.cart=[];renderCart();}});
+    const load=()=>refresh().catch(()=>status('Catalogo non raggiungibile. Riprova con “Aggiorna catalogo”.'));
+    const subscription=shopStore.onAuthChange(()=>{if(disposed)return;commerce.reset();state.cart=[];root.querySelector('#shop-master').hidden=true;root.querySelector('#shop-metrics').hidden=true;root.querySelector('#shop-orders').hidden=true;void load();});
+    root.querySelector('[data-home]').onclick=()=>navigateTo('home',container);
+    root.querySelector('#shop-retry').onclick=load;
+    root.querySelector('#shop-metrics').onclick=()=>navigateTo('management',container);
+    window.__shopCleanup=()=>{disposed=true;subscription?.unsubscribe();commerce.cleanup();};
+    void load();
 }

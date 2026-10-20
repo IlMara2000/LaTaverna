@@ -17,6 +17,7 @@ export const MINIGAME_CATEGORIES = [
 ];
 
 export const MINIGAMES = [
+    {id:'scala40',name:'Scala quaranta',category:'cards',icon:'♣',players:'1 giocatore · contro l’Oste',duration:'15–30 min',description:'Tris, scale e un’apertura da 40 punti. Una smazzata contro l’Oste.',color:'linear-gradient(135deg, #174f44, #092920)',initFn:'initScala40'},
     {
         id: 'briscola',
         name: 'Briscola',
@@ -136,6 +137,10 @@ export const MINIGAMES = [
 ];
 
 export const APP_DESTINATIONS = {
+    cards: {name:'Carte',description:'Collezioni e giochi di carte.'},
+    rpg: {name:'Giochi di ruolo',description:'D&D e avventure con l’Oracolo.'},
+    oracle: {name:'L’Oracolo',description:'Carte, regole e videogiochi.'},
+    magic: {name:'Magic / MTG',description:'Collezione e mazzi.'},
     cardCounter: { name: 'Segnapunti carte', description: 'Vite, premi e segnalini per il tuo tavolo.' },
     reading: {
         name: 'Lettura',
@@ -151,7 +156,7 @@ export const APP_DESTINATIONS = {
     },
     shop: {
         name: 'Bottega del Viandante',
-        description: 'Bocchini artigianali e richieste su misura.'
+        description: 'Accessori, merchandise e creazioni della community.'
     }
 };
 
