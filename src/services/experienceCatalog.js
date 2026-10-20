@@ -137,6 +137,7 @@ export const MINIGAMES = [
 ];
 
 export const APP_DESTINATIONS = {
+    cardGames: {name:'Giochi di carte',description:'I classici da giocare.'},
     cards: {name:'Carte',description:'Collezioni e giochi di carte.'},
     rpg: {name:'Giochi di ruolo',description:'D&D e avventure con l’Oracolo.'},
     oracle: {name:'L’Oracolo',description:'Carte, regole e videogiochi.'},
@@ -147,8 +148,8 @@ export const APP_DESTINATIONS = {
         description: 'Libri PDF, bacheca e raccolte personali.'
     },
     minigames: {
-        name: 'Sala giochi',
-        description: 'Carte, party game e strategia.'
+        name: 'Minigiochi',
+        description: 'Giochi da compagnia e strategia.'
     },
     dnd5e: {
         name: 'Dungeons & Dragons',

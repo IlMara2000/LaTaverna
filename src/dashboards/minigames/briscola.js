@@ -580,7 +580,7 @@ async function quitGame(container, state, cleanupOnlineMode) {
     document.body.style.overflow = '';
     try {
         const { showMinigamesList } = await import('../../minigamelist.js');
-        showMinigamesList(document.getElementById('app') || container);
+        showMinigamesList(document.getElementById('app') || container, { filter: 'cards' });
     } catch {
         window.location.reload();
     }

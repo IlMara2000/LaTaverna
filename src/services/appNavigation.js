@@ -57,8 +57,10 @@ export const getLastDestination = () => {
 
 export async function navigateTo(destination, container = document.getElementById('app'), options = {}) {
     if (!container) return false;
+    if (destination === 'minigames' && options.filter === 'cards') destination = 'cardGames';
 
     const routes = {
+        cardGames: { label: 'i giochi di carte', load: () => import('../minigamelist.js'), render: m => m.showMinigamesList(container, { ...options, filter: 'cards' }) },
         management: {label:'le metriche',load:()=>import('../dashboards/management.js'),render:m=>m.showManagement(container)},
         cards: { label: 'le carte', load: () => import('../dashboards/cards.js'), render: m => m.showCards(container) },
         rpg: { label: 'i giochi di ruolo', load: () => import('../dashboards/rpg.js'), render: m => m.showRpg(container) },
@@ -89,7 +91,7 @@ export async function navigateTo(destination, container = document.getElementByI
                     selector: '.reading-welcome, .reading-shelf, .settings-group, .profile-glass-card, .music-player, .music-playlist, .dnd-hero, .dnd-panel'
                 });
             }
-            if (context.isCurrent() && ['cards', 'rpg', 'oracle', 'minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
+            if (context.isCurrent() && ['cardGames', 'cards', 'rpg', 'oracle', 'minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
                 rememberDestination(destination, destination === 'minigames' ? options : {});
             }
         };

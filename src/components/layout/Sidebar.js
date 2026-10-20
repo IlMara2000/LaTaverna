@@ -1,3 +1,4 @@
+import '../../styles/appHierarchy.css';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 // Sidebar.js - Versione Master Integrata (Fiducia Totale)
 import { getCachedAppPreference } from '../../services/appPreferences.js';
@@ -44,28 +45,15 @@ function renderSidebarContent(container, context) {
                     TAVERNA
                 </a>
 
-                <a class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" href="/minigames" style="font-size: 0.8rem; padding: 12px;">
-                    SALA GIOCHI
-                </a>
-
-                <a class="btn-glass sidebar-nav-item" id="nav-cards" data-context="cards" href="/carte" style="font-size: 0.8rem; padding: 12px;">
-                    CARTE
-                </a>
-
-                <a class="btn-glass sidebar-nav-item" id="nav-oracle" data-context="oracle" href="/oracolo" style="font-size:0.8rem;padding:12px">L’ORACOLO</a>
-                <button class="btn-glass sidebar-nav-item" id="nav-card-counter" data-context="cardCounter" style="font-size: 0.8rem; padding: 12px;">SEGNAPUNTI CARTE</button>
-
-                <a class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" href="/library" style="font-size: 0.8rem; padding: 12px;">
-                    LETTURA
-                </a>
-
-                <a class="btn-glass sidebar-nav-item" id="nav-shop" data-context="shop" href="/shop" style="font-size: 0.8rem; padding: 12px;">
-                    BOTTEGA
-                </a>
-
-                <a class="btn-glass sidebar-nav-item" id="nav-rpg" data-context="rpg" href="/giochi-di-ruolo" style="font-size: 0.8rem; padding: 12px;">
-                    GIOCHI DI RUOLO
-                </a>
+                <span class="sidebar-section-label">ESPLORA</span>
+                <a class="btn-glass sidebar-nav-item" id="nav-cards" data-context="cards" href="/carte">CARTE</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" href="/minigames">MINIGIOCHI</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-rpg" data-context="rpg" href="/giochi-di-ruolo">GIOCHI DI RUOLO</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" href="/library">LETTURA</a>
+                <span class="sidebar-section-label">AL TUO FIANCO</span>
+                <a class="btn-glass sidebar-nav-item" id="nav-oracle" data-context="oracle" href="/oracolo">L’ORACOLO</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-shop" data-context="shop" href="/shop">BOTTEGA</a>
+                <span class="sidebar-section-label">IL TUO SPAZIO</span>
 
                 <div class="sidebar-divider" style="height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 10px;"></div>
 
@@ -125,7 +113,7 @@ function highlightActiveContext() {
         item.style.textShadow = "";
         item.style.borderColor = "";
         item.removeAttribute('aria-current');
-        if (item.dataset.context === currentActiveContext) {
+        if (item.dataset.context === ({cardGames:'cards',magic:'cards',cardCounter:'cards',dnd5e:'rpg',management:'shop',artisanShop:'shop'}[currentActiveContext] || currentActiveContext)) {
             item.setAttribute('aria-current', 'page');
         }
     });
@@ -152,7 +140,7 @@ function setupEventListeners(container, context) {
         trigger?.setAttribute('aria-expanded', String(isOpen));
         trigger?.setAttribute('aria-label', isOpen ? 'Chiudi menu' : 'Apri menu');
         window.dispatchEvent(new CustomEvent('sidebarState', { detail: { isOpen } }));
-        if (isOpen) sidebar.querySelector('button')?.focus({ preventScroll: true });
+        if (isOpen) sidebar.querySelector('a[href],button')?.focus({ preventScroll: true });
         else trigger?.focus({ preventScroll: true });
     };
     backdrop.onclick = toggle;
@@ -203,7 +191,6 @@ function setupEventListeners(container, context) {
     attachNav('nav-cards', 'cards');
     attachNav('nav-oracle', 'oracle');
     attachNav('nav-reading', 'reading');
-    attachNav('nav-card-counter', 'cardCounter');
     attachNav('nav-shop', 'shop');
     attachNav('nav-rpg', 'rpg');
     attachNav('nav-profile', 'profile');
