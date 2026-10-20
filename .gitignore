@@ -13,3 +13,8 @@ public/manuals/Giocatore/Giocatore.pdf
 public/manuals/Mostri/Mostri.pdf
 .vercel
 .env*
+
+# Local browser-test and OCR caches (regenerated when needed)
+.playwright-cli/
+/*.traineddata
+supabase/.temp/

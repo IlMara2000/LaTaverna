@@ -1,0 +1,21 @@
+/* Shared information hierarchy; preserve the existing illustrated identity. */
+#ui .taverna-home .taverna-scene-stage {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: auto; overflow: visible;
+}
+#ui .taverna-home .taverna-scene { min-height: 320px; }
+#ui .taverna-home .scene-reading img { width: 100%; object-position: center; }
+#ui .taverna-home .taverna-home-dock,
+#ui .taverna-home .taverna-home-dock:has(.is-resume) {
+    display: flex; flex-wrap: wrap; justify-content: center;
+}
+#ui .taverna-home .taverna-home-dock button { flex: 1 1 180px; max-width: 360px; }
+.sidebar-section-label { font-size: .7rem; letter-spacing: .12em; opacity: .65; margin-top: 12px; }
+.sidebar-actions > a.sidebar-nav-item { font-size: .8rem; padding: 12px; }
+@media (min-width: 601px) and (max-width: 1000px) {
+    #ui .taverna-home .taverna-scene-stage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    #ui .taverna-home .taverna-scene-stage { grid-template-columns: minmax(0, 1fr); }
+    #ui .taverna-home .taverna-scene { min-height: 270px; }
+}

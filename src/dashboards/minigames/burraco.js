@@ -41,7 +41,7 @@ const quitGame = async (container) => {
     document.body.style.position = '';
     try {
         const { showMinigamesList } = await import('../../minigamelist.js');
-        showMinigamesList(document.getElementById('app') || container);
+        showMinigamesList(document.getElementById('app') || container, { filter: 'cards' });
     } catch (e) { window.location.reload(); }
 };
 

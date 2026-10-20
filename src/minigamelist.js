@@ -1,3 +1,4 @@
+import {syncDestinationPath} from './services/publicRoutes.js';
 import {recordActivity} from './services/communityMetrics.js';
 import { setExperienceTheme } from './services/experienceTheme.js';
 import { renderHomeBackButton } from './components/ui/BackButton.js';
@@ -33,12 +34,15 @@ export function showMinigamesList(container, options = {}) {
     document.body.style.touchAction = '';
     window.scrollTo(0, 0);
 
+    const cardsOnly = options.filter === 'cards';
     if (typeof updateSidebarContext === 'function') {
-        updateSidebarContext("minigames");
+        updateSidebarContext(cardsOnly ? "cards" : "minigames");
     }
 
     let activeFilter = ['cards', 'party', 'strategy'].includes(options.filter) ? options.filter : 'all';
-    rememberDestination('minigames', { filter: activeFilter });
+    rememberDestination(cardsOnly ? 'cardGames' : 'minigames', { filter: activeFilter });
+
+    syncDestinationPath(cardsOnly ? 'cardGames' : 'minigames');
 
     // RIMOSSA la classe .dashboard-container che creava il bordo invisibile!
     // Ora è un layout puro e piatto.
@@ -46,20 +50,17 @@ export function showMinigamesList(container, options = {}) {
         <div id="lobby-wrapper" class="minigames-lobby-wrapper fade-in">
 
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 30px;">
-                ${renderHomeBackButton({ id: 'btn-back-main' })}
+                ${cardsOnly ? '<button type="button" class="app-back-button" id="btn-back-main">← Carte</button>' : renderHomeBackButton({ id: 'btn-back-main' })}
             </div>
 
             <header class="world-catalog-header" style="margin: 10px 0 28px 0; text-align: center;">
                 <span class="crystal-eyebrow">IL PIACERE DI STARE AL TAVOLO</span>
-                <h1 class="main-title">Sala giochi</h1>
+                <h1 class="main-title">${cardsOnly ? 'Giochi di carte' : 'Minigiochi'}</h1>
                 <p class="catalog-intro">Ritrova un classico o lasciati sorprendere da una nuova sfida.</p>
             </header>
 
             <nav class="session-tool-switcher" id="minigame-filters" aria-label="Categorie minigiochi" style="margin-bottom: 18px;">
-                <button type="button" data-game-filter="all">Tutti</button>
-                <button type="button" data-game-filter="cards">Carte</button>
-                <button type="button" data-game-filter="party">Con amici</button>
-                <button type="button" data-game-filter="strategy">Strategia</button>
+                ${cardsOnly ? '<button type="button" id="open-collection">Collezioni e strumenti</button>' : `<button type="button" data-game-filter="all">Tutti i minigiochi</button><button type="button" data-game-filter="party">Da compagnia</button><button type="button" data-game-filter="strategy">Strategia</button><button type="button" id="open-collection">Cerchi i giochi di carte? → Carte</button>`}
             </nav>
 
             <section class="minigame-multiplayer-panel" aria-label="Multiplayer minigiochi">
@@ -199,7 +200,7 @@ export function showMinigamesList(container, options = {}) {
         setExperienceTheme(activeFilter, 'catalog');
         const catalog = container.querySelector('#minigame-catalog');
         const visibleCategories = activeFilter === 'all'
-            ? MINIGAME_CATEGORIES
+            ? MINIGAME_CATEGORIES.filter(category => category.id !== 'cards')
             : MINIGAME_CATEGORIES.filter(category => category.id === activeFilter);
 
         catalog.innerHTML = visibleCategories.map(category => {
@@ -243,7 +244,7 @@ export function showMinigamesList(container, options = {}) {
     container.querySelectorAll('[data-game-filter]').forEach(button => {
         button.onclick = () => {
             activeFilter = button.dataset.gameFilter || 'all';
-            rememberDestination('minigames', { filter: activeFilter });
+            rememberDestination(cardsOnly ? 'cardGames' : 'minigames', { filter: activeFilter });
             renderGameCatalog();
         };
     });
@@ -257,7 +258,8 @@ export function showMinigamesList(container, options = {}) {
     };
 
     // Torna alla lobby principale
-    document.getElementById('btn-back-main').onclick = () => navigateTo('home', container);
+    document.getElementById('btn-back-main').onclick = () => navigateTo(cardsOnly ? 'cards' : 'home', container);
+    container.querySelector('#open-collection').onclick = () => navigateTo('cards', container);
 
     document.getElementById('btn-minigame-multiplayer').onclick = async () => {
         setMultiplayerBusy(true);

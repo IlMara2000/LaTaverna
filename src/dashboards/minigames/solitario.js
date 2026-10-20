@@ -175,7 +175,7 @@ export function initSolitario(container) {
     async function leave() {
         cleanup();
         const { showMinigamesList } = await import('../../minigamelist.js');
-        showMinigamesList(document.getElementById('app') || container);
+        showMinigamesList(document.getElementById('app') || container, { filter: 'cards' });
     }
 
     function onClick(event) {

@@ -1,3 +1,4 @@
+import './styles/appHierarchy.css';
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { APP_DESTINATIONS } from './services/experienceCatalog.js';
 import { getLastDestination, navigateTo } from './services/appNavigation.js';
@@ -9,19 +10,6 @@ const escapeHTML = (value = '') => String(value)
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
-
-const getGuestState = () => {
-    try {
-        const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user') || 'null');
-        return {
-            isGuest: Boolean(guestUser),
-            isLocalDndGuest: Boolean(guestUser?.isLocalDnd),
-            name: guestUser?.name || guestUser?.user_metadata?.full_name || 'Ospite'
-        };
-    } catch {
-        return { isGuest: false, isLocalDndGuest: false, name: 'Viandante' };
-    }
-};
 
 export function showLobby(container) {
     window.__homeCleanup?.();
@@ -35,7 +23,6 @@ export function showLobby(container) {
 
     updateSidebarContext('home');
 
-    const guest = getGuestState();
     const lastDestination = getLastDestination();
     const lastDestinationInfo = APP_DESTINATIONS[lastDestination?.destination] || null;
 
@@ -58,7 +45,7 @@ export function showLobby(container) {
                     <p>Una mano di carte, una sfida tra amici, una nuova avventura.<br>Il tuo posto al tavolo ti aspetta.</p>
                 </section>
                 <div class="home-section-label"><span>Esplora la Taverna</span></div>
-                <section class="taverna-scene-stage" aria-label="Scegli come giocare">
+                <section class="taverna-scene-stage" aria-label="Le quattro aree della Taverna">
                     <button type="button" class="taverna-scene scene-cards" id="hub-card-games">
                         <img src="/assets/worlds/handwritten-triptych.webp" alt="Carte illustrate a inchiostro tra le dita di un guanto medievale" fetchpriority="high" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
@@ -70,30 +57,32 @@ export function showLobby(container) {
                         <img src="/assets/worlds/handwritten-triptych.webp" alt="Cavallo degli scacchi e dadi disegnati a mano" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">II · LA SFIDA</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Minigiochi</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Invita i tuoi amici <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🎲</span><span class="taverna-scene-title">Minigiochi</span><span class="scene-description">Piccole sfide, grandi risate.</span><span class="scene-link">Scegli una sfida <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-gdr" id="hub-gdr-games">
                         <img src="/assets/worlds/handwritten-triptych.webp" alt="Avventuriero incappucciato sotto una luna ametista" loading="lazy" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">III · LA LEGGENDA</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di Ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🐉</span><span class="taverna-scene-title">Giochi di ruolo</span><span class="scene-description">Tira i dadi. Scrivi la tua leggenda.</span><span class="scene-link">Inizia un’avventura <b aria-hidden="true">↗</b></span></span>
                     </button>
 
+                    <button type="button" class="taverna-scene scene-reading" id="hub-reading">
+                        <img src="/assets/worlds/reading-nook.webp" alt="Un angolo della Taverna dedicato alla lettura" loading="lazy" decoding="async">
+                        <span class="taverna-scene-scrim" aria-hidden="true"></span>
+                        <span class="scene-number" aria-hidden="true">IV · LE STORIE</span>
+                        <span class="taverna-scene-caption"><span class="taverna-scene-title">Lettura</span><span class="scene-description">La tua biblioteca, la bacheca e le raccolte.</span><span class="scene-link">Apri la biblioteca <b aria-hidden="true">↗</b></span></span>
+                    </button>
                 </section>
 
-                <nav class="taverna-home-dock" aria-label="Destinazioni rapide">
+                <nav class="taverna-home-dock" aria-label="Riprendi e servizi della Taverna">
                     ${lastDestinationInfo ? `
                         <button type="button" id="resume-last-destination" class="is-resume">
                             <small>RIPRENDI</small>
                             <strong>${escapeHTML(lastDestinationInfo.name)}</strong>
                         </button>
                     ` : ''}
-                    <button type="button" id="hub-all-games">SALA GIOCHI</button>
-                    <button type="button" id="hub-strategy-games">STRATEGIA</button>
                     <button type="button" id="hub-shop">BOTTEGA</button>
-                    <button type="button" id="hub-card-counter">SEGNAPUNTI CARTE</button>
-                    <button type="button" id="hub-reading">LETTURA</button>
                     <button type="button" id="hub-oracle">L’ORACOLO</button>
                 </nav>
                 <p class="taverna-home-footer"><span aria-hidden="true">✦</span> Le storie più belle si giocano insieme.</p>
@@ -117,12 +106,9 @@ export function showLobby(container) {
         openDestination(lastDestination.destination, lastDestination.options || {});
     });
     cardScene.onclick = () => openDestination('cards');
-    partyScene.onclick = () => openDestination('minigames', { filter: 'party' });
+    partyScene.onclick = () => openDestination('minigames');
     gdrScene.onclick = () => openDestination('rpg');
-    container.querySelector('#hub-strategy-games').onclick = () => openDestination('minigames', { filter: 'strategy' });
-    container.querySelector('#hub-all-games').onclick = () => openDestination('minigames', { filter: 'all' });
     container.querySelector('#hub-shop').onclick = () => openDestination('shop');
-    container.querySelector('#hub-card-counter').onclick = () => openDestination('cardCounter');
     container.querySelector('#hub-reading').onclick = () => openDestination('reading');
     container.querySelector('#hub-oracle').onclick = () => openDestination('oracle');
 }
