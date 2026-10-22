@@ -53,7 +53,7 @@ export async function showAssets(container) {
                         return `
                             <div class="glass-box asset-card" style="padding: 10px; text-align:center;">
                                 <div style="height: 100px; background: rgba(255,255,255,0.03); border-radius: 12px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; overflow:hidden;">
-                                    ${isImg ? `<img src="${url}" style="width:100%; height:100%; object-fit:cover;">` : `<span>📜</span>`}
+                                    ${isImg ? `<img src="${escapeHTML(url)}" style="width:100%; height:100%; object-fit:cover;">` : `<span>📜</span>`}
                                 </div>
                                 <p style="font-size: 10px; overflow: hidden; text-overflow: ellipsis;">${safeName}</p>
                             </div>`;
@@ -74,7 +74,8 @@ export async function showAssets(container) {
             if (!file) return;
             try {
                 const fileName = `${Math.random().toString(36).substring(7)}_${file.name}`;
-                await supabase.storage.from(buckets.zaino).upload(fileName, file);
+                const { error } = await supabase.storage.from(buckets.zaino).upload(fileName, file);
+                if (error) throw error;
                 showAssets(container);
             } catch (err) { alert(err.message); }
         };

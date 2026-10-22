@@ -12,10 +12,17 @@ export const methodNotAllowed = (response, allowed = ['POST']) => {
     });
 };
 
+const requireObject = value => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw Object.assign(new Error('Il corpo JSON deve essere un oggetto.'), { statusCode: 400 });
+    }
+    return value;
+};
+
 export const readJsonBody = async (request, maxBytes = MAX_BODY_BYTES) => {
     if (request.body && typeof request.body === 'object') {
         if (Buffer.byteLength(JSON.stringify(request.body), 'utf8') > maxBytes) throw Object.assign(new Error('Payload troppo grande.'), {statusCode:413});
-        return request.body;
+        return requireObject(request.body);
     }
     if (!request.body) return {};
 
@@ -30,7 +37,7 @@ export const readJsonBody = async (request, maxBytes = MAX_BODY_BYTES) => {
     }
 
     try {
-        return JSON.parse(raw || '{}');
+        return requireObject(JSON.parse(raw || '{}'));
     } catch {
         const error = new Error('JSON non valido.');
         error.statusCode = 400;
