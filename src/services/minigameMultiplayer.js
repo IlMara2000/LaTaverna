@@ -109,18 +109,13 @@ const ensureRoomAccess = async () => {
         return { ready: false, error: new Error('Supabase non configurato.') };
     }
 
-    // Se Anonymous Sign-In e' abilitato lo usiamo, altrimenti la tabella resta
-    // accessibile via ruolo anon con policy RLS limitate al codice stanza.
     try {
-        const current = await supabase.auth?.getUser?.();
-        if (!current?.data?.user?.id) {
-            await supabase.auth?.signInAnonymously?.();
-        }
-    } catch {
-        // Il pairing non deve bloccarsi se il progetto non usa login anonimo.
-    }
-
-    return { ready: true };
+        const current = await supabase.auth.getUser();
+        if (current?.data?.user?.id) return { ready: true };
+        const signedIn = await supabase.auth.signInAnonymously();
+        if (signedIn?.data?.user?.id && !signedIn.error) return { ready: true };
+    } catch { /* Fail closed: never use the shared anon role for room access. */ }
+    return { ready: false, error: new Error('Accedi al tuo account per usare il multiplayer.') };
 };
 
 export const createMinigameRoom = async ({scope = 'minigames'} = {}) => {
@@ -175,6 +170,8 @@ export const joinMinigameRoom = async (rawCode = '', attempt = 0) => {
     if (code.length !== 6) return { room: null, error: new Error('Inserisci un codice di 6 caratteri.') };
     const access = await ensureRoomAccess();
     if (!access.ready) return { room: null, error: access.error, unavailable: true };
+    const invitation = await supabase.rpc('join_minigame_room', { p_code: code });
+    if (invitation.error) return { room: null, error: invitation.error, unavailable: isSchemaError(invitation.error) };
     const lookup = await supabase.from(ROOM_TABLE).select('*').eq('code', code)
         .neq('status', 'closed').gt('expires_at', new Date().toISOString()).maybeSingle();
     if (lookup.error) return { room: null, error: lookup.error, unavailable: isSchemaError(lookup.error) };
@@ -208,6 +205,8 @@ export const joinMagicRoom = async (rawCode = '', deck = null) => {
     if (code.length !== 6) return { room: null, error: new Error('Inserisci un codice di 6 caratteri.'), unavailable: false };
     const session = await ensureRoomAccess();
     if (!session.ready) return { room: null, error: session.error, unavailable: true };
+    const invitation = await supabase.rpc('join_minigame_room', { p_code: code });
+    if (invitation.error) return { room: null, error: invitation.error, unavailable: isSchemaError(invitation.error) };
     const clientId = getMinigameClientId();
     for (let attempt = 0; attempt < 3; attempt += 1) {
         const lookup = await supabase.from(ROOM_TABLE).select('*').eq('code', code)

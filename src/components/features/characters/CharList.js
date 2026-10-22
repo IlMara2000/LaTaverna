@@ -1,3 +1,4 @@
+import { esc } from '../../../services/communityUi.js';
 // CORREZIONE CRITICA: 3 livelli di risalita per trovare services/
 import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 
@@ -94,7 +95,7 @@ export async function initCharacters(container) {
 
             charList.innerHTML = data.map(c => {
                 // Logica visiva basata sulla classe
-                const isMagic = c.class.toLowerCase().includes('mago') || c.class.toLowerCase().includes('stregone') || c.class.toLowerCase().includes('chierico') || c.class.toLowerCase().includes('druido');
+                const isMagic = String(c.class || '').toLowerCase().includes('mago') || String(c.class || '').toLowerCase().includes('stregone') || String(c.class || '').toLowerCase().includes('chierico') || String(c.class || '').toLowerCase().includes('druido');
                 const icon = isMagic ? '🧙‍♂️' : '⚔️';
                 const colorTheme = isMagic ? 'var(--amethyst-bright)' : '#ff416c';
                 
@@ -104,12 +105,12 @@ export async function initCharacters(container) {
                             ${icon}
                         </div>
                         <div style="flex-grow: 1;">
-                            <h3 style="margin:0; font-size: 1.2rem; font-weight:800; color: white;">${c.name}</h3>
-                            <p style="margin:4px 0 0 0; font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing:1px; color: ${colorTheme}; font-weight: 700;">${c.class} • LV ${c.level || 1}</p>
+                            <h3 style="margin:0; font-size: 1.2rem; font-weight:800; color: white;">${esc(c.name)}</h3>
+                            <p style="margin:4px 0 0 0; font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing:1px; color: ${colorTheme}; font-weight: 700;">${esc(c.class)} • LV ${esc(c.level || 1)}</p>
                         </div>
                         <div style="text-align: right; background: rgba(255,65,108,0.1); padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(255,65,108,0.2);">
                             <span style="font-size: 9px; color: #ff416c; display:block; text-transform:uppercase; font-weight: 900; letter-spacing: 1px;">HP</span>
-                            <div style="font-weight:900; font-size:1.1rem; color: white;">${c.hp || 10}<span style="font-size:11px; opacity:0.5;">/${c.hp_max || 10}</span></div>
+                            <div style="font-weight:900; font-size:1.1rem; color: white;">${esc(c.hp || 10)}<span style="font-size:11px; opacity:0.5;">/${esc(c.hp_max || 10)}</span></div>
                         </div>
                     </div>
                 `;
