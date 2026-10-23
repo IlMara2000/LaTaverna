@@ -76,6 +76,18 @@
     {
       "source": "/gestione/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/multiplayer",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mtcg/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mtcg",
+      "destination": "/index.html"
     }
   ]
 }

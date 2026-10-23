@@ -1,0 +1,17 @@
+#ui #app .proxy-printer { width: min(100%,1000px); margin: auto; padding: 24px; color: #eee8f5; }
+.proxy-printer form { display: grid; gap: 16px; }
+.proxy-printer label { display: block; }
+.proxy-printer textarea { display: block; width: 100%; padding: 16px; margin-top: 10px; }
+.proxy-printer button { padding: 12px 18px; border-radius: 10px; cursor: pointer; }
+.proxy-toolbar { display: flex; gap: 16px; align-items: center; justify-content: space-between; margin: 24px 0; }
+.proxy-sheets { display: grid; gap: 24px; overflow: auto; }
+.proxy-sheet { background: white; width: 210mm; height: 297mm; padding: 16.5mm 10.5mm; display: grid; grid-template-columns: repeat(3,63mm); grid-auto-rows: 88mm; box-sizing: border-box; }
+.proxy-sheet img { display: block; width: 63mm; height: 88mm; object-fit: contain; outline: .1mm solid #ddd; }
+@media print {
+ @page { size: A4; margin: 0; }
+ html,body,#ui,#ui #app { margin: 0 !important; padding: 0 !important; width: 210mm !important; height: auto !important; overflow: visible !important; background: white !important; display: block !important; }
+ body > :not(#ui), #ui > :not(#app), #ui #app > :not(.proxy-printer), .proxy-printer > :not(.proxy-sheets) { display: none !important; }
+ #ui #app .proxy-printer,.proxy-sheets { display: block !important; padding: 0 !important; margin: 0 !important; width: 210mm !important; overflow: visible !important; }
+ .proxy-sheet { break-after: page; break-inside: avoid; }
+ .proxy-sheet:last-child { break-after: auto; }
+}

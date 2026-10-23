@@ -46,6 +46,9 @@ function renderSidebarContent(container, context) {
                 </a>
 
                 <span class="sidebar-section-label">ESPLORA</span>
+                <a class="btn-glass sidebar-nav-item" id="nav-multiplayer" data-context="multiplayer" href="/multiplayer">MULTIPLAYER</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-mtcg" data-context="mtcg" href="/mtcg">MTCG</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-cardCounter" data-context="cardCounter" href="/mtcg/segnapunti">SEGNAPUNTI</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-cards" data-context="cards" href="/carte">CARTE</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" href="/minigames">MINIGIOCHI</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-rpg" data-context="rpg" href="/giochi-di-ruolo">GIOCHI DI RUOLO</a>
@@ -113,7 +116,7 @@ function highlightActiveContext() {
         item.style.textShadow = "";
         item.style.borderColor = "";
         item.removeAttribute('aria-current');
-        if (item.dataset.context === ({cardGames:'cards',magic:'cards',cardCounter:'cards',dnd5e:'rpg',management:'shop',artisanShop:'shop'}[currentActiveContext] || currentActiveContext)) {
+        if (item.dataset.context === ({cardGames:'cards',magic:'mtcg',proxyPrinter:'mtcg',dnd5e:'rpg',management:'shop',artisanShop:'shop'}[currentActiveContext] || currentActiveContext)) {
             item.setAttribute('aria-current', 'page');
         }
     });
@@ -189,6 +192,9 @@ function setupEventListeners(container, context) {
     attachNav('nav-home', 'home');
     attachNav('nav-minigames', 'minigames');
     attachNav('nav-cards', 'cards');
+    attachNav('nav-multiplayer','multiplayer');
+    attachNav('nav-mtcg','mtcg');
+    attachNav('nav-cardCounter','cardCounter');
     attachNav('nav-oracle', 'oracle');
     attachNav('nav-reading', 'reading');
     attachNav('nav-shop', 'shop');

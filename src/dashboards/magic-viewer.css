@@ -106,3 +106,10 @@
     min-height:44px;
     color-scheme:light;
 }
+#ui .mv-platform-tools { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+#ui .mv-platform-tools button { padding:10px 14px; color:#f5edff; border:1px solid #ac8bbd; border-radius:9px; background:#241630; cursor:pointer; }
+#ui .mv-deck-groups { display:grid; gap:28px; }
+#ui .mv-deck-group h4 { display:flex; align-items:center; gap:10px; border-bottom:1px solid #d4c6de; padding-bottom:9px; color:#38204b; }
+#ui .mv-deck-group h4 span { font-size:12px; border-radius:20px; padding:4px 9px; background:#e9dff3; }
+#ui .mv-deck-card { min-width:0; }
+#ui .mv-deck-card .mv-quantity-tools { justify-content:center; margin-top:8px; }

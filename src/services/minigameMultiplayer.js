@@ -6,6 +6,11 @@ const ROOM_KEY = 'taverna_minigame_room';
 const CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
 let memoryClientId = '';
+let realtimeAccessToken = '';
+function bindPlatformIdentity(userId) {
+    memoryClientId=userId;
+    safeStorage()?.setItem(CLIENT_ID_KEY,userId);
+}
 
 const isSchemaError = (error) => {
     const message = String(error?.message || '');
@@ -57,6 +62,8 @@ const normalizeRoom = (room = null) => {
     if (!room) return null;
     return {
         id: room.id || '',
+        ownerId: room.owner_id || '',
+        dndSessionId: room.dnd_session_id || null,
         code: String(room.code || '').toUpperCase(),
         hostClientId: room.host_client_id || '',
         guestClientId: room.guest_client_id || '',
@@ -110,10 +117,16 @@ const ensureRoomAccess = async () => {
     }
 
     try {
+        const authenticated = async userId => {
+            const session=await supabase.auth.getSession();
+            const token=session.data?.session?.access_token;
+            if(token&&token!==realtimeAccessToken){await supabase.realtime?.setAuth(token);realtimeAccessToken=token;}
+            return {ready:true,userId};
+        };
         const current = await supabase.auth.getUser();
-        if (current?.data?.user?.id) return { ready: true };
+        if (current?.data?.user?.id) return await authenticated(current.data.user.id);
         const signedIn = await supabase.auth.signInAnonymously();
-        if (signedIn?.data?.user?.id && !signedIn.error) return { ready: true };
+        if (signedIn?.data?.user?.id && !signedIn.error) return await authenticated(signedIn.data.user.id);
     } catch { /* Fail closed: never use the shared anon role for room access. */ }
     return { ready: false, error: new Error('Accedi al tuo account per usare il multiplayer.') };
 };
@@ -121,7 +134,7 @@ const ensureRoomAccess = async () => {
 export const createMinigameRoom = async ({scope = 'minigames'} = {}) => {
     const session = await ensureRoomAccess();
     if (!session.ready) return { room: null, error: session.error, unavailable: true };
-
+    if(scope==='platform')bindPlatformIdentity(session.userId);
     const clientId = getMinigameClientId();
     let lastError = null;
 
@@ -178,6 +191,14 @@ export const joinMinigameRoom = async (rawCode = '', attempt = 0) => {
     const row = lookup.data;
     if (!row) return { room: null, error: new Error('Codice non trovato o scaduto.') };
     if (row.data?.scope === 'magic') return { room: null, error: new Error('Entra in questa stanza dalla sezione Magic.') };
+    if(row.data?.scope==='platform'){
+        const joined=await supabase.rpc('join_platform_room',{p_code:code});
+        if(joined.error)return {room:null,error:joined.error};
+        bindPlatformIdentity(access.userId);
+        const latest=await getMinigameRoomByCode(code);
+        if(latest.room)saveRoom(latest.room,true);
+        return latest;
+    }
     const room = normalizeRoom(row), clientId = getMinigameClientId(), participants = getRoomParticipants(room);
     if (participants.includes(clientId)) { saveRoom(room, true); return { room, error: null }; }
     if (participants.length >= 8) return { room: null, error: new Error('Stanza piena: massimo 8 giocatori.') };
@@ -343,7 +364,7 @@ export const watchMinigameRoom = (code = '', onChange = () => {}) => {
     const normalizedCode = String(code || '').trim().toUpperCase();
     if (!normalizedCode || !supabase?.channel) return () => {};
 
-    const channel = supabase.channel(`minigame-room-${normalizedCode}`)
+    const channel = supabase.channel(`minigame-room-${normalizedCode}-${crypto.randomUUID()}`)
         .on('postgres_changes', {
             event: '*',
             schema: 'public',

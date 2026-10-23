@@ -1,5 +1,9 @@
 export const PUBLIC_ROUTES = Object.freeze({
     management: '/gestione',
+    multiplayer: '/multiplayer',
+    mtcg: '/mtcg',
+    proxyPrinter: '/mtcg/proxy-printer',
+    cardCounter: '/mtcg/segnapunti',
     cards: '/carte',
     cardGames: '/carte/giochi',
     rpg: '/giochi-di-ruolo',

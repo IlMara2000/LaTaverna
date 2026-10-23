@@ -50,7 +50,7 @@ export function showLobby(container) {
                         <img src="/assets/worlds/handwritten-triptych.webp" alt="Carte illustrate a inchiostro tra le dita di un guanto medievale" fetchpriority="high" decoding="async">
                         <span class="taverna-scene-scrim" aria-hidden="true"></span>
                         <span class="scene-number" aria-hidden="true">I · LA SORTE</span>
-                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Carte</span><span class="scene-description">Le tue collezioni e i grandi classici.</span><span class="scene-link">Esplora le carte <b aria-hidden="true">↗</b></span></span>
+                        <span class="taverna-scene-caption"><span class="scene-symbol" aria-hidden="true">🃏</span><span class="taverna-scene-title">Carte</span><span class="scene-description">I grandi classici da giocare.</span><span class="scene-link">Esplora le carte <b aria-hidden="true">↗</b></span></span>
                     </button>
 
                     <button type="button" class="taverna-scene scene-party" id="hub-party-games">
@@ -82,7 +82,7 @@ export function showLobby(container) {
                             <strong>${escapeHTML(lastDestinationInfo.name)}</strong>
                         </button>
                     ` : ''}
-                    <button type="button" id="hub-shop">BOTTEGA</button>
+                    <button type="button" id="hub-multiplayer">MULTIPLAYER</button><button type="button" id="hub-mtcg">MTCG</button><button type="button" id="hub-shop">BOTTEGA</button>
                     <button type="button" id="hub-oracle">L’ORACOLO</button>
                 </nav>
                 <p class="taverna-home-footer"><span aria-hidden="true">✦</span> Le storie più belle si giocano insieme.</p>
@@ -108,6 +108,8 @@ export function showLobby(container) {
     cardScene.onclick = () => openDestination('cards');
     partyScene.onclick = () => openDestination('minigames');
     gdrScene.onclick = () => openDestination('rpg');
+    container.querySelector('#hub-multiplayer').onclick=()=>openDestination('multiplayer');
+    container.querySelector('#hub-mtcg').onclick=()=>openDestination('mtcg');
     container.querySelector('#hub-shop').onclick = () => openDestination('shop');
     container.querySelector('#hub-reading').onclick = () => openDestination('reading');
     container.querySelector('#hub-oracle').onclick = () => openDestination('oracle');

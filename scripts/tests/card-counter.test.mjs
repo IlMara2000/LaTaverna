@@ -35,3 +35,38 @@ test('one Magic choice starts at 40 and legacy saves keep their scores',()=>{
  assert.equal(restored.initial,20);assert.equal(legacy.preset,'magic');
  assert.equal(changeScore(createMatch('commander'),0,10).players[0].value,50);
 });
+
+test('commander damage tracks each source and partner separately, independent of life',async()=>{
+ const {changeCommanderDamage,hasLethalCommanderDamage}=await import('../../src/services/cardCounter.js');
+ const original=createMatch('commander',4);
+ let s=changeCommanderDamage(original,0,1,0,12);
+ s=changeCommanderDamage(s,0,1,1,10);
+ s=changeCommanderDamage(s,0,2,0,9);
+ assert.equal(hasLethalCommanderDamage(s.players[0]),false);
+ assert.equal(s.players[0].value,40);
+ assert.equal(original.players[0].commanderDamage[1][0],0);
+ s=changeCommanderDamage(s,0,1,0,9,true);
+ assert.equal(hasLethalCommanderDamage(s.players[0]),true);
+ assert.equal(s.players[0].value,31);
+ s=changeScore(s,0,20);
+ assert.equal(hasLethalCommanderDamage(s.players[0]),true);
+ s=changeCommanderDamage(s,0,1,0,-100,true);
+ assert.equal(s.players[0].commanderDamage[1][0],0);
+ assert.equal(s.players[0].value,72);
+ assert.equal(hasLethalCommanderDamage(s.players[0]),false);
+ assert.deepEqual(validateMatch(JSON.parse(JSON.stringify(s))),s);
+ assert.throws(()=>changeCommanderDamage(s,0,4,0,1));
+ assert.throws(()=>changeCommanderDamage(s,0,1,2,1));
+ assert.throws(()=>changeCommanderDamage(s,0,1,0,NaN));
+});
+test('older Magic saves receive independent zero damage trackers and malformed trackers fail closed',()=>{
+ const s=createMatch('commander',3);s.players.forEach(p=>delete p.commanderDamage);
+ const loaded=validateMatch(s);
+ assert.deepEqual(loaded.players[0].commanderDamage,[[0,0],[0,0],[0,0]]);
+ loaded.players[0].commanderDamage[0][0]=21;
+ assert.equal(loaded.players[1].commanderDamage[0][0],0);
+ assert.equal(s.players[0].commanderDamage,undefined);
+ for(const bad of [null,[],[[0,0]],[[0,0],[0,0],[-1,0]],[[0,0],[0,0],[1.5,0]]]){
+  const broken=structuredClone(loaded);broken.players[0].commanderDamage=bad;assert.equal(validateMatch(broken),null);
+ }
+});

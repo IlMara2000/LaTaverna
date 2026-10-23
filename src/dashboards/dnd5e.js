@@ -1,3 +1,5 @@
+import {currentPlatformRoom,openPlatformDnd} from '../services/platformMultiplayer.js';
+import {navigateTo} from '../services/appNavigation.js';
 import {recordActivity} from '../services/communityMetrics.js';
 import { renderHomeBackButton } from '../components/ui/BackButton.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
@@ -401,10 +403,11 @@ function renderShell(container, activeView = 'overview') {
                 <button class="${activeView === 'tools' ? 'active' : ''}" data-dnd-view="tools">Strumenti</button>
             </nav>
 
-            <main id="dnd-content"></main>
+            <button type="button" id="dnd-platform-online" class="btn-primary">ONLINE · Tavolo Multiplayer</button><p id="dnd-platform-status" role="status"></p><main id="dnd-content"></main>
         </div>
     `;
 
+    container.querySelector('#dnd-platform-online').onclick=async()=>{try{if(!currentPlatformRoom()){await navigateTo('multiplayer',container);return;}await openPlatformDnd(container);}catch(error){const status=container.querySelector('#dnd-platform-status');if(status)status.textContent=error.message;}};
     container.querySelector('#back-to-lobby').onclick = () => showLobby(container);
     container.querySelectorAll('[data-dnd-view]').forEach(btn => {
         btn.onclick = () => {
