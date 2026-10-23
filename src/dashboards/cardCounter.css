@@ -77,3 +77,9 @@ body:has(.card-counter) :is(#navbar-trigger,#nav-home-btn) { display: none !impo
     #ui #app .counter-token-preview { display: none; }
     #ui #app .counter-value { font-size: clamp(40px,15vmin,100px) !important; }
 }
+#ui #app .counter-commander { margin-top: 24px; }
+#ui #app .counter-commander p { font-size: 13px; line-height: 1.5; }
+#ui #app .counter-commander .counter-life-toggle { display: flex; align-items: center; gap: 10px; }
+#ui #app .counter-commander input[type="checkbox"] { width: 20px; height: 20px; }
+#ui #app .counter-commander .counter-tokens li { grid-template-columns: minmax(0,1fr) 36px 64px 36px; }
+#ui #app .counter-commander .commander-lethal { border: 2px solid #d74767; border-radius: 12px; padding: 8px; }

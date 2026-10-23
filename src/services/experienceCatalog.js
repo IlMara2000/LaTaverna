@@ -137,8 +137,11 @@ export const MINIGAMES = [
 ];
 
 export const APP_DESTINATIONS = {
+    multiplayer:{name:'Multiplayer',description:'Un collegamento per tutta la Taverna.'},
+    mtcg:{name:'MTCG',description:'Magic e strumenti per il tavolo.'},
+    proxyPrinter:{name:'MTG Proxy Printer',description:'Prepara i fogli da stampare.'},
     cardGames: {name:'Giochi di carte',description:'I classici da giocare.'},
-    cards: {name:'Carte',description:'Collezioni e giochi di carte.'},
+    cards: {name:'Carte',description:'I classici da giocare.'},
     rpg: {name:'Giochi di ruolo',description:'D&D e avventure con l’Oracolo.'},
     oracle: {name:'L’Oracolo',description:'Carte, regole e videogiochi.'},
     magic: {name:'Magic / MTG',description:'Collezione e mazzi.'},

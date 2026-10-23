@@ -1,8 +1,9 @@
-import { PRESETS, createMatch, changeScore, loadMatch, saveMatch } from '../services/cardCounter.js';
+import { PRESETS, createMatch, changeScore, changeCommanderDamage, hasLethalCommanderDamage, loadMatch, saveMatch } from '../services/cardCounter.js';
 import { navigateTo } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import './cardCounter.css';
 import './magic-clay.css';
+import './cardCounter-lotus.css';
 const escape = v => String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function showCardCounter(container, options = {}) {
     updateSidebarContext('cardCounter');
@@ -11,9 +12,15 @@ export function showCardCounter(container, options = {}) {
     const savedMatch = loadMatch(storage);
     let state = requestedPreset
         ? (savedMatch?.preset === requestedPreset ? savedMatch : createMatch(requestedPreset))
-        : (savedMatch || createMatch()), undo=[];
+        : (savedMatch || createMatch('commander')), undo=[];
+    let commanderUpdatesLife = true;
+    const damageView = new Set(), sources = new Map(), commanderSlots = new Map();
+    const presses = new Map();
+    const clearFeedback=()=>{for(const press of presses.values())clearTimeout(press.timer);presses.clear();};
+    window.__counterCleanup=clearFeedback;
+    let gesture = null, wheelTotal = 0, wheelPlayer = null, wheelTime = 0, wheelEventTime = 0, suppressClickUntil = 0;
     const root=document.createElement('section');root.className='card-counter';container.replaceChildren(root);
-    root.innerHTML=`<header class="counter-header"><button type="button" data-home aria-label="Torna alla Taverna">←</button><div><h1>Segnapunti</h1><strong data-match-label></strong></div><button type="button" data-settings aria-label="Impostazioni della partita">⚙ <span>Partita</span></button></header>
+    root.innerHTML=`<header class="counter-header"><button type="button" data-home aria-label="Torna a MTCG">←</button><div><h1>Segnapunti</h1><strong data-match-label></strong></div><button type="button" data-settings aria-label="Impostazioni della partita">⚙ <span>Partita</span></button></header>
     <div class="counter-players"></div>
     <footer class="counter-toolbar"><button type="button" data-undo>↶ Annulla</button><p class="counter-status" role="status" aria-live="polite"></p><button type="button" data-next>Turno →</button></footer>
     <dialog class="counter-dialog counter-settings" aria-label="Gestisci la partita"><button type="button" data-close-settings class="counter-close" aria-label="Chiudi impostazioni">×</button><h2>La tua partita</h2>
@@ -31,19 +38,24 @@ export function showCardCounter(container, options = {}) {
         const preset=PRESETS[state.preset];
         find('[data-match-label]').textContent=`${preset.name} · Turno ${state.turn}`;
         find('[data-undo]').disabled=!undo.length;
-        find('.counter-players').innerHTML=state.players.map((p,i)=>`<article class="counter-player ${i===state.active?'is-active':''}" data-player="${i}">
+        find('.counter-players').innerHTML=state.players.map((p,i)=>{const showDamage=state.preset==='commander'&&damageView.has(i), source=sources.get(i)??(i===0?1:0), slot=commanderSlots.get(i)??0;return `<article class="counter-player ${i===state.active?'is-active':''} ${showDamage?'is-damage-view':''}" data-player="${i}">
             <div class="counter-player-top"><button type="button" data-details><span>${escape(p.name)}</span><small>${i===state.active?'DI TURNO':'GIOCATORE '+(i+1)}</small></button><span class="counter-value-label">${preset.label}</span></div>
-            <div class="counter-face"><button type="button" class="counter-tap" data-delta="${-preset.steps[0]}" data-focus="p${i}minus${preset.steps[0]}" aria-label="Sottrai ${preset.steps[0]} a ${escape(p.name)}">−<small>${preset.steps[0]}</small></button><output class="counter-value" aria-label="${escape(p.name)}: ${preset.label}">${p.value.toLocaleString('it-IT')}</output><button type="button" class="counter-tap" data-delta="${preset.steps[0]}" data-focus="p${i}plus${preset.steps[0]}" aria-label="Aggiungi ${preset.steps[0]} a ${escape(p.name)}">+<small>${preset.steps[0]}</small></button></div>
+            ${showDamage?`<div class="counter-damage-source"><label>Comandante di <select data-damage-source aria-label="Proprietario del comandante per ${escape(p.name)}">${state.players.map((s,j)=>`<option value="${j}" ${j===source?'selected':''}>${escape(s.name)}${i===j?' (tuo)':''}</option>`).join('')}</select></label><button type="button" data-damage-slot aria-label="Cambia comandante o partner">${slot===0?'Comandante 1':'Partner · 2'}</button></div>`:''}
+            <div class="counter-face">${showDamage?`<button type="button" class="counter-tap" data-commander-source="${source}" data-commander-slot="${slot}" data-commander-delta="-1" aria-label="Riduci danni da comandante di ${escape(p.name)}" ${p.commanderDamage[source][slot]===0?'disabled':''}>−</button><output class="counter-value" data-swipe tabindex="0" aria-label="${escape(p.name)}: ${p.commanderDamage[source][slot]} danni da comandante. Scorri in basso o premi freccia giù per tornare ai punti vita.">${p.commanderDamage[source][slot]}<small>/ 21 · PV ${p.value}</small></output><button type="button" class="counter-tap" data-commander-source="${source}" data-commander-slot="${slot}" data-commander-delta="1" aria-label="Aumenta danni da comandante di ${escape(p.name)}">+</button>`:`<button type="button" class="counter-tap" data-delta="${-preset.steps[0]}" data-focus="p${i}minus${preset.steps[0]}" aria-label="Sottrai ${preset.steps[0]} a ${escape(p.name)}">−<small>${preset.steps[0]}</small></button><output class="counter-value" ${state.preset==='commander'?'data-swipe tabindex="0"':''} aria-label="${escape(p.name)}: ${preset.label}${state.preset==='commander'?'. Scorri in alto o premi freccia su per i danni da comandante.':''}">${p.value.toLocaleString('it-IT')}</output><button type="button" class="counter-tap" data-delta="${preset.steps[0]}" data-focus="p${i}plus${preset.steps[0]}" aria-label="Aggiungi ${preset.steps[0]} a ${escape(p.name)}">+<small>${preset.steps[0]}</small></button>`}</div>
+            <div class="counter-press-feedback" data-press-feedback role="status" aria-live="polite"></div>
+            ${state.preset==='commander'?`<button type="button" class="counter-view-toggle" data-toggle-damage aria-pressed="${showDamage}">${showDamage?'↓ Torna ai punti vita':'↑ Scorri sui PV · Danni comandante'}</button>`:''}
 
-            <button type="button" class="counter-details-button" data-details aria-label="Dettagli e segnalini di ${escape(p.name)}"><span>Altre azioni</span><span class="counter-token-preview">${p.counters.filter(c=>c.value).slice(0,2).map(c=>`${escape(c.name)} ${c.value}`).join(' · ') || ''}</span></button>
-            <dialog class="counter-dialog counter-player-dialog" aria-label="Dettagli di ${escape(p.name)}"><button type="button" data-close-player class="counter-close" aria-label="Chiudi dettagli">×</button><h2>Il tuo contatore</h2><label>Nome<input data-name maxlength="40" aria-label="Nome giocatore ${i+1}" value="${escape(p.name)}"></label>
+            <button type="button" class="counter-details-button" data-details aria-label="Dettagli e segnalini di ${escape(p.name)}"><span>${state.preset==='commander'?'Danni comandante e segnalini':'Altre azioni'}</span><span class="counter-token-preview">${hasLethalCommanderDamage(p)?'21 danni da un comandante · soglia raggiunta':p.counters.filter(c=>c.value).slice(0,2).map(c=>`${escape(c.name)} ${c.value}`).join(' · ') || ''}</span></button>
+            <dialog class="counter-dialog counter-player-dialog" aria-label="Dettagli di ${escape(p.name)}"><button type="button" data-close-player class="counter-close" aria-label="Chiudi dettagli">×</button><h2>Il tuo contatore</h2><div class="counter-press-feedback" data-press-feedback role="status" aria-live="polite"></div><label>Nome<input data-name maxlength="40" aria-label="Nome giocatore ${i+1}" value="${escape(p.name)}"></label>
             <form class="counter-adjust"><label>Importo<input type="number" name="amount" min="1" max="999999" step="1" required placeholder="Es. ${preset.steps[0]}" aria-label="Importo per ${escape(p.name)}"></label><button type="submit" name="sign" value="-1">Sottrai</button><button type="submit" name="sign" value="1">Aggiungi</button>${state.preset==='yugioh'?'<button type="button" data-half>Dimezza LP</button>':''}</form>
             <div class="counter-quick">${preset.steps.slice(1).map(n=>`<button type="button" data-delta="${-n}" data-focus="p${i}minus${n}" aria-label="Sottrai ${n} a ${escape(p.name)}">−${n}</button><button type="button" data-delta="${n}" data-focus="p${i}plus${n}" aria-label="Aggiungi ${n} a ${escape(p.name)}">+${n}</button>`).join('')}</div>
+            ${state.preset==='commander'?`<section class="counter-commander"><h2>Danni da comandante ricevuti</h2><p>Solo danni da combattimento. La soglia di 21 vale per ogni singolo comandante: i partner non si sommano.</p><label class="counter-life-toggle"><input type="checkbox" data-commander-life ${commanderUpdatesLife?'checked':''}> Aggiorna anche i punti vita</label><ul class="counter-tokens">${state.players.map((source,j)=>[0,1].map(slot=>`<li class="${p.commanderDamage[j][slot]>=21?'commander-lethal':''}"><span>${escape(source.name)}${i===j?' (tuo)':''}<small>Comandante ${slot+1}${slot===1?' · partner':''}${p.commanderDamage[j][slot]>=21?' · soglia raggiunta':''}</small></span><button type="button" data-commander-source="${j}" data-commander-slot="${slot}" data-commander-delta="-1" data-focus="p${i}commander${j}-${slot}-minus" aria-label="Riduci danni dal comandante ${slot+1} di ${escape(source.name)}" ${p.commanderDamage[j][slot]===0?'disabled':''}>−</button><output aria-label="Danni da comandante ricevuti">${p.commanderDamage[j][slot]} / 21</output><button type="button" data-commander-source="${j}" data-commander-slot="${slot}" data-commander-delta="1" data-focus="p${i}commander${j}-${slot}-plus" aria-label="Aumenta danni dal comandante ${slot+1} di ${escape(source.name)}">+</button></li>`).join('')).join('')}</ul></section>`:''}
             <div class="counter-token-heading"><h2>Segnalini</h2><button type="button" data-add-token>+ Aggiungi</button></div>
             <ul class="counter-tokens">${p.counters.map(c=>`<li data-token="${escape(c.id)}"><span>${escape(c.name)}<small>Passo ${c.step}</small></span><button type="button" data-token-delta="${-c.step}" data-focus="p${i}${escape(c.id)}minus" aria-label="Riduci ${escape(c.name)} di ${c.step}" ${c.value===0?'disabled':''}>−</button><output>${c.value}</output><button type="button" data-token-delta="${c.step}" data-focus="p${i}${escape(c.id)}plus" aria-label="Aumenta ${escape(c.name)} di ${c.step}">+</button><button type="button" data-remove-token aria-label="Rimuovi ${escape(c.name)}" title="Rimuovi segnalino">×</button></li>`).join('')||'<li class="counter-token-empty">Mana, danni, cariche… aggiungi il tuo primo segnalino.</li>'}</ul>
-        </dialog></article>`).join('');
+        </dialog></article>`;}).join('');
         find('.counter-history ol').innerHTML=state.log.length?state.log.slice().reverse().map(line=>`<li>${escape(line)}</li>`).join(''):'<li>La partita comincia adesso.</li>';
         persist();
+        for(const [i,press] of presses)paintPress(i,press);
         if(openPlayer !== undefined) {
             const panel=find(`[data-player="${openPlayer}"] .counter-player-dialog`);
             if(panel){panel.showModal();panel.scrollTop=panelScroll;}
@@ -51,7 +63,45 @@ export function showCardCounter(container, options = {}) {
         root.querySelectorAll('.counter-player-dialog').forEach(panel=>panel.onclose=()=>panel.closest('[data-player]')?.querySelector('[data-details]')?.focus({preventScroll:true}));
         if(focusKey) [...root.querySelectorAll('[data-focus]')].find(e=>e.dataset.focus===focusKey)?.focus({preventScroll:true});
     }
-    function commit(next,focusKey) { undo.push(structuredClone(state));if(undo.length>100)undo.shift();state=next;render(focusKey); }
+    function commit(next,focusKey) { undo.push(structuredClone(state));if(undo.length>100)undo.shift();if(next.players.length!==state.players.length){damageView.clear();sources.clear();commanderSlots.clear();}state=next;render(focusKey); }
+    function paintPress(index,press){
+        root.querySelectorAll(`[data-player="${index}"] [data-press-feedback]`).forEach(el=>{el.textContent=Date.now()-press.time<1800?`${press.total>0?'+':''}${press.total} · ${press.count} ${press.count===1?'pressione':'pressioni'}`:'';});
+    }
+    function registerPress(index,key,delta,actual){
+        const now=Date.now(),previous=presses.get(index),same=previous&&previous.key===key&&previous.sign===Math.sign(delta)&&now-previous.time<1800;
+        if(previous)clearTimeout(previous.timer);
+        const press={key,sign:Math.sign(delta),count:same?previous.count+1:1,total:(same?previous.total:0)+actual,time:now};
+        presses.set(index,press);paintPress(index,press);
+        press.timer=setTimeout(()=>{if(presses.get(index)!==press)return;presses.delete(index);root.querySelectorAll(`[data-player="${index}"] [data-press-feedback]`).forEach(el=>el.textContent='');},1800);
+    }
+    function switchView(index,show,focus=false){
+        if(state.preset!=='commander'||damageView.has(index)===show)return;
+        if(show)damageView.add(index);else damageView.delete(index);
+        render();if(focus)find(`[data-player="${index}"] [data-swipe]`)?.focus({preventScroll:true});
+        announce(`${state.players[index].name} · ${show?'Danni da comandante ricevuti':'Punti vita'}`);
+    }
+    const playersArea=find('.counter-players');
+    playersArea.addEventListener('pointerdown',e=>{
+        const target=e.target.closest('[data-swipe]');if(!target||!e.isPrimary||e.button!==0)return;
+        gesture={id:e.pointerId,x:e.clientX,y:e.clientY,index:Number(target.closest('[data-player]').dataset.player)};
+        target.setPointerCapture(e.pointerId);
+    });
+    playersArea.addEventListener('pointerup',e=>{
+        if(!gesture||gesture.id!==e.pointerId)return;
+        const g=gesture;gesture=null;const dy=e.clientY-g.y,dx=e.clientX-g.x;
+        if(Math.abs(dy)<45||Math.abs(dy)<Math.abs(dx)*1.3)return;
+        suppressClickUntil=Date.now()+400;switchView(g.index,dy<0);
+    });
+    playersArea.addEventListener('pointercancel',()=>{gesture=null;});
+    playersArea.addEventListener('wheel',e=>{
+        const target=e.target.closest('[data-swipe]');if(!target||e.ctrlKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+        e.preventDefault();const i=Number(target.closest('[data-player]').dataset.player),now=Date.now();
+        if(now-wheelTime<350)return;
+        if(wheelPlayer!==i||now-wheelEventTime>250)wheelTotal=0;
+        wheelEventTime=now;wheelPlayer=i;wheelTotal+=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?300:1);
+        if(Math.abs(wheelTotal)>=55){switchView(i,wheelTotal>0);wheelTotal=0;wheelTime=now;}
+    },{passive:false});
+    playersArea.addEventListener('keydown',e=>{if(!e.target.matches('[data-swipe]')||!['ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();switchView(Number(e.target.closest('[data-player]').dataset.player),e.key==='ArrowUp',true);});
     function modal(title,content,onSubmit) {
         const d=document.createElement('dialog');d.className='counter-dialog';d.innerHTML=`<form><h2>${escape(title)}</h2>${content}<div><button type="button" data-cancel>Annulla</button><button type="submit">Conferma</button></div></form>`;
         d.setAttribute('aria-label',title);root.append(d);d.querySelector('[data-cancel]').onclick=()=>d.close();d.onclose=()=>d.remove();
@@ -61,20 +111,23 @@ export function showCardCounter(container, options = {}) {
     find('[data-close-settings]').onclick=()=>find('.counter-settings').close();
     form.elements.preset.onchange=()=>{form.elements.initial.value=PRESETS[form.elements.preset.value].initial;};
     form.onsubmit=e=>{e.preventDefault();const preset=form.elements.preset.value,count=Number(form.elements.players.value),initial=Number(form.elements.initial.value);
-        modal('Iniziare una nuova partita?','<p>I contatori attuali saranno azzerati. Puoi recuperare la partita precedente con “Annulla”.</p>',()=>{commit(createMatch(preset,count,initial));find('.counter-settings').close();announce('Nuova partita pronta.');});};
-    find('[data-home]').onclick=()=>navigateTo(options.returnTo === 'magic' ? 'magic' : 'home',container);
+        modal('Iniziare una nuova partita?','<p>I contatori attuali saranno azzerati. Puoi recuperare la partita precedente con “Annulla”.</p>',()=>{clearFeedback();damageView.clear();sources.clear();commanderSlots.clear();commit(createMatch(preset,count,initial));find('.counter-settings').close();announce('Nuova partita pronta.');});};
+    find('[data-home]').onclick=()=>navigateTo(options.returnTo === 'magic' ? 'magic' : 'mtcg',container);
     find('[data-next]').onclick=()=>{const next=structuredClone(state);next.active=(next.active+1)%next.players.length;next.turn++;next.log.push(`Turno ${next.turn} · ${next.players[next.active].name}`);next.log=next.log.slice(-50);commit(next);announce(`È il turno di ${state.players[state.active].name}.`);};
-    find('[data-undo]').onclick=()=>{if(undo.length){state=undo.pop();render();announce('Ultima modifica annullata.');}};
+    find('[data-undo]').onclick=()=>{if(undo.length){clearFeedback();damageView.clear();sources.clear();commanderSlots.clear();state=undo.pop();render();announce('Ultima modifica annullata.');}};
     function randomResult(sides,label){const bytes=new Uint32Array(1);let n;const limit=Math.floor(4294967296/sides)*sides;do{crypto.getRandomValues(bytes);n=bytes[0];}while(n>=limit);const result=label(n%sides);const next=structuredClone(state);next.log.push(result);next.log=next.log.slice(-50);commit(next);announce(result);find('[data-tool-result]').textContent=result;}
     find('[data-coin]').onclick=()=>randomResult(2,n=>`Moneta: ${n?'croce':'testa'}.`);
     find('[data-die]').onclick=()=>randomResult(6,n=>`Dado: ${n+1}.`);
-    find('.counter-players').onchange=e=>{if(!e.target.matches('[data-name]'))return;const next=structuredClone(state);const i=Number(e.target.closest('[data-player]').dataset.player);next.players[i].name=e.target.value.trim().slice(0,40)||`Giocatore ${i+1}`;commit(next);};
+    find('.counter-players').onchange=e=>{if(e.target.matches('[data-damage-source]')){sources.set(Number(e.target.closest('[data-player]').dataset.player),Number(e.target.value));render();return;}if(e.target.matches('[data-commander-life]')){commanderUpdatesLife=e.target.checked;return;}if(!e.target.matches('[data-name]'))return;const next=structuredClone(state);const i=Number(e.target.closest('[data-player]').dataset.player);next.players[i].name=e.target.value.trim().slice(0,40)||`Giocatore ${i+1}`;commit(next);};
     find('.counter-players').onsubmit=e=>{e.preventDefault();if(!e.target.matches('.counter-adjust'))return;const i=Number(e.target.closest('[data-player]').dataset.player),amount=Number(e.target.elements.amount.value)*Number(e.submitter?.value||1);try{commit(changeScore(state,i,amount));announce(state.log.at(-1));}catch(error){announce(error.message);}};
     find('.counter-players').onclick=e=>{
-        const b=e.target.closest('button');if(!b||b.disabled)return;const i=Number(b.closest('[data-player]').dataset.player),token=b.closest('[data-token]')?.dataset.token;
+        const b=e.target.closest('button');if(!b||b.disabled||Date.now()<suppressClickUntil)return;const i=Number(b.closest('[data-player]').dataset.player),token=b.closest('[data-token]')?.dataset.token;
+        if(b.hasAttribute('data-toggle-damage')){switchView(i,!damageView.has(i),true);return;}
+        if(b.hasAttribute('data-damage-slot')){commanderSlots.set(i,(commanderSlots.get(i)??0)===0?1:0);render();return;}
         if(b.hasAttribute('data-details')){b.closest('[data-player]').querySelector('dialog').showModal();return;}
         if(b.hasAttribute('data-close-player')){b.closest('dialog').close();return;}
-        if(b.hasAttribute('data-delta')||b.hasAttribute('data-token-delta')){commit(changeScore(state,i,Number(b.dataset.delta??b.dataset.tokenDelta),token??null),b.dataset.focus);announce(state.log.at(-1));}
+        if(b.hasAttribute('data-commander-delta')){const source=Number(b.dataset.commanderSource),slot=Number(b.dataset.commanderSlot),delta=Number(b.dataset.commanderDelta),old=state.players[i].commanderDamage[source][slot];commit(changeCommanderDamage(state,i,source,slot,delta,commanderUpdatesLife),b.dataset.focus);registerPress(i,`commander-${source}-${slot}`,delta,state.players[i].commanderDamage[source][slot]-old);announce(state.log.at(-1)+(hasLethalCommanderDamage(state.players[i])?' · Soglia di 21 raggiunta.':''));}
+        else if(b.hasAttribute('data-delta')||b.hasAttribute('data-token-delta')){const delta=Number(b.dataset.delta??b.dataset.tokenDelta),old=token?state.players[i].counters.find(c=>c.id===token).value:state.players[i].value;commit(changeScore(state,i,delta,token??null),b.dataset.focus);registerPress(i,token??'life',delta,(token?state.players[i].counters.find(c=>c.id===token).value:state.players[i].value)-old);announce(state.log.at(-1));}
         else if(b.hasAttribute('data-half')){commit(changeScore(state,i,Math.ceil(state.players[i].value/2)-state.players[i].value));announce(state.log.at(-1));}
         else if(b.hasAttribute('data-remove-token')){const next=structuredClone(state);next.players[i].counters=next.players[i].counters.filter(c=>c.id!==token);commit(next);announce('Segnalino rimosso. Puoi annullare.');}
         else if(b.hasAttribute('data-add-token')){

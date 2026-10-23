@@ -7,15 +7,8 @@ import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { MINIGAMES, MINIGAME_CATEGORIES, getGamesByCategory } from './services/experienceCatalog.js';
 import { rememberDestination, navigateTo, resetAppSurface } from './services/appNavigation.js';
 import { enhanceSurfaceMotion } from './services/motionSystem.js';
-import {
-    createMinigameRoom,
-    getMinigameRoomByCode,
-    getSavedMinigameRoom,
-    getRoomParticipants,
-    isMinigameRoomConnected,
-    joinMinigameRoom,
-    watchMinigameRoom
-} from './services/minigameMultiplayer.js';
+import {subscribePlatformRoom} from './services/platformMultiplayer.js';
+import {getRoomParticipants} from './services/minigameMultiplayer.js';
 
 const FANTASY_GAME_MARKS = { briscola: '♠︎', scopa: '♦︎', solitario: '♥︎', solo: '✦', burraco: '♣︎', impostore: '◈', numeri: 'Ⅶ', tictactoe: '✕', scacchi: '♞', dama: '◉', blocchi: '▦' };
 
@@ -50,143 +43,33 @@ export function showMinigamesList(container, options = {}) {
         <div id="lobby-wrapper" class="minigames-lobby-wrapper fade-in">
 
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 30px;">
-                ${cardsOnly ? '<button type="button" class="app-back-button" id="btn-back-main">← Carte</button>' : renderHomeBackButton({ id: 'btn-back-main' })}
+                ${cardsOnly ? '<button type="button" class="app-back-button" id="btn-back-main">← La Taverna</button>' : renderHomeBackButton({ id: 'btn-back-main' })}
             </div>
 
             <header class="world-catalog-header" style="margin: 10px 0 28px 0; text-align: center;">
                 <span class="crystal-eyebrow">IL PIACERE DI STARE AL TAVOLO</span>
-                <h1 class="main-title">${cardsOnly ? 'Giochi di carte' : 'Minigiochi'}</h1>
+                <h1 class="main-title">${cardsOnly ? 'Carte' : 'Minigiochi'}</h1>
                 <p class="catalog-intro">Ritrova un classico o lasciati sorprendere da una nuova sfida.</p>
             </header>
 
             <nav class="session-tool-switcher" id="minigame-filters" aria-label="Categorie minigiochi" style="margin-bottom: 18px;">
-                ${cardsOnly ? '<button type="button" id="open-collection">Collezioni e strumenti</button>' : `<button type="button" data-game-filter="all">Tutti i minigiochi</button><button type="button" data-game-filter="party">Da compagnia</button><button type="button" data-game-filter="strategy">Strategia</button><button type="button" id="open-collection">Cerchi i giochi di carte? → Carte</button>`}
+                ${cardsOnly ? '<button type="button" id="open-collection">Cerchi Magic? → MTCG</button>' : `<button type="button" data-game-filter="all">Tutti i minigiochi</button><button type="button" data-game-filter="party">Da compagnia</button><button type="button" data-game-filter="strategy">Strategia</button><button type="button" id="open-collection">Cerchi i giochi di carte? → Carte</button>`}
             </nav>
 
-            <section class="minigame-multiplayer-panel" aria-label="Multiplayer minigiochi">
-                <form id="minigame-multiplayer-join" class="minigame-multiplayer-join">
-                    <input id="minigame-multiplayer-code-input" type="text" inputmode="latin" maxlength="6" autocomplete="off" aria-label="Codice multiplayer" placeholder="INSERISCI CODICE">
-                    <button type="submit">INVIA</button>
-                </form>
-
-                <button type="button" id="btn-minigame-multiplayer" class="minigame-multiplayer-main">
-                    <span class="minigame-multiplayer-dot" id="minigame-multiplayer-dot" aria-hidden="true"></span>
-                    <span>MULTIPLAYER</span>
-                </button>
-
-                <div id="minigame-multiplayer-code" class="minigame-multiplayer-code" hidden>
-                    <small>Codice collegamento</small>
-                    <strong>------</strong>
-                </div>
-
-                <p id="minigame-multiplayer-status" class="minigame-multiplayer-status">Non connesso</p>
-            </section>
+            <section class="minigame-multiplayer-panel"><button id="open-multiplayer" type="button">Multiplayer →</button><p id="platform-connection-status" role="status">Collegati nella sezione Multiplayer, poi scegli Online nel gioco.</p></section>
 
             <div id="minigame-catalog"></div>
 
         </div>
     `;
 
-    let multiplayerRoom = getSavedMinigameRoom();
-    let stopRoomWatch = null;
-    let pollTimer = null;
-    let catalogMotionCleanup = null;
-    const pageMotionCleanup = enhanceSurfaceMotion(container, {
-        selector: '.minigame-multiplayer-panel, .session-tool-switcher'
+    let catalogMotionCleanup=null;
+    const stopConnection=subscribePlatformRoom(({room,error})=>{
+        const status=container.querySelector('#platform-connection-status');
+        if(status)status.textContent=error?error.message:room?`Codice ${room.code} · ${getRoomParticipants(room).length} partecipanti · scegliete lo stesso gioco e premete Online`:'Collegati nella sezione Multiplayer, poi scegli Online nel gioco.';
     });
-    const clientCanPoll = () => Boolean(multiplayerRoom?.code);
-
-    const exposeMultiplayerRoom = () => {
-        window.__tavernaMultiplayerConnection = multiplayerRoom ? {
-            scope: 'minigames',
-            code: multiplayerRoom.code,
-            status: multiplayerRoom.status,
-            connected: isMinigameRoomConnected(multiplayerRoom),
-            room: multiplayerRoom
-        } : null;
-    };
-
-    const setMultiplayerBusy = (busy) => {
-        const hostButton = document.getElementById('btn-minigame-multiplayer');
-        const joinButton = document.querySelector('#minigame-multiplayer-join button');
-        if (hostButton) hostButton.disabled = busy;
-        if (joinButton) joinButton.disabled = busy;
-    };
-
-    const renderMultiplayerState = (message = '') => {
-        const panel = document.querySelector('.minigame-multiplayer-panel');
-        const dot = document.getElementById('minigame-multiplayer-dot');
-        const status = document.getElementById('minigame-multiplayer-status');
-        const codeBox = document.getElementById('minigame-multiplayer-code');
-        const hostButton = document.getElementById('btn-minigame-multiplayer');
-        const connected = isMinigameRoomConnected(multiplayerRoom);
-
-        panel?.classList.toggle('is-connected', connected);
-        dot?.classList.toggle('is-connected', connected);
-
-        if (codeBox) {
-            codeBox.hidden = !multiplayerRoom?.code;
-            const codeText = codeBox.querySelector('strong');
-            if (codeText) codeText.textContent = multiplayerRoom?.code || '------';
-        }
-
-        if (hostButton) {
-            hostButton.querySelector('span:last-child').textContent = multiplayerRoom?.code ? 'MULTIPLAYER ATTIVO' : 'MULTIPLAYER';
-        }
-
-        if (status) {
-            if (message) {
-                status.textContent = message;
-            } else if (connected) {
-                status.textContent = `${getRoomParticipants(multiplayerRoom).length} giocatori nella stanza · aprite lo stesso gioco`;
-            } else if (multiplayerRoom?.code) {
-                status.textContent = 'In attesa di connessione';
-            } else {
-                status.textContent = 'Non connesso';
-            }
-        }
-
-        exposeMultiplayerRoom();
-    };
-
-    const stopWatchingRoom = () => {
-        if (stopRoomWatch) stopRoomWatch();
-        stopRoomWatch = null;
-        if (pollTimer) window.clearInterval(pollTimer);
-        pollTimer = null;
-    };
-
-    const startWatchingRoom = (room) => {
-        stopWatchingRoom();
-        if (!room?.code) return;
-
-        stopRoomWatch = watchMinigameRoom(room.code, nextRoom => {
-            multiplayerRoom = nextRoom;
-            renderMultiplayerState();
-        });
-
-        pollTimer = window.setInterval(async () => {
-            if (!clientCanPoll()) return;
-            const { room: nextRoom } = await getMinigameRoomByCode(multiplayerRoom.code);
-            if (nextRoom) {
-                multiplayerRoom = nextRoom;
-                renderMultiplayerState();
-            }
-        }, 3500);
-    };
-
-    if (multiplayerRoom?.code) {
-        renderMultiplayerState();
-        startWatchingRoom(multiplayerRoom);
-    } else {
-        renderMultiplayerState();
-    }
-
-    window.__minigameMultiplayerCleanup = () => {
-        stopWatchingRoom();
-        pageMotionCleanup?.();
-        catalogMotionCleanup?.();
-    };
+    container.querySelector('#open-multiplayer').onclick=()=>navigateTo('multiplayer',container);
+    window.__minigameMultiplayerCleanup=()=>{stopConnection();catalogMotionCleanup?.();};
 
     const launchGame = game => loadView(container, async () => {
         const module = await import(`./dashboards/minigames/${game.id}.js`);
@@ -250,56 +133,8 @@ export function showMinigamesList(container, options = {}) {
     });
     renderGameCatalog();
 
-    document.getElementById('minigame-multiplayer-code-input').oninput = (event) => {
-        event.target.value = String(event.target.value || '')
-            .toUpperCase()
-            .replace(/[^A-Z0-9]/g, '')
-            .slice(0, 6);
-    };
-
-    // Torna alla lobby principale
-    document.getElementById('btn-back-main').onclick = () => navigateTo(cardsOnly ? 'cards' : 'home', container);
-    container.querySelector('#open-collection').onclick = () => navigateTo('cards', container);
-
-    document.getElementById('btn-minigame-multiplayer').onclick = async () => {
-        setMultiplayerBusy(true);
-        renderMultiplayerState('Creazione codice...');
-        const { room, error, unavailable } = await createMinigameRoom();
-        setMultiplayerBusy(false);
-
-        if (room) {
-            multiplayerRoom = room;
-            renderMultiplayerState('Codice creato. Condividilo con l’altro dispositivo.');
-            startWatchingRoom(room);
-            return;
-        }
-
-        renderMultiplayerState(unavailable
-            ? 'Multiplayer non attivo su Supabase: esegui lo schema aggiornato.'
-            : (error?.message || 'Codice non creato.'));
-    };
-
-    document.getElementById('minigame-multiplayer-join').onsubmit = async (event) => {
-        event.preventDefault();
-        const input = document.getElementById('minigame-multiplayer-code-input');
-        const code = input?.value || '';
-        setMultiplayerBusy(true);
-        renderMultiplayerState('Connessione...');
-        const { room, error, unavailable } = await joinMinigameRoom(code);
-        setMultiplayerBusy(false);
-
-        if (room) {
-            multiplayerRoom = room;
-            input.value = '';
-            renderMultiplayerState();
-            startWatchingRoom(room);
-            return;
-        }
-
-        renderMultiplayerState(unavailable
-            ? 'Multiplayer non attivo su Supabase: esegui lo schema aggiornato.'
-            : (error?.message || 'Connessione non riuscita.'));
-    };
+    document.getElementById('btn-back-main').onclick=()=>navigateTo('home',container);
+    container.querySelector('#open-collection').onclick=()=>navigateTo(cardsOnly?'mtcg':'cards',container);
 
 }
 

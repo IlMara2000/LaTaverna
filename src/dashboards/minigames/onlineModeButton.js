@@ -1,5 +1,5 @@
+import {navigateTo} from '../../services/appNavigation.js';
 import {
-    createMinigameRoom,
     getMinigameClientId,
     getRoomParticipants,
     getSavedMinigameRoom,
@@ -23,7 +23,7 @@ export const renderOnlineModeButton = (gameId = 'game') => `
             <span class="tictactoe-mode-icon" aria-hidden="true">🌐</span>
             <span class="tictactoe-mode-copy">
                 <strong>ONLINE</strong>
-                <small>Gioca con chi è nel multiplayer</small>
+                <small>Usa il collegamento Multiplayer</small>
             </span>
         </button>
     </section>
@@ -99,7 +99,8 @@ export function bindOnlineModeButton(container, {
         setStatus('Controllo collegamento online…');
         try {
             const saved = getCurrentRoom();
-            const result = saved?.code ? await getMinigameRoomByCode(saved.code) : await createMinigameRoom();
+            if (!saved?.code) { await navigateTo('multiplayer',container); return; }
+            const result = await getMinigameRoomByCode(saved.code);
             if (cancelled) return;
             if (result.error || !result.room) throw result.error || new Error('Stanza scaduta. Ricollegati dal pannello Multiplayer.');
             const room = result.room;

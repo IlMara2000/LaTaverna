@@ -2,6 +2,7 @@ import { supabase, SUPABASE_CONFIG } from '../../../services/supabase.js';
 import { dndLocalStore } from '../../../services/dndLocalStore.js';
 import { clientToMapPoint, snapTokenToGrid } from './gridMath.js';
 import { getCachedAppPreference } from '../../../services/appPreferences.js';
+import {tabletopMediaUrl} from '../../../services/tabletopMedia.js';
 
 const TOKEN_TABLE = SUPABASE_CONFIG?.tables?.tokens || 'dnd_tokens';
 
@@ -71,8 +72,10 @@ export function showTabletop(container, sessionId, options = {}) {
     const snapToGrid = getCachedAppPreference('tabletop.snap_to_grid', true) !== false;
     const weatherEffectsEnabled = getCachedAppPreference('tabletop.weather_effects', true) !== false;
     let knownTokens = [];
+    let mapDisposed=false,tokenLoading=false;
     const localMode = Boolean(options.localMode);
     const readOnly = Boolean(options.readOnly);
+    const mapUrl=tabletopMediaUrl(options.mapUrl,location.origin);
     const localStore = options.localStore || dndLocalStore;
     const activePointers = new Map();
     let panState = null;
@@ -81,10 +84,10 @@ export function showTabletop(container, sessionId, options = {}) {
     container.innerHTML = `
         <div class="tabletop-viewport ${readOnly ? 'is-readonly' : ''}" id="viewport" tabindex="0" aria-label="Mappa di gioco interattiva" data-read-only="${readOnly ? 'true' : 'false'}">
             <div class="map-layer" id="map-layer">
-                ${options.mapUrl ? (
-                    isPdfMap(options.mapUrl)
-                        ? `<iframe class="map-pdf" src="${escapeHTML(options.mapUrl)}" title="Mappa PDF"></iframe>`
-                        : `<img class="map-image" src="${escapeHTML(options.mapUrl)}" alt="">`
+                ${mapUrl ? (
+                    isPdfMap(mapUrl)
+                        ? `<iframe class="map-pdf" src="${escapeHTML(mapUrl)}" sandbox="" referrerpolicy="no-referrer" title="Mappa PDF"></iframe>`
+                        : `<img class="map-image" src="${escapeHTML(mapUrl)}" alt="">`
                 ) : '<div class="map-empty"><strong>Nessuna mappa</strong><span>Carica una mappa nella configurazione sessione o usa la griglia come tavolo libero.</span></div>'}
                 <div class="map-grid ${gridVisible ? '' : 'is-hidden'}" id="map-grid"></div>
             </div>
@@ -383,7 +386,7 @@ export function showTabletop(container, sessionId, options = {}) {
     };
 
     const makeTokenDraggable = (el, doc) => {
-        if (readOnly) {
+        if (readOnly && !(options.playerUserId && doc.controller_id === options.playerUserId)) {
             el.classList.add('readonly');
             return;
         }
@@ -451,12 +454,14 @@ export function showTabletop(container, sessionId, options = {}) {
                     if (localMode) {
                         localStore.tokens.update(doc.id, patch);
                     } else {
-                        await supabase
-                            .from(TOKEN_TABLE)
-                            .update(patch)
-                            .eq('id', doc.id);
+                        const result = readOnly
+                            ? await supabase.rpc('move_platform_pawn',{p_token_id:doc.id,p_x:Math.round(patch.x),p_y:Math.round(patch.y)})
+                            : await supabase.from(TOKEN_TABLE).update(patch).eq('id', doc.id);
+                        if(result.error)throw result.error;
                     }
                 } catch (err) {
+                    el.style.left=`${startX}px`;el.style.top=`${startY}px`;
+                    Object.assign(doc,{x:startX,y:startY});upsertKnownToken(doc);
                     console.error('Errore sync token:', err);
                 }
             };
@@ -469,6 +474,8 @@ export function showTabletop(container, sessionId, options = {}) {
     };
 
     const loadTokens = async () => {
+        if(mapDisposed||tokenLoading)return;
+        tokenLoading=true;
         try {
             const { data, error } = localMode
                 ? localStore.tokens.list(sessionId)
@@ -477,13 +484,17 @@ export function showTabletop(container, sessionId, options = {}) {
                         .select('*')
                         .eq('session_id', sessionId);
             if (error) throw error;
+            if(mapDisposed)return;
+            const ids=new Set((data||[]).map(token=>String(token.id)));
+            for(const token of [...knownTokens])if(!ids.has(String(token.id))){mapLayer.querySelector(`#token-${CSS.escape(String(token.id))}`)?.remove();removeKnownToken(token.id);}
             (data || []).forEach(renderToken);
         } catch (err) {
             console.error('Errore caricamento token:', err);
-        }
+        } finally {tokenLoading=false;}
     };
 
     loadTokens();
+    const tokenPoll=localMode?null:setInterval(loadTokens,3000);
 
     let mapSubscription = null;
     if (!localMode) {
@@ -592,6 +603,7 @@ export function showTabletop(container, sessionId, options = {}) {
         },
         pingCenter,
         cleanup: () => {
+            mapDisposed=true;clearInterval(tokenPoll);
             if (mapSubscription && supabase.removeChannel) supabase.removeChannel(mapSubscription);
         }
     };

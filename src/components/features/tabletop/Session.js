@@ -9,6 +9,8 @@ import {
 } from '../../../services/dndLocalStore.js';
 import { getAIResponse } from '../../../services/ai.js';
 import { showTabletop } from './Map.js';
+import { currentPlatformRoom, sharePlatformDnd } from '../../../services/platformMultiplayer.js';
+import { navigateTo } from '../../../services/appNavigation.js';
 import { animateDiceRoll } from './diceAnimation.js';
 import { getCachedAppPreference } from '../../../services/appPreferences.js';
 
@@ -205,10 +207,12 @@ const getCharacterInitiativeMod = (char = {}) => {
 };
 
 export async function showSession(container, sessionId, options = {}) {
+    let sessionDisposed=false;
     if (options.systemId && options.systemId !== 'dnd5e') {
         container.textContent = 'Questo sistema di gioco non è più disponibile.';
         return;
     }
+    window.__dndSessionCleanup?.();
     const requestedSystem = getSessionSystem(options.systemId || 'dnd5e');
     const currentUser = await getSupabaseUser(requestedSystem.id);
     if (!currentUser?.id) {
@@ -224,19 +228,22 @@ export async function showSession(container, sessionId, options = {}) {
     const dbUserId = currentUserId;
     const currentUserName = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Viandante';
     const localMode = requestedSystem.isLocalUser(currentUser);
+    if(!localMode){const authSession=await supabase.auth.getSession();if(authSession.data?.session?.access_token)await supabase.realtime?.setAuth(authSession.data.session.access_token);}
 
     let sessionData = { id: sessionId, name: 'Tavolo Live', data: {} };
     try {
         const { data } = localMode
             ? requestedSystem.localStore.sessions.get(sessionId)
-            : await supabase
+            : options.platformRoomCode ? await supabase.rpc('get_platform_dnd_session',{p_session_id:sessionId}) : await supabase
                 .from(TABLES.sessions)
                 .select('*')
                 .eq('id', sessionId)
                 .single();
-        if (data) sessionData = normalizeSession(data);
+        if (!data) { container.textContent='Sessione non disponibile o collegamento scaduto.'; return; }
+        sessionData = normalizeSession(data);
     } catch (err) {
         console.warn('Sessione non recuperata:', err);
+        container.textContent='Impossibile caricare la sessione.'; return;
     }
     const savedSystemId = sessionData.system_id || sessionData.data?.system_id || requestedSystem.id;
     if (savedSystemId !== 'dnd5e') {
@@ -249,6 +256,8 @@ export async function showSession(container, sessionId, options = {}) {
     const forcedReadOnly = Boolean(options.readOnly || options.sharedInvite);
     const isSessionOwner = localMode || !sessionOwnerId || String(sessionOwnerId) === String(dbUserId);
     const readOnlyMode = !localMode && (forcedReadOnly || !isSessionOwner);
+    const membership = !localMode ? await supabase.rpc('is_platform_dnd_member',{p_session_id:sessionId}) : null;
+    const platformPlayer = !membership?.error && membership?.data === true;
     const participantRole = readOnlyMode ? 'Giocatore' : 'Master';
     const characters = await loadSessionCharacters(currentUserId, sessionSystem.id);
 
@@ -292,7 +301,7 @@ export async function showSession(container, sessionId, options = {}) {
 
                 ${readOnlyMode ? `
                     <div class="dnd-readonly-banner" id="sessionReadonlyStatus">
-                        Modalita sola lettura: vedi la sessione in realtime, ma solo il Master modifica tavolo, token, note, AI e ambiente.
+                        ${platformPlayer?'Multiplayer: usa la chat e muovi la tua pedina. Il Master gestisce il tavolo e l’ambiente.':'Modalità sola lettura: vedi la sessione in tempo reale.'}
                     </div>
                 ` : ''}
 
@@ -430,6 +439,8 @@ export async function showSession(container, sessionId, options = {}) {
                     <div class="dnd-session-primary-controls">
                         <button id="toggleSessionMenu" class="btn-back-glass dnd-panel-toggle" type="button" aria-controls="sessionToolsPanel" aria-expanded="false">STRUMENTI</button>
                         <button id="exitSession" class="btn-back-glass">ESCI</button>
+                        <button id="platformSessionOnline" class="btn-back-glass">${platformPlayer?'ONLINE · Collegati':'ONLINE'}</button>
+                        ${platformPlayer?'<button id="platformSessionPawn" class="btn-back-glass">La mia pedina</button>':''}
                     </div>
                     <strong>${escapeHTML((sessionData.name || 'Tavolo Live').toUpperCase())}</strong>
                     <div class="map-control-row">
@@ -573,11 +584,12 @@ export async function showSession(container, sessionId, options = {}) {
     const applyReadOnlyLocks = () => {
         if (!readOnlyMode) return;
         container.querySelectorAll(readOnlyControlSelector).forEach(control => {
+            if(platformPlayer && ['chat-input','chatSubmit'].includes(control.id))return;
             control.disabled = true;
             control.setAttribute('aria-disabled', 'true');
         });
         const chatInput = container.querySelector('#chat-input');
-        if (chatInput) chatInput.placeholder = 'Sessione in sola lettura: chat disattivata per gli ospiti.';
+        if (chatInput) chatInput.placeholder = platformPlayer?'Scrivi al tavolo…':'Sessione in sola lettura: chat disattivata per gli ospiti.';
     };
     const blockReadOnly = (message = 'Solo il Master puo modificare questa sessione.') => {
         if (!readOnlyMode) return false;
@@ -664,6 +676,7 @@ export async function showSession(container, sessionId, options = {}) {
         gridSize: sessionState.map_grid_size,
         localMode,
         readOnly: readOnlyMode,
+        playerUserId: platformPlayer ? dbUserId : null,
         localStore,
         onTokensChange: (tokens) => renderTokenList(tokens)
     });
@@ -696,7 +709,7 @@ export async function showSession(container, sessionId, options = {}) {
 
     const sendMsg = async (message, isRoll = false, overrides = {}) => {
         if (!String(message).trim()) return;
-        if (readOnlyMode && !overrides.allowReadOnly) {
+        if (readOnlyMode && !platformPlayer && !overrides.allowReadOnly) {
             blockReadOnly('Chat disattivata per gli ospiti: il Master resta l’unico a modificare il tavolo.');
             return;
         }
@@ -704,8 +717,8 @@ export async function showSession(container, sessionId, options = {}) {
             const payload = {
                 session_id: sessionId,
                 sender_id: overrides.sender_id === undefined ? dbUserId : overrides.sender_id,
-                sender_name: overrides.sender_name || currentUserName,
-                message,
+                sender_name: String(overrides.sender_name || currentUserName).slice(0,80),
+                message: String(message).slice(0,4000),
                 is_roll: isRoll
             };
             const { data, error } = localMode
@@ -713,8 +726,12 @@ export async function showSession(container, sessionId, options = {}) {
                 : await supabase.from(TABLES.chat).insert([payload]).select('*').single();
             if (error) throw error;
             if (data) renderMessage(data);
+            return true;
         } catch (err) {
             console.error('Errore invio chat:', err);
+            const status=container.querySelector('#chatDeliveryStatus');
+            if(status)status.textContent='Messaggio non inviato. Controlla il collegamento e riprova.';
+            return false;
         }
     };
 
@@ -750,7 +767,9 @@ export async function showSession(container, sessionId, options = {}) {
         });
     };
 
+    let messagesLoading=false;
     const loadMessages = async () => {
+        if(sessionDisposed||messagesLoading)return;messagesLoading=true;
         try {
             const { data, error } = localMode
                 ? localStore.chat.list(sessionId)
@@ -758,16 +777,17 @@ export async function showSession(container, sessionId, options = {}) {
                         .from(TABLES.chat)
                         .select('*')
                         .eq('session_id', sessionId)
-                        .order('created_at', { ascending: true })
+                        .order('created_at', { ascending: false })
                         .limit(80);
             if (error) throw error;
-            (data || []).forEach(renderMessage);
-            chatMsgs.scrollTo({ top: chatMsgs.scrollHeight, behavior: 'instant' });
+            if(sessionDisposed)return;
+            (localMode?(data||[]):[...(data||[])].reverse()).forEach(renderMessage);
         } catch (err) {
             console.warn('Chat non caricata:', err);
-        }
+        } finally {messagesLoading=false;}
     };
     loadMessages();
+    const chatPoll=localMode?null:setInterval(loadMessages,3000);
 
     let chatSubscription = null;
     if (!localMode) {
@@ -896,17 +916,8 @@ export async function showSession(container, sessionId, options = {}) {
         }
     };
 
-    let sessionSubscription = null;
-    if (!localMode) {
-        try {
-            sessionSubscription = supabase.channel(`dnd-session-${sessionId}`)
-                .on('postgres_changes', {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: TABLES.sessions,
-                    filter: `id=eq.${sessionId}`
-                }, payload => {
-                    const nextData = payload.new?.data || {};
+    const applySharedSession = record => {
+                    const nextData = record?.data || {};
                     sessionData.data = nextData;
                     sessionState.initiative = Array.isArray(nextData.initiative) ? nextData.initiative : [];
                     sessionState.round = Number(nextData.round || 1);
@@ -922,6 +933,29 @@ export async function showSession(container, sessionId, options = {}) {
                     sessionState.aiMode = nextData.ai?.mode || sessionState.aiMode || 'master';
                     sessionState.aiAutoReply = Boolean(nextData.ai?.autoReply);
                     syncSessionControls();
+    };
+    let platformPoll = null, platformPolling = false;
+    if(platformPlayer && readOnlyMode)platformPoll=setInterval(async()=>{
+        if(platformPolling)return;platformPolling=true;
+        try{const {data,error}=await supabase.rpc('get_platform_dnd_session',{p_session_id:sessionId});
+            if(sessionDisposed)return;
+            if(error)throw error;
+            if(!data){cleanupSessionView();container.textContent='Collegamento terminato. Rientra dalla sezione Multiplayer.';return;}
+            if(container.isConnected)applySharedSession(data);
+        }catch(error){console.warn('Aggiornamento tavolo non disponibile:',error);}
+        finally{platformPolling=false;}
+    },2500);
+    let sessionSubscription = null;
+    if (!localMode) {
+        try {
+            sessionSubscription = supabase.channel(`dnd-session-${sessionId}`)
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: TABLES.sessions,
+                    filter: `id=eq.${sessionId}`
+                }, payload => {
+                    applySharedSession(payload.new);
                 })
                 .subscribe();
         } catch (err) {
@@ -978,6 +1012,9 @@ export async function showSession(container, sessionId, options = {}) {
     renderPresence();
 
     const cleanupSessionView = () => {
+        sessionDisposed=true;
+        clearInterval(chatPoll);
+        clearInterval(platformPoll);
         toolbarObserver.disconnect();
         window.__dndMapApi?.cleanup();
         if (chatSubscription && supabase.removeChannel) supabase.removeChannel(chatSubscription);
@@ -1601,19 +1638,35 @@ export async function showSession(container, sessionId, options = {}) {
     };
 
     const submitChatMessage = async () => {
-        if (blockReadOnly('Chat disattivata per gli ospiti: il Master resta l’unico a modificare il tavolo.')) return;
+        if (!platformPlayer && blockReadOnly('Chat disattivata per gli ospiti: il Master resta l’unico a modificare il tavolo.')) return;
         const input = container.querySelector('#chat-input');
         const message = input.value;
-        input.value = '';
-        await sendMsg(message);
+        const sent=await sendMsg(message);
+        if(!sent)return;
+        if(input.value===message)input.value='';
+        container.querySelector('#chatDeliveryStatus').textContent='';
 
         const callsAI = /@(?:oracolo|oste|master|ai|ia)\b/i.test(message) || sessionState.aiAutoReply;
-        if (callsAI) {
+        if (callsAI && !readOnlyMode) {
             askSessionAI(message.replace(/@(?:oracolo|oste|master|ai|ia)\b/ig, '').trim() || message, 'chat');
         }
     };
 
     container.querySelector('#chatSubmit').onclick = submitChatMessage;
+    const chatDeliveryStatus=document.createElement('p');chatDeliveryStatus.id='chatDeliveryStatus';chatDeliveryStatus.setAttribute('role','status');
+    container.querySelector('#chatForm').after(chatDeliveryStatus);
+    container.querySelector('#platformSessionOnline').onclick=async()=>{
+        if(!currentPlatformRoom()){await navigateTo('multiplayer',container);return;}
+        try{if(platformPlayer&&!isSessionOwner)return;await sharePlatformDnd(sessionId);await showSession(container,sessionId,options);}
+        catch(error){alert(error.message||'Collegamento non disponibile.');}
+    };
+    const pawnButton=container.querySelector('#platformSessionPawn');
+    if(pawnButton)pawnButton.onclick=async()=>{
+        pawnButton.disabled=true;
+        try{const {data,error}=await supabase.rpc('ensure_platform_pawn',{p_session_id:sessionId,p_name:String(currentUserName||'Giocatore').slice(0,80)});if(error)throw error;window.__dndMapApi?.focusToken?.(data);}
+        catch(error){alert(error.message||'Pedina non disponibile.');}
+        finally{pawnButton.disabled=false;}
+    };
     container.querySelector('#chatForm').onsubmit = (e) => {
         e.preventDefault();
         submitChatMessage();

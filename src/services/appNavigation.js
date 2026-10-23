@@ -5,6 +5,8 @@ import { loadView } from './navigationLoading.js';
 const LAST_DESTINATION_KEY = 'taverna_last_destination';
 
 export const resetAppSurface = () => {
+    window.__counterCleanup?.();
+    window.__counterCleanup = null;
     window.__communityCleanup?.();
     window.__communityCleanup = null;
     window.__routeMotionCleanup?.();
@@ -60,9 +62,12 @@ export async function navigateTo(destination, container = document.getElementByI
     if (destination === 'minigames' && options.filter === 'cards') destination = 'cardGames';
 
     const routes = {
+        multiplayer: {label:'Multiplayer',load:()=>import('../dashboards/multiplayer.js'),render:m=>m.showMultiplayer(container)},
+        mtcg: {label:'MTCG',load:()=>import('../dashboards/mtcg.js'),render:m=>m.showMtcg(container)},
+        proxyPrinter: {label:'MTG Proxy Printer',load:()=>import('../dashboards/proxyPrinter.js'),render:m=>m.showProxyPrinter(container, options)},
         cardGames: { label: 'i giochi di carte', load: () => import('../minigamelist.js'), render: m => m.showMinigamesList(container, { ...options, filter: 'cards' }) },
         management: {label:'le metriche',load:()=>import('../dashboards/management.js'),render:m=>m.showManagement(container)},
-        cards: { label: 'le carte', load: () => import('../dashboards/cards.js'), render: m => m.showCards(container) },
+        cards: { label: 'le carte', load: () => import('../minigamelist.js'), render: m => m.showMinigamesList(container,{filter:'cards'}) },
         rpg: { label: 'i giochi di ruolo', load: () => import('../dashboards/rpg.js'), render: m => m.showRpg(container) },
         oracle: { label: 'l’Oracolo', load: () => import('../dashboards/oracle.js'), render: m => m.showOracle(container, options) },
         home: { label: 'la Taverna', load: () => import('../lobby.js'), render: (module) => module.showLobby(container) },
@@ -91,7 +96,7 @@ export async function navigateTo(destination, container = document.getElementByI
                     selector: '.reading-welcome, .reading-shelf, .settings-group, .profile-glass-card, .music-player, .music-playlist, .dnd-hero, .dnd-panel'
                 });
             }
-            if (context.isCurrent() && ['cardGames', 'cards', 'rpg', 'oracle', 'minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
+            if (context.isCurrent() && ['multiplayer', 'mtcg', 'proxyPrinter', 'cardGames', 'cards', 'rpg', 'oracle', 'minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
                 rememberDestination(destination, destination === 'minigames' ? options : {});
             }
         };
