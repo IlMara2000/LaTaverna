@@ -15,3 +15,25 @@
  .proxy-sheet { break-after: page; break-inside: avoid; }
  .proxy-sheet:last-child { break-after: auto; }
 }
+@media screen {
+ #ui #app .proxy-printer { padding: 0; }
+ #ui #app .proxy-printer form { padding: clamp(18px,3vw,28px); border: 2px solid #a184b4; border-radius: 24px 16px 26px 16px; background: #281d35; box-shadow: 5px 6px 0 #0d0912; }
+ #ui #app .proxy-printer textarea { min-width: 0; resize: vertical; min-height: 180px; max-height: 55dvh; border: 1px solid #a184b4; border-radius: 12px; color: #f4ecdd; background: #18101f; font-size: 16px; text-align: left !important; }
+ #ui #app .proxy-printer label:has(input[type=checkbox]) { display: flex; align-items: flex-start; gap: 12px; text-align: left !important; }
+ #ui #app .proxy-printer input[type=checkbox] { flex: 0 0 24px; width: 24px; height: 24px; margin-top: 2px; accent-color: #cfb0eb; }
+ #ui #app .proxy-printer [data-status] { overflow-wrap: anywhere; min-height: 26px; margin-block: 20px; }
+ #ui #app .proxy-toolbar { flex-wrap: wrap; gap: 14px; }
+ #ui #app .proxy-toolbar p { flex: 1 1 280px; margin: 0; }
+ #ui #app .proxy-toolbar button { flex: 0 1 auto; }
+ #ui #app .proxy-sheets { overflow: visible; gap: 24px; }
+ #ui #app .proxy-sheet { width: 100%; height: auto; aspect-ratio: 210 / 297; padding: 7.857142857% 5%; grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: repeat(3,minmax(0,1fr)); grid-auto-rows: auto; box-shadow: 4px 5px 0 #0007; }
+ #ui #app .proxy-sheet img { width: 100%; height: 100%; min-height: 0; min-width: 0; }
+ #ui #app .proxy-printer footer { margin-top: 28px; color: #c4b0d2; font-size: 12px; }
+ @media(max-width:500px) { #ui #app .proxy-toolbar button { width: 100%; } }
+}
+@media print {
+ html.standalone-app #ui #app { position: static !important; top: auto !important; left: auto !important; min-height: 0 !important; }
+}
+@media print {
+ html #ui #app:has(> .proxy-printer) { position: static !important; padding: 0 !important; margin: 0 !important; height: auto !important; width: 210mm !important; }
+}

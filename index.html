@@ -140,6 +140,13 @@
     <script type="module" src="/src/main.js"></script>
 
     <script>
+        const standaloneDisplay = window.matchMedia('(display-mode: standalone)');
+        const syncDisplayMode = () => {
+            document.documentElement.classList.toggle('standalone-app', standaloneDisplay.matches || window.navigator.standalone === true);
+        };
+        syncDisplayMode();
+        standaloneDisplay.addEventListener('change', syncDisplayMode);
+        window.addEventListener('pageshow', syncDisplayMode);
         const syncVisualViewportVars = () => {
             const viewport = window.visualViewport;
             const height = viewport?.height || window.innerHeight;
