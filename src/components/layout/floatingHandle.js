@@ -11,6 +11,12 @@ export function constrainHandle(left, top, width, height, view) {
     return { left: x, top: y, clipped };
 }
 
+export function usableHandleViewport(view, insets = {}) {
+    const top = Math.max(0, insets.top || 0), bottom = Math.max(0, insets.bottom || 0);
+    const left = Math.max(0, insets.left || 0), right = Math.max(0, insets.right || 0);
+    return { left: view.left + left, top: view.top + top, width: Math.max(0, view.width - left - right), height: Math.max(0, view.height - top - bottom) };
+}
+
 export function initFloatingHandle(btn) {
     const positionKey = 'taverna.navbar-trigger.position.v1';
     const controller = new AbortController();
@@ -20,7 +26,16 @@ export function initFloatingHandle(btn) {
     let positioned = false;
     const viewport = () => {
         const vv = window.visualViewport;
-        return { left: vv?.offsetLeft || 0, top: vv?.offsetTop || 0, width: vv?.width || innerWidth, height: vv?.height || innerHeight };
+        const view = { left: vv?.offsetLeft || 0, top: vv?.offsetTop || 0, width: vv?.width || innerWidth, height: vv?.height || innerHeight };
+        if (!document.documentElement.classList.contains('standalone-app')) return view;
+        // Resolve env() as lengths, not the unevaluated custom-property string.
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+        document.body.append(probe);
+        const css = getComputedStyle(probe);
+        const insets = { top: parseFloat(css.paddingTop), right: parseFloat(css.paddingRight), bottom: parseFloat(css.paddingBottom), left: parseFloat(css.paddingLeft) };
+        probe.remove();
+        return usableHandleViewport(view, insets);
     };
     btn.classList.add('is-mobile-draggable');
     btn.title = 'Apri menu · trascina per spostare';
@@ -30,7 +45,12 @@ export function initFloatingHandle(btn) {
     btn.append(grip);
     const place = (left, top, persist = false) => {
         const { width, height } = btn.getBoundingClientRect();
-        const position = constrainHandle(left, top, width, height, viewport());
+        const view = viewport();
+        if (document.documentElement.classList.contains('standalone-app')) {
+            left = Math.max(view.left, Math.min(left, view.left + view.width - width));
+            top = Math.max(view.top, Math.min(top, view.top + view.height - height));
+        }
+        const position = constrainHandle(left, top, width, height, view);
         btn.style.setProperty('left', `${position.left}px`, 'important');
         btn.style.setProperty('top', `${position.top}px`, 'important');
         btn.style.setProperty('right', 'auto', 'important');

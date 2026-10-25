@@ -1,0 +1,43 @@
+/* Cartoon workspaces share the tavern's ink, ivory and amethyst palette. */
+#ui #app:has(> :is(.mtcg-page,.multiplayer-page,.proxy-printer)) {
+    padding: calc(var(--safe-top) + 24px) max(18px,var(--safe-right)) calc(100px + var(--safe-bottom)) max(18px,var(--safe-left)) !important;
+}
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) {
+    --hub-ink: #21152c;
+    --hub-paper: #f4ecdd;
+    --hub-accent: #cfb0eb;
+    width: min(1100px,100%); min-width: 0; flex: 0 0 auto; margin: 0 auto;
+}
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) header { margin-bottom: 28px; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) h1 { font: 400 clamp(38px,7vw,66px)/1.1 Bangers,sans-serif !important; color: #f4ecdd; overflow-wrap: anywhere; margin: 24px 0 14px; text-shadow: 3px 3px 0 #0009; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) h2 { font: 400 clamp(24px,4vw,32px)/1.15 Bangers,sans-serif !important; overflow-wrap: anywhere; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) :is(p,label,li,footer) { line-height: 1.65; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) header :is(p,.community-intro) { max-width: 680px; margin-inline: auto; color: #d0c3da; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) button {
+    min-height: 48px; max-width: 100%; padding: 12px 18px; border: 2px solid var(--hub-ink); border-radius: 16px 12px 18px 12px;
+    color: var(--hub-ink); background: var(--hub-paper); box-shadow: 3px 4px 0 #100b18;
+    font: 750 14px/1.4 Manrope,sans-serif; white-space: normal; overflow-wrap: anywhere; touch-action: manipulation; cursor: pointer;
+}
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) button:disabled { opacity: .5; cursor: default; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) button:active:not(:disabled) { transform: translateY(2px); box-shadow: 1px 2px 0 #100b18; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) :is(button,input,textarea,select):focus-visible { outline: 3px solid var(--hub-accent) !important; outline-offset: 3px; }
+#ui #app :is(.mtcg-page,.multiplayer-page) .community-panel {
+    background: #281d35; border: 2px solid #a184b4; border-radius: 24px 16px 26px 16px; padding: clamp(18px,3vw,28px); box-shadow: 5px 6px 0 #0d0912; min-width: 0;
+}
+#ui #app .mtcg-page .community-panel { display: flex; flex-direction: column; align-items: stretch; }
+#ui #app .mtcg-page .community-panel p { flex: 1; margin-block: 0 24px; color: #ded0e7; }
+#ui #app .mtcg-page .community-panel button { width: 100%; background: var(--hub-accent); }
+#ui #app .multiplayer-page :is(input,select) { min-height: 48px; font-size: 16px; }
+#ui #app .multiplayer-page .community-toolbar { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,180px),1fr)); gap: 14px; }
+#ui #app .multiplayer-page #mp-connected { margin: 24px 0 32px; }
+#ui #app .multiplayer-page #mp-members { list-style: none; padding: 0; display: grid; gap: 8px; }
+#ui #app .multiplayer-page #mp-members li { border-bottom: 1px solid #a184b455; overflow-wrap: anywhere; }
+#ui #app .multiplayer-page #mp-status { padding: 14px 0; overflow-wrap: anywhere; }
+#ui #app .multiplayer-page #mp-code output { font-family: Bangers,sans-serif !important; font-size: clamp(30px,9vw,58px); letter-spacing: .1em; overflow-wrap: anywhere; }
+@media (max-width:650px) {
+    #ui #app :is(.mtcg-page,.multiplayer-page) .community-grid { grid-template-columns: 1fr; gap: 20px; }
+    #ui #app .multiplayer-page .community-panel button { width: 100%; }
+}
+@media (prefers-reduced-motion:no-preference) {
+    #ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) button { transition: transform 120ms ease,box-shadow 120ms ease; }
+}

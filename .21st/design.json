@@ -108,6 +108,11 @@
       "area": "Magic integrated release",
       "decision": "Keep the simplified card-first flows. Restore the shared amethyst page background per latest user direction, with pale work surfaces and light headings outside panels for contrast. Magic entry opens the 40-life format; use the illustrated card artwork on the home tile.",
       "source": "Coordinated user requests in both Magic chats, 2026-10-12"
+    },
+    {
+      "area": "Mobile scorekeeper and installed iPhone app",
+      "decision": "Setup first with game, player count, initial points and a small interactive 3D coin. Match fills the usable viewport with raised colored panels, points and +/- only, per-button press bursts and a three-action hamburger. Swipe down for commander damage, up for life. Installed standalone app keeps scrolling and draggable controls outside system safe areas.",
+      "source": "User screenshots and request, 2026-10-24"
     }
   ],
   "evidence": [
