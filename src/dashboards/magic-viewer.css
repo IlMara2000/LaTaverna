@@ -113,3 +113,33 @@
 #ui .mv-deck-group h4 span { font-size:12px; border-radius:20px; padding:4px 9px; background:#e9dff3; }
 #ui .mv-deck-card { min-width:0; }
 #ui .mv-deck-card .mv-quantity-tools { justify-content:center; margin-top:8px; }
+
+/* Collection selection keeps the artwork visible and touch scrolling native. */
+#ui .mv-selection-tools { display:flex; flex-wrap:wrap; align-items:center; gap:10px; position:sticky; top:0; z-index:3; padding:12px; margin:0 0 18px; border:1px solid #d9c5e8; border-radius:18px; background:#f6effc; box-shadow:0 5px 16px #25103520,inset 0 1px #fff; }
+#ui .mv-selection-tools small { flex-basis:100%; color:#684d7b; }
+#ui .mv-selection-tools button { min-height:44px; }
+#ui .mv-card.is-selected { outline:3px solid #a569d0; outline-offset:2px; }
+#ui .mv-selection-dot { position:absolute; right:10px; top:10px; display:grid; place-items:center; width:30px; height:30px; border:2px solid #fff; border-radius:50%; color:#fff; background:#372044a6; box-shadow:0 2px 8px #0008; pointer-events:none; }
+#ui .is-selected .mv-selection-dot { background:#79419d; }
+#ui .mv-want[hidden] { display:none; }
+#ui .mv-card-open { touch-action:pan-y; -webkit-touch-callout:none; user-select:none; }
+#ui .mv-browse { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+#ui .mv-browse span { font-size:12px; color:#735584; }
+#ui .mv-browse button { width:44px; height:44px; border:1px solid #d8c6e4; border-radius:50%; background:linear-gradient(145deg,#fff,#e9d9f5); color:#512e6b; box-shadow:0 3px 0 #d6c3e4; cursor:pointer; }
+#ui .mv-modal-art { touch-action:pan-y; user-select:none; -webkit-touch-callout:none; }
+#ui .mv-modal-backdrop { padding-top:max(18px,env(safe-area-inset-top)); padding-bottom:max(18px,env(safe-area-inset-bottom)); }
+#ui .mv-modal { max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 36px); }
+@media(max-width:650px) {
+ #ui #app .magic-viewer { width:100%; padding-inline:12px; }
+ #ui .mv-panel { padding:14px; }
+ #ui .mv-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ #ui .mv-modal-backdrop { padding:0; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); background:linear-gradient(160deg,#231333,#503762); }
+ #ui .mv-modal { width:100%; height:100%; max-height:100%; border:0; border-radius:0; grid-template-columns:1fr; grid-template-rows:minmax(260px,55dvh) auto; gap:0; padding:48px 0 0; background:transparent; box-shadow:none; overscroll-behavior:contain; }
+ #ui .mv-modal-art { height:100%; max-height:none; width:100%; padding:0 22px 20px; border-radius:0; box-shadow:none; object-fit:contain; }
+ #ui .mv-modal-copy { align-self:start; padding:20px 22px 32px; border:1px solid #ffffffb0; border-radius:28px 28px 0 0; background:linear-gradient(140deg,#fff,#efe3f8); box-shadow:0 -8px 30px #170a2433,inset 0 2px #fff; text-align:left; }
+ #ui .mv-modal-copy h2 { font-size:26px; }
+ #ui .mv-modal-effect { font-size:16px; line-height:1.6; }
+ #ui .mv-modal-close { position:fixed; top:calc(env(safe-area-inset-top) + 8px); right:12px; width:44px; height:44px; }
+ #ui .mv-selection-tools { gap:8px; padding:10px; }
+ #ui .mv-selection-tools button { flex:1 1 auto; padding-inline:10px; font-size:13px; }
+}

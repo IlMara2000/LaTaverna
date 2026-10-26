@@ -41,3 +41,41 @@
 @media (prefers-reduced-motion:no-preference) {
     #ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) button { transition: transform 120ms ease,box-shadow 120ms ease; }
 }
+
+/* User-selected liquid glass / soft clay, limited to the tabletop workspaces. */
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) {
+    --hub-glass: linear-gradient(145deg,#dfc2ff29,#b983ed12 48%,#69508526);
+    --hub-rim: #e8d5ff55;
+    --hub-relief: inset 0 2px 1px #fff4, inset 0 -4px 8px #12091b55, 0 12px 28px #09051155;
+}
+#ui #app :is(.mtcg-page,.multiplayer-page) .community-panel,
+#ui #app .proxy-printer form {
+    background: var(--hub-glass),#24182f;
+    border: 1px solid var(--hub-rim); border-radius: 28px;
+    box-shadow: var(--hub-relief); padding: clamp(20px,3vw,30px);
+}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+    #ui #app :is(.mtcg-page,.multiplayer-page) .community-panel,
+    #ui #app .proxy-printer form { background: var(--hub-glass),#24182fcc; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+}
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) button {
+    border: 1px solid #fff7; border-radius: 18px;
+    background: linear-gradient(160deg,#f9f3ff,#dcc9ed);
+    box-shadow: inset 0 2px 1px #ffffffe0,inset 0 -3px 3px #7f599c33,0 4px 0 #806295,0 7px 12px #0c061c44;
+}
+#ui #app .mtcg-page .community-panel button { background: linear-gradient(160deg,#ead9ff,#bd92dd); }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) button:active:not(:disabled) { box-shadow: inset 0 2px 4px #4a265b33,0 2px 0 #806295; }
+#ui #app :is(.mtcg-page,.multiplayer-page,.proxy-printer) :is(input:not([type=checkbox]),textarea,select) {
+    background: #100b1acc; border: 1px solid #d4b1ee55; border-radius: 14px;
+    box-shadow: inset 0 3px 8px #08040e66; font-size: 16px;
+}
+@media (max-width:650px) {
+    #ui #app :is(.mtcg-page,.multiplayer-page) .community-panel,
+    #ui #app .proxy-printer form { border-radius: 24px; }
+}
+@media (prefers-reduced-transparency:reduce) {
+    #ui #app :is(.mtcg-page,.multiplayer-page) .community-panel,
+    #ui #app .proxy-printer form { background: #30203d; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+html.app-high-contrast #ui #app :is(.mtcg-page,.multiplayer-page) .community-panel,
+html.app-high-contrast #ui #app .proxy-printer form { background: #24182f; border-color: #e8d5ff; backdrop-filter: none; -webkit-backdrop-filter: none; }
