@@ -81,8 +81,18 @@ export function showMagicDashboard(container, options = {}) {
     let exportLanguage = 'it', exportFormat = 'txt';
     let filter = '', notice = '', pending = [], busy = false, cloudUserId = null, disposed = false, modalCard = null;
     let cloudQueue = Promise.resolve(), searchResults = [];
+    let selecting = false, selected = new Set(), pressTimer = null, suppressClickUntil = 0, undoRemoval = null;
+    const clearPress = () => { clearTimeout(pressTimer); pressTimer = null; };
+    const toggleSelection = cardId => { selected.has(cardId) ? selected.delete(cardId) : selected.add(cardId); render(); };
+    const browseCard = direction => {
+        const list = (tab === 'wantlist' ? wantlist : cards).filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)));
+        const index = list.findIndex(card => String(card.id) === String(modalCard?.id));
+        const next = list[index + direction];
+        if (next) void openCard(next);
+    };
 
-    const persist = () => {
+    const persist = ({ keepUndo = false } = {}) => {
+        if (!keepUndo) undoRemoval = null;
         save(COLLECTION_KEY, cards); save(DECKS_KEY, decks); save(WANTLIST_KEY, wantlist);
         if (cloudUserId) {
             const userId = cloudUserId;
@@ -92,12 +102,13 @@ export function showMagicDashboard(container, options = {}) {
     };
     const setNotice = value => { notice = value || ''; const node = container.querySelector('#magic-viewer-notice'); if (node) node.textContent = notice; };
     const byId = () => new Map(cards.map(card => [String(card.id), card]));
-    const cardTile = (card, area) => `<article class="mv-card" data-card-id="${esc(card.id)}">
-        <button class="mv-card-open" type="button" data-open-card="${esc(card.id)}" aria-label="Apri ${esc(card.name)}">
+    const cardTile = (card, area) => `<article class="mv-card ${area === 'collection' && selected.has(String(card.id)) ? 'is-selected' : ''}" data-card-id="${esc(card.id)}">
+        <button class="mv-card-open" type="button" ${area === 'collection' && selecting ? `aria-pressed="${selected.has(String(card.id))}"` : ''} data-open-card="${esc(card.id)}" aria-label="${area === 'collection' && selecting ? 'Seleziona' : 'Apri'} ${esc(card.name)}">
           <span class="mv-art">${card.image ? `<img src="${esc(card.image)}" alt="${esc(card.name)}" loading="lazy">` : '<span class="mv-no-art">Carta</span>'}</span>
           <span class="mv-card-meta"><strong>${esc(card.printedName || card.name)}</strong><small>${renderCardSymbols(card.manaCost)} · ${esc(card.typeLine)}</small><span>×${Math.max(1, Number(card.quantity) || 1)}</span></span>
         </button>
-        <button type="button" class="mv-want ${wantlist.some(item => String(item.id) === String(card.id)) ? 'is-wanted' : ''}" data-want="${esc(card.id)}" aria-label="${wantlist.some(item => String(item.id) === String(card.id)) ? 'Rimuovi dalla' : 'Aggiungi alla'} wantlist">${wantlist.some(item => String(item.id) === String(card.id)) ? '◆' : '◇'}</button>
+        ${area === 'collection' && selecting ? `<span class="mv-selection-dot" aria-hidden="true">${selected.has(String(card.id)) ? '✓' : ''}</span>` : ''}
+        <button type="button" ${area === 'collection' && selecting ? 'hidden' : ''} class="mv-want ${wantlist.some(item => String(item.id) === String(card.id)) ? 'is-wanted' : ''}" data-want="${esc(card.id)}" aria-label="${wantlist.some(item => String(item.id) === String(card.id)) ? 'Rimuovi dalla' : 'Aggiungi alla'} wantlist">${wantlist.some(item => String(item.id) === String(card.id)) ? '◆' : '◇'}</button>
         ${area === 'wantlist' ? `<button type="button" class="mv-remove" data-remove-want="${esc(card.id)}">Rimuovi</button>` : ''}
       </article>`;
 
@@ -121,12 +132,19 @@ export function showMagicDashboard(container, options = {}) {
             <div class="mv-import"><div><h3>Importa una lista</h3><p>Carica un file PDF, TXT o DOCX. I nomi vengono cercati nel catalogo ufficiale.</p></div><label class="mv-file">Scegli file<input id="mv-file" type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label></div>
             <label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra le carte per nome…" value="${esc(filter)}"></label>
             ${pending.length ? `<div class="mv-review"><h3>Controlla le carte trovate</h3><p>Verifica i nomi prima di salvarli; gli elementi in rosso non sono stati associati a una carta.</p>${pending.map((item,index)=>`<div class="mv-review-row"><label>${esc(item.name)} <small>×${item.quantity}</small><select data-resolve="${index}"><option value="">${item.card ? `Trovata: ${esc(item.card.name)}` : 'Scegli il risultato esatto'}</option>${(item.matches||[]).map(card=>`<option value="${esc(card.id)}">${esc(card.name)} · ${esc(card.set_name||card.set||'')}</option>`).join('')}</select></label></div>`).join('')}<div class="mv-actions"><button type="button" class="mv-button" id="mv-confirm-import" ${pending.some(item=>!item.card)?'disabled':''}>Aggiungi carte selezionate</button><button type="button" class="mv-button mv-soft" id="mv-cancel-import">Annulla</button></div></div>` : ''}
+            <div class="mv-selection-tools" aria-label="Gestisci collezione">
+              <button type="button" class="mv-button" id="mv-delete-cards" ${selected.size ? '' : 'disabled'}>Cancella${selected.size ? ` (${selected.size})` : ''}</button>
+              <button type="button" class="mv-button mv-soft" id="mv-select-mode">${selecting ? 'Fine selezione' : 'Seleziona carte'}</button>
+              ${selecting ? '<button type="button" class="mv-button" id="mv-select-all">Seleziona tutti</button>' : ''}
+              ${undoRemoval ? '<button type="button" class="mv-button" id="mv-undo-delete">Annulla eliminazione</button>' : ''}
+              <small aria-live="polite">${selecting ? `${selected.size} selezionate · Elimina tutte le copie anche dai mazzi` : 'Tieni premuta una carta per selezionarla.'}</small>
+            </div>
             <div class="mv-grid">${visible.map(card=>cardTile(card,'collection')).join('') || `<p class="mv-empty">${cards.length?'Nessuna carta corrisponde alla ricerca.':'La collezione è vuota. Importa un PDF, TXT o DOCX per iniziare.'}</p>`}</div>
           </section>` : tab === 'mazzi' ? `<section class="mv-panel">
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button></div>
             ${decks.length ? `<div class="mv-deck-layout"><aside class="mv-deck-list">${decks.map(deck=>`<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id===activeDeck?.id}"><strong>${esc(deck.name)}</strong><small>${deck.cards.reduce((sum,item)=>sum+(Number(item.quantity)||1),0)} carte</small></button>`).join('')}</aside><div class="mv-deck-content"><div class="mv-deck-tools"><h3>${esc(activeDeck?.name||'')}</h3><button class="mv-text-button" id="mv-print-deck" type="button">Stampa proxy</button><button class="mv-text-button" id="mv-rename-deck" type="button">Rinomina</button><button class="mv-text-button" id="mv-delete-deck" type="button">Elimina</button></div><label class="mv-search"><span>⌕</span><input id="mv-deck-search" type="search" placeholder="Aggiungi una carta…"></label><div id="mv-search-results" class="mv-search-results">${searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div><div class="mv-deck-groups">${[['Creature','Creature'],['Instant','Istantanei'],['Sorcery','Stregonerie'],['Artifact','Artefatti'],['Enchantment','Incantesimi'],['Planeswalker','Planeswalker'],['Battle','Battaglie'],['Land','Terre'],['Other','Altre carte']].map(([type,title])=>{const group=deckCards.filter(c=>{const primary=['Land','Creature','Planeswalker','Battle','Artifact','Enchantment','Instant','Sorcery'].find(t=>c.typeLine?.includes(t))||'Other';return primary===type;});return group.length?`<section class="mv-deck-group"><h4>${title} <span>${group.reduce((sum,c)=>sum+c.quantity,0)}</span></h4><div class="mv-grid">${group.map(card=>`<div class="mv-deck-card">${cardTile(card,'deck')}<div class="mv-quantity-tools"><button data-deck-quantity="${esc(card.id)}" data-delta="-1" aria-label="Riduci copie di ${esc(card.name)}">−</button><span>${card.quantity}</span><button data-deck-quantity="${esc(card.id)}" data-delta="1" aria-label="Aumenta copie di ${esc(card.name)}">+</button></div></div>`).join('')}</div></section>`:'';}).join('')||'<p class="mv-empty">Questo mazzo è vuoto. Cerca una carta qui sopra.</p>'}</div></div></div>` : '<p class="mv-empty">Non hai ancora creato mazzi.</p>'}
           </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
-          ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></section></div>` : ''}
+          ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><div class="mv-browse"><button type="button" data-browse="-1" aria-label="Carta precedente">←</button><span>Scorri per sfogliare</span><button type="button" data-browse="1" aria-label="Carta successiva">→</button></div><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></section></div>` : ''}
         </main>`;
         bind();
     };
@@ -192,10 +210,72 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelectorAll('[data-mtcg-tool]').forEach(button=>button.onclick=()=>navigateTo(button.dataset.mtcgTool,container,{preset:'commander',returnTo:'magic'}));
         const printDeck=container.querySelector('#mv-print-deck');
         if(printDeck)printDeck.onclick=()=>{const deck=decks.find(d=>d.id===activeDeckId)||decks[0],map=byId();const decklist=(deck?.cards||[]).map(e=>{const card=map.get(String(e.cardId));return card?`${e.quantity} ${card.name}`:'';}).filter(Boolean).join('\n');void navigateTo('proxyPrinter',container,{decklist});};
-        container.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { tab = button.dataset.tab; filter = ''; searchResults = []; render(); }));
+        container.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { tab = button.dataset.tab; filter = ''; searchResults = []; selecting = false; selected.clear(); clearPress(); render(); }));
         container.querySelector('#mv-file')?.addEventListener('change', event => { const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''; });
         container.querySelector('#mv-filter')?.addEventListener('input', event => { filter = event.target.value; const start=event.target.selectionStart; render(); const input=container.querySelector('#mv-filter'); input?.focus(); try { input?.setSelectionRange(start,start); } catch { /* search inputs may not support selection */ } });
-        container.querySelectorAll('[data-open-card]').forEach(button => button.addEventListener('click', () => { const card = byId().get(button.dataset.openCard) || wantlist.find(item=>String(item.id)===button.dataset.openCard); if(card) void openCard(card); }));
+        container.querySelectorAll('[data-open-card]').forEach(button => {
+            const cardId = button.dataset.openCard;
+            button.addEventListener('click', () => {
+                if (Date.now() < suppressClickUntil) return;
+                if (tab === 'collezione' && selecting) { toggleSelection(cardId); return; }
+                const card = byId().get(cardId) || wantlist.find(item => String(item.id) === cardId);
+                if (card) void openCard(card);
+            });
+            if (tab !== 'collezione') return;
+            let origin;
+            button.addEventListener('pointerdown', event => {
+                if (event.button !== 0 || selecting) return;
+                clearPress(); origin = [event.clientX, event.clientY];
+                pressTimer = setTimeout(() => {
+                    if (disposed || !button.isConnected) return;
+                    selecting = true; selected.add(cardId); suppressClickUntil = Date.now() + 800; render();
+                }, 500);
+            });
+            button.addEventListener('pointermove', event => { if (origin && Math.hypot(event.clientX-origin[0], event.clientY-origin[1]) > 10) clearPress(); });
+            ['pointerup','pointercancel','pointerleave'].forEach(type => button.addEventListener(type, clearPress));
+            button.addEventListener('contextmenu', event => event.preventDefault());
+        });
+        container.querySelector('#mv-select-mode')?.addEventListener('click', () => { selecting = !selecting; selected.clear(); render(); });
+        container.querySelector('#mv-select-all')?.addEventListener('click', () => {
+            cards.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter))).forEach(card => selected.add(String(card.id)));
+            render();
+        });
+        container.querySelector('#mv-delete-cards')?.addEventListener('click', () => {
+            if (!selected.size) return;
+            undoRemoval = { cards: structuredClone(cards), decks: structuredClone(decks) };
+            const count = selected.size;
+            cards = cards.filter(card => !selected.has(String(card.id)));
+            decks = decks.map(deck => ({ ...deck, cards: deck.cards.filter(entry => !selected.has(String(entry.cardId))) }));
+            selected.clear(); selecting = false; persist({ keepUndo: true }); render();
+            setNotice(`${count} carte eliminate dalla collezione e dai mazzi. Puoi annullare l’eliminazione.`);
+        });
+        container.querySelector('#mv-undo-delete')?.addEventListener('click', () => {
+            if (!undoRemoval) return;
+            cards = undoRemoval.cards; decks = undoRemoval.decks; undoRemoval = null; persist(); render(); setNotice('Eliminazione annullata.');
+        });
+        container.querySelectorAll('[data-browse]').forEach(button => button.addEventListener('click', () => browseCard(Number(button.dataset.browse))));
+        const dialog = container.querySelector('.mv-modal');
+        dialog?.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { event.preventDefault(); closeCard(); }
+            if (event.key === 'ArrowLeft') { event.preventDefault(); browseCard(-1); }
+            if (event.key === 'ArrowRight') { event.preventDefault(); browseCard(1); }
+            if (event.key === 'Tab') {
+                const controls = [...dialog.querySelectorAll('button:not(:disabled)')];
+                const first = controls[0], last = controls.at(-1);
+                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+            }
+        });
+        const art = container.querySelector('.mv-modal-art');
+        let swipe;
+        art?.addEventListener('pointerdown', event => { swipe = [event.clientX,event.clientY]; art.setPointerCapture(event.pointerId); });
+        art?.addEventListener('pointerup', event => {
+            if (!swipe) return;
+            const dx = event.clientX-swipe[0], dy = event.clientY-swipe[1]; swipe = null;
+            if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5) browseCard(dx < 0 ? 1 : -1);
+        });
+        art?.addEventListener('pointercancel', () => { swipe = null; });
+        art?.addEventListener('dragstart', event => event.preventDefault());
         container.querySelectorAll('[data-want]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); const card=byId().get(button.dataset.want)||wantlist.find(item=>String(item.id)===button.dataset.want); if(card) toggleWant(card); }));
         container.querySelectorAll('[data-remove-want]').forEach(button => button.addEventListener('click', () => { wantlist=wantlist.filter(item=>String(item.id)!==button.dataset.removeWant); persist(); render(); }));
         container.querySelector('.mv-modal-close')?.addEventListener('click', closeCard);
@@ -227,7 +307,7 @@ export function showMagicDashboard(container, options = {}) {
         });
     }
 
-    window.__magicCleanup = () => { disposed = true; };
+    window.__magicCleanup = () => { disposed = true; clearPress(); };
     render();
     if (navigator.onLine) void (async()=>{
         try {

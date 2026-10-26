@@ -113,6 +113,11 @@
       "area": "Mobile scorekeeper and installed iPhone app",
       "decision": "Setup first with game, player count, initial points and a small interactive 3D coin. Match fills the usable viewport with raised colored panels, points and +/- only, per-button press bursts and a three-action hamburger. Swipe down for commander damage, up for life. Installed standalone app keeps scrolling and draggable controls outside system safe areas.",
       "source": "User screenshots and request, 2026-10-24"
+    },
+    {
+      "area": "PC browser feedback: entrance, mobile portals and tabletop hubs",
+      "decision": "Illustrated walnut door with iron straps integrates with the exterior. No solid purple caption panels on mobile home. MTCG, Multiplayer and Proxy Printer use restrained liquid amethyst glass panels with rounded clay cartoon buttons. This explicitly supersedes the no-blur rule for these workspace panels only; retain opaque reduced-transparency fallback.",
+      "source": "Three user browser comments, 2026-10-26"
     }
   ],
   "evidence": [

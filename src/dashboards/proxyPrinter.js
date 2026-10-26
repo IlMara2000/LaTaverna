@@ -1,7 +1,7 @@
 import { navigateTo } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
-import '../styles/tabletop-hubs.css';
 import './proxyPrinter.css';
+import '../styles/tabletop-hubs.css';
 const esc = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function showProxyPrinter(container, options={}) {
     updateSidebarContext('mtcg');
