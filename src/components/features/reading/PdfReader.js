@@ -16,6 +16,7 @@ export async function mountPdfReader(holder, { data, bookId, userId, signal, dow
             <span class="ebook-kicker">IL TUO SPAZIO DI LETTURA</span>
             <button type="button" data-toggle-search aria-expanded="false">⌕ Cerca</button>
             <button type="button" data-toggle-settings aria-expanded="false">Aa Aspetto</button>
+            <button type="button" data-fullscreen aria-pressed="false">Schermo intero</button>
         </div>
         <form class="ebook-search" hidden role="search" aria-label="Cerca nel libro">
             <input type="search" data-search placeholder="Cerca una parola nel libro" aria-label="Cerca nel libro">
@@ -42,6 +43,27 @@ export async function mountPdfReader(holder, { data, bookId, userId, signal, dow
         </footer>`;
     const find = selector => holder.querySelector(selector);
     const status = find('.pdf-bookmark-status');
+    const fullscreenButton = find('[data-fullscreen]');
+    fullscreenButton.hidden = !holder.requestFullscreen || !window.document.fullscreenEnabled;
+    const syncFullscreen = () => {
+        const active = window.document.fullscreenElement === holder;
+        fullscreenButton.textContent = active ? 'Esci da schermo intero' : 'Schermo intero';
+        fullscreenButton.setAttribute('aria-pressed', String(active));
+        if (active && !restoring) {
+            viewer.currentScaleValue = 'page-width';
+            find('[data-zoom]').value = 'page-width';
+        }
+    };
+    window.document.addEventListener('fullscreenchange', syncFullscreen, { signal });
+    fullscreenButton.onclick = async () => {
+        try {
+            if (window.document.fullscreenElement === holder) await window.document.exitFullscreen();
+            else await holder.requestFullscreen();
+            if (signal.aborted && window.document.fullscreenElement === holder) await window.document.exitFullscreen();
+        } catch {
+            if (!signal.aborted) status.textContent = 'Il browser non consente la lettura a schermo intero.';
+        }
+    };
     if (downloadLink) find('[data-download]').append(downloadLink);
     let preferences = getReaderPreferences(userId);
     holder.dataset.paper = preferences.theme;
@@ -102,6 +124,7 @@ export async function mountPdfReader(holder, { data, bookId, userId, signal, dow
     window.document.addEventListener('visibilitychange', saveNow, { signal });
     container.addEventListener('scroll', () => { if (!restoring) viewer.update(); }, { passive: true, signal });
     signal.addEventListener('abort', () => {
+        if (window.document.fullscreenElement === holder) void window.document.exitFullscreen().catch(() => {});
         // Flush the last observed position even if the dialog has already been removed.
         flush(); clearTimeout(timer);
         eventBus.off('updateviewarea', capture);

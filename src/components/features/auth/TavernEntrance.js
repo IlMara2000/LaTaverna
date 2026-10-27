@@ -15,12 +15,12 @@ export function renderTavernEntrance(container, onEnter) {
                         <span class="tavern-door-hinge hinge-top" aria-hidden="true"></span>
                         <span class="tavern-door-hinge hinge-bottom" aria-hidden="true"></span>
                         <p class="tavern-door-plaque">Ogni grande storia<br>comincia insieme.</p>
-                        <button class="tavern-door-handle" type="button" aria-label="Entra nella Taverna" aria-describedby="door-invitation">
+                        <button class="tavern-door-handle" type="button" aria-label="Entra nella Taverna">
                             <span class="tavern-handle-plate" aria-hidden="true"><span class="tavern-handle-lever"></span><span class="tavern-keyhole"></span></span>
                         </button>
-                        <span class="tavern-door-invitation" id="door-invitation">Entra nella Taverna
-                            <svg viewBox="0 0 110 55" aria-hidden="true"><path d="M5 8 Q53 2 88 38 M69 35 Q82 38 96 44 L94 24"/></svg>
-                        </span>
+                        <svg class="tavern-door-arrow" viewBox="0 0 80 48" aria-hidden="true" focusable="false">
+                            <path d="M8 35 C12 9 39 8 62 23 L53 10 L72 26 L51 32 L62 23"/>
+                        </svg>
                     </div>
                 </div>
             </div>
