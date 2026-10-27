@@ -10,7 +10,10 @@ html #app dialog.reading-reader {
 .reading-reader .reading-dialog-top h2:focus { outline: none; }
 .reading-reader > [data-reader] { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .ebook-reader { display: flex; flex-direction: column; flex: 1; min-height: 0; color: var(--text-primary); }
+.ebook-reader:fullscreen { width: 100%; height: 100%; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); box-sizing: border-box; background: var(--bg-deep, #10091d); }
+.ebook-reader:fullscreen .ebook-tools { padding-top: 8px; }
 .ebook-tools { display: flex; align-items: center; gap: 8px; padding: 0 max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); }
+.ebook-tools { flex-wrap: wrap; }
 .ebook-kicker { flex: 1; color: var(--text-secondary); letter-spacing: .14em; font-size: 9px; }
 .ebook-reader button, .ebook-reader input, .ebook-reader select { min-height: 44px; min-width: 44px; border: 1px solid var(--glass-border); border-radius: var(--crystal-radius-sm, 16px); background: var(--crystal-control, #271a36); color: var(--text-primary); font: inherit; font-size: 13px; padding: 8px 12px; }
 .ebook-reader button { cursor: pointer; flex-shrink: 0; }
@@ -47,6 +50,7 @@ html #app dialog.reading-reader {
 .reading-dialog .pdfViewer .textLayer span { text-align: initial !important; }
 .reading-reader > .reading-dialog-error:not([hidden]), .reading-reader > [data-reader-loading] { padding: 16px; }
 @media (max-width: 480px) {
+    .ebook-kicker { display: none; }
     .ebook-kicker { font-size: 8px; letter-spacing: .08em; max-width: 130px; }
     .ebook-reader button, .ebook-reader select { padding: 8px 10px; font-size: 12px; }
     .ebook-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
