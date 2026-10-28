@@ -1,21 +1,32 @@
 /* Installed iPhone web apps draw behind the status bar with black-translucent.
    Move the scroll viewport itself below it, so scrolling cannot put controls there.
+   Let content reach the bottom edge; reserve the home-indicator inset inside
+   the scrollable content instead of cutting it off the viewport.
    Safari tabs retain their existing viewport and spacing. */
 html.standalone-app #ui #app {
     position: fixed;
     top: calc(var(--visual-viewport-top) + env(safe-area-inset-top, 0px));
     left: env(safe-area-inset-left, 0px);
     width: calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-    height: calc(var(--visual-viewport-height) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+    bottom: 0;
+    height: auto !important;
     min-height: 0 !important;
-    /* Descendants using shared tokens must not reserve these insets again. */
+    /* Top and side insets are already outside the scrollport.
+       Bottom clearance belongs to the content, so it scrolls away. */
     --safe-top: 0px;
-    --safe-bottom: 0px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: 0px;
     --safe-right: 0px;
 }
 html.standalone-app #ui #app > .taverna-home {
     min-height: 100%;
     padding-top: 18px;
-    padding-bottom: 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+/* While typing, keep the active form above the visual viewport's keyboard.
+   The normal installed-app viewport remains anchored to the screen bottom. */
+html.standalone-app #ui #app:has(:is(input, textarea, [contenteditable="true"]):focus) {
+    bottom: auto;
+    height: calc(var(--visual-viewport-height) - env(safe-area-inset-top, 0px)) !important;
 }
