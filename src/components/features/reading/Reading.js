@@ -20,7 +20,7 @@ export async function showReading(container) {
     updateSidebarContext('reading');
     const library = createReadingLibrary(supabase);
     const root = document.createElement('main');
-    root.className = 'reading-page';
+    root.className = 'entry-page reading-page';
     container.replaceChildren(root);
     let alive = true;
     let request = 0;
@@ -37,17 +37,11 @@ export async function showReading(container) {
 
     root.innerHTML = `
         <header class="reading-header">
-            <div class="reading-nook-art" aria-hidden="true"><span>EX LIBRIS · LA TAVERNA</span></div>
             ${renderHomeBackButton({ dataHome: true })}
             <span class="reading-eyebrow">IL RIFUGIO DELLE STORIE</span>
-            <div class="reading-heading"><div><h1>Ancora un capitolo<span>.</span></h1>
+            <div class="reading-heading"><div><h1>Lettura</h1>
                 <p>Lascia fuori il rumore. Qui comincia un altro mondo.</p></div>
                 <button type="button" class="reading-primary" data-upload disabled>+ Carica un PDF</button>
-            </div>
-            <div class="reading-welcome"><span class="reading-book-mark">${bookIcon}</span>
-                <p>Custodisci le tue letture. Raccogli le tue ispirazioni.<br>
-                <span>Condividi un libro in bacheca, solo se lo desideri.</span></p>
-                <span class="reading-welcome-note">IL TUO ANGOLO DI QUIETE</span>
             </div>
         </header>
         <p class="reading-account-note" data-account-note hidden></p>

@@ -40,13 +40,12 @@ export function showMinigamesList(container, options = {}) {
     // RIMOSSA la classe .dashboard-container che creava il bordo invisibile!
     // Ora è un layout puro e piatto.
     container.innerHTML = `
-        <div id="lobby-wrapper" class="minigames-lobby-wrapper fade-in">
+        <div id="lobby-wrapper" class="entry-page minigames-lobby-wrapper fade-in">
 
-            <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 30px;">
+            <header class="world-catalog-header">
+                <div class="entry-back-row">
                 ${cardsOnly ? '<button type="button" class="app-back-button" id="btn-back-main">← La Taverna</button>' : renderHomeBackButton({ id: 'btn-back-main' })}
-            </div>
-
-            <header class="world-catalog-header" style="margin: 10px 0 28px 0; text-align: center;">
+                </div>
                 <span class="crystal-eyebrow">IL PIACERE DI STARE AL TAVOLO</span>
                 <h1 class="main-title">${cardsOnly ? 'Carte' : 'Minigiochi'}</h1>
                 <p class="catalog-intro">Ritrova un classico o lasciati sorprendere da una nuova sfida.</p>

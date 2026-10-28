@@ -21,3 +21,7 @@ Keep the original login logo centered, without a duplicate white brand title or 
 ## Asset
 
 See `docs/dark-fantasy-design.md` for generation provenance and validation.
+
+## Unified destination entrances
+
+Homepage destinations share `src/styles/entry-pages.css` and the explicit `entry-page` class. Follow the MTCG layout: 1100px content width, aligned back button and heading, restrained rounded amethyst panels and white actions. This supersedes differing entrance layouts and purple buttons. Gameplay and the PDF reader retain their dedicated layouts.

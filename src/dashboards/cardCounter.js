@@ -34,7 +34,7 @@ export function showCardCounter(container, options = {}) {
     <section class="counter-board" hidden aria-label="Segnapunti della partita">
         <div class="counter-players"></div>
         <button type="button" class="counter-menu-trigger" data-menu aria-label="Menu partita" aria-expanded="false" aria-controls="counter-menu">☰</button>
-        <dialog id="counter-menu" class="counter-menu" aria-label="Menu partita"><button type="button" data-mode="commander">Danni Comandante</button><button type="button" data-mode="poison">Danni Veleno</button><button type="button" data-new>Nuova Partita</button></dialog>
+        <dialog id="counter-menu" class="counter-menu" aria-label="Menu partita"><button type="button" data-mode="commander">Danni Comandante</button><button type="button" data-mode="poison">Danni Veleno</button><button type="button" data-new>Torna indietro</button></dialog>
     </section><p class="counter-sr" data-status role="status" aria-live="polite"></p>`;
     const form = find('form'), menu = find('.counter-menu');
     if (options.preset && PRESETS[options.preset]) form.elements.initial.value = PRESETS[options.preset].initial;
