@@ -5,7 +5,7 @@ import '../styles/tabletop-hubs.css';
 const esc = value => String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function showProxyPrinter(container, options={}) {
     updateSidebarContext('mtcg');
-    const root=document.createElement('main');root.className='proxy-printer';container.replaceChildren(root);
+    const root=document.createElement('main');root.className='entry-page proxy-printer';container.replaceChildren(root);
     root.innerHTML=`<header><button class="app-back-button" data-back>← MTCG</button><h1>MTG Proxy Printer</h1><p>Incolla una lista, controlla le carte e prepara i fogli A4 per il tuo tavolo.</p></header><form><label>Lista delle carte<textarea name="deck" required rows="8" maxlength="20000" placeholder="1 Sol Ring&#10;4 Lightning Bolt&#10;10 Forest"></textarea></label><label><input type="checkbox" name="backs"> Includi anche il retro delle carte bifronte (su fogli separati)</label><button type="submit">Carica carte</button></form><p data-status role="status" aria-live="polite"></p><div class="proxy-toolbar"><p>9 carte per foglio · 63 × 88 mm. Stampa al 100%, senza intestazioni o piè di pagina.</p><button data-print disabled>Stampa / Salva PDF</button></div><div class="proxy-sheets"></div><footer>Dati e immagini delle carte: Scryfall. Proxy per prove di gioco; non carte ufficiali.</footer>`;
     const form=root.querySelector('form'),status=root.querySelector('[data-status]'),sheets=root.querySelector('.proxy-sheets'),print=root.querySelector('[data-print]');
     if(options.decklist)form.elements.deck.value=String(options.decklist).slice(0,20000);
