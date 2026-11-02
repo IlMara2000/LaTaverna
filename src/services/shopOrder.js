@@ -1,4 +1,5 @@
-export const SHOP_EMAIL = 'marangoni.daniele@icloud.com';
+// Indirizzo di ruolo, non personale. Può essere sovrascritto in build con VITE_SHOP_EMAIL.
+export const SHOP_EMAIL = import.meta.env?.VITE_SHOP_EMAIL || 'ordini@lataverna.xyz';
 export const orderReference = order => `TV-${order.id.slice(0, 8).toUpperCase()}`;
 export function orderEmail(order) {
     const euro = cents => cents == null ? 'prezzo da concordare' : `${(cents / 100).toFixed(2)} EUR`;

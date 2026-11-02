@@ -18,9 +18,7 @@
     <link rel="apple-touch-icon" href="/assets/logo.png">
     <link rel="manifest" href="/assets/manifest.json">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bangers&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/fonts/fonts.css">
 
 
     <style>
@@ -139,30 +137,5 @@
 
     <script type="module" src="/src/main.js"></script>
 
-    <script>
-        const standaloneDisplay = window.matchMedia('(display-mode: standalone)');
-        const syncDisplayMode = () => {
-            document.documentElement.classList.toggle('standalone-app', standaloneDisplay.matches || window.navigator.standalone === true);
-        };
-        syncDisplayMode();
-        standaloneDisplay.addEventListener('change', syncDisplayMode);
-        window.addEventListener('pageshow', syncDisplayMode);
-        const syncVisualViewportVars = () => {
-            const viewport = window.visualViewport;
-            const height = viewport?.height || window.innerHeight;
-            const offsetTop = viewport?.offsetTop || 0;
-            document.documentElement.style.setProperty('--visual-viewport-height', `${height}px`);
-            document.documentElement.style.setProperty('--visual-viewport-top', `${offsetTop}px`);
-        };
-
-        syncVisualViewportVars();
-        window.addEventListener('resize', syncVisualViewportVars, { passive: true });
-        window.addEventListener('orientationchange', () => {
-            window.setTimeout(syncVisualViewportVars, 80);
-        }, { passive: true });
-        window.visualViewport?.addEventListener('resize', syncVisualViewportVars, { passive: true });
-        window.visualViewport?.addEventListener('scroll', syncVisualViewportVars, { passive: true });
-
-    </script>
 </body>
 </html>

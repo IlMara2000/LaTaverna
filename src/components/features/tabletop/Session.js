@@ -234,11 +234,15 @@ export async function showSession(container, sessionId, options = {}) {
     try {
         const { data } = localMode
             ? requestedSystem.localStore.sessions.get(sessionId)
-            : options.platformRoomCode ? await supabase.rpc('get_platform_dnd_session',{p_session_id:sessionId}) : await supabase
-                .from(TABLES.sessions)
-                .select('*')
-                .eq('id', sessionId)
-                .single();
+            : options.platformRoomCode
+                ? await supabase.rpc('get_platform_dnd_session',{p_session_id:sessionId})
+                : options.sharedInvite
+                    ? await supabase.rpc('get_shared_dnd_session',{p_session_id:sessionId})
+                    : await supabase
+                        .from(TABLES.sessions)
+                        .select('*')
+                        .eq('id', sessionId)
+                        .single();
         if (!data) { container.textContent='Sessione non disponibile o collegamento scaduto.'; return; }
         sessionData = normalizeSession(data);
     } catch (err) {
@@ -269,12 +273,12 @@ export async function showSession(container, sessionId, options = {}) {
         weather: ['clear', 'rain', 'storm', 'snow', 'mist'].includes(sessionData.data?.weather) ? sessionData.data.weather : 'clear',
         gridVisible: sessionData.data?.gridVisible !== false,
         map_grid_size: Number(sessionData.data?.map_grid_size || 50),
-        live_notes: sessionData.data?.live_notes || '',
+        live_notes: readOnlyMode ? '' : (sessionData.data?.live_notes || ''),
         scene: sessionData.data?.scene || '',
         public_summary: sessionData.data?.public_summary || '',
         objective_done: Boolean(sessionData.data?.objective_done),
-        aiMode: sessionData.data?.ai?.mode || 'master',
-        aiAutoReply: Boolean(sessionData.data?.ai?.autoReply),
+        aiMode: readOnlyMode ? 'master' : (sessionData.data?.ai?.mode || 'master'),
+        aiAutoReply: readOnlyMode ? false : Boolean(sessionData.data?.ai?.autoReply),
         selectedTokenId: null
     };
 
@@ -284,6 +288,15 @@ export async function showSession(container, sessionId, options = {}) {
     document.body.style.touchAction = '';
     setExperienceTheme('dnd5e', 'session');
     document.body.classList.add('dnd-session-active');
+
+    const prepPanel = readOnlyMode ? '' : `
+                <details class="session-prep-log"><summary>📜 Appunti della sessione</summary>
+                    ${renderPrepText('Obiettivi', sessionData.data?.objectives)}
+                    ${renderPrepText('Recap', sessionData.data?.recap)}
+                    ${renderPrepText('Agganci', sessionData.data?.hooks)}
+                    ${renderPrepText('PNG', sessionData.data?.npcs)}
+                    ${renderPrepText('Tesori', sessionData.data?.loot)}
+                </details>`;
 
     container.innerHTML = `
         <div class="dnd-session fade-in" data-left-open="false" data-chat-open="false" data-read-only="${readOnlyMode ? 'true' : 'false'}">
@@ -415,7 +428,8 @@ export async function showSession(container, sessionId, options = {}) {
 
                 <section class="dnd-session-block session-ai-panel" data-session-tool-panel="ai" hidden>
                     <h3>L’Oracolo al tavolo</h3>
-                    <p class="dnd-muted">Usa @oracolo nella chat oppure chiedi direttamente qui. Le risposte sono condivise con il tavolo.</p>
+                    <p class="dnd-muted">Usa @oracolo nella chat oppure chiedi direttamente qui. Le risposte sono condivise con il tavolo e possono contenere errori.</p>
+                    <p class="dnd-muted">Le domande e il contesto della sessione vengono inviati a Groq. <a href="/privacy" target="_blank" rel="noopener noreferrer">Informativa privacy</a> · <a href="/termini" target="_blank" rel="noopener noreferrer">Termini</a>.</p>
                     <label>Ruolo AI
                         <select id="aiMode">
                             <option value="master" ${sessionState.aiMode === 'master' ? 'selected' : ''}>Master</option>
@@ -504,13 +518,7 @@ export async function showSession(container, sessionId, options = {}) {
                     </div>
                     <button type="button" class="dnd-panel-close" id="closeSessionChat" aria-label="Chiudi chat">X</button>
                 </header>
-                <details class="session-prep-log"><summary>📜 Appunti della sessione</summary>
-                    ${renderPrepText('Obiettivi', sessionData.data?.objectives)}
-                    ${renderPrepText('Recap', sessionData.data?.recap)}
-                    ${renderPrepText('Agganci', sessionData.data?.hooks)}
-                    ${renderPrepText('PNG', sessionData.data?.npcs)}
-                    ${renderPrepText('Tesori', sessionData.data?.loot)}
-                </details>
+                ${prepPanel}
                 <div id="chat-msgs" class="dnd-chat-messages"></div>
                 <form id="chatForm" class="dnd-chat-form">
                     <input id="chat-input" type="text" aria-label="Messaggio al party" placeholder="Scrivi al party... usa @oracolo per chiedere aiuto">
@@ -926,12 +934,12 @@ export async function showSession(container, sessionId, options = {}) {
                     sessionState.weather = ['clear', 'rain', 'storm', 'snow', 'mist'].includes(nextData.weather) ? nextData.weather : 'clear';
                     sessionState.gridVisible = nextData.gridVisible !== false;
                     sessionState.map_grid_size = Number(nextData.map_grid_size || sessionState.map_grid_size || 50);
-                    sessionState.live_notes = nextData.live_notes || '';
+                    sessionState.live_notes = readOnlyMode ? '' : (nextData.live_notes || '');
                     sessionState.scene = nextData.scene || '';
                     sessionState.public_summary = nextData.public_summary || '';
                     sessionState.objective_done = Boolean(nextData.objective_done);
-                    sessionState.aiMode = nextData.ai?.mode || sessionState.aiMode || 'master';
-                    sessionState.aiAutoReply = Boolean(nextData.ai?.autoReply);
+                    sessionState.aiMode = readOnlyMode ? 'master' : (nextData.ai?.mode || sessionState.aiMode || 'master');
+                    sessionState.aiAutoReply = readOnlyMode ? false : Boolean(nextData.ai?.autoReply);
                     syncSessionControls();
     };
     let platformPoll = null, platformPolling = false;
@@ -945,8 +953,26 @@ export async function showSession(container, sessionId, options = {}) {
         }catch(error){console.warn('Aggiornamento tavolo non disponibile:',error);}
         finally{platformPolling=false;}
     },2500);
+    // Gli invitati non hanno SELECT sulla tabella (le note del Master restano
+    // private): ricevono gli aggiornamenti dalla RPC filtrata, non da Realtime.
+    let sharedPoll = null, sharedPolling = false;
+    if (options.sharedInvite && readOnlyMode) sharedPoll = setInterval(async () => {
+        if (sharedPolling || sessionDisposed) return;
+        sharedPolling = true;
+        try {
+            const { data, error } = await supabase.rpc('get_shared_dnd_session', { p_session_id: sessionId });
+            if (sessionDisposed) return;
+            if (error) throw error;
+            if (!data) { cleanupSessionView(); container.textContent = 'Collegamento terminato. Chiedi un nuovo invito al Master.'; return; }
+            if (container.isConnected) applySharedSession(data);
+        } catch (error) {
+            console.warn('Aggiornamento tavolo condiviso non disponibile:', error);
+        } finally {
+            sharedPolling = false;
+        }
+    }, 2500);
     let sessionSubscription = null;
-    if (!localMode) {
+    if (!localMode && !readOnlyMode) {
         try {
             sessionSubscription = supabase.channel(`dnd-session-${sessionId}`)
                 .on('postgres_changes', {
@@ -1015,6 +1041,7 @@ export async function showSession(container, sessionId, options = {}) {
         sessionDisposed=true;
         clearInterval(chatPoll);
         clearInterval(platformPoll);
+        clearInterval(sharedPoll);
         toolbarObserver.disconnect();
         window.__dndMapApi?.cleanup();
         if (chatSubscription && supabase.removeChannel) supabase.removeChannel(chatSubscription);

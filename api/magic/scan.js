@@ -1,8 +1,9 @@
 import {authorizeOracle} from '../_lib/oracleAccess.js';
 import { callGroqVision } from '../_lib/groq.js';
-import { methodNotAllowed, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
+import { methodNotAllowed, publicErrorMessage, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
 
 export default async function handler(request, response) {
+    response.setHeader('Cache-Control', 'no-store');
     if (request.method !== 'POST') return methodNotAllowed(response);
     try {
         const body = await readJsonBody(request, 4 * 1024 * 1024);
@@ -15,6 +16,6 @@ export default async function handler(request, response) {
         return sendJson(response, 200, { ok: true, cards: result.cards, provider: 'groq', model: result.model, usage: result.usage });
     } catch (error) {
         if (error.statusCode === 429) response.setHeader('Retry-After', String(Math.ceil((error.retryAfterMs || 5000) / 1000)));
-        return sendJson(response, error.statusCode || 500, { ok: false, code: error.code || 'magic_scan_failed', error: error.message || 'Scansione non riuscita.', retryAfterMs: error.retryAfterMs || undefined });
+        return sendJson(response, error.statusCode || 500, { ok: false, code: error.code || 'magic_scan_failed', error: publicErrorMessage(error, 'Scansione non riuscita.'), retryAfterMs: error.retryAfterMs || undefined });
     }
 }

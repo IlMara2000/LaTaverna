@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase.js';
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validatePassword } from '../../../services/passwordPolicy.js';
 import { showLogin } from './Login.js';
 
 export function showRegister(container) {
@@ -10,10 +11,16 @@ export function showRegister(container) {
             <form id="register-form" style="display: flex; flex-direction: column; gap: 15px;">
                 <input type="text" id="reg-username" placeholder="Nome Viandante" required class="auth-input">
                 <input type="email" id="reg-email" placeholder="Email" required class="auth-input">
-                <input type="password" id="reg-password" placeholder="Password (min. 6)" required minlength="6" class="auth-input">
-                <div style="display:flex; align-items:center; gap:12px; margin: 10px 0; font-size:12px; opacity:0.8;">
-                    <input type="checkbox" id="gdpr-check" style="width:18px; height:18px; accent-color: var(--amethyst-bright);">
-                    <label for="gdpr-check">Accetto i Termini della Taverna</label>
+                <input type="password" id="reg-password" placeholder="Password (min. 10, lettera e numero)" required minlength="${PASSWORD_MIN_LENGTH}" maxlength="${PASSWORD_MAX_LENGTH}" autocomplete="new-password" class="auth-input">
+                <div style="display:flex; flex-direction:column; gap:10px; margin: 10px 0; font-size:12px; opacity:0.85; line-height:1.5;">
+                    <label for="gdpr-check" style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                        <input type="checkbox" id="gdpr-check" style="width:18px; height:18px; margin-top:2px; accent-color: var(--amethyst-bright); flex:0 0 auto;">
+                        <span>Accetto i <a href="/termini" target="_blank" rel="noopener noreferrer" style="color:var(--amethyst-bright);">Termini</a> e l’<a href="/privacy" target="_blank" rel="noopener noreferrer" style="color:var(--amethyst-bright);">Informativa privacy</a>.</span>
+                    </label>
+                    <label for="age-check" style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
+                        <input type="checkbox" id="age-check" style="width:18px; height:18px; margin-top:2px; accent-color: var(--amethyst-bright); flex:0 0 auto;">
+                        <span>Dichiaro di avere almeno 14 anni o il consenso di chi esercita la responsabilità genitoriale.</span>
+                    </label>
                 </div>
                 <button type="submit" class="btn-primary" id="reg-submit" disabled style="opacity:0.5; margin-top: 10px;">EVOCA IL TUO NOME</button>
             </form>
@@ -26,12 +33,16 @@ export function showRegister(container) {
     const form = container.querySelector('#register-form');
     const msg = container.querySelector('#reg-msg');
     const checkbox = container.querySelector('#gdpr-check');
+    const ageCheckbox = container.querySelector('#age-check');
     const submitBtn = container.querySelector('#reg-submit');
-
-    checkbox.onchange = () => {
-        submitBtn.disabled = !checkbox.checked;
-        submitBtn.style.opacity = checkbox.checked ? "1" : "0.5";
+    const syncSubmit = () => {
+        const ready = checkbox.checked && ageCheckbox.checked;
+        submitBtn.disabled = !ready;
+        submitBtn.style.opacity = ready ? "1" : "0.5";
     };
+
+    checkbox.onchange = syncSubmit;
+    ageCheckbox.onchange = syncSubmit;
 
     form.onsubmit = async (e) => {
         e.preventDefault();
@@ -39,6 +50,17 @@ export function showRegister(container) {
         const email = container.querySelector('#reg-email').value.trim();
         const password = container.querySelector('#reg-password').value;
 
+        if (!checkbox.checked || !ageCheckbox.checked) {
+            msg.textContent = 'Conferma i Termini, l’Informativa privacy e l’età per continuare.';
+            msg.style.color = 'var(--error-red)';
+            return;
+        }
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+            msg.textContent = passwordError;
+            msg.style.color = 'var(--error-red)';
+            return;
+        }
         submitBtn.disabled = true;
         submitBtn.textContent = 'CREAZIONE...';
         submitBtn.style.opacity = '0.7';
@@ -49,7 +71,11 @@ export function showRegister(container) {
                 email,
                 password,
                 options: {
-                    data: { full_name: username },
+                    data: {
+                        full_name: username,
+                        terms_accepted_at: new Date().toISOString(),
+                        age_14_confirmed: true
+                    },
                     emailRedirectTo: window.location.origin
                 }
             });
@@ -66,9 +92,8 @@ export function showRegister(container) {
             msg.textContent = err.message;
             msg.style.color = "var(--error-red)";
         } finally {
-            submitBtn.disabled = !checkbox.checked;
+            syncSubmit();
             submitBtn.textContent = 'EVOCA IL TUO NOME';
-            submitBtn.style.opacity = checkbox.checked ? '1' : '0.5';
         }
     };
 

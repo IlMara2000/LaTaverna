@@ -219,7 +219,8 @@ export async function scanMagicDocument(file, onProgress = () => {}) {
         return parsed.cards;
     }
     if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-        const pdf = await getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+        // Nessun eval: compatibile con la CSP script-src 'self'.
+        const pdf = await getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
         if (pdf.numPages > 30) throw new Error('Il PDF supera il limite di 30 pagine per scansione.');
         let text = '';
         for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
@@ -236,9 +237,17 @@ export async function scanMagicDocument(file, onProgress = () => {}) {
             return groqScan({ text: text.slice(0, 24000) }, onProgress);
         }
         onProgress('Leggo localmente i titoli delle carte…');
-        const worker = await createWorker('eng');
         const all = [];
+        let worker = null;
         try {
+            // Asset OCR serviti dal nostro dominio: nessun CDN esterno, quindi
+            // nessuna richiesta a terzi e compatibilità con la CSP.
+            worker = await createWorker('eng', 1, {
+                workerPath: '/ocr/worker.min.js',
+                corePath: '/ocr/tesseract-core-lstm.wasm.js',
+                langPath: '/ocr',
+                gzip: true
+            });
             for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
                 onProgress(`Riconosco i nomi nella pagina ${pageNo} di ${pdf.numPages}…`);
                 const page = await pdf.getPage(pageNo), viewport = page.getViewport({ scale: 2 });
@@ -246,8 +255,12 @@ export async function scanMagicDocument(file, onProgress = () => {}) {
                 await page.render({ canvas, viewport }).promise;
                 all.push(...await extractProxySheetNames(canvas, worker));
             }
+        } catch (error) {
+            // Se il browser non supporta il core locale, resta disponibile la
+            // scansione AI già dichiarata nell'informativa.
+            console.warn('OCR locale non disponibile:', error);
         } finally {
-            await worker.terminate();
+            await worker?.terminate();
         }
         if (all.length) {
             const unique = new Map();

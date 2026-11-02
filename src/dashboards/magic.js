@@ -120,7 +120,7 @@ export function showMagicDashboard(container, options = {}) {
         const cardMap = byId();
         const deckCards = activeDeck ? activeDeck.cards.map(entry => ({ ...cardMap.get(String(entry.cardId)), quantity: entry.quantity })).filter(card => card.id) : [];
         container.innerHTML = `<main class="magic-page magic-viewer">
-          <div class="mv-platform-tools"><button type="button" data-mtcg-tool="mtcg">← MTCG</button><button type="button" data-mtcg-tool="cardCounter">Segnapunti</button><button type="button" data-mtcg-tool="proxyPrinter">MTG Proxy Printer</button></div><header class="mv-heading"><div><span class="mv-eyebrow">LA TAVERNA · ARCHIVIO MAGIC</span><h1>Le tue carte</h1><p>Cerca, consulta e organizza la tua raccolta.</p></div></header>
+          <div class="mv-platform-tools"><button type="button" data-mtcg-tool="mtcg">← MTCG</button><button type="button" data-mtcg-tool="cardCounter">Segnapunti</button><button type="button" data-mtcg-tool="proxyPrinter">MTG Proxy Printer</button></div><header class="mv-heading"><div><span class="mv-eyebrow">LA TAVERNA · ARCHIVIO MAGIC</span><h1>Le tue carte</h1><p>Cerca, consulta e organizza la tua raccolta.</p><p class="legal-inline-note">Magic: The Gathering è un marchio di Wizards of the Coast. Dati e immagini da Scryfall; nessuna affiliazione.</p></div></header>
           <nav class="mv-tabs" aria-label="Sezioni Magic">
             <button type="button" data-tab="collezione" aria-selected="${tab==='collezione'}">Collezione <span>${cards.length}</span></button>
             <button type="button" data-tab="mazzi" aria-selected="${tab==='mazzi'}">Mazzi <span>${decks.length}</span></button>
@@ -323,6 +323,6 @@ export function showMagicDashboard(container, options = {}) {
 
 function renderShare(container, share) {
     window.__magicCleanup?.();
-    container.innerHTML='<main class="magic-page magic-viewer"><header class="mv-heading"><div><span class="mv-eyebrow">LA TAVERNA · CONDIVISIONE</span><h1>Carte Magic</h1><p>Carico le carte condivise…</p></div></header><section id="mv-shared" class="mv-panel"></section></main>';
+    container.innerHTML='<main class="magic-page magic-viewer"><header class="mv-heading"><div><span class="mv-eyebrow">LA TAVERNA · CONDIVISIONE</span><h1>Carte Magic</h1><p>Carico le carte condivise…</p><p class="legal-inline-note">Magic: The Gathering è un marchio di Wizards of the Coast. Dati e immagini da Scryfall; nessuna affiliazione.</p></div></header><section id="mv-shared" class="mv-panel"></section></main>';
     void loadPublicMagicShare(share).then(data=>{const root=container.querySelector('#mv-shared');if(!root)return;root.innerHTML=`<h2>${esc(data.name||'Collezione condivisa')}</h2><div class="mv-grid">${(data.cards||[]).map(card=>`<article class="mv-card"><span class="mv-art">${card.image?`<img src="${esc(card.image)}" alt="${esc(card.name)}">`:''}</span><strong>${esc(card.name)}</strong><small>×${card.quantity}</small></article>`).join('')}</div>`;}).catch(error=>{const root=container.querySelector('#mv-shared');if(root)root.textContent=error.message;});
 }

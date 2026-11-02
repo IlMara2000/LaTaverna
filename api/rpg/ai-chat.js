@@ -1,8 +1,9 @@
 import { callOracle } from '../_lib/oracle.js';
 import { authorizeOracle } from '../_lib/oracleAccess.js';
-import { methodNotAllowed, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
+import { methodNotAllowed, publicErrorMessage, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
 
 export default async function handler(request, response) {
+    response.setHeader('Cache-Control', 'no-store');
     if (request.method !== 'POST') return methodNotAllowed(response, ['POST']);
 
     try {
@@ -36,7 +37,7 @@ export default async function handler(request, response) {
         return sendJson(response, status, {
             ok: false,
             code: error.code || 'ai_chat_failed',
-            error: error.message || 'Errore AI.'
+            error: publicErrorMessage(error, 'Errore AI.')
         });
     }
 }

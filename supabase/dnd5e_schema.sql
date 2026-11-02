@@ -248,12 +248,9 @@ for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+-- Gli invitati leggono solo la RPC filtrata get_shared_dnd_session:
+-- una policy SELECT sulla tabella esporrebbe anche le note private del Master.
 drop policy if exists "dnd_sessions_guest_read" on public.dnd_sessions;
-create policy "dnd_sessions_guest_read"
-on public.dnd_sessions
-for select
-to authenticated
-using (public.is_dnd_session_guest(dnd_sessions.id));
 
 drop policy if exists "dnd_tokens_session_owner_all" on public.dnd_tokens;
 create policy "dnd_tokens_session_owner_all"
@@ -451,11 +448,14 @@ insert into storage.buckets (id, name, public)
 values ('vtt_assets', 'vtt_assets', true)
 on conflict (id) do update set public = true;
 
+-- Le mappe sono raggiungibili via URL pubblico; solo il proprietario può
+-- elencare i file dal pannello Storage.
 drop policy if exists "vtt_assets_public_read" on storage.objects;
-create policy "vtt_assets_public_read"
+drop policy if exists vtt_assets_owner_read on storage.objects;
+create policy vtt_assets_owner_read
 on storage.objects
-for select
-using (bucket_id = 'vtt_assets');
+for select to authenticated
+using (bucket_id = 'vtt_assets' and owner_id = (select auth.uid())::text);
 
 -- Uploaded public maps remain publicly readable; only their uploader may mutate.
 drop policy if exists vtt_assets_owner_write on storage.objects;

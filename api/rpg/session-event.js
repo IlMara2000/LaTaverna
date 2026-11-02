@@ -1,6 +1,6 @@
 import { callOracle } from '../_lib/oracle.js';
 import { authorizeOracle } from '../_lib/oracleAccess.js';
-import { methodNotAllowed, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
+import { methodNotAllowed, publicErrorMessage, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
 
 const eventPrompt = (eventType = '', context = {}) => {
     const sessionName = context?.session?.name || 'la sessione';
@@ -18,6 +18,7 @@ const eventPrompt = (eventType = '', context = {}) => {
 };
 
 export default async function handler(request, response) {
+    response.setHeader('Cache-Control', 'no-store');
     if (request.method !== 'POST') return methodNotAllowed(response, ['POST']);
 
     try {
@@ -51,7 +52,7 @@ export default async function handler(request, response) {
         return sendJson(response, status, {
             ok: false,
             code: error.code || 'session_event_failed',
-            error: error.message || 'Evento AI non gestito.'
+            error: publicErrorMessage(error, 'Evento AI non gestito.')
         });
     }
 }

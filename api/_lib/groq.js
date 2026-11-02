@@ -52,7 +52,17 @@ export const callGroqVision = async ({ images = [], text = '' }) => {
             : messageDelay
                 ? Math.min(86400000, Number(messageDelay[1]) * ({ ms: 1, s: 1000, m: 60000 })[messageDelay[2].toLowerCase()])
                 : null;
-        throw Object.assign(new Error(message), { statusCode: response.status, code: data?.error?.code || 'groq_error', retryAfterMs });
+        // I dettagli del provider restano nei log: al client va un messaggio
+        // stabile senza chiavi, quote o parametri interni.
+        const statusCode = response.status === 429 ? 429 : 502;
+        throw Object.assign(new Error(statusCode === 429
+            ? 'Troppe richieste di scansione. Riprova tra poco.'
+            : 'Scansione non disponibile. Riprova più tardi.'), {
+            statusCode,
+            code: data?.error?.code || 'groq_error',
+            retryAfterMs,
+            providerMessage: message
+        });
     }
     let parsed;
     try { parsed = JSON.parse(data?.choices?.[0]?.message?.content || '{}'); }
@@ -72,7 +82,16 @@ export const translateMagicOracle = async ({ name, typeLine, text }) => {
         ] })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw Object.assign(new Error(data?.error?.message || `Groq non disponibile (${response.status}).`), { statusCode: response.status, code: data?.error?.code || 'groq_error' });
+    if (!response.ok) {
+        const statusCode = response.status === 429 ? 429 : 502;
+        throw Object.assign(new Error(statusCode === 429
+            ? 'Troppe traduzioni. Riprova tra poco.'
+            : 'Traduzione non disponibile. Riprova più tardi.'), {
+            statusCode,
+            code: data?.error?.code || 'groq_error',
+            providerMessage: data?.error?.message || `Groq ${response.status}`
+        });
+    }
     const translation = sanitizeText(data?.choices?.[0]?.message?.content || '', 3000);
     if (!translation) throw Object.assign(new Error('Traduzione non disponibile.'), { statusCode: 502, code: 'empty_translation' });
     return { translation, model: config.model, usage: data?.usage || null };
@@ -140,9 +159,15 @@ export const callGroqChat = async ({ prompt, mode = 'master', systemId = 'dnd5e'
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const error = new Error(data?.error?.message || `Groq non disponibile (${response.status}).`);
-        error.statusCode = response.status;
+        // Non riversare al browser i dettagli del provider (chiavi, limiti,
+        // parametri): restano nel log server, il client riceve un testo stabile.
+        const statusCode = response.status === 429 ? 429 : 502;
+        const error = new Error(statusCode === 429
+            ? 'L’Oracolo è molto richiesto. Riprova tra poco.'
+            : 'L’Oracolo non è disponibile. Riprova più tardi.');
+        error.statusCode = statusCode;
         error.code = data?.error?.code || 'groq_error';
+        error.providerMessage = data?.error?.message || `Groq ${response.status}`;
         throw error;
     }
 

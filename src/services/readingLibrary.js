@@ -103,7 +103,10 @@ export function createReadingLibrary(client) {
 
         async setVisibility(bookId, isPublic, userId) {
             await account(userId);
-            const { data } = await checked(client.from('reading_books').update({ is_public: isPublic === true })
+            const payload = isPublic === true
+                ? { is_public: true, rights_confirmed_at: new Date().toISOString() }
+                : { is_public: false };
+            const { data } = await checked(client.from('reading_books').update(payload)
                 .eq('id', bookId).eq('owner_id', userId).select().single());
             return data;
         },

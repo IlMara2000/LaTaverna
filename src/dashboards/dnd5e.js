@@ -3,7 +3,6 @@ import {navigateTo} from '../services/appNavigation.js';
 import {recordActivity} from '../services/communityMetrics.js';
 import { renderHomeBackButton } from '../components/ui/BackButton.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
-import { renderManualLibrary } from '../components/features/manuals/ManualLibrary.js';
 import { renderDndTools } from '../components/features/tools/DndTools.js';
 import { showLobby } from '../lobby.js';
 import { supabase, SUPABASE_CONFIG } from '../services/supabase.js';
@@ -16,46 +15,6 @@ const TABLES = {
 };
 const STORAGE = {
     maps: SUPABASE_CONFIG?.buckets?.zaino || 'vtt_assets'
-};
-
-const MANUALS = [
-    {
-        id: 'player',
-        title: 'Manuale del Giocatore',
-        tag: 'Creazione personaggi, classi, razze, regole base',
-        slug: 'Giocatore',
-        pages: 321,
-        filePageOffset: 0
-    },
-    {
-        id: 'master',
-        title: 'Guida del Dungeon Master',
-        tag: 'Sessioni, incontri, tesori, regole avanzate',
-        slug: 'DM',
-        pages: 320,
-        filePageOffset: 0
-    },
-    {
-        id: 'monsters',
-        title: 'Manuale dei Mostri',
-        tag: 'Creature, GS, statistiche e incontri',
-        slug: 'Mostri',
-        pages: 353,
-        filePageOffset: 0
-    }
-];
-
-const MANUAL_PAGE_WINDOW_SIZE = 10;
-const getManualIndexedPages = (manual) => Math.max(1, manual.indexedPages || (manual.pages - Math.max(0, manual.filePageOffset || 0)));
-const clampManualPage = (manual, page = 1) => Math.min(getManualIndexedPages(manual), Math.max(1, Number(page) || 1));
-const getManualFilePage = (manual, page = 1) => Math.min(manual.pages, Math.max(1, clampManualPage(manual, page) + (manual.filePageOffset || 0)));
-const getManualPageUrl = (manual, page = 1) => `/manuals/${manual.slug}/${manual.slug}-${getManualFilePage(manual, page)}.pdf`;
-const getManualEmbedUrl = (manual, page = 1) => `${getManualPageUrl(manual, page)}#toolbar=0&navpanes=0&scrollbar=0&view=Fit&zoom=page-fit`;
-const getManualFullUrl = (manual) => `/manuals/${manual.slug}/${manual.slug}.pdf`;
-const getManualIndexNote = (manual, page = 1) => {
-    const manualPage = clampManualPage(manual, page);
-    const filePage = getManualFilePage(manual, manualPage);
-    return filePage === manualPage ? 'Numerazione allineata al manuale' : `Pagina manuale ${manualPage} -> PDF ${filePage}`;
 };
 
 const escapeHTML = (value = '') => String(value)
@@ -241,6 +200,10 @@ const buildSessionPayload = (form, user, mapUrlOverride = null) => {
 async function uploadSessionMapFile(form, user) {
     const file = form.get('map_file');
     if (!(file instanceof File) || !file.name || file.size === 0) return null;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        throw new Error('La mappa deve essere JPG, PNG o WebP.');
+    }
+    if (file.size > 8 * 1024 * 1024) throw new Error('La mappa supera il limite di 8 MB.');
 
     const safeName = file.name
         .normalize('NFKD')
@@ -381,7 +344,8 @@ function renderShell(container, activeView = 'overview') {
                 <div>
                     <p class="dnd-kicker">Sistema D&D 5e</p>
                     <h1>Dungeons <span>& Dragons</span></h1>
-                    <p>Manuali, personaggi, sessioni live e strumenti rapidi per giocatori e Master.</p>
+                    <p>Personaggi, sessioni live e strumenti rapidi per giocatori e Master.</p>
+                    <p class="legal-inline-note">D&amp;D è un marchio di Wizards of the Coast. La Taverna non è affiliata. Non distribuiamo manuali ufficiali: stiamo integrando contenuti con licenza.</p>
                 </div>
                 <svg class="dnd-hero-die" viewBox="0 0 120 132" aria-hidden="true" focusable="false">
                     <path class="die-shell" d="M60 4 112 34 112 96 60 128 8 96 8 34Z"/>
@@ -398,7 +362,6 @@ function renderShell(container, activeView = 'overview') {
             <nav class="dnd-tabs" aria-label="Sezioni D&D">
                 <button class="${activeView === 'overview' ? 'active' : ''}" data-dnd-view="overview">Dashboard</button>
                 <button class="${activeView === 'sessions' ? 'active' : ''}" data-dnd-view="sessions">Sessioni</button>
-                <button class="${activeView === 'manuals' ? 'active' : ''}" data-dnd-view="manuals">Manuali</button>
                 <button class="${activeView === 'characters' ? 'active' : ''}" data-dnd-view="characters">Personaggi</button>
                 <button class="${activeView === 'tools' ? 'active' : ''}" data-dnd-view="tools">Strumenti</button>
             </nav>
@@ -413,7 +376,6 @@ function renderShell(container, activeView = 'overview') {
         btn.onclick = () => {
             const view = btn.dataset.dndView;
             if (view === 'overview') renderDashboard(container);
-            if (view === 'manuals') renderManuals(container);
             if (view === 'characters') renderCharacters(container);
             if (view === 'sessions') renderSessions(container);
             if (view === 'tools') renderTools(container);
@@ -431,11 +393,6 @@ function renderDashboard(container) {
                 <strong>Sessioni</strong>
                 <p>Crea campagne, entra al tavolo, usa mappa, dadi, token e chat.</p>
             </button>
-            <button class="dnd-panel" data-open="manuals">
-                <span>Biblioteca</span>
-                <strong>Biblioteca dei Manuali</strong>
-                <p>Cerca regole e paragrafi nei tre manuali, oppure consulta ogni pagina.</p>
-            </button>
             <button class="dnd-panel" data-open="characters">
                 <span>Schede</span>
                 <strong>Personaggi completi</strong>
@@ -450,18 +407,8 @@ function renderDashboard(container) {
     `;
 
     content.querySelector('[data-open="sessions"]').onclick = () => renderSessions(container);
-    content.querySelector('[data-open="manuals"]').onclick = () => renderManuals(container);
     content.querySelector('[data-open="characters"]').onclick = () => renderCharacters(container);
     content.querySelector('[data-open="tools"]').onclick = () => renderTools(container);
-}
-
-function renderManuals(container) {
-    renderShell(container, 'manuals');
-    renderManualLibrary({
-        container: container.querySelector('#dnd-content'),
-        manuals: MANUALS,
-        systemId: 'dnd5e'
-    });
 }
 
 function renderTools(container) {
@@ -499,251 +446,6 @@ function renderTools(container) {
             });
         }
     });
-}
-
-function renderLegacyManuals(container) {
-    renderShell(container, 'manuals');
-    const content = container.querySelector('#dnd-content');
-    let selectedManual = MANUALS[0];
-    let selectedPage = 1;
-    const pageWindowSize = MANUAL_PAGE_WINDOW_SIZE;
-    let windowStart = 1;
-    const clampPage = (page, manual = selectedManual) => clampManualPage(manual, page);
-    const manualPageTotal = () => getManualIndexedPages(selectedManual);
-    const maxWindowStart = () => Math.max(1, manualPageTotal() - pageWindowSize + 1);
-    const pageWindowEnd = () => Math.min(manualPageTotal(), windowStart + pageWindowSize - 1);
-    const visiblePages = () => Array.from(
-        { length: pageWindowEnd() - windowStart + 1 },
-        (_, index) => windowStart + index
-    );
-
-    content.innerHTML = `
-        <section class="dnd-section-head">
-            <h2>Biblioteca dei Manuali</h2>
-            <p>Sfoglia il manuale come un libro: i numeri qui sotto corrispondono alle pagine reali del manuale e ogni blocco mostra massimo ${pageWindowSize} pagine.</p>
-        </section>
-
-        <div class="dnd-manual-layout">
-            <aside class="dnd-manual-list">
-                ${MANUALS.map((manual, index) => `
-                    <button class="dnd-manual-card ${index === 0 ? 'active' : ''}" data-manual="${manual.id}">
-                        <strong>${manual.title}</strong>
-                        <span>${manual.tag}</span>
-                        <small>${getManualIndexedPages(manual)} pagine</small>
-                    </button>
-                `).join('')}
-            </aside>
-            <section class="dnd-manual-viewer glass-box">
-                <div class="dnd-manual-toolbar">
-                    <div class="dnd-manual-title">
-                        <span>Manuale</span>
-                        <strong id="manualTitle">${selectedManual.title}</strong>
-                        <small id="manualRange">Pagine reali 1-${pageWindowEnd()} di ${manualPageTotal()}</small>
-                        <small id="manualIndexNote" class="dnd-manual-index-note" hidden>${getManualIndexNote(selectedManual, selectedPage)}</small>
-                    </div>
-                    <div class="dnd-manual-controls">
-                        <button type="button" id="manualPrevBlock">Indietro ${pageWindowSize}</button>
-                        <label>
-                            <span>Vai a pagina</span>
-                            <input id="manualPage" type="number" min="1" max="${manualPageTotal()}" value="${selectedPage}">
-                        </label>
-                        <span id="manualTotal">di ${manualPageTotal()}</span>
-                        <button type="button" id="manualGoPage">VAI</button>
-                        <button type="button" id="manualNextBlock">Avanti ${pageWindowSize}</button>
-                        <a id="manualOpen" href="${getManualPageUrl(selectedManual, selectedPage)}" target="_blank" rel="noreferrer">APRILA PAGINA</a>
-                        <a id="manualOpenFull" href="${getManualFullUrl(selectedManual)}" target="_blank" rel="noreferrer">PDF COMPLETO</a>
-                    </div>
-                </div>
-                <div class="dnd-manual-page-strip" id="manualPageStrip" aria-label="Indice pagine visibili"></div>
-                <div class="dnd-manual-reader" id="manualReader"></div>
-            </section>
-        </div>
-        <div class="dnd-manual-modal" id="manualPageModal" aria-hidden="true">
-            <button type="button" class="dnd-manual-modal-backdrop" data-close-manual-page aria-label="Chiudi pagina"></button>
-            <section class="dnd-manual-modal-panel" role="dialog" aria-modal="true" aria-labelledby="manualModalTitle">
-                <header>
-                    <strong id="manualModalTitle">${selectedManual.title} - Pagina ${selectedPage}</strong>
-                    <div>
-                        <a id="manualModalOpen" href="${getManualPageUrl(selectedManual, selectedPage)}" target="_blank" rel="noreferrer">Apri PDF</a>
-                        <button type="button" data-close-manual-page>Chiudi</button>
-                    </div>
-                </header>
-                <iframe id="manualModalFrame" title="${escapeHTML(selectedManual.title)} - pagina ${selectedPage}" src=""></iframe>
-            </section>
-        </div>
-    `;
-
-    document.querySelectorAll('body > .dnd-manual-modal').forEach(modal => modal.remove());
-    const manualModalRoot = content.querySelector('#manualPageModal');
-    if (manualModalRoot) document.body.appendChild(manualModalRoot);
-
-    const renderPageFrame = (page) => {
-        const pageUrl = getManualPageUrl(selectedManual, page);
-        return `
-        <a class="dnd-manual-page ${page === selectedPage ? 'active' : ''}" data-page-card="${page}" href="${escapeHTML(pageUrl)}" target="_blank" rel="noreferrer" aria-label="Apri pagina ${page} di ${escapeHTML(selectedManual.title)}">
-            <span class="dnd-manual-card-head">
-                <span>
-                    <span class="dnd-manual-card-kicker">Pagina reale</span>
-                    <strong>Pagina ${page}</strong>
-                </span>
-                <span class="dnd-manual-open-badge">Leggi</span>
-            </span>
-            <span class="dnd-manual-preview">
-                <span class="dnd-manual-preview-fallback">Pagina ${page}</span>
-                <iframe class="dnd-manual-preview-frame" width="100%" height="420" title="${escapeHTML(selectedManual.title)} - anteprima pagina ${page}" src="${escapeHTML(getManualEmbedUrl(selectedManual, page))}"></iframe>
-            </span>
-        </a>
-    `;
-    };
-
-    const closeManualPageModal = () => {
-        const modal = document.querySelector('#manualPageModal');
-        const frame = document.querySelector('#manualModalFrame');
-        modal?.classList.remove('active');
-        modal?.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('dnd-manual-modal-open');
-        if (frame) frame.src = '';
-    };
-
-    const openManualPageModal = (page) => {
-        selectedPage = clampPage(page);
-        syncSelectedManualPage();
-        const modal = document.querySelector('#manualPageModal');
-        const frame = document.querySelector('#manualModalFrame');
-        const title = document.querySelector('#manualModalTitle');
-        const openLink = document.querySelector('#manualModalOpen');
-        const pageUrl = getManualPageUrl(selectedManual, selectedPage);
-        if (!modal || !frame || !title || !openLink) return;
-        title.textContent = `${selectedManual.title} - Pagina ${selectedPage}`;
-        frame.title = `${selectedManual.title} - pagina ${selectedPage}`;
-        frame.src = getManualEmbedUrl(selectedManual, selectedPage);
-        openLink.href = pageUrl;
-        modal.classList.add('active');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('dnd-manual-modal-open');
-    };
-
-    const animateReaderTurn = () => {
-        const reader = content.querySelector('#manualReader');
-        if (!reader) return;
-        reader.classList.remove('is-turning');
-        void reader.offsetWidth;
-        reader.classList.add('is-turning');
-        window.setTimeout(() => reader.classList.remove('is-turning'), 520);
-    };
-
-    const syncSelectedManualPage = (scrollToCard = false) => {
-        const pageInput = content.querySelector('#manualPage');
-        const reader = content.querySelector('#manualReader');
-        const strip = content.querySelector('#manualPageStrip');
-        if (!pageInput || !reader || !strip) return;
-        pageInput.value = selectedPage;
-        content.querySelector('#manualOpen').href = getManualPageUrl(selectedManual, selectedPage);
-        content.querySelector('#manualIndexNote').textContent = getManualIndexNote(selectedManual, selectedPage);
-        reader.querySelectorAll('[data-page-card]').forEach(item => {
-            item.classList.toggle('active', Number(item.dataset.pageCard) === selectedPage);
-        });
-        strip.querySelectorAll('[data-page-chip]').forEach(item => {
-            item.classList.toggle('active', Number(item.dataset.pageChip) === selectedPage);
-        });
-        if (scrollToCard) {
-            reader.querySelector(`[data-page-card="${selectedPage}"]`)?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'nearest',
-                inline: 'center'
-            });
-            animateReaderTurn();
-        }
-    };
-
-    const syncManualViewer = (resetScroll = false) => {
-        const pageInput = content.querySelector('#manualPage');
-        const pageTotal = manualPageTotal();
-        content.querySelector('#manualTitle').textContent = selectedManual.title;
-        content.querySelector('#manualTotal').textContent = `di ${pageTotal}`;
-        content.querySelector('#manualRange').textContent = `Pagine reali ${windowStart}-${pageWindowEnd()} di ${pageTotal}`;
-        content.querySelector('#manualIndexNote').textContent = getManualIndexNote(selectedManual, selectedPage);
-        pageInput.max = pageTotal;
-        pageInput.value = selectedPage;
-        content.querySelector('#manualOpen').href = getManualPageUrl(selectedManual, selectedPage);
-        content.querySelector('#manualOpenFull').href = getManualFullUrl(selectedManual);
-        const strip = content.querySelector('#manualPageStrip');
-        strip.innerHTML = visiblePages().map(page => `
-            <button type="button" class="dnd-manual-page-chip ${page === selectedPage ? 'active' : ''}" data-page-chip="${page}">
-                ${page}
-            </button>
-        `).join('');
-        strip.querySelectorAll('[data-page-chip]').forEach(chip => {
-            chip.onclick = () => {
-                selectedPage = clampPage(chip.dataset.pageChip);
-                syncSelectedManualPage(true);
-            };
-        });
-        const reader = content.querySelector('#manualReader');
-        reader.innerHTML = visiblePages().map(page => renderPageFrame(page)).join('');
-        if (resetScroll) {
-            reader.scrollTop = 0;
-            reader.scrollLeft = 0;
-        } else {
-            requestAnimationFrame(() => {
-                reader.querySelector(`[data-page-card="${selectedPage}"]`)?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
-            });
-        }
-        reader.querySelectorAll('[data-page-card]').forEach(card => {
-            card.onclick = event => {
-                event.preventDefault();
-                openManualPageModal(card.dataset.pageCard);
-            };
-        });
-        animateReaderTurn();
-    };
-
-    const setManualPage = (page, centerWindow = true) => {
-        selectedPage = clampPage(page);
-        if (centerWindow || selectedPage < windowStart || selectedPage > pageWindowEnd()) {
-            windowStart = Math.min(
-                Math.max(1, selectedPage - Math.floor(pageWindowSize / 2)),
-                maxWindowStart()
-            );
-        }
-        syncManualViewer(centerWindow);
-    };
-
-    content.querySelectorAll('[data-manual]').forEach(btn => {
-        btn.onclick = () => {
-            const manual = MANUALS.find(item => item.id === btn.dataset.manual);
-            selectedManual = manual;
-            selectedPage = 1;
-            windowStart = 1;
-            content.querySelectorAll('[data-manual]').forEach(item => item.classList.remove('active'));
-            btn.classList.add('active');
-            syncManualViewer(true);
-        };
-    });
-
-    content.querySelector('#manualPrevBlock').onclick = () => {
-        windowStart = Math.max(1, windowStart - pageWindowSize);
-        selectedPage = windowStart;
-        syncManualViewer(true);
-    };
-    content.querySelector('#manualNextBlock').onclick = () => {
-        windowStart = Math.min(maxWindowStart(), windowStart + pageWindowSize);
-        selectedPage = windowStart;
-        syncManualViewer(true);
-    };
-    content.querySelector('#manualPage').onchange = event => setManualPage(event.target.value);
-    content.querySelector('#manualPage').onkeydown = event => {
-        if (event.key === 'Enter') setManualPage(event.target.value);
-    };
-    content.querySelector('#manualGoPage').onclick = () => setManualPage(content.querySelector('#manualPage').value);
-    document.querySelectorAll('#manualPageModal [data-close-manual-page]').forEach(button => {
-        button.onclick = closeManualPageModal;
-    });
-    syncManualViewer();
 }
 
 async function renderCharacters(container) {
@@ -1198,8 +900,8 @@ function renderSessionEditor(container, user, session) {
                 <label class="dnd-check-inline">Griglia visibile<input name="gridVisible" type="checkbox" ${data.gridVisible !== false ? 'checked' : ''}></label>
                 <label class="dnd-map-upload">
                     File mappa opzionale
-                    <input name="map_file" type="file" accept="image/*,application/pdf,.pdf,.png,.jpg,.jpeg,.webp,.gif">
-                    <span>Puoi caricare PDF, JPG, PNG, WEBP o GIF. Se carichi un file, sostituisce l'URL mappa.</span>
+                    <input name="map_file" type="file" accept="image/jpeg,image/png,image/webp">
+                    <span>Carica JPG, PNG o WebP fino a 8 MB. Se carichi un file, sostituisce l'URL mappa. I PDF restano utilizzabili solo tramite URL.</span>
                 </label>
                 </div>
             </section>
@@ -1230,6 +932,7 @@ function renderSessionEditor(container, user, session) {
                 uploadedMapUrl = await uploadSessionMapFile(form, user);
             } catch (uploadErr) {
                 console.warn('Upload mappa non riuscito, salvo comunque la sessione:', uploadErr);
+                alert(`Mappa non caricata: ${uploadErr.message}`);
             }
             const result = await saveSessionRow(session, form, user, uploadedMapUrl);
             if (result.error) throw result.error;

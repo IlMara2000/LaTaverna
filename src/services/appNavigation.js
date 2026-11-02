@@ -80,7 +80,13 @@ export async function navigateTo(destination, container = document.getElementByI
         artisanShop: { label: 'la Bottega', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
         profile: { label: 'il profilo', deferred: true, load: () => import('../components/features/user/Profile.js'), render: (module, context) => module.showProfile(container, options.user || null, context) },
         settings: { label: 'le impostazioni', deferred: true, load: () => import('../components/features/user/Settings.js'), render: (module, context) => module.showSettings(container, options.user || null, context) },
-        music: { label: 'la libreria musicale', deferred: true, load: () => import('../components/ui/AudioManager.js'), render: (module, context) => module.AudioManager.showMusicCenter(container, context) }
+        music: { label: 'la libreria musicale', deferred: true, load: () => import('../components/ui/AudioManager.js'), render: (module, context) => module.AudioManager.showMusicCenter(container, context) },
+        privacy: { label: 'la privacy', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'privacy') },
+        terms: { label: 'i termini', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'terms') },
+        cookies: { label: 'cookie e terzi', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'cookies') },
+        community: { label: 'il regolamento community', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'community') },
+        seller: { label: 'le condizioni Bottega', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'seller') },
+        takedown: { label: 'la segnalazione contenuti', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'takedown') }
     };
     const route = routes[destination];
     if (!route) return false;

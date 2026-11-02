@@ -47,7 +47,7 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - Minigiochi: Briscola, Scopa, Solitario, Solo, Impostore, Burraco, Scacchi, Numeri, Tic Tac Toe e Blocchi Arcani.
 - Briscola e Scopa usano 40 carte da poker: A, 2, 3, 4, 5, 6, 7, J, Q, K di cuori, quadri, fiori e picche. Nella Scopa i quadri sostituiscono i denari e il settebello è il 7 di quadri.
 - Solitario Klondike con mazzo da poker completo di 52 carte e pesca di una carta alla volta.
-- D&D 5e: Biblioteca dei Manuali con ricerca OCR, filtri per parte/capitolo/argomento, sintesi AI basata sulle fonti, lettore pagina per pagina, personaggi e sessioni.
+- D&D 5e: personaggi, sessioni, dadi, token, mappe e strumenti del tavolo. Non distribuiamo copie non autorizzate di manuali; la Biblioteca personale accetta solo PDF caricati dall'utente con dichiarazione dei diritti, mentre la Bacheca pubblica resta riservata a opere autorizzate.
 - AI di sessione: bot testuale in chat, attivabile con `@oracolo` (anche `@oste`) o dal pannello Oracolo del tavolo, servito da function Vercel e Groq.
 - Libreria musicale con playlist tematiche e upload file audio locale.
 - Lettura: upload di PDF privati, consenso esplicito alla pubblicazione in Bacheca, elenco alfabetico con ricerca per titolo/autore, lettore PDF, preferiti e raccolte salvati per account.
@@ -79,26 +79,31 @@ GROQ_LLM_MAX_TOKENS=420
 
 Non usare chiavi Groq con prefisso `VITE_` in produzione: le variabili `VITE_*` vengono incluse nel bundle browser.
 
+## Documenti legali
+
+Le pagine `/privacy`, `/termini`, `/cookie`, `/community`, `/bottega/condizioni` e `/segnala` sono generate da `src/data/legal.js` e `src/components/features/legal/Legal.js`. Prima del lancio sostituisci i segnaposto del titolare (ragione sociale, indirizzo, P.IVA, PEC) e fai validare i testi da un legale/DPO. L'avviso in pagina compare solo in sviluppo; la build di produzione non lo espone, ma i dati vanno comunque completati.
+
+Il checkout della Bottega richiede l'accettazione delle condizioni di vendita e l'informativa privacy. La registrazione richiede Termini, privacy e conferma dell'età minima di 14 anni. L'email di contatto per gli ordini è configurabile con `VITE_SHOP_EMAIL` (default `ordini@lataverna.xyz`).
+
 ## Comandi
 
 ```bash
 npm run dev
 npm run build
 npm run preview
-npm run index:manuals
 ```
 
-`npm run lint` e al momento un placeholder del progetto.
+`npm run lint` è al momento un placeholder del progetto.
 
-## Indice dei manuali
+## Biblioteca dei manuali e copyright
 
-I PDF sono scansioni, quindi la ricerca usa indici OCR statici in `public/manual-index/`. Quando aggiungi o sostituisci pagine, rigenera gli indici su macOS con Swift, Vision e PDFKit:
+La vecchia raccolta di scansioni e l'indice OCR sono stati rimossi dal repository e dal build. Non pubblicare manuali, carte o altri contenuti senza una licenza che autorizzi la distribuzione. Per una nuova biblioteca usa esclusivamente SRD 5.1/5.2 (CC BY), materiale originale o contenuti con permesso scritto del titolare, e documenta la fonte accanto a ogni opera.
 
-```bash
-npm run index:manuals:dnd
-```
+Non sono presenti script di indicizzazione o copie locali dei manuali. Per una nuova biblioteca usa esclusivamente l’upload privato della sezione Lettura e pubblica solo opere di cui possiedi i diritti.
 
-L'applicazione distribuita usa solo i JSON generati e non richiede OCR lato server o lato browser.
+## OCR locale
+
+La lettura dei PDF scansionati usa Tesseract nel browser con asset serviti dal nostro dominio (`public/ocr`, licenze Apache-2.0 documentate nella cartella). Nessun CDN esterno e nessuna CSP permissiva: servono solo `worker-src blob:`, `'wasm-unsafe-eval'` e il fetch same-origin del modello `eng`. Se l'OCR non parte, la scansione passa al fallback AI già dichiarato nell'informativa.
 
 ## Community e Oracolo
 

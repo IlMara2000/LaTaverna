@@ -16,11 +16,12 @@ import { renderTavernEntrance } from './components/features/auth/TavernEntrance.
 import { initLogin } from './components/features/auth/Login.js';
 import { initNavbar } from './components/layout/Navbar.js';
 import { showLobby } from './lobby.js';
-import { shouldShowPortalButton, updateLastAccess } from './components/ui/AuthInput.js';
+import { updateLastAccess } from './components/ui/AuthInput.js';
 import { loadAndApplyProfileAppearance } from './services/profileAppearance.js';
 import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './services/appPreferences.js';
 import { getSessionInviteFromUrl, joinSessionInvite } from './services/sessionInvites.js';
 import { initMotionPreferences, playLoaderExit } from './services/motionSystem.js';
+import './services/standalone.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
@@ -30,7 +31,6 @@ const cleanupMotionPreferences = initMotionPreferences();
 if (import.meta.hot) import.meta.hot.dispose(cleanupMotionPreferences);
 
 const uiContainer = document.getElementById('ui');
-const SERVER_INVITE = "https://discord.gg/9BqNgdqC";
 const isAnonymousUser = (user) => Boolean(user?.is_anonymous || user?.app_metadata?.provider === 'anonymous');
 
 async function initApp() {
@@ -61,6 +61,7 @@ async function initApp() {
         }
 
         const guestUser = JSON.parse(localStorage.getItem('taverna_guest_user'));
+
         const publicDestination = destinationFromPath(location.pathname);
         if (publicDestination) {
             initializeNavigation(user || guestUser || { isGuest: true });
@@ -69,13 +70,11 @@ async function initApp() {
         }
         
         // 3. LOGICA DI REDIRECT
-        const isVerifiedDiscord = user && localStorage.getItem('taverna_member_verified') === 'true';
-        
-        if ((isVerifiedDiscord && !shouldShowPortalButton()) || isAnonymousUser(user) || guestUser) {
+        if (user || guestUser) {
             renderDashboard(user || guestUser);
         } else {
             // Altrimenti mostra il Portale d'ingresso
-            renderPortal(user);
+            renderPortal(null);
         }
 
     } catch (err) {
@@ -92,43 +91,9 @@ function renderPortal(user) {
     const appContainer = document.getElementById('app');
     
     renderTavernEntrance(appContainer, () => {
-        if (user) checkAccess(user, appContainer);
+        if (user) renderDashboard(user);
         else initLogin(appContainer);
     });
-}
-
-function checkAccess(user, container) {
-    const isVerified = localStorage.getItem('taverna_member_verified') === 'true';
-    if (isVerified || isAnonymousUser(user)) {
-        updateLastAccess();
-        renderDashboard(user);
-    } else {
-        container.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100dvh; text-align: center; padding: 30px; animation: fadeInUp 0.5s ease-out;">
-                <h2 class="main-title" style="font-size: 2.2rem; margin-bottom: 5px;">QUASI CI SEI! ⚔️</h2>
-                <p style="opacity: 0.6; font-size: 13px; margin-bottom: 40px; letter-spacing: 1px; line-height: 1.6;">
-                    Unisciti al Server Discord per sbloccare l'accesso completo alla Taverna.
-                </p>
-                
-                <a href="${SERVER_INVITE}" target="_blank" class="game-card" style="background: #5865F2; border: none; padding: 20px 40px; text-decoration: none; width: 100%; max-width: 300px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(88, 101, 242, 0.3);">
-                    <span style="color: white; font-weight: 900; font-size: 1.1rem; font-family: 'Montserrat', sans-serif;">UNISCITI ORA</span>
-                </a>
-                
-                <button id="verify-btn" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white; padding: 15px 30px; border-radius: 16px; cursor:pointer; font-size: 11px; font-weight: 800; letter-spacing: 2px; transition: 0.3s;">
-                    SONO GIÀ DENTRO
-                </button>
-            </div>
-        `;
-        
-        document.getElementById('verify-btn').onclick = (e) => {
-            e.target.style.background = 'var(--amethyst-bright)';
-            e.target.style.borderColor = 'var(--amethyst-bright)';
-            setTimeout(() => {
-                localStorage.setItem('taverna_member_verified', 'true');
-                window.location.reload();
-            }, 300);
-        };
-    }
 }
 
 function initializeNavigation(user) {
@@ -140,7 +105,6 @@ function initializeNavigation(user) {
             await supabase.auth.signOut();
         } else {
             await supabase.auth.signOut();
-            localStorage.removeItem('taverna_member_verified');
         }
         window.location.reload();
     });
@@ -148,6 +112,7 @@ function initializeNavigation(user) {
 }
 
 function renderDashboard(user) {
+    updateLastAccess();
     const appContainer = document.getElementById('app');
     loadAndApplyProfileAppearance(user).catch(err => console.warn('Tema profilo non applicato:', err));
     loadAndApplyAppPreferences().catch(err => console.warn('Preferenze app non sincronizzate:', err));

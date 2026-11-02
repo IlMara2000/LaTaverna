@@ -86,6 +86,13 @@ export function showLobby(container) {
                     <button type="button" id="hub-oracle">L’ORACOLO</button>
                 </nav>
                 <p class="taverna-home-footer"><span aria-hidden="true">✦</span> Le storie più belle si giocano insieme.</p>
+                <nav class="taverna-legal-links" aria-label="Informazioni legali">
+                    <a href="/privacy">Privacy</a><span aria-hidden="true">·</span>
+                    <a href="/termini">Termini</a><span aria-hidden="true">·</span>
+                    <a href="/cookie">Cookie e terzi</a><span aria-hidden="true">·</span>
+                    <a href="/community">Community</a><span aria-hidden="true">·</span>
+                    <a href="/segnala">Segnala contenuto</a>
+                </nav>
             </div>
         </div>
     `;

@@ -2,6 +2,7 @@ import { renderHomeBackButton } from '../../ui/BackButton.js';
 import { navigateTo } from '../../../services/appNavigation.js';
 import { supabase } from '../../../services/supabase.js';
 import { applyProfileAppearance } from '../../../services/profileAppearance.js';
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validatePassword } from '../../../services/passwordPolicy.js';
 import {
     loadAndApplyAppPreferences,
     resetAppPreferences,
@@ -139,6 +140,7 @@ export async function showSettings(container, user = null, navigation = null) {
                     <button type="button" data-settings-tab="experience">ESPERIENZA</button>
                     <button type="button" data-settings-tab="tabletop">TAVOLO GDR</button>
                     <button type="button" data-settings-tab="device">DISPOSITIVO</button>
+                    <button type="button" data-settings-tab="privacy">PRIVACY E DATI</button>
                 </nav>
 
                 <main class="settings-panels">
@@ -294,6 +296,45 @@ export async function showSettings(container, user = null, navigation = null) {
                             <small>Preferenze sincronizzate con Supabase e disponibili anche nella cache locale.</small>
                         </div>
                     </section>
+
+                    <section class="settings-panel" data-settings-panel="privacy" hidden>
+                        <div class="settings-section-heading">
+                            <h2>PRIVACY E DATI</h2>
+                            <p>Esporta o elimina i dati associati al tuo account.</p>
+                        </div>
+                        ${supabaseUser?.is_anonymous ? '' : `
+                        <div class="settings-group">
+                            <p class="settings-note"><strong>Password</strong><br>Minimo ${PASSWORD_MIN_LENGTH} caratteri, con almeno una lettera e un numero. Se non ricordi la password, esci e usa “Password dimenticata?” nella schermata di accesso.</p>
+                            <form id="passwordForm" class="settings-form">
+                                <div class="settings-field-grid">
+                                    <label>
+                                        <span>Nuova password</span>
+                                        <input type="password" id="newPassword" minlength="${PASSWORD_MIN_LENGTH}" maxlength="${PASSWORD_MAX_LENGTH}" autocomplete="new-password" required>
+                                    </label>
+                                    <label>
+                                        <span>Conferma password</span>
+                                        <input type="password" id="confirmPassword" minlength="${PASSWORD_MIN_LENGTH}" maxlength="${PASSWORD_MAX_LENGTH}" autocomplete="new-password" required>
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn-primary settings-save">CAMBIA PASSWORD</button>
+                            </form>
+                        </div>`}
+                        <div class="settings-group settings-actions-list">
+                            ${optionRow({
+                                title: 'Esporta i miei dati',
+                                description: 'Scarica un file JSON con profilo, preferenze, personaggi, sessioni, biblioteca, collezioni e ordini.',
+                                control: '<button id="exportMyData" class="settings-inline-button" type="button">ESPORTA</button>'
+                            })}
+                            ${optionRow({
+                                title: 'Elimina account',
+                                description: 'Rimuove account, profilo, contenuti e file. Gli ordini restano per gli obblighi contabili e la gestione di eventuali contestazioni, con i soli dati necessari.',
+                                control: '<button id="deleteAccount" class="settings-inline-button danger" type="button">ELIMINA</button>'
+                            })}
+                        </div>
+                        <div class="settings-group">
+                            <p class="settings-note">Documenti: <a href="/privacy">Privacy</a> · <a href="/termini">Termini</a> · <a href="/cookie">Cookie e terzi</a> · <a href="/community">Community</a> · <a href="/segnala">Segnala contenuto</a>.</p>
+                        </div>
+                    </section>
                 </main>
             </div>
 
@@ -431,6 +472,158 @@ export async function showSettings(container, user = null, navigation = null) {
         container.querySelector('#weatherEffects').checked = values['tabletop.weather_effects'];
         container.querySelector('#snapToGrid').checked = values['tabletop.snap_to_grid'];
         showStatus(error ? `Ripristino locale completato. Sync non riuscita: ${error.message}` : 'Preferenze ripristinate.', Boolean(error));
+    };
+
+    const downloadJson = (name, data) => {
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+
+    const collectRows = async (table, column = 'user_id') => {
+        const { data, error } = await supabase.from(table).select('*').eq(column, supabaseUser.id);
+        if (error) throw new Error(`${table}: ${error.message}`);
+        return data || [];
+    };
+
+    const exportMyData = async () => {
+        if (!supabaseUser?.id) throw new Error('Account non disponibile.');
+        const uid = supabaseUser.id;
+        const [profile, preferences, characters, sessions, books, favorites, collections, collectionBooks, magicCollections, magicDecks, wantlist, tcgCards, orders, activity] = await Promise.all([
+            supabase.from('user_profiles').select('*').eq('user_id', uid).maybeSingle().then(({ data, error }) => {
+                if (error) throw new Error(`user_profiles: ${error.message}`);
+                return data || null;
+            }),
+            collectRows('user_preferences'),
+            collectRows('characters'),
+            collectRows('dnd_sessions'),
+            collectRows('reading_books', 'owner_id'),
+            collectRows('reading_favorites'),
+            collectRows('reading_collections'),
+            collectRows('reading_collection_books'),
+            collectRows('magic_collections'),
+            collectRows('magic_decks'),
+            collectRows('magic_wantlist_cards'),
+            collectRows('tcg_cards'),
+            collectRows('shop_orders'),
+            collectRows('community_activity')
+        ]);
+
+        const sessionIds = sessions.map(item => item.id);
+        const collectionIds = magicCollections.map(item => item.id);
+        const deckIds = magicDecks.map(item => item.id);
+
+        const related = async (table, column, ids) => {
+            if (!ids.length) return [];
+            const { data, error } = await supabase.from(table).select('*').in(column, ids);
+            if (error) throw new Error(`${table}: ${error.message}`);
+            return data || [];
+        };
+
+        const [tokens, chat, sentChat, controlledTokens, guests, collectionCards, deckCards] = await Promise.all([
+            related('dnd_tokens', 'session_id', sessionIds),
+            related('dnd_chat', 'session_id', sessionIds),
+            // Messaggi e pedine anche nei tavoli a cui partecipi senza essere il Master.
+            collectRows('dnd_chat', 'sender_id'),
+            collectRows('dnd_tokens', 'controller_id'),
+            collectRows('dnd_session_guests'),
+            related('magic_collection_cards', 'collection_id', collectionIds),
+            related('magic_deck_cards', 'deck_id', deckIds)
+        ]);
+
+        downloadJson(`la-taverna-dati-${new Date().toISOString().slice(0, 10)}.json`, {
+            exported_at: new Date().toISOString(),
+            account: {
+                id: supabaseUser.id,
+                email: supabaseUser.email || null,
+                created_at: supabaseUser.created_at || null,
+                last_sign_in_at: supabaseUser.last_sign_in_at || null,
+                user_metadata: supabaseUser.user_metadata || {}
+            },
+            profile, preferences, characters, sessions, tokens, chat, sentChat, controlledTokens, guests,
+            reading: { books, favorites, collections, collectionBooks },
+            magic: { collections: magicCollections, collectionCards, decks: magicDecks, deckCards, wantlist },
+            cards: tcgCards,
+            orders, activity
+        });
+    };
+
+    const deleteAccount = async () => {
+        if (!supabaseUser?.id) throw new Error('Account non disponibile.');
+        const answer = window.prompt('Questa operazione è irreversibile. Scrivi ELIMINA per confermare.');
+        if (answer !== 'ELIMINA') {
+            showStatus('Eliminazione annullata.');
+            return;
+        }
+        showStatus('Eliminazione in corso…');
+        const uid = supabaseUser.id;
+
+        const { data: books } = await supabase.from('reading_books').select('storage_path').eq('owner_id', uid);
+        const paths = (books || []).map(item => item.storage_path).filter(Boolean);
+        if (paths.length) await supabase.storage.from('reading_books').remove(paths);
+
+        const assets = [];
+        for (let offset = 0; ; offset += 100) {
+            const { data, error } = await supabase.storage.from('vtt_assets').list(uid, { limit: 100, offset });
+            if (error) throw error;
+            assets.push(...(data || []));
+            if (!data || data.length < 100) break;
+        }
+        if (assets.length) {
+            await supabase.storage.from('vtt_assets').remove(assets.map(item => `${uid}/${item.name}`));
+        }
+
+        const { error } = await supabase.rpc('delete_my_account');
+        if (error) throw error;
+        try { await supabase.auth.signOut(); } catch { /* sessione già invalidata */ }
+        window.location.href = '/';
+    };
+
+    const passwordForm = container.querySelector('#passwordForm');
+    if (passwordForm) {
+        passwordForm.onsubmit = async (event) => {
+            event.preventDefault();
+            const nextPassword = container.querySelector('#newPassword').value;
+            const confirmPassword = container.querySelector('#confirmPassword').value;
+            const policyError = validatePassword(nextPassword);
+            if (policyError) return showStatus(policyError, true);
+            if (nextPassword !== confirmPassword) return showStatus('Le due password non coincidono.', true);
+            const submit = passwordForm.querySelector('button[type="submit"]');
+            submit.disabled = true;
+            try {
+                const { error } = await supabase.auth.updateUser({ password: nextPassword });
+                if (error) throw error;
+                passwordForm.reset();
+                showStatus('Password aggiornata.');
+            } catch (error) {
+                showStatus(`Password non aggiornata: ${error.message}`, true);
+            } finally {
+                submit.disabled = false;
+            }
+        };
+    }
+
+    container.querySelector('#exportMyData').onclick = async () => {
+        try {
+            await exportMyData();
+            showStatus('Esportazione pronta.');
+        } catch (error) {
+            showStatus(`Esportazione non riuscita: ${error.message}`, true);
+        }
+    };
+
+    container.querySelector('#deleteAccount').onclick = async () => {
+        try {
+            await deleteAccount();
+        } catch (error) {
+            showStatus(`Eliminazione non riuscita: ${error.message}`, true);
+        }
     };
 
     container.querySelector('#settingsBack').onclick = () => navigateTo('home', container);

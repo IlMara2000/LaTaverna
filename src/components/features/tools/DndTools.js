@@ -20,36 +20,16 @@ import {
 } from './dndToolEngine.js';
 
 const STORAGE_KEY = 'taverna_dnd_tools_v1';
-const INDEX_CACHE = new Map();
-
-const MANUALS = {
-    player: { id: 'player', title: 'Manuale del Giocatore', slug: 'Giocatore' },
-    master: { id: 'master', title: 'Guida del Dungeon Master', slug: 'DM' },
-    monsters: { id: 'monsters', title: 'Manuale dei Mostri', slug: 'Mostri' }
-};
 
 const TOOL_CARDS = [
     { id: 'dungeon', glyph: '▦', eyebrow: 'Mappe', title: 'Officina dei dungeon', description: 'Mappe con seed, stanze, porte, scale e appunti. Esporta o prepara una sessione.', tags: 'donjon dungeon mappa generatore stanze corridoi' },
     { id: 'donjon', glyph: '↗', eyebrow: 'Risorse esterne', title: 'Catalogo Donjon', description: 'Strumenti ufficiali per mondi, città, nomi, meteo, calendari e altri sistemi.', tags: 'donjon generatore nomi png npc città mondo meteo calendario avventure negozi' },
-    { id: 'reference', glyph: '⌕', eyebrow: 'Consultazione', title: 'Archivio rapido', description: 'Liste filtrate, ricerca e scheda dettaglio con fonte PDF.', tags: 'regole incantesimi classi creature oggetti condizioni ricerca' },
     { id: 'abilities', glyph: '✦', eyebrow: 'Personaggi', title: 'Caratteristiche', description: '4d6 scarta il minore, serie standard e point buy da 27 punti.', tags: 'stat generator punteggi personaggio dadi point buy' },
     { id: 'encounter', glyph: '⚔', eyebrow: 'Master', title: 'Costruttore incontri', description: 'Party, mostri, PE modificati e difficoltà calcolata in tempo reale.', tags: 'encounter builder combattimento mostri esperienza difficoltà' },
     { id: 'challenge', glyph: '⬡', eyebrow: 'Creature', title: 'Calcolatore GS', description: 'Stima GS difensivo e offensivo da PF, CA, danni e precisione.', tags: 'cr calculator grado sfida mostro statistiche' },
     { id: 'loot', glyph: '◆', eyebrow: 'Ricompense', title: 'Generatore bottino', description: 'Tesori rapidi per fascia di livello, ricchezza e rarità.', tags: 'loot tesoro monete oggetti ricompense' },
     { id: 'initiative', glyph: '➜', eyebrow: 'Combattimento', title: 'Iniziativa', description: 'Ordine dei turni, round, condizioni e punti ferita locali.', tags: 'initiative tracker turni round combattimento' },
     { id: 'screen', glyph: '▦', eyebrow: 'Master', title: 'Schermo del Master', description: 'Promemoria personalizzabili e riferimenti rapidi al tavolo.', tags: 'dm screen regole cd copertura concentrazione azioni' }
-];
-
-const REFERENCE_CATEGORIES = [
-    { id: 'all', label: 'Tutto', ranges: [] },
-    { id: 'classes', label: 'Classi', ranges: [['player', 45, 120]] },
-    { id: 'species', label: 'Razze', ranges: [['player', 17, 43]] },
-    { id: 'backgrounds', label: 'Background', ranges: [['player', 125, 142]] },
-    { id: 'spells', label: 'Incantesimi', ranges: [['player', 201, 289]] },
-    { id: 'items', label: 'Oggetti', ranges: [['player', 143, 171], ['master', 133, 232]] },
-    { id: 'creatures', label: 'Creature', ranges: [['monsters', 1, 353]] },
-    { id: 'rules', label: 'Regole', ranges: [['player', 173, 200], ['master', 235, 289]] },
-    { id: 'conditions', label: 'Condizioni', ranges: [['player', 290, 292]] }
 ];
 
 const DM_WIDGETS = [
@@ -59,7 +39,6 @@ const DM_WIDGETS = [
         title: 'CD rapide',
         lead: 'Una scala pronta per improvvisare prove senza fermare la scena.',
         rows: [['Molto facile', '5'], ['Facile', '10'], ['Media', '15'], ['Difficile', '20'], ['Molto difficile', '25'], ['Quasi impossibile', '30']],
-        source: ['master', 238]
     },
     {
         id: 'cover',
@@ -67,7 +46,6 @@ const DM_WIDGETS = [
         title: 'Copertura',
         lead: 'La copertura modifica CA e tiri salvezza su Destrezza.',
         rows: [['Mezza', '+2'], ['Tre quarti', '+5'], ['Totale', 'Non bersagliabile direttamente']],
-        source: ['player', 196]
     },
     {
         id: 'concentration',
@@ -75,7 +53,6 @@ const DM_WIDGETS = [
         title: 'Concentrazione',
         lead: 'Dopo il danno: TS Costituzione con CD 10 o metà del danno, scegliendo il valore più alto.',
         rows: [['Incantesimi attivi', 'Uno alla volta'], ['Incapacitato', 'Termina'], ['Nuova concentrazione', 'Sostituisce la precedente']],
-        source: ['player', 203]
     },
     {
         id: 'actions',
@@ -83,16 +60,13 @@ const DM_WIDGETS = [
         title: 'Azioni del turno',
         lead: 'Le opzioni più comuni quando un giocatore non sa cosa fare.',
         tags: ['Attacco', 'Aiuto', 'Cercare', 'Disimpegno', 'Nascondersi', 'Prepararsi', 'Scatto', 'Schivata', 'Usare un oggetto'],
-        source: ['player', 192]
     },
     {
         id: 'conditions',
         category: 'Regole',
         title: 'Condizioni',
-        lead: 'Apri una condizione nell’Archivio rapido per trovare il testo completo.',
-        tags: ['Accecato', 'Affascinato', 'Afferrato', 'Avvelenato', 'Incapacitato', 'Invisibile', 'Paralizzato', 'Prono', 'Spaventato', 'Stordito', 'Trattenuto'],
-        source: ['player', 290],
-        searchable: true
+        lead: 'Promemoria delle condizioni più comuni, da verificare con il regolamento che usi al tavolo.',
+        tags: ['Accecato', 'Affascinato', 'Afferrato', 'Avvelenato', 'Incapacitato', 'Invisibile', 'Paralizzato', 'Prono', 'Spaventato', 'Stordito', 'Trattenuto']
     },
     {
         id: 'rests',
@@ -100,7 +74,6 @@ const DM_WIDGETS = [
         title: 'Riposi',
         lead: 'Segna il passaggio del tempo e le risorse recuperate dalla compagnia.',
         rows: [['Riposo breve', 'Almeno 1 ora'], ['Riposo lungo', 'Almeno 8 ore'], ['Dadi Vita', 'Spendibili nel breve']],
-        source: ['player', 186]
     },
     {
         id: 'death',
@@ -108,7 +81,6 @@ const DM_WIDGETS = [
         title: 'Morte e stabilità',
         lead: 'A 0 PF si seguono i tiri salvezza contro morte finché il personaggio non si stabilizza.',
         rows: [['3 successi', 'Stabile'], ['3 fallimenti', 'Morte'], ['20 naturale', 'Recupera 1 PF'], ['1 naturale', 'Due fallimenti']],
-        source: ['player', 197]
     },
     {
         id: 'travel',
@@ -116,7 +88,6 @@ const DM_WIDGETS = [
         title: 'Ritmo di viaggio',
         lead: 'Il ritmo cambia velocità, percezione e possibilità di furtività.',
         rows: [['Veloce', 'Più strada, meno attenzione'], ['Normale', 'Equilibrato'], ['Lento', 'Furtività possibile']],
-        source: ['player', 182]
     }
 ];
 
@@ -143,16 +114,11 @@ const loadSavedState = () => {
     }
 };
 
-const manualPageUrl = (manualId, page) => {
-    const manual = MANUALS[manualId] || MANUALS.player;
-    return `/manuals/${manual.slug}/${manual.slug}-${Math.max(1, Number(page) || 1)}.pdf`;
-};
-
-const sourceLink = (manualId, page, label = 'Apri la fonte') => `
-    <a class="dnd-tool-source" href="${manualPageUrl(manualId, page)}" target="_blank" rel="noreferrer">
+const sourceLink = (label = 'Fonte') => `
+    <span class="dnd-tool-source">
         <span>${escapeHTML(label)}</span>
-        <small>${escapeHTML(MANUALS[manualId]?.title || 'Manuale')} · pagina ${page}</small>
-    </a>
+        <small>Contenuto originale della Taverna</small>
+    </span>
 `;
 
 const copyText = async (value) => {
@@ -170,77 +136,6 @@ const copyText = async (value) => {
         area.remove();
         return copied;
     }
-};
-
-const getPageSnippet = (text, query) => {
-    const compact = String(text || '').replace(/\s+/g, ' ').trim();
-    if (!compact) return 'Testo non riconosciuto per questa pagina.';
-    const normalized = normalizeText(compact);
-    const tokens = normalizeText(query).split(' ').filter(token => token.length > 1);
-    const positions = tokens.map(token => normalized.indexOf(token)).filter(index => index >= 0);
-    const start = Math.max(0, (positions.length ? Math.min(...positions) : 0) - 130);
-    const snippet = compact.slice(start, start + 620).trim();
-    return `${start > 0 ? '…' : ''}${snippet}${start + 620 < compact.length ? '…' : ''}`;
-};
-
-const getPageTitle = (text, query, page) => {
-    const tokens = normalizeText(query).split(' ').filter(token => token.length > 1);
-    const lines = String(text || '').split(/\n+/).map(line => line.replace(/\s+/g, ' ').trim());
-    const matching = lines.find(line => {
-        const normalized = normalizeText(line);
-        return line.length >= 4 && line.length <= 90 && tokens.some(token => normalized.includes(token));
-    });
-    return matching || `Riferimento a pagina ${page}`;
-};
-
-async function loadReferenceIndex(manualId) {
-    if (INDEX_CACHE.has(manualId)) return INDEX_CACHE.get(manualId);
-    const request = fetch(`/manual-index/dnd5e/${manualId}.json`)
-        .then(async response => {
-            if (!response.ok) throw new Error(`Indice ${MANUALS[manualId]?.title || manualId} non disponibile.`);
-            const data = await response.json();
-            return Array.isArray(data.pages) ? data.pages : [];
-        })
-        .catch(error => {
-            INDEX_CACHE.delete(manualId);
-            throw error;
-        });
-    INDEX_CACHE.set(manualId, request);
-    return request;
-}
-
-const pageMatchesCategory = (page, category) => {
-    if (!category || category.id === 'all') return true;
-    return category.ranges.some(([manualId, start, end]) => page.manualId === manualId && page.page >= start && page.page <= end);
-};
-
-const searchReferencePages = (pages, query, category, manualId) => {
-    const normalizedQuery = normalizeText(query);
-    const tokens = normalizedQuery.split(' ').filter(token => token.length > 1);
-    if (!tokens.length) return [];
-
-    return pages
-        .filter(page => (!manualId || manualId === 'all' || page.manualId === manualId) && pageMatchesCategory(page, category))
-        .map(page => {
-            const normalized = normalizeText(page.text);
-            let score = normalized.includes(normalizedQuery) ? 180 : 0;
-            let matched = 0;
-            tokens.forEach(token => {
-                const count = normalized.split(token).length - 1;
-                if (count > 0) matched += 1;
-                score += Math.min(count, 8) * (token.length >= 6 ? 10 : 6);
-            });
-            if (matched === tokens.length) score += 60;
-            return { ...page, score };
-        })
-        .filter(page => page.score > 0)
-        .sort((a, b) => b.score - a.score || a.page - b.page)
-        .slice(0, 40)
-        .map(page => ({
-            ...page,
-            title: getPageTitle(page.text, query, page.page),
-            snippet: getPageSnippet(page.text, query)
-        }));
 };
 
 const renderToolShell = ({ glyph, eyebrow, title, description, body, source = '' }) => `
@@ -272,12 +167,6 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
         ? saved.monsterRows
         : [{ id: crypto.randomUUID(), name: 'Creatura', cr: '2', count: 1 }];
     let lootResult = null;
-    let referencePages = null;
-    let referenceQuery = '';
-    let referenceCategory = 'all';
-    let referenceManual = 'all';
-    let referenceResults = [];
-    let selectedReference = null;
     let initiative = {
         round: 1,
         turn: 0,
@@ -322,7 +211,6 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
         activeTool = toolId;
         if (toolId === 'dungeon') renderDungeonWorkshop(root, { onBack: renderHub, onPrepareSession });
         if (toolId === 'donjon') renderDonjonCatalog(root, { onBack: renderHub, onOpenTool: openTool });
-        if (toolId === 'reference') renderReference();
         if (toolId === 'abilities') renderAbilities();
         if (toolId === 'encounter') renderEncounter();
         if (toolId === 'challenge') renderChallengeRating();
@@ -398,153 +286,6 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
         };
     }
 
-    async function ensureReferencePages() {
-        if (referencePages) return referencePages;
-        const pageGroups = await Promise.all(Object.keys(MANUALS).map(loadReferenceIndex));
-        referencePages = pageGroups.flat();
-        return referencePages;
-    }
-
-    function renderReference() {
-        const body = `
-            <div class="dnd-reference-layout">
-                <aside class="dnd-reference-controls">
-                    <label class="dnd-tool-field">
-                        <span>Cerca una regola o una voce</span>
-                        <input id="referenceSearch" type="search" autocomplete="off" value="${escapeHTML(referenceQuery)}" placeholder="Es. palla di fuoco, attacco furtivo, troll…">
-                    </label>
-                    <label class="dnd-tool-field">
-                        <span>Manuale</span>
-                        <select id="referenceManual">
-                            <option value="all">Tutti i manuali</option>
-                            ${Object.values(MANUALS).map(manual => `<option value="${manual.id}" ${referenceManual === manual.id ? 'selected' : ''}>${manual.title}</option>`).join('')}
-                        </select>
-                    </label>
-                    <div class="dnd-reference-filters" aria-label="Tipo di contenuto">
-                        ${REFERENCE_CATEGORIES.map(category => `<button type="button" class="${referenceCategory === category.id ? 'active' : ''}" data-reference-category="${category.id}">${category.label}</button>`).join('')}
-                    </div>
-                    <div class="dnd-reference-suggestions">
-                        <span>Prova subito</span>
-                        ${['attacco di opportunità', 'concentrazione', 'drago rosso', 'cura ferite'].map(query => `<button type="button" data-reference-suggestion="${escapeHTML(query)}">${escapeHTML(query)}</button>`).join('')}
-                    </div>
-                    <p class="dnd-reference-note">L’Archivio rapido è uno strumento autonomo: legge gli indici locali e apre direttamente la pagina PDF.</p>
-                </aside>
-                <section class="dnd-reference-browser">
-                    <div class="dnd-reference-list" id="referenceList">
-                        <div class="dnd-tool-empty"><strong>Scrivi ciò che cerchi</strong><span>Non serve conoscere il nome esatto.</span></div>
-                    </div>
-                    <article class="dnd-reference-detail" id="referenceDetail">
-                        <div class="dnd-tool-empty"><strong>Nessuna scheda selezionata</strong><span>I risultati compariranno qui con fonte e pagina.</span></div>
-                    </article>
-                </section>
-            </div>
-            <p class="dnd-tool-toast" data-tool-status role="status" aria-live="polite"></p>
-        `;
-        root.innerHTML = renderToolShell({
-            glyph: '⌕',
-            eyebrow: 'Consultazione autonoma',
-            title: 'Archivio rapido',
-            description: 'Ricerca filtrata e scheda dettaglio costruite sugli indici italiani già presenti nel sito.',
-            body
-        });
-        wireHomeButton();
-
-        const searchInput = root.querySelector('#referenceSearch');
-        const runSearch = async () => {
-            referenceQuery = searchInput.value.trim();
-            const list = root.querySelector('#referenceList');
-            if (referenceQuery.length < 2) {
-                referenceResults = [];
-                selectedReference = null;
-                list.innerHTML = '<div class="dnd-tool-empty"><strong>Scrivi almeno due caratteri</strong><span>Puoi usare una descrizione naturale.</span></div>';
-                renderReferenceDetail();
-                return;
-            }
-            list.innerHTML = '<div class="dnd-tool-loading"><i></i><span>Consulto gli indici…</span></div>';
-            try {
-                const pages = await ensureReferencePages();
-                const category = REFERENCE_CATEGORIES.find(item => item.id === referenceCategory) || REFERENCE_CATEGORIES[0];
-                referenceResults = searchReferencePages(pages, referenceQuery, category, referenceManual);
-                selectedReference = referenceResults[0] || null;
-                renderReferenceList();
-                renderReferenceDetail();
-            } catch (error) {
-                list.innerHTML = `<div class="dnd-tool-empty is-error"><strong>Indice non disponibile</strong><span>${escapeHTML(error.message)}</span></div>`;
-            }
-        };
-
-        const renderReferenceList = () => {
-            const list = root.querySelector('#referenceList');
-            if (!referenceResults.length) {
-                list.innerHTML = '<div class="dnd-tool-empty"><strong>Nessun risultato</strong><span>Prova una descrizione più generale o cambia filtro.</span></div>';
-                return;
-            }
-            list.innerHTML = `
-                <header><strong>${referenceResults.length} riferimenti</strong><span>ordinati per pertinenza</span></header>
-                ${referenceResults.map((result, index) => `
-                    <button type="button" class="${selectedReference === result ? 'active' : ''}" data-reference-index="${index}">
-                        <small>${escapeHTML(MANUALS[result.manualId]?.title || result.manualId)} · p. ${result.page}</small>
-                        <strong>${escapeHTML(result.title)}</strong>
-                        <span>${escapeHTML(result.snippet.slice(0, 130))}</span>
-                    </button>
-                `).join('')}
-            `;
-            list.querySelectorAll('[data-reference-index]').forEach(button => {
-                button.onclick = () => {
-                    selectedReference = referenceResults[Number(button.dataset.referenceIndex)] || null;
-                    renderReferenceList();
-                    renderReferenceDetail();
-                };
-            });
-        };
-
-        const renderReferenceDetail = () => {
-            const detail = root.querySelector('#referenceDetail');
-            if (!selectedReference) {
-                detail.innerHTML = '<div class="dnd-tool-empty"><strong>Nessuna scheda selezionata</strong><span>I risultati compariranno qui con fonte e pagina.</span></div>';
-                return;
-            }
-            const manual = MANUALS[selectedReference.manualId] || MANUALS.player;
-            detail.innerHTML = `
-                <span class="dnd-reference-detail-kicker">${escapeHTML(manual.title)} · pagina ${selectedReference.page}</span>
-                <h3>${escapeHTML(selectedReference.title)}</h3>
-                <p>${escapeHTML(selectedReference.snippet)}</p>
-                <div class="dnd-reference-detail-actions">
-                    <a href="${manualPageUrl(selectedReference.manualId, selectedReference.page)}" target="_blank" rel="noreferrer">APRI LA PAGINA PDF</a>
-                    <button type="button" id="copyReference">COPIA PASSAGGIO</button>
-                </div>
-            `;
-            detail.querySelector('#copyReference').onclick = async () => {
-                await copyText(`${selectedReference.title}\n${selectedReference.snippet}\n${manual.title}, pagina ${selectedReference.page}`);
-                setStatus('Passaggio copiato.');
-            };
-        };
-
-        let searchTimer = 0;
-        searchInput.oninput = () => {
-            window.clearTimeout(searchTimer);
-            searchTimer = window.setTimeout(runSearch, 220);
-        };
-        root.querySelector('#referenceManual').onchange = event => {
-            referenceManual = event.currentTarget.value;
-            runSearch();
-        };
-        root.querySelectorAll('[data-reference-category]').forEach(button => {
-            button.onclick = () => {
-                referenceCategory = button.dataset.referenceCategory;
-                root.querySelectorAll('[data-reference-category]').forEach(item => item.classList.toggle('active', item === button));
-                runSearch();
-            };
-        });
-        root.querySelectorAll('[data-reference-suggestion]').forEach(button => {
-            button.onclick = () => {
-                searchInput.value = button.dataset.referenceSuggestion;
-                runSearch();
-            };
-        });
-        if (referenceQuery) runSearch();
-    }
-
     function getAbilityScores() {
         if (abilityMode === 'roll') {
             return Object.fromEntries(ABILITIES.map(ability => [ability.id, rolledAbilities[ability.id].total]));
@@ -615,7 +356,7 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
             title: 'Caratteristiche',
             description: 'Tre metodi completi, modificatori automatici e passaggio diretto alla scheda personaggio.',
             body,
-            source: sourceLink('player', 13, 'Regola di riferimento')
+            source: sourceLink('Regola di riferimento')
         });
         wireHomeButton();
         root.querySelectorAll('[data-ability-mode]').forEach(button => {
@@ -705,7 +446,7 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
             title: 'Costruttore incontri',
             description: 'Combina livelli e GS: soglie, moltiplicatore numerico e difficoltà si aggiornano mentre scrivi.',
             body,
-            source: sourceLink('master', 82, 'Regole degli incontri')
+            source: sourceLink('Regole degli incontri')
         });
         wireHomeButton();
 
@@ -838,7 +579,7 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
             title: 'Calcolatore GS',
             description: 'Una stima trasparente: mostra separatamente GS difensivo, offensivo e risultato medio.',
             body,
-            source: sourceLink('master', 273, 'Creazione di un mostro')
+            source: sourceLink('Creazione di un mostro')
         });
         wireHomeButton();
 
@@ -889,7 +630,7 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
                     </select></label>
                     <label class="dnd-tool-check"><input name="includeMagic" type="checkbox" checked> Può contenere ricompense magiche</label>
                     <button type="submit">GENERA BOTTINO</button>
-                    <p>Il generatore produce una proposta rapida originale. Per le tabelle ufficiali complete usa il riferimento al manuale.</p>
+                    <p>Il generatore produce una proposta rapida originale. Per le tabelle ufficiali verifica sempre il regolamento che usi al tavolo.</p>
                 </form>
                 <section class="dnd-loot-result" id="lootResult">
                     <div class="dnd-loot-chest" aria-hidden="true"><i></i><b>◆</b></div>
@@ -904,7 +645,7 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
             title: 'Generatore bottino',
             description: 'Monete, preziosi, rarità e uno spunto narrativo pronti da passare alla preparazione.',
             body,
-            source: sourceLink('master', 133, 'Tabelle dei tesori')
+            source: sourceLink('Tabelle dei tesori')
         });
         wireHomeButton();
 
@@ -1068,8 +809,8 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
                         <h3>${escapeHTML(widget.title)}</h3>
                         <p>${escapeHTML(widget.lead)}</p>
                         ${widget.rows ? `<div class="dnd-dm-widget-rows">${widget.rows.map(([label, value]) => `<div><span>${escapeHTML(label)}</span><strong>${escapeHTML(value)}</strong></div>`).join('')}</div>` : ''}
-                        ${widget.tags ? `<div class="dnd-dm-widget-tags">${widget.tags.map(tag => `<button type="button" ${widget.searchable ? `data-open-reference="${escapeHTML(tag)}"` : 'disabled'}>${escapeHTML(tag)}</button>`).join('')}</div>` : ''}
-                        ${sourceLink(widget.source[0], widget.source[1], 'Fonte')}
+                        ${widget.tags ? `<div class="dnd-dm-widget-tags">${widget.tags.map(tag => `<button type="button" disabled>${escapeHTML(tag)}</button>`).join('')}</div>` : ''}
+                        ${sourceLink('Fonte')}
                     </article>
                 `).join('') : '<div class="dnd-tool-empty"><strong>Schermo vuoto</strong><span>Seleziona almeno un pannello dal menu superiore.</span></div>'}
             </div>
@@ -1096,14 +837,6 @@ export function renderDndTools({ container, onCreateCharacter, onPrepareSession 
                 pinnedWidgets = pinnedWidgets.filter(id => id !== button.dataset.unpinWidget);
                 persist();
                 renderDmScreen();
-            };
-        });
-        root.querySelectorAll('[data-open-reference]').forEach(button => {
-            button.onclick = () => {
-                referenceQuery = button.dataset.openReference;
-                referenceCategory = 'conditions';
-                referenceManual = 'player';
-                openTool('reference');
             };
         });
     }

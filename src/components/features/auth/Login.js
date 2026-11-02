@@ -52,6 +52,7 @@ function renderLoginMethods(container) {
                 <div class="auth-divider"><span>oppure</span></div>
                 <button id="login-discord" class="auth-provider" type="button">Continua con Discord</button>
                 <button id="login-guest" class="auth-guest" type="button">Esplora come ospite <span aria-hidden="true">→</span></button>
+                <p class="auth-register"><button id="forgot-password" type="button">Password dimenticata?</button></p>
                 <p class="auth-register">È la tua prima visita? <button id="show-register" type="button">Crea profilo</button></p>
                 <button id="back-to-start" class="auth-back" type="button">← Torna alla porta</button>
             </div>
@@ -81,6 +82,25 @@ function renderLoginMethods(container) {
             loginMessage.textContent = err.message || 'Accesso non riuscito.';
             emailSubmit.disabled = false;
             emailSubmit.innerText = 'ACCEDI';
+        }
+    };
+
+    // Recupero password: risposta generica per non rivelare se l'email è registrata.
+    document.getElementById('forgot-password').onclick = async () => {
+        const email = document.getElementById('login-email').value.trim();
+        if (!email) {
+            loginMessage.textContent = 'Inserisci prima la tua email, poi richiedi il recupero.';
+            document.getElementById('login-email').focus();
+            return;
+        }
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin
+            });
+            if (error) throw error;
+            loginMessage.textContent = 'Se l’indirizzo è registrato, riceverai un’email con il link per reimpostare la password.';
+        } catch {
+            loginMessage.textContent = 'Recupero non disponibile in questo momento. Riprova più tardi.';
         }
     };
 

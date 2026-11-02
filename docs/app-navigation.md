@@ -13,4 +13,4 @@ La home mantiene le illustrazioni esistenti: quattro colonne su desktop, due su 
 
 ## Pulizia locale
 
-Eliminati snapshot/log temporanei `.playwright-cli/` e i file OCR di cache `eng.traineddata`, `ita.traineddata` nella radice. Il riconoscimento browser usa Tesseract e non legge tali file dalla radice. Aggiunte esclusioni Git per impedirne la ricomparsa nei commit. Conservati dipendenze, risorse pubbliche, manuali e documentazione; conservato `output/`, che contiene anche materiali utilizzati dagli script musicali e prove del lavoro.
+Eliminati snapshot/log temporanei `.playwright-cli/` e i file OCR di cache `eng.traineddata`, `ita.traineddata` nella radice. Il riconoscimento browser usa Tesseract e non legge tali file dalla radice. Aggiunte esclusioni Git per impedirne la ricomparsa nei commit. Conservati dipendenze, risorse pubbliche e documentazione; conservato `output/`, che contiene anche materiali utilizzati dagli script musicali e prove del lavoro. Le copie dei manuali e i relativi indici sono stati rimossi.

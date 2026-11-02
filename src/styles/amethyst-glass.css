@@ -194,6 +194,10 @@ html[data-theme="amethyst"] .taverna-home-ambient { display: none; }
 #ui .taverna-home-dock .is-resume strong { font-size: 11px; }
 #ui .taverna-home-footer { display: flex; justify-content: center; align-items: center; gap: 9px; margin: 24px 0 0; color: #ad93c3; font-size: 10px; }
 #ui .taverna-home-footer span { color: #ba88e2; }
+#ui .taverna-legal-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; margin: 12px 0 0; color: #8f7aa2; font-size: 10px; letter-spacing: 0.04em; }
+#ui .taverna-legal-links a { color: #bda5cf; text-decoration: none; }
+#ui .taverna-legal-links a:hover, #ui .taverna-legal-links a:focus-visible { color: #ffffff; text-decoration: underline; }
+#ui .taverna-legal-links span { color: #6f5c7e; }
 
 /* Floating navigation and dialogs keep the same translucent material. */
 .sidebar-backdrop { position: fixed; inset: 0; z-index: 8999; border: 0; background: rgb(13 5 23 / 48%); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: crystal-enter 240ms ease-out; cursor: pointer; }
@@ -349,3 +353,6 @@ html[data-theme="amethyst"].app-high-contrast .amethyst-atmosphere { display: no
     :root[data-theme="amethyst"] { --crystal-glass: linear-gradient(135deg, #352244, #21132f); --crystal-control: #302040; }
     #ui .taverna-scene-caption { background: rgb(38 21 53 / 95%); }
 }
+#ui .sidebar-legal-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin: 4px 0 8px; }
+#ui .sidebar-legal-links a { color: #a58cb8; font-size: 9px; letter-spacing: 0.08em; text-decoration: none; padding: 3px 2px; }
+#ui .sidebar-legal-links a:hover, #ui .sidebar-legal-links a:focus-visible { color: #ffffff; text-decoration: underline; }

@@ -54,7 +54,8 @@ export function initShopCommerce(root, state, { refresh, onOrder }) {
                 <label>Consegna o ritiro<textarea name="delivery" rows="2" required minlength="2" maxlength="1000" placeholder="Indica la città di consegna oppure se preferisci il ritiro"></textarea></label>
                 <label>Note (facoltative)<textarea name="notes" rows="2" maxlength="2000" placeholder="Finitura, misure o personalizzazioni"></textarea></label>
                 <label class="commerce-check"><input name="adult" type="checkbox" required>Confermo di avere almeno 18 anni.</label>
-                <label class="commerce-check"><input name="agreement" type="checkbox" required>Invio una richiesta d’ordine. Prezzo finale, disponibilità, consegna e pagamento saranno concordati con la bottega. I dati inseriti saranno usati per gestire questa richiesta.</label>
+                <label class="commerce-check"><input name="agreement" type="checkbox" required>Invio una richiesta d’ordine e accetto le <a href="/bottega/condizioni" target="_blank" rel="noopener noreferrer">condizioni di vendita</a>. Prezzo finale, disponibilità, consegna e pagamento saranno concordati con la bottega.</label>
+                <p class="commerce-hint">I dati inseriti sono trattati per gestire la richiesta secondo l’<a href="/privacy" target="_blank" rel="noopener noreferrer">informativa privacy</a>. Nessun pagamento viene eseguito online.</p>
                 <button class="shop-primary-action" type="submit">REGISTRA ORDINE E PREPARA EMAIL →</button>
             </form>`);
             const form = dialog.querySelector('form');

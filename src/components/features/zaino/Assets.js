@@ -18,11 +18,18 @@ export async function showAssets(container) {
         </div>
     `;
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.id) {
+        container.innerHTML = '<div class="dashboard-content" style="padding:40px;text-align:center;"><p>Accedi per vedere il tuo zaino.</p></div>';
+        return;
+    }
+
     try {
-        const { data, error } = await supabase.storage.from(buckets.zaino).list();
+        // Ogni utente vede e cancella solo i file nella propria cartella.
+        const { data, error } = await supabase.storage.from(buckets.zaino).list(user.id);
         if (error) throw error;
-        files = data || [];
-    } catch (err) { 
+        files = (data || []).filter(file => file.id);
+    } catch (err) {
         console.error("Errore zaino:", err);
     }
 
@@ -40,8 +47,9 @@ export async function showAssets(container) {
 
                 <div class="glass-box" style="text-align:center; padding: 20px; border-style: dashed; border-width: 2px;">
                     <p id="uploadMsg" style="font-size: 12px; margin-bottom: 15px; opacity: 0.7;">Nuovo oggetto?</p>
-                    <input type="file" id="fileInput" style="display:none;" accept="image/*,application/pdf">
+                    <input type="file" id="fileInput" style="display:none;" accept="image/jpeg,image/png,image/webp">
                     <button id="btnUpload" class="btn-primary" style="width: 100%;">CARICA</button>
+                    <p style="font-size:10px; opacity:0.55; margin:10px 0 0;">Solo JPG, PNG o WebP · massimo 8 MB. Caricando dichiari di avere i diritti necessari e di rispettare i <a href="/termini">Termini</a>.</p>
                 </div>
 
                 <div id="assetsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
@@ -49,7 +57,7 @@ export async function showAssets(container) {
                     files.map(file => {
                         const safeName = escapeHTML(file.name);
                         const isImg = ['png','jpg','jpeg','webp'].includes(file.name.split('.').pop().toLowerCase());
-                        const url = supabase.storage.from(buckets.zaino).getPublicUrl(file.name).data.publicUrl;
+                        const url = supabase.storage.from(buckets.zaino).getPublicUrl(`${user.id}/${file.name}`).data.publicUrl;
                         return `
                             <div class="glass-box asset-card" style="padding: 10px; text-align:center;">
                                 <div style="height: 100px; background: rgba(255,255,255,0.03); border-radius: 12px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; overflow:hidden;">
@@ -73,8 +81,13 @@ export async function showAssets(container) {
             const file = e.target.files[0];
             if (!file) return;
             try {
-                const fileName = `${Math.random().toString(36).substring(7)}_${file.name}`;
-                const { error } = await supabase.storage.from(buckets.zaino).upload(fileName, file);
+                if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                    throw new Error('Carica solo immagini JPG, PNG o WebP.');
+                }
+                if (file.size > 8 * 1024 * 1024) throw new Error('L’immagine supera il limite di 8 MB.');
+                const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[file.type];
+                const fileName = `${crypto.randomUUID()}.${extension}`;
+                const { error } = await supabase.storage.from(buckets.zaino).upload(`${user.id}/${fileName}`, file, { contentType: file.type, upsert: false });
                 if (error) throw error;
                 showAssets(container);
             } catch (err) { alert(err.message); }

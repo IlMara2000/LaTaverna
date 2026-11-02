@@ -103,3 +103,6 @@
 @media (prefers-reduced-motion:no-preference) {
     #ui #app .entry-page button { transition: background 120ms ease,transform 120ms ease; }
 }
+#ui #app .legal-inline-note { margin: 10px 0 0; max-width: 70ch; color: #a996b8; font-size: 11px; line-height: 1.55; }
+#ui #app .legal-inline-note a { color: #d9b8ff; text-underline-offset: 3px; }
+#ui #app .dnd-hero .legal-inline-note { margin-top: 12px; color: #b9a6c9; }

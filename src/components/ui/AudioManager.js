@@ -19,6 +19,9 @@ const player = createMusicPlayer({ onState: state => {
         detail: { ...state, playlistKey: currentPlaylistKey, trackName: currentTrackName }
     }));
 } });
+let oracleSpeaking = false;
+let cancelOracleSpeech = () => {};
+const applyVolume = () => player.setVolume(currentVolume * (oracleSpeaking ? 0.18 : 1));
 let currentTrackIndex = 0;
 let currentPlaylistKey = 'tavern';
 let currentTrackName = 'Nessuna traccia';
@@ -44,7 +47,7 @@ function hydrateAudioPreferences() {
             currentTrackName = values['music.track'];
             isMusicEnabled = values['music.enabled'];
             currentVolume = Number(values['music.volume']);
-            player.setVolume(currentVolume);
+            applyVolume();
         }).catch(error => {
             preferencesHydration = null;
             throw error;
@@ -59,6 +62,35 @@ function persistAudioPreferences() {
 }
 
 export const AudioManager = {
+    // Speech shares the music volume and ducks the soundtrack without changing preferences.
+    speakOracle: (text) => {
+        cancelOracleSpeech();
+        return new Promise((resolve, reject) => {
+            if (!window.speechSynthesis) { reject(new Error('Voce non disponibile')); return; }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'it-IT';
+            utterance.volume = currentVolume;
+            utterance.rate = 0.95;
+            utterance.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.startsWith('it')) || null;
+            let finished = false;
+            const finish = error => {
+                if (finished) return;
+                finished = true;
+                clearTimeout(watchdog);
+                oracleSpeaking = false; applyVolume(); cancelOracleSpeech = () => {};
+                if (error) reject(error); else resolve();
+            };
+            const watchdog = setTimeout(() => {
+                window.speechSynthesis.cancel(); finish(new Error('Voce interrotta'));
+            }, Math.max(15000, text.split(/\s+/).length * 1800));
+            cancelOracleSpeech = () => { window.speechSynthesis.cancel(); finish(); };
+            utterance.onend = () => finish();
+            utterance.onerror = () => finish(new Error('Voce non disponibile'));
+            oracleSpeaking = true; applyVolume();
+            try { window.speechSynthesis.speak(utterance); } catch (error) { finish(error); }
+        });
+    },
+    cancelOracleSpeech: () => cancelOracleSpeech(),
     // Riproduzione universale
     play: (url, isPlaylist = false, meta = {}) => {
         preferenceRevision++;
@@ -69,7 +101,7 @@ export const AudioManager = {
         isMusicEnabled = true;
         void updateAppPreferences({ 'music.enabled': true }).catch(console.warn);
         persistAudioPreferences();
-        player.setVolume(currentVolume);
+        applyVolume();
         player.select(url, { loop: !isPlaylist, onEnd: () => {
             if (isPlaylistActive) AudioManager.playNext();
         } });
@@ -109,7 +141,7 @@ export const AudioManager = {
     setVolume: (volume) => {
         preferenceRevision++;
         currentVolume = Math.min(Math.max(Number(volume) || 0, 0), 1);
-        player.setVolume(currentVolume);
+        applyVolume();
         void updateAppPreferences({ 'music.volume': currentVolume }).catch(console.warn);
     },
 
@@ -264,14 +296,14 @@ window.addEventListener('appPreferencesChanged', e => {
     }
     if ('music.volume' in patch) {
         currentVolume = Math.min(1, Math.max(0, Number(patch['music.volume']) || 0));
-        player.setVolume(currentVolume);
+        applyVolume();
     }
 });
 window.addEventListener('appPreferencesLoaded', e => {
     if (preferenceRevision) return;
     isMusicEnabled = e.detail['music.enabled'];
     currentVolume = e.detail['music.volume'];
-    player.setVolume(currentVolume);
+    applyVolume();
 });
 window.addEventListener('musicUploaded', e => {
     AudioManager.play(e.detail.url, false, { playlistKey: 'tavern', trackName: e.detail.name || 'Traccia caricata' });

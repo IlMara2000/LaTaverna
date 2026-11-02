@@ -14,8 +14,7 @@ export const useAuth = () => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'discord',
             options: {
-                // 'guilds' serve per vedere se è nel tuo server
-                scopes: 'identify email guilds',
+                scopes: 'identify email',
                 redirectTo: window.location.origin 
             }
         });
@@ -30,7 +29,6 @@ export const useAuth = () => {
 
     const logout = async () => {
         await supabase.auth.signOut();
-        localStorage.removeItem('taverna_member_verified');
         window.location.href = '/';
     };
 

@@ -23,8 +23,9 @@ export async function initCharacters(container) {
                 <h1 style="font-size: 3rem; filter: drop-shadow(0 0 20px rgba(255,65,108,0.5)); margin-bottom: 10px;">💀</h1>
                 <h2 class="main-title" style="font-size: 1.8rem; background: none; -webkit-text-fill-color: #ff416c;">ACCESSO NEGATO</h2>
                 <p style="opacity:0.5; font-size: 13px; margin-bottom: 30px;">Sessione magica scaduta. Effettua di nuovo l'accesso alla Taverna.</p>
-                <button class="btn-back-glass" onclick="location.reload()">RITORNA ALLA RECEPTION</button>
+                <button class="btn-back-glass" id="charBackReload">RITORNA ALLA RECEPTION</button>
             </div>`;
+        container.querySelector('#charBackReload')?.addEventListener('click', () => location.reload());
         return;
     }
 

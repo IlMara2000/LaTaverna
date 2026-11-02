@@ -45,6 +45,15 @@ export const readJsonBody = async (request, maxBytes = MAX_BODY_BYTES) => {
     }
 };
 
+export const publicErrorMessage = (error, fallback = 'Servizio temporaneamente non disponibile.') => {
+    const status = Number(error?.statusCode || 500);
+    // I messaggi 4xx sono utili all'utente (quota, input, sessione).
+    // I dettagli dei provider e gli errori interni restano nei log server.
+    return status >= 400 && status < 500
+        ? (error?.message || fallback)
+        : fallback;
+};
+
 export const sanitizeText = (value = '', maxLength = 4000) => String(value || '')
     .replace(/\u0000/g, '')
     .trim()

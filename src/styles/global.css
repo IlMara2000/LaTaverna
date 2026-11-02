@@ -185,6 +185,13 @@
        background: #05010a;
    }
 
+   /* Home e hall giochi lasciano vedere lo sfondo unico della piattaforma
+      (vedi tavern-entrance.css); i tavoli da gioco restano opachi. */
+   #app:has(> .taverna-home),
+   #app:has(> .minigames-lobby-wrapper) {
+       background: transparent;
+   }
+
    #app:has(> .game-master-wrapper) {
        overflow: hidden !important;
    }
@@ -2057,7 +2064,7 @@
        gap: 24px;
        background:
            linear-gradient(135deg, rgba(40, 10, 60, 0.82), rgba(5, 1, 10, 0.94)),
-           url('https://www.transparenttextures.com/patterns/dark-matter.png');
+           repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 7px);
        overflow: hidden;
        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
        position: relative;
@@ -8748,7 +8755,8 @@ body.manual-page-modal-open .floating-trigger {
         radial-gradient(circle at 88% 10%, rgba(91, 33, 182, 0.2), transparent 26%),
         radial-gradient(circle at 50% 112%, rgba(157, 78, 221, 0.25), transparent 44%),
         repeating-linear-gradient(90deg, rgba(224, 170, 255, 0.018) 0 1px, transparent 1px 86px),
-        linear-gradient(180deg, #10061c 0%, #07020d 50%, #030106 100%) !important;
+        linear-gradient(180deg, rgba(16, 6, 28, 0.88) 0%, rgba(7, 2, 13, 0.93) 50%, rgba(3, 1, 6, 0.97) 100%),
+        url('/assets/entrance/interior.webp') center / cover no-repeat #05010a !important;
 }
 
 .dnd-app {

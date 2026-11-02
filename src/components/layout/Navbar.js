@@ -1,8 +1,11 @@
+import { mountOracleCompanion, stopOracleVoice } from './OracleCompanion.js';
 import { initFloatingHandle } from './floatingHandle.js';
 import { initSidebar } from './Sidebar.js'; 
 import { navigateTo } from '../../services/appNavigation.js';
 
 let disposeHandle;
+let disposeOracle;
+let sidebarStateListener;
 
 export function initNavbar(user, onLogout) {
     const navbarContainer = document.getElementById('navbar-container');
@@ -14,6 +17,8 @@ export function initNavbar(user, onLogout) {
     }
 
     disposeHandle?.();
+    disposeOracle?.();
+    if (sidebarStateListener) window.removeEventListener('sidebarState', sidebarStateListener);
 
     // Struttura HTML pulita. 
     // pointer-events: none sull'img impedisce il menu "Salva immagine" sui telefoni.
@@ -30,12 +35,13 @@ export function initNavbar(user, onLogout) {
     `;
 
     // Inizializza la Sidebar passando l'utente e la funzione di logout
-    initSidebar(sidebarContainer, user, onLogout);
+    initSidebar(sidebarContainer, user, () => { stopOracleVoice(); return onLogout?.(); });
 
     const btn = document.getElementById('navbar-trigger');
 
     const handle = initFloatingHandle(btn);
     disposeHandle = handle.destroy;
+    disposeOracle = mountOracleCompanion(btn);
 
     btn.onclick = (e) => {
         e.preventDefault();
@@ -45,7 +51,7 @@ export function initNavbar(user, onLogout) {
     };
 
     // Ascolta lo stato della sidebar per animare il pulsante Hamburger -> X
-    window.addEventListener('sidebarState', (e) => {
+    sidebarStateListener = (e) => {
         const isOpen = e.detail.isOpen;
         btn.setAttribute('aria-expanded', String(isOpen));
         btn.setAttribute('aria-label', isOpen ? 'Chiudi menu' : 'Apri menu');
@@ -54,7 +60,8 @@ export function initNavbar(user, onLogout) {
         } else {
             btn.classList.remove('is-active'); // Torna ametista a righe (global.css)
         }
-    });
+    };
+    window.addEventListener('sidebarState', sidebarStateListener);
 
     // Il logo riporta alla Taverna senza ricaricare tutta l'app.
     const logoBtn = document.getElementById('nav-home-btn');

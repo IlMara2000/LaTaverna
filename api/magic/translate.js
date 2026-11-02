@@ -1,8 +1,9 @@
 import {authorizeOracle} from '../_lib/oracleAccess.js';
 import { translateMagicOracle } from '../_lib/groq.js';
-import { methodNotAllowed, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
+import { methodNotAllowed, publicErrorMessage, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
 
 export default async function handler(request, response) {
+    response.setHeader('Cache-Control', 'no-store');
     if (request.method !== 'POST') return methodNotAllowed(response);
     try {
         const body = await readJsonBody(request, 8 * 1024);
@@ -12,6 +13,6 @@ export default async function handler(request, response) {
         const result = await translateMagicOracle({ name, typeLine, text });
         return sendJson(response, 200, { ok: true, translation: result.translation, provider: 'groq', model: result.model });
     } catch (error) {
-        return sendJson(response, error.statusCode || 500, { ok: false, code: error.code || 'magic_translation_failed', error: error.message || 'Traduzione non riuscita.' });
+        return sendJson(response, error.statusCode || 500, { ok: false, code: error.code || 'magic_translation_failed', error: publicErrorMessage(error, 'Traduzione non riuscita.') });
     }
 }

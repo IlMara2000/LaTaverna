@@ -9,9 +9,5 @@ output
 supabase/.temp
 dist
 public/*.zip
-public/manuals/DM.pdf
-public/manuals/Giocatore.pdf
-public/manuals/Mostri.pdf
-public/manuals/DM/DM.pdf
-public/manuals/Giocatore/Giocatore.pdf
-public/manuals/Mostri/Mostri.pdf
+public/manuals
+public/manual-index

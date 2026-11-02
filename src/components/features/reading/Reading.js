@@ -304,15 +304,24 @@ export async function showReading(container) {
         const modal = dialog(justUploaded ? 'PDF caricato con successo' : 'Condividi questo libro', `
             <div class="reading-success-icon" aria-hidden="true">✓</div>
             <p><strong>${escapeHTML(book.title)}</strong> è nella tua biblioteca privata.</p>
-            <p>Vuoi renderlo disponibile al pubblico per contribuire alla crescita e allo sviluppo della piattaforma?</p>
+            <p>Vuoi renderlo disponibile al pubblico nella Bacheca della Taverna?</p>
             <label class="reading-consent"><input type="checkbox" name="publish">
-                <span>Sì, voglio rendere questo PDF pubblico nella Bacheca della Taverna.</span></label>
-            <p class="reading-form-note">Senza la spunta, il libro resta visibile solo al tuo account. Puoi cambiare scelta in qualsiasi momento.</p>
+                <span>Sì, voglio rendere questo PDF pubblico nella Bacheca.</span></label>
+            <label class="reading-consent"><input type="checkbox" name="rights">
+                <span>Dichiaro di possedere i diritti di distribuzione di questo PDF o di avere l’autorizzazione del titolare. So che pubblicare opere non autorizzate è vietato e può comportare la rimozione del contenuto e la sospensione dell’account.</span></label>
+            <p class="reading-form-note">Senza la spunta, il libro resta visibile solo al tuo account. La pubblicazione è registrata con data e ora. Puoi cambiare scelta in qualsiasi momento. Leggi i <a href="/termini" target="_blank" rel="noopener noreferrer">Termini</a> e il <a href="/community" target="_blank" rel="noopener noreferrer">Regolamento community</a>.</p>
             <div class="reading-dialog-actions"><button type="button" class="reading-secondary" data-private>Solo per me</button>
                 <button type="button" class="reading-primary" data-confirm>Conferma scelta</button></div>`);
         modal.element.querySelector('[data-private]').onclick = () => { modal.close(); feedback('Libro salvato nella tua biblioteca privata.'); };
         modal.element.querySelector('[data-confirm]').onclick = () => {
             const publish = modal.element.querySelector('[name="publish"]').checked;
+            const rights = modal.element.querySelector('[name="rights"]').checked;
+            if (publish && !rights) {
+                const errorBox = modal.element.querySelector('.reading-dialog-error');
+                errorBox.textContent = 'Per pubblicare devi confermare di possedere i diritti di distribuzione del PDF.';
+                errorBox.hidden = false;
+                return;
+            }
             void modal.run(async () => {
                 if (publish) await library.setVisibility(book.id, true, user.id);
                 if (!aliveHere()) return;

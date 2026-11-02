@@ -13,7 +13,13 @@ export const PUBLIC_ROUTES = Object.freeze({
     shop: '/shop',
     reading: '/library',
     magic: '/magic',
-    artisanShop: '/bottega/artigiano-rituale'
+    artisanShop: '/bottega/artigiano-rituale',
+    privacy: '/privacy',
+    terms: '/termini',
+    cookies: '/cookie',
+    community: '/community',
+    seller: '/bottega/condizioni',
+    takedown: '/segnala'
 });
 const LEGACY_ROUTES = Object.freeze({ '/bottega': 'shop' });
 export function destinationFromPath(pathname) {

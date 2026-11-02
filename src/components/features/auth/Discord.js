@@ -112,9 +112,10 @@ export async function setupDiscordRedirect(container) {
                     <p style="color: white; font-size: 12px; margin-top: 10px; opacity: 0.6; font-family: 'Montserrat';">
                         ${err.message}
                     </p>
-                    <button onclick="window.location.href='/'" style="background: white; border: none; padding: 10px 20px; border-radius: 50px; margin-top: 20px; font-weight: 800; cursor: pointer;">RIPROVA</button>
+                    <button id="discordRetry" style="background: white; border: none; padding: 10px 20px; border-radius: 50px; margin-top: 20px; font-weight: 800; cursor: pointer;">RIPROVA</button>
                 </div>
             `;
+            statusOverlay.querySelector('#discordRetry')?.addEventListener('click', () => { window.location.href = '/'; });
         }
     }
 }

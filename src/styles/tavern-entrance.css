@@ -39,3 +39,29 @@
     #ui .tavern-handle-lever { transition: none; }
     #ui .tavern-door-arrow { animation: none; }
 }
+
+/* ------------------------------------------------------------
+   Sfondo unico della piattaforma
+   La stessa sala della taverna accompagna tutte le viste interne.
+   Qui la copertura è più alta che nella schermata di accesso: i testi
+   corrono direttamente su pietra e legno, quindi il velo protegge il
+   contrasto mentre il dipinto resta leggibile ai bordi e dietro i pannelli.
+   ------------------------------------------------------------ */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at 50% 42%, transparent 30%, rgb(4 2 7 / 52%) 100%),
+        linear-gradient(180deg, rgb(18 10 27 / 74%), rgb(12 7 19 / 84%) 55%, rgb(8 4 14 / 94%)),
+        radial-gradient(ellipse at 50% 112%, rgb(103 55 143 / 32%), transparent 60%),
+        url('/assets/entrance/interior.webp') center / cover no-repeat,
+        #0b0612;
+}
+
+/* Le viste immersive e i tavoli da gioco mantengono il proprio fondo pieno. */
+@media (prefers-reduced-data: reduce) {
+    body::before { background-image: none; }
+}

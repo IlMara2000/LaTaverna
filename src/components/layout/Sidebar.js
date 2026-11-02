@@ -1,3 +1,4 @@
+import { isOracleVoiceActive, toggleOracleVoice } from './OracleCompanion.js';
 import '../../styles/appHierarchy.css';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 // Sidebar.js - Versione Master Integrata (Fiducia Totale)
@@ -71,6 +72,14 @@ function renderSidebarContent(container, context) {
                 <button class="btn-glass" id="sideMusicCenterBtn" style="font-size: 0.8rem; padding: 12px;">
                     LIBRERIA MUSICALE
                 </button>
+
+                <div class="sidebar-legal-links" aria-label="Informazioni legali">
+                    <a href="/privacy">PRIVACY</a>
+                    <a href="/termini">TERMINI</a>
+                    <a href="/cookie">COOKIE</a>
+                    <a href="/community">COMMUNITY</a>
+                    <a href="/segnala">SEGNALA</a>
+                </div>
                 
                 <button id="btn-fix-games" class="btn-glass" type="button" title="Aggiorna la vista corrente senza perdere i dati" style="font-size: 0.8rem; padding: 12px;">
                     AGGIORNA PAGINA
@@ -83,6 +92,9 @@ function renderSidebarContent(container, context) {
                     <span class="side-music-toggle-knob" aria-hidden="true">${isMusicOn ? '🔊' : '🔈'}</span>
                     <span class="side-music-toggle-state">${isMusicOn ? 'ON' : 'OFF'}</span>
                 </button>
+
+                <button class="btn-glass" id="sideOracleBtn" type="button" aria-pressed="${Boolean(isOracleVoiceActive())}" aria-describedby="oracle-voice-privacy">${isOracleVoiceActive() ? 'SPEGNI ORACOLO VOCALE' : 'ATTIVA ORACOLO VOCALE'}</button>
+                <p class="oracle-privacy" id="oracle-voice-privacy">Il microfono si attiva solo quando lo accendi. La trascrizione è gestita dal servizio vocale del browser (Google, Apple o altro): l’audio può essere elaborato dal fornitore del browser, non lo salviamo noi. Solo le domande attive vengono inviate a Groq. Contesto temporaneo, cancellato allo spegnimento. “Non ascoltarmi” lascia il microfono acceso per il richiamo; Spegni lo chiude. Voce al volume della musica.</p>
 
                 <div class="sidebar-divider" style="margin: 15px 0; height: 1px; background: rgba(255,255,255,0.1);"></div>
                 
@@ -253,6 +265,11 @@ function setupEventListeners(container, context) {
                 btnFix.textContent = 'AGGIORNA PAGINA';
             }, 350);
         });
+    };
+
+    container.querySelector('#sideOracleBtn').onclick = () => {
+        toggle();
+        toggleOracleVoice();
     };
 
     // --- MUSICA ---

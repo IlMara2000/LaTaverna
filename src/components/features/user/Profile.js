@@ -77,7 +77,7 @@ export async function showProfile(container, user, navigation = null) {
 
     if (navigation && !navigation.beforeRender()) return;
 
-    const avatar = profile.avatar_url || 'https://placehold.co/100x100?text=V';
+    const avatar = profile.avatar_url || '/assets/avatar-placeholder.svg';
     const name = escapeHTML(profile.display_name);
     const title = escapeHTML(profile.title);
     const email = escapeHTML(resolvedUser?.email || 'Email non disponibile');
