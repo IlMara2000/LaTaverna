@@ -5,6 +5,8 @@ import { createReadingLibrary, bookTitleFromFilename, readingErrorMessage, READI
 import { updateSidebarContext } from '../../layout/Sidebar.js';
 import { navigateTo } from '../../../services/appNavigation.js';
 import { getReadingPosition, removeReadingPosition } from '../../../services/readingProgress.js';
+import { categoryLabel, loadRuleSearch } from '../../../services/ruleSearch.js';
+import { MANUAL_CATALOG, SRD_INFO } from '../../../data/manualCatalog.js';
 import './reading.css';
 
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -32,6 +34,8 @@ export async function showReading(container) {
     let books = [];
     let collections = [];
     let favorites = new Set();
+    let rulesQuery = '';
+    let rulesResults = null;
     const dialogs = new Set();
     const aliveHere = () => alive && root.isConnected;
 
@@ -50,6 +54,7 @@ export async function showReading(container) {
             <button type="button" data-view="board">Bacheca</button>
             <button type="button" data-view="favorites">Preferiti</button>
             <button type="button" data-view="collections">Raccolte</button>
+            <button type="button" data-view="rules">Regole</button>
         </nav>
         <p class="reading-feedback" data-feedback role="status" aria-live="polite" hidden></p>
         <section class="reading-shelf" aria-labelledby="reading-shelf-title">
@@ -141,7 +146,8 @@ export async function showReading(container) {
             board: ['Bacheca', 'I libri condivisi dalla comunità, in ordine alfabetico.'],
             favorites: ['Preferiti', 'Le letture che vuoi ritrovare al volo.'],
             collections: ['Le mie raccolte', 'Piccoli scaffali per le tue passioni. Visibili soltanto a te.'],
-            collection: [collections.find(item => item.id === collectionId)?.name || 'Raccolta', 'I libri di questa raccolta personale.']
+            collection: [collections.find(item => item.id === collectionId)?.name || 'Raccolta', 'I libri di questa raccolta personale.'],
+            rules: ['Regole', 'Cerca tra le regole aperte del SRD 5.1 e scopri dove approfondire nei manuali ufficiali.']
         };
         find('#reading-shelf-title').textContent = headings[view][0];
         find('[data-description]').textContent = headings[view][1];
@@ -150,14 +156,17 @@ export async function showReading(container) {
             if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
         });
         find('[data-create]').hidden = !user || view !== 'collections';
-        find('[data-order]').hidden = view === 'collections';
-        find('[data-search-form]').hidden = view === 'collections';
-        find('.reading-pagination').hidden = view === 'collections';
+        const shelfSimple = view === 'collections' || view === 'rules';
+        find('[data-order]').hidden = shelfSimple;
+        find('[data-search-form]').hidden = shelfSimple;
+        find('.reading-pagination').hidden = shelfSimple;
         find('[data-prev]').disabled = true;
         find('[data-next]').disabled = true;
         list.setAttribute('aria-busy', 'true');
         list.innerHTML = '<p class="reading-empty">Caricamento…</p>';
         try {
+            // La ricerca nelle regole aperte non richiede account né Supabase.
+            if (view === 'rules') { renderRules(); return; }
             if (!isSupabaseConfigured) throw new Error('La biblioteca non è ancora disponibile. Riprova tra poco.');
             if (!user && view !== 'board') {
                 list.innerHTML = '<div class="reading-empty"><h3>Uno scaffale tutto tuo</h3><p>Accedi a un account per caricare PDF, salvare preferiti e creare raccolte.</p><button type="button" class="reading-secondary" data-browse>Esplora la bacheca</button></div>';
@@ -193,6 +202,83 @@ export async function showReading(container) {
             find('[data-count]').textContent = '';
             find('[data-page]').textContent = '';
         } finally { if (stillCurrent()) list.setAttribute('aria-busy', 'false'); }
+    }
+
+    function rulesResultsHTML() {
+        if (rulesResults === null) {
+            return `<div class="reading-empty"><h3>Cerca una regola, non un libro</h3>
+                <p>Il pannello cerca tra le regole aperte del SRD 5.1 e ti mostra il passaggio
+                pertinente con la citazione. Prova con termini come <em>opportunità di attacco</em>,
+                <em>tiri salvifici</em> o <em>condizioni</em>.</p></div>`;
+        }
+        if (rulesResults === 'searching') return '<p class="reading-empty">Cerco tra le regole…</p>';
+        if (!rulesResults.length) {
+            return `<div class="reading-empty"><h3>Nessuna regola trovata</h3>
+                <p>Per «${escapeHTML(rulesQuery)}» non ho trovato nulla nel SRD. Prova con termini
+                più semplici, oppure in inglese (es. <em>opportunity</em>, <em>saving throw</em>).</p></div>`;
+        }
+        return `<p class="rules-count">${rulesResults.length} passaggi trovati per «${escapeHTML(rulesQuery)}»</p>
+            <ol class="rules-results">${rulesResults.map(result => `
+                <li><span class="rules-cat">${escapeHTML(categoryLabel(result.category))}</span>
+                    <h4>${escapeHTML(result.title)}</h4>
+                    <p>${result.segments.map(segment => segment.mark
+                        ? `<mark>${escapeHTML(segment.t)}</mark>`
+                        : escapeHTML(segment.t)).join('')}</p>
+                </li>`).join('')}</ol>`;
+    }
+
+    function rulesCatalogHTML() {
+        return `<section class="rules-catalog" aria-labelledby="rules-catalog-title">
+            <h3 id="rules-catalog-title">Dove approfondire</h3>
+            <div class="rules-catalog-grid">${MANUAL_CATALOG.map(book => `
+                <article class="rules-book"><h4>${escapeHTML(book.title)}</h4>
+                    <p class="rules-book-original">${escapeHTML(book.originalTitle)} · ${escapeHTML(book.edition)}</p>
+                    <p>${escapeHTML(book.summary)}</p>
+                    <p class="rules-book-topics">${book.covers.map(topic => `<span>${escapeHTML(topic)}</span>`).join('')}</p>
+                    <a href="${book.officialUrl}" target="_blank" rel="noopener noreferrer">Scheda ufficiale ↗</a>
+                </article>`).join('')}</div>
+            <p class="rules-srd-note">${escapeHTML(SRD_INFO.description)}
+                <a href="${SRD_INFO.officialUrl}" target="_blank" rel="noopener noreferrer">SRD ufficiale</a> ·
+                <a href="${SRD_INFO.licenseUrl}" target="_blank" rel="noopener noreferrer">Licenza CC BY 4.0</a></p>
+        </section>`;
+    }
+
+    function renderRules() {
+        const paintResults = () => {
+            const box = list.querySelector('[data-rules-results]');
+            if (box) box.innerHTML = rulesResultsHTML();
+        };
+        const runSearch = async value => {
+            rulesQuery = value.trim();
+            if (!rulesQuery) {
+                rulesResults = null;
+                paintResults();
+                return;
+            }
+            rulesResults = 'searching';
+            paintResults();
+            try {
+                const search = await loadRuleSearch();
+                if (!aliveHere() || view !== 'rules') return;
+                rulesResults = search(rulesQuery);
+            } catch {
+                if (!aliveHere() || view !== 'rules') return;
+                rulesResults = [];
+            }
+            paintResults();
+        };
+        list.innerHTML = `<div class="rules-panel">
+            <form class="reading-search rules-search" role="search" data-rules-form>
+                <label for="rules-query">Cerca tra le regole aperte</label>
+                <div><span aria-hidden="true">⌕</span><input id="rules-query" type="search" maxlength="160"
+                    placeholder="Es.: opportunità di attacco, tiri salvifici, condizioni…" autocomplete="off"
+                    value="${escapeHTML(rulesQuery)}"><button type="submit" class="reading-secondary">Cerca</button></div>
+            </form>
+            <div data-rules-results aria-live="polite">${rulesResultsHTML()}</div>
+            ${rulesCatalogHTML()}
+        </div>`;
+        const form = list.querySelector('[data-rules-form]');
+        form.onsubmit = event => { event.preventDefault(); void runSearch(form.querySelector('input').value); };
     }
 
     function renderBooks() {
@@ -399,7 +485,7 @@ export async function showReading(container) {
         modal.onClose = () => {
             controller.abort();
             if (objectUrl) URL.revokeObjectURL(objectUrl);
-            if (aliveHere() && view !== 'collections') renderBooks();
+            if (aliveHere() && view !== 'collections' && view !== 'rules') renderBooks();
         };
         // Reading remains cancellable while the file is downloaded.
         try {

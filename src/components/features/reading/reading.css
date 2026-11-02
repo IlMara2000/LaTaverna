@@ -148,3 +148,26 @@
     #app .reading-heading h1 { font-size: 46px; }
     #app .reading-welcome { padding: 16px; }
 }
+
+/* Pannello "Regole": ricerca sul SRD aperto e catalogo dei manuali ufficiali. */
+.rules-panel { display: grid; gap: 26px; }
+.rules-search { padding-top: 0; border-top: 0; }
+.rules-count { margin: 0 0 14px; font-size: 11px; color: var(--reading-muted); }
+.rules-results { display: grid; gap: 14px; list-style: none; padding: 0; margin: 0; }
+.rules-results li { border: 1px solid var(--reading-line); border-radius: 12px; padding: 16px 18px; background: rgba(103, 62, 127, .07); }
+.rules-cat { display: inline-block; margin-bottom: 8px; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: #a580bd; }
+.rules-results h4 { margin: 0 0 8px; font-size: 15px; font-weight: 500; color: #e5d1f7; overflow-wrap: anywhere; }
+.rules-results p { margin: 0; font-size: 13px; line-height: 1.8; color: #cfc0dd; }
+.rules-results mark { background: rgba(199, 145, 244, .28); color: #f3e6ff; border-radius: 4px; padding: 0 2px; }
+.rules-catalog h3 { margin: 0 0 14px; font-size: 14px; font-weight: 500; color: #e1c0ff; }
+.rules-catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.rules-book { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--reading-line); border-radius: 12px; padding: 16px; background: rgba(15, 8, 24, .5); }
+.rules-book h4 { margin: 0; font-size: 14px; font-weight: 600; color: #ecd9ff; overflow-wrap: anywhere; }
+.rules-book-original { margin: 0; font-size: 10px; color: #9484a3; }
+.rules-book p { margin: 0; font-size: 12px; line-height: 1.7; color: var(--reading-muted); }
+.rules-book-topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.rules-book-topics span { font-size: 9px; border: 1px solid var(--reading-line); border-radius: 999px; padding: 3px 8px; color: #b8a6c9; }
+.rules-book a { margin-top: auto; color: #c791f4; font-size: 11px; text-decoration: none; }
+.rules-srd-note { margin: 0; padding-top: 14px; border-top: 1px solid var(--reading-line); font-size: 11px; line-height: 1.8; color: #9484a3; }
+.rules-srd-note a { color: #c791f4; text-decoration: none; }
+.rules-book a:hover, .rules-srd-note a:hover { text-decoration: underline; }
