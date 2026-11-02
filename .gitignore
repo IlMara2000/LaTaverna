@@ -5,12 +5,9 @@ node_modules/
 !.env.example
 dist/
 public/*.zip
-public/manuals/DM.pdf
-public/manuals/Giocatore.pdf
-public/manuals/Mostri.pdf
-public/manuals/DM/DM.pdf
-public/manuals/Giocatore/Giocatore.pdf
-public/manuals/Mostri/Mostri.pdf
+# Copie di manuali non licenziate: mai nel repository o nel deploy.
+public/manuals/
+public/manual-index/
 .vercel
 .env*
 
@@ -18,3 +15,6 @@ public/manuals/Mostri/Mostri.pdf
 .playwright-cli/
 /*.traineddata
 supabase/.temp/
+
+# Screenshot di test locali
+output/
