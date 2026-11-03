@@ -1,15 +1,20 @@
 // Verifica in sola lettura dello stato di APP LAB su Supabase.
 // Non applica la migrazione: interroga PostgREST per capire se lo schema esiste.
-// Uso: node scripts/verify-applab.mjs
+// Uso: node scripts/verify-applab.mjs (funziona da qualsiasi directory)
 import { existsSync, readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const TABLES = ['app_lab_apps', 'app_lab_sessions', 'app_lab_porting_projects'];
 
 const readEnvFiles = () => {
     const values = {};
     for (const file of ['.env.local', '.env']) {
-        if (!existsSync(file)) continue;
-        for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
+        const path = resolve(projectRoot, file);
+        if (!existsSync(path)) continue;
+        for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
             const match = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*)$/);
             if (!match) continue;
             const value = match[2].trim().replace(/^(['"])(.*)\1$/, '$2');
