@@ -611,7 +611,14 @@ export async function showAppLab(container) {
             if (file) void runAnalysis(file);
         };
 
-        fileInput.addEventListener('change', () => readFile(fileInput.files));
+        // Svuotare l'input consente di riscegliere lo stesso file dopo un errore:
+        // con il valore invariato il browser non emette `change` e sembra che
+        // il file “non venga preso”.
+        fileInput.addEventListener('change', () => {
+            const chosen = fileInput.files ? [...fileInput.files] : [];
+            fileInput.value = '';
+            readFile(chosen);
+        });
         ['dragenter', 'dragover'].forEach(eventName => dropzone.addEventListener(eventName, event => {
             event.preventDefault();
             dropzone.classList.add('is-dragging');
@@ -620,7 +627,12 @@ export async function showAppLab(container) {
             event.preventDefault();
             dropzone.classList.remove('is-dragging');
         }));
-        dropzone.addEventListener('drop', event => readFile(event.dataTransfer?.files));
+        // Il rilascio vale su tutta la finestra di caricamento: trascinare di
+        // pochi pixel fuori dal riquadro non deve aprire l'APK nella scheda.
+        ['dragover', 'drop'].forEach(eventName => modal.body.addEventListener(eventName, event => {
+            event.preventDefault();
+            if (eventName === 'drop') readFile(event.dataTransfer?.files);
+        }));
         rights.addEventListener('change', () => { saveButton.disabled = !rights.checked || !analyzed || busy; });
         modal.body.querySelector('[data-cancel]').onclick = () => modal.close();
 

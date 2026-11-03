@@ -556,9 +556,15 @@ export async function analyzeApk(file, { onProgress = () => {} } = {}) {
 
     report(3, 'Verifico il file…', 'validate');
     if (!file) throw new Error('Nessun file selezionato.');
-    if (!/\.apk$/i.test(file.name || '')) throw new Error('Seleziona un file con estensione .apk.');
-    if (!file.size) throw new Error('Il file è vuoto.');
-    if (file.size > MAX_APK_BYTES) throw new Error('L’APK supera il limite di 200 MB.');
+    const fileName = String(file.name || '');
+    if (/(\.xapk|\.apks|\.apkm|\.aab)$/i.test(fileName)) {
+        throw new Error(`«${fileName}» è un pacchetto multiplo: APP LAB installa solo APK singoli. Scarica l’APK del dispositivo (arm64) e riprova.`);
+    }
+    if (!/\.apk$/i.test(fileName)) throw new Error(`«${fileName}» non ha estensione .apk: serve un file APK.`);
+    if (!file.size) throw new Error(`«${fileName}» è vuoto (0 byte).`);
+    if (file.size > MAX_APK_BYTES) {
+        throw new Error(`«${fileName}» pesa ${formatBytes(file.size)}: il limite è ${formatBytes(MAX_APK_BYTES)}.`);
+    }
     const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
     if (header[0] !== 0x50 || header[1] !== 0x4b || header[2] !== 0x03 || header[3] !== 0x04) {
         throw new Error('Il file non è un APK valido (manca l’intestazione ZIP).');
@@ -703,7 +709,9 @@ export async function analyzeApk(file, { onProgress = () => {} } = {}) {
     };
 }
 
-export const APK_ACCEPT = '.apk,application/vnd.android.package-archive';
+// `application/octet-stream` serve ai browser che non conoscono il tipo APK:
+// senza, il selettore di macOS/iPadOS mostra i file in grigio e non li fa scegliere.
+export const APK_ACCEPT = '.apk,application/vnd.android.package-archive,application/octet-stream';
 export const formatBytes = bytes => {
     const value = Number(bytes) || 0;
     if (value < 1024) return `${value} B`;
