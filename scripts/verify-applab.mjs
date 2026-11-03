@@ -68,9 +68,13 @@ for (const table of TABLES) {
     console.log(`${verdict.ready ? '✔' : '✖'} ${table}: ${verdict.label}`);
 }
 
+// I bucket privati non sono verificabili con la anon key: sia un bucket esistente sia
+// uno inesistente rispondono `200 []` a list e `NoSuchBucket` alla rotta pubblica.
+// Restano quindi un controllo manuale dal dashboard.
 if (missing > 0) {
     console.log(`\n${missing} di ${TABLES.length} tabelle non sono pronte: la migrazione APP LAB non è applicata a questo progetto.`);
     process.exit(1);
 }
 
-console.log('\nAPP LAB: schema e permessi rispondono. Bucket privati e policy vanno verificati dal dashboard Storage.');
+console.log('\nAPP LAB: le tabelle rispondono.');
+console.log('Bucket app_lab_apks, app_lab_sources, app_lab_builds: non verificabili con la anon key, controllali in Dashboard → Storage (devono essere privati).');
