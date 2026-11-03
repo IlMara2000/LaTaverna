@@ -61,6 +61,7 @@ const IT_EN = {
     denaro: 'money', monete: 'coin', peso: 'weight', munizioni: 'ammunition',
     torcia: 'light', pozione: 'potion', pergamena: 'scroll',
     // condizioni
+    condizione: 'condition', condizioni: 'condition',
     avvelenato: 'poisoned', paralizzato: 'paralyzed', accecato: 'blinded',
     assordato: 'deafened', invisibile: 'invisible', spaventato: 'frightened',
     impedito: 'restrained', legato: 'restrained', pietrificato: 'petrified',
@@ -125,12 +126,15 @@ function countOccurrences(haystack, needle) {
 
 // Ritorna la finestra di testo intorno al primo termine trovato, spezzettata
 // in segmenti con flag "mark" per l'evidenziazione, senza interpretare HTML.
-export function snippetSegments(text, tokens, windowSize = 260) {
+// `focusTokens` decide dove centrare la finestra: si prova il primo termine
+// disponibile, così la frase cercata ("opportunity attack") vince sulle
+// occorrenze generiche di un termine comune trovato prima nel testo.
+export function snippetSegments(text, tokens, windowSize = 260, focusTokens = tokens) {
     const normalized = normalize(text);
     let center = -1;
-    for (const token of tokens) {
+    for (const token of focusTokens) {
         const index = normalized.indexOf(token);
-        if (index !== -1 && (center === -1 || index < center)) center = index;
+        if (index !== -1) { center = index; break; }
     }
     if (center === -1) center = 0;
     let start = Math.max(0, center - Math.floor(windowSize / 3));
@@ -190,13 +194,20 @@ export function createRuleSearch(corpus) {
                 ...passage,
                 normalizedTitle: normalize(passage.t),
                 normalizedText: normalize(passage.x),
+                // Fattore di lunghezza: nei passaggi lunghi i termini comuni
+                // ricorrono per caso, quindi la frequenza pesa meno.
+                lengthFactor: Math.sqrt(1 + String(passage.x).length / 900),
             }));
         }
-        const phrase = normalize(query)
-            .replace(/[^a-z0-9' ]+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-        const phraseWords = phrase.split(' ').filter(word => word.length > 1 && !STOPWORDS.has(word));
+        const phraseWords = normalize(query)
+            .match(/[a-z0-9']+/g)
+            ?.filter(word => word.length > 1 && !STOPWORDS.has(word)) || [];
+        const phrase = phraseWords.join(' ');
+        // Fase mappata: "opportunità di attacco" → "opportunity attack", così
+        // l'aggettivo in italiano trova i termini adiacenti del testo ufficiale.
+        const mappedPhrase = (normalize(query).match(/[a-z0-9']+/g) || [])
+            .flatMap(word => (IT_EN[word] || '').split(' ').filter(Boolean))
+            .join(' ');
         // Peso IDF: i termini tecnici rari ("opportunity") pesano più dei termini
         // comuni ("creature"), così la regola esatta scala sopra i richiami generici.
         const weights = new Map();
@@ -209,7 +220,8 @@ export function createRuleSearch(corpus) {
         }
         const scored = [];
         for (const passage of prepared) {
-            let score = 0;
+            let frequency = 0;
+            let bonus = 0;
             let matched = 0;
             for (const token of tokens) {
                 const weight = weights.get(token);
@@ -217,19 +229,32 @@ export function createRuleSearch(corpus) {
                 const inTitle = passage.normalizedTitle.includes(token) ? 1 : 0;
                 if (!inText && !inTitle) continue;
                 matched += 1;
-                score += Math.min(inText, 4) * weight + inTitle * 2 * weight;
+                frequency += Math.min(inText, 4) * weight + inTitle * 2 * weight;
             }
             if (!matched) continue;
-            if (matched === tokens.length) score += 5;
-            if (phraseWords.length > 1 && passage.normalizedText.includes(phrase)) score += 8;
-            scored.push({ passage, score });
+            if (matched === tokens.length) bonus += 4;
+            // I bonus di frase restano assoluti: un passaggio che contiene davvero
+            // "opportunity attack" deve battere uno che ripete solo "attack".
+            if (phraseWords.length > 1 && passage.normalizedText.includes(phrase)) bonus += 10;
+            if (mappedPhrase.includes(' ') && passage.normalizedText.includes(mappedPhrase)) bonus += 10;
+            scored.push({ passage, score: frequency / passage.lengthFactor + bonus });
         }
         scored.sort((a, b) => b.score - a.score || a.passage.x.length - b.passage.x.length);
+        // Ordine di priorità per centrare lo snippet: frase mappata, poi i
+        // termini dal più raro (peso IDF) al più comune.
+        const rarestFirst = [...tokens].sort((a, b) => weights.get(b) - weights.get(a));
         return scored.slice(0, limit).map(({ passage, score }) => ({
             category: passage.c,
             title: passage.t,
             score,
-            segments: snippetSegments(passage.x, tokens),
+            segments: snippetSegments(
+                passage.x,
+                tokens,
+                260,
+                passage.normalizedText.includes(mappedPhrase) && mappedPhrase.includes(' ')
+                    ? [mappedPhrase, ...rarestFirst]
+                    : rarestFirst,
+            ),
         }));
     };
 }
