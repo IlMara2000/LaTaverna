@@ -75,7 +75,7 @@ La voce **APP LAB** (`/app-lab`, sidebar e dock della home) è la sezione per ca
 - `PORTING iOS` distingue APK-only (mai convertibile in `.ipa`) e progetto sorgente (framework riconosciuto, fattibilità, coda di build). La build richiede un servizio macOS con Xcode (`APP_LAB_BUILD_SERVICE_URL`, `APP_LAB_BUILD_SERVICE_TOKEN`). Un `.ipa` compare solo dopo una build firmata riuscita.
 - Dettagli, contratti dei servizi esterni, sicurezza e checklist di test: [docs/app-lab.md](docs/app-lab.md).
 
-Verifica: `npm run test:cards` (include `scripts/tests/applab.test.mjs`).
+Verifica: `npm run test:cards` (include `scripts/tests/applab.test.mjs`). Stato dello schema sul progetto collegato: `node scripts/verify-applab.mjs` (esce con codice 1 finché la migrazione non è applicata).
 
 ## Variabili Vercel
 
