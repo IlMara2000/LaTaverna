@@ -94,6 +94,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/app-lab/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/app-lab",
+      "destination": "/index.html"
+    },
+    {
       "source": "/magic/:path*",
       "destination": "/index.html"
     },
@@ -132,7 +140,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.scryfall.com; media-src 'self' blob:; frame-src 'self' blob: https://*.supabase.co; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.lataverna.xyz wss://*.lataverna.xyz https://api.scryfall.com; media-src 'self' blob: https://*.lataverna.xyz; frame-src 'self' blob: https://*.supabase.co https://*.lataverna.xyz; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
         },
         { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
         { "key": "X-Frame-Options", "value": "DENY" },

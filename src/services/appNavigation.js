@@ -18,10 +18,12 @@ export const resetAppSurface = () => {
     window.__magicCleanup?.();
     window.__settingsCleanup?.();
     window.__readingCleanup?.();
+    window.__appLabCleanup?.();
     window.__homeCleanup = null;
     window.__shopCleanup = null;
     window.__settingsCleanup = null;
     window.__readingCleanup = null;
+    window.__appLabCleanup = null;
     window.__magicCleanup = null;
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
@@ -76,6 +78,7 @@ export async function navigateTo(destination, container = document.getElementByI
         dnd5e: { label: 'D&D', load: () => import('../dashboards/dnd5e.js'), render: (module) => module.initDndDashboard(container) },
         cardCounter: { label: 'il Segnapunti', load: () => import('../dashboards/cardCounter.js'), render: module => module.showCardCounter(container, options) },
         reading: { label: 'Lettura', load: () => import('../components/features/reading/Reading.js'), render: (module) => module.showReading(container) },
+        applab: { label: 'APP LAB', load: () => import('../components/features/applab/AppLab.js'), render: (module) => module.showAppLab(container) },
         shop: { label: 'la bottega', load: () => import('../dashboards/bottega.js'), render: (module) => module.initBottega(container) },
         artisanShop: { label: 'la Bottega', load: () => import('../dashboards/shop.js'), render: (module) => module.initShop(container) },
         profile: { label: 'il profilo', deferred: true, load: () => import('../components/features/user/Profile.js'), render: (module, context) => module.showProfile(container, options.user || null, context) },
@@ -102,7 +105,7 @@ export async function navigateTo(destination, container = document.getElementByI
                     selector: '.reading-welcome, .reading-shelf, .settings-group, .profile-glass-card, .music-player, .music-playlist, .dnd-hero, .dnd-panel'
                 });
             }
-            if (context.isCurrent() && ['multiplayer', 'mtcg', 'proxyPrinter', 'cardGames', 'cards', 'rpg', 'oracle', 'minigames', 'dnd5e', 'reading', 'shop', 'cardCounter'].includes(destination)) {
+            if (context.isCurrent() && ['multiplayer', 'mtcg', 'proxyPrinter', 'cardGames', 'cards', 'rpg', 'oracle', 'minigames', 'dnd5e', 'reading', 'applab', 'shop', 'cardCounter'].includes(destination)) {
                 rememberDestination(destination, destination === 'minigames' ? options : {});
             }
         };

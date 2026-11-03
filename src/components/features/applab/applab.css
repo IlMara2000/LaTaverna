@@ -1,0 +1,308 @@
+/* APP LAB — libreria Android e sessione immersiva. */
+
+.applab-page {
+    --lab-line: rgba(211, 189, 237, .14);
+    --lab-muted: #b6a9c9;
+    --lab-ink: #f7f2ff;
+    --lab-accent: #c791f4;
+    width: min(1180px, 100%);
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    color: var(--lab-ink);
+}
+#app .applab-page * { box-sizing: border-box; }
+#app .applab-page [hidden], #app .applab-player [hidden] { display: none !important; }
+.applab-page button, .applab-dialog button, .applab-player button { font: inherit; cursor: pointer; }
+.applab-page button:disabled { opacity: .45; cursor: not-allowed; }
+.applab-page button:focus-visible, .applab-dialog button:focus-visible,
+.applab-page input:focus-visible, .applab-page select:focus-visible,
+.applab-player button:focus-visible, .applab-player input:focus-visible {
+    outline: 2px solid #d5acff; outline-offset: 3px;
+}
+
+.applab-header { padding-top: 4px; position: relative; }
+.applab-back { border: 0; background: none; color: var(--lab-muted); padding: 8px 0; font-size: 12px; letter-spacing: .08em; }
+.applab-eyebrow { display: block; margin-top: 34px; font-size: 10px; letter-spacing: .24em; color: #c5a3e5; }
+.applab-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 28px; margin: 14px 0 28px; flex-wrap: wrap; }
+.applab-heading h1 { margin: 0; font-size: clamp(44px, 6vw, 76px); line-height: 1; letter-spacing: -.055em; font-weight: 600; }
+.applab-heading h1 span { color: #bb82ed; }
+.applab-heading p { color: var(--lab-muted); font-size: 13px; line-height: 1.85; margin: 14px 0 0; max-width: 560px; }
+.applab-primary, .applab-secondary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 42px; padding: 11px 18px; border-radius: 10px;
+    font-size: 12px; font-weight: 600; letter-spacing: .04em; transition: background .15s ease, border-color .15s ease;
+}
+.applab-primary { background: #ba8be4; color: #180b24; border: 1px solid #cfa1f5; }
+.applab-primary:hover { background: #d3aaf5; }
+.applab-primary.is-danger { background: #c05a6b; border-color: #d98290; color: #1d0910; }
+.applab-secondary { background: rgba(237, 220, 255, .04); color: #e0c9f5; border: 1px solid #493456; }
+.applab-secondary:hover { background: rgba(237, 220, 255, .1); }
+.applab-secondary.is-danger { color: #f0a9b4; border-color: #6b3a48; }
+
+.applab-runtime {
+    display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px;
+    border: 1px solid var(--lab-line); border-radius: 12px;
+    background: linear-gradient(120deg, rgba(109, 58, 153, .16), rgba(36, 21, 57, .08));
+}
+.applab-runtime-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #8b7f96; box-shadow: 0 0 10px #8b7f96; }
+.applab-runtime[data-state="ok"] .applab-runtime-dot { background: #79c79a; box-shadow: 0 0 12px #79c79a; }
+.applab-runtime strong { display: block; font-size: 12px; font-weight: 600; }
+.applab-runtime p { margin: 5px 0 0; font-size: 11px; line-height: 1.75; color: var(--lab-muted); }
+
+.applab-tabs { display: flex; gap: 26px; border-bottom: 1px solid var(--lab-line); margin: 28px 0 0; overflow-x: auto; }
+.applab-tabs button {
+    white-space: nowrap; background: none; border: 0; color: var(--lab-muted);
+    padding: 16px 2px; font-size: 12px; letter-spacing: .08em; border-bottom: 2px solid transparent;
+}
+.applab-tabs button[aria-selected="true"] { color: #e1c0ff; border-bottom-color: var(--lab-accent); }
+
+.applab-shell { border: 1px solid var(--lab-line); border-top: 0; border-radius: 0 0 16px 16px; padding: 26px; background: rgba(15, 8, 24, .62); }
+.applab-shell-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+.applab-shell-heading h2 { margin: 0; font-size: 18px; font-weight: 500; }
+.applab-shell-heading p { margin: 8px 0 0; font-size: 12px; color: var(--lab-muted); line-height: 1.7; max-width: 640px; }
+.applab-counter { font-size: 10px; letter-spacing: .14em; color: var(--lab-muted); white-space: nowrap; }
+
+.applab-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin: 22px 0 6px; align-items: flex-end; }
+.applab-search { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 220px; border: 1px solid var(--lab-line); border-radius: 10px; padding: 4px 6px 4px 14px; background: #100b18; }
+.applab-search span { font-size: 24px; color: #a98bbc; }
+.applab-search input { flex: 1; min-width: 0; border: 0; background: none; color: #eee0ff; padding: 10px 2px; font-size: 12px; }
+.applab-search input::placeholder { color: #9885aa; }
+.applab-select { display: flex; flex-direction: column; gap: 6px; font-size: 9px; letter-spacing: .16em; color: #9b87ab; }
+.applab-select select {
+    appearance: none; background: #100b18; color: #e6d6f5; border: 1px solid var(--lab-line);
+    border-radius: 9px; padding: 10px 30px 10px 12px; font-size: 11px; min-width: 148px;
+    background-image: linear-gradient(45deg, transparent 50%, #b192c7 50%), linear-gradient(135deg, #b192c7 50%, transparent 50%);
+    background-position: calc(100% - 16px) 17px, calc(100% - 11px) 17px;
+    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+}
+
+.applab-feedback { border: 1px solid var(--lab-line); border-radius: 10px; padding: 12px 16px; font-size: 12px; line-height: 1.7; color: #cbb4df; background: #1d122a; margin: 14px 0; }
+.applab-feedback.is-error { color: #ffc1bf; border-color: #6d3a48; }
+
+.applab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 16px; margin-top: 16px; }
+.applab-grid > .applab-empty, .applab-grid > .applab-empty-card { grid-column: 1 / -1; }
+
+.applab-card {
+    position: relative; display: flex; flex-direction: column; gap: 14px;
+    border: 1px solid #4a3459; border-radius: 14px; padding: 16px;
+    background: linear-gradient(165deg, #241531, #150d1f 70%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+    transition: border-color .15s ease, transform .15s ease;
+}
+.applab-card:hover { border-color: #6c467f; transform: translateY(-2px); }
+.applab-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.applab-icon {
+    width: 54px; height: 54px; border-radius: 13px; overflow: hidden; flex-shrink: 0;
+    display: grid; place-items: center; background: #2c1a3b; border: 1px solid #4e3562;
+    color: #cfa9ec; font-size: 20px; font-weight: 600;
+}
+.applab-icon img { width: 100%; height: 100%; object-fit: cover; }
+.applab-icon--large { width: 68px; height: 68px; border-radius: 16px; }
+.applab-card-menu-button { border: 1px solid transparent; background: none; color: #b79ccb; font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 8px; }
+.applab-card-menu-button:hover { background: rgba(237, 220, 255, .08); border-color: #513863; }
+.applab-card-body h3 { margin: 0; font-size: 15px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.applab-card-meta { margin: 6px 0 0; font-size: 11px; color: #c9b6d9; }
+.applab-card-package { margin: 4px 0 0; font-size: 10px; color: #8f7c9f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.applab-card-status { margin: 10px 0 0; font-size: 10px; color: #9c88ab; }
+.applab-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.applab-badge {
+    font-size: 9px; letter-spacing: .1em; padding: 4px 8px; border-radius: 999px;
+    border: 1px solid #513863; color: #c4aada; background: rgba(120, 74, 150, .16);
+}
+.applab-badge--ok { border-color: #3d6a4f; color: #a8dcbb; background: rgba(61, 106, 79, .18); }
+.applab-badge--warn { border-color: #6d5a2f; color: #e7cf93; background: rgba(109, 90, 47, .18); }
+.applab-badge--bad { border-color: #6d3a48; color: #f0a9b4; background: rgba(109, 58, 72, .18); }
+.applab-badge--idle { border-color: #4c3f57; color: #b3a4bf; }
+.applab-card-actions { display: flex; gap: 8px; margin-top: auto; }
+.applab-launch { flex: 1; min-height: 40px; border-radius: 9px; border: 1px solid #9d6bc4; background: linear-gradient(120deg, #b98ae6, #9a6ac9); color: #170a22; font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+.applab-launch:hover { background: linear-gradient(120deg, #cda6f2, #ac7cdb); }
+.applab-secondary.applab-launch { background: none; color: #d9bff0; border-color: #5d4370; font-weight: 600; }
+.applab-card-actions .applab-secondary { flex: 1; min-height: 40px; padding: 8px 12px; font-size: 11px; }
+
+.applab-card-menu {
+    position: absolute; right: 12px; top: 52px; z-index: 5; min-width: 190px;
+    display: flex; flex-direction: column; padding: 6px;
+    border: 1px solid #5b3d70; border-radius: 11px; background: #1c1128;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .55);
+}
+.applab-card-menu button { text-align: left; border: 0; background: none; color: #e2cfef; padding: 10px 12px; border-radius: 7px; font-size: 12px; }
+.applab-card-menu button:hover { background: rgba(237, 220, 255, .09); }
+.applab-card-menu button.is-danger { color: #f0a9b4; }
+
+.applab-empty { padding: 40px 10px; text-align: center; color: var(--lab-muted); }
+.applab-empty-card { text-align: center; padding: 44px 20px; border: 1px dashed #5a3f6d; border-radius: 14px; background: rgba(109, 58, 153, .06); }
+.applab-empty-glyph { display: block; font-size: 34px; color: #846399; margin-bottom: 12px; }
+.applab-empty-card h3 { margin: 0 0 10px; font-size: 17px; font-weight: 500; }
+.applab-empty-card p { margin: 0 auto 20px; max-width: 460px; font-size: 12px; line-height: 1.8; color: var(--lab-muted); }
+
+.applab-porting-card { border: 1px solid #4a3459; border-radius: 14px; padding: 18px; background: linear-gradient(165deg, #241531, #150d1f 75%); display: flex; flex-direction: column; gap: 8px; }
+.applab-porting-head { display: flex; gap: 8px; flex-wrap: wrap; }
+.applab-porting-card h3 { margin: 4px 0 0; font-size: 15px; font-weight: 500; overflow-wrap: anywhere; }
+.applab-porting-card p { margin: 0; font-size: 11px; color: #b8a4c8; line-height: 1.7; }
+.applab-porting-status { color: #cfb6e2 !important; font-size: 10px !important; letter-spacing: .08em; text-transform: uppercase; }
+.applab-porting-card .applab-card-actions { flex-wrap: wrap; }
+.applab-porting-card .applab-card-actions button { flex: 1 1 110px; min-height: 38px; font-size: 10px; padding: 8px 10px; }
+
+.applab-footer { margin-top: 22px; color: #a997b7; font-size: 10px; line-height: 1.9; text-align: center; }
+.applab-footer p { margin: 6px 0; }
+
+/* Dialoghi */
+.applab-dialog {
+    width: min(560px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto;
+    border: 1px solid #5b3d70; border-radius: 18px; padding: 24px;
+    background: #180f22; color: #f1e4ff; box-shadow: 0 24px 100px #0009;
+}
+.applab-dialog::backdrop { background: rgba(5, 2, 10, .82); backdrop-filter: blur(7px); }
+.applab-dialog--wide { width: min(760px, calc(100vw - 24px)); }
+.applab-dialog-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.applab-dialog h2 { margin: 0 0 16px; font-size: 20px; font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
+.applab-dialog h3 { margin: 22px 0 8px; font-size: 14px; font-weight: 500; }
+.applab-dialog h4 { margin: 16px 0 6px; font-size: 12px; letter-spacing: .08em; color: #d8bff0; text-transform: uppercase; }
+.applab-dialog p { font-size: 12px; line-height: 1.8; color: #c9b6d9; }
+.applab-dialog-close { border: 0; background: none; color: #c9b6d9; font-size: 26px; line-height: 1; padding: 0 4px; }
+.applab-dialog-error { margin: 14px 0 0; padding: 10px 12px; border: 1px solid #6d3a48; border-radius: 9px; color: #ffc1bf; font-size: 12px; line-height: 1.7; }
+.applab-dialog-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 22px; }
+.applab-dialog-actions--stack { flex-direction: column; align-items: stretch; }
+.applab-muted { color: #b29cc4; font-size: 11px; line-height: 1.8; }
+
+.applab-dropzone {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;
+    border: 1px dashed #795293; border-radius: 12px; padding: 26px 16px; cursor: pointer;
+    background: #241430; transition: background .15s ease, border-color .15s ease;
+}
+.applab-dropzone.is-dragging { background: #412454; border-color: #b98ae6; }
+.applab-dropzone input { max-width: 100%; font-size: 11px; color: #cbb4df; }
+.applab-dropzone-icon { font-size: 28px; color: #cca1ed; }
+.applab-dropzone strong { font-size: 12px; font-weight: 500; }
+.applab-dropzone > span:last-child { font-size: 10px; color: #ac97bd; }
+
+.applab-progress { margin-top: 16px; }
+.applab-progress-track { height: 6px; border-radius: 3px; background: #2c1a3b; overflow: hidden; }
+.applab-progress-track span { display: block; height: 100%; background: linear-gradient(90deg, #9a6ac9, #d3aaf5); transition: width .2s ease; }
+.applab-progress p { display: flex; justify-content: space-between; gap: 12px; margin: 8px 0 0; font-size: 11px; color: #bfa9d1; }
+.applab-progress strong { color: #e7d3f7; font-weight: 500; }
+
+.applab-preview { display: flex; gap: 16px; align-items: flex-start; margin-top: 18px; padding: 16px; border: 1px solid #4a3459; border-radius: 12px; background: #1f1229; }
+.applab-preview h3 { margin: 0; font-size: 15px; font-weight: 500; }
+.applab-preview p { margin: 5px 0 0; font-size: 11px; color: #bfa9d1; line-height: 1.6; overflow-wrap: anywhere; }
+.applab-consent { display: flex; gap: 12px; align-items: flex-start; margin-top: 18px; padding: 14px; border: 1px solid #593970; border-radius: 10px; font-size: 12px; line-height: 1.7; color: #d6c2e6; cursor: pointer; }
+.applab-consent input { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; accent-color: #c28fe6; }
+.applab-warnings { margin: 10px 0 0; padding-left: 18px; color: #e7cf93; font-size: 11px; line-height: 1.8; }
+.applab-form label { display: block; font-size: 12px; color: #dbc6ec; }
+.applab-form input { display: block; width: 100%; margin-top: 8px; padding: 12px; border-radius: 8px; border: 1px solid #483257; background: #0f0917; color: #f4e8ff; font-size: 13px; }
+
+.applab-detail-hero { display: flex; gap: 16px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--lab-line); }
+.applab-detail-package { margin: 0; font-size: 12px; color: #d3bce6; overflow-wrap: anywhere; }
+.applab-detail-meta { margin: 6px 0 0; font-size: 11px; color: #a996ba; }
+.applab-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 18px 0 0; }
+.applab-facts div { border: 1px solid #3f2c4d; border-radius: 9px; padding: 10px 12px; background: #1b1025; }
+.applab-facts dt { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: #9c88ab; }
+.applab-facts dd { margin: 6px 0 0; font-size: 11px; color: #e0cdee; overflow-wrap: anywhere; }
+.applab-detail-title { border-top: 1px solid var(--lab-line); padding-top: 16px; }
+.applab-permissions { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.applab-permissions li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #3f2c4d; border-radius: 8px; font-size: 11px; background: #1b1025; }
+.applab-permissions li[data-severity="dangerous"] { border-color: #6d5a2f; }
+.applab-permissions li[data-severity="critical"] { border-color: #6d3a48; }
+.applab-permissions code { font-size: 9px; color: #a996ba; text-align: right; overflow-wrap: anywhere; }
+.applab-arch { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.applab-arch li { border: 1px solid #3f2c4d; border-radius: 8px; padding: 9px 11px; font-size: 11px; background: #1b1025; }
+.applab-arch span { display: block; margin-top: 4px; color: #a996ba; font-size: 10px; }
+.applab-detail-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+.applab-detail-actions .applab-primary, .applab-detail-actions .applab-secondary { flex: 1 1 150px; }
+.applab-ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.applab-report ul { margin: 6px 0 0; padding-left: 18px; font-size: 11px; line-height: 1.85; color: #c9b6d9; }
+.applab-report-head { display: flex; justify-content: space-between; align-items: center; gap: 18px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--lab-line); }
+.applab-report-head h3 { margin: 4px 0 0; font-size: 18px; }
+.applab-score { display: grid; grid-template-columns: auto auto; align-items: baseline; gap: 2px; padding: 10px 16px; border: 1px solid #6d3a48; border-radius: 12px; text-align: right; }
+.applab-score[data-level="high"], .applab-score[data-level="medium"] { border-color: #3d6a4f; }
+.applab-score strong { font-size: 28px; font-weight: 600; line-height: 1; color: #e9d6fa; }
+.applab-score span { font-size: 11px; color: #a996ba; }
+.applab-score small { grid-column: 1 / -1; font-size: 8px; letter-spacing: .12em; color: #b9a4c9; }
+.applab-report-note { margin-top: 14px; padding: 10px 12px; border: 1px solid #4a3459; border-radius: 9px; background: #1b1025; font-size: 11px !important; }
+
+/* Sessione immersiva */
+body.applab-immersive #navbar-container,
+body.applab-immersive #sidebar-container { display: none !important; }
+body.applab-immersive #app { visibility: hidden; }
+body.applab-immersive { overflow: hidden !important; }
+
+.applab-player {
+    position: fixed; inset: 0; z-index: 90000;
+    display: flex; flex-direction: column;
+    background: #000; color: #f2e9fb;
+    height: 100dvh; width: 100vw;
+    overscroll-behavior: none; touch-action: none;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.applab-player-bar {
+    position: absolute; inset: env(safe-area-inset-top) 0 auto 0; z-index: 3;
+    display: flex; align-items: center; gap: 14px; padding: 10px 14px;
+    background: linear-gradient(180deg, rgba(8, 4, 14, .92), rgba(8, 4, 14, 0));
+    transition: opacity .25s ease, transform .25s ease;
+}
+.applab-player-bar.is-hidden { opacity: 0; transform: translateY(-100%); pointer-events: none; }
+.applab-exit { border: 1px solid #5f4570; background: rgba(20, 10, 30, .8); color: #e0c9f5; border-radius: 999px; padding: 8px 14px; font-size: 10px; letter-spacing: .1em; }
+.applab-player-title { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.applab-player-title img, .applab-player-monogram { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; background: #2c1a3b; display: grid; place-items: center; font-size: 14px; color: #d9bff0; }
+.applab-player-title div { min-width: 0; }
+.applab-player-title strong { display: block; font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
+.applab-player-title small { display: block; font-size: 9px; color: #b7a4c6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38vw; }
+.applab-player-tools { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.applab-player-tools button { width: 38px; height: 36px; border-radius: 9px; border: 1px solid #5f4570; background: rgba(20, 10, 30, .8); color: #e0c9f5; font-size: 16px; }
+.applab-session-clock { font-size: 10px; letter-spacing: .1em; color: #b7a4c6; padding: 0 8px; }
+
+.applab-stage { position: relative; flex: 1; display: grid; place-items: center; min-height: 0; background: #000; }
+.applab-stage video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; touch-action: none; }
+.applab-stage-layer { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at 50% 40%, rgba(50, 22, 72, .55), rgba(4, 2, 8, .92)); z-index: 2; }
+.applab-stage-card { max-width: 520px; width: 100%; border: 1px solid #5b3d70; border-radius: 16px; padding: 24px; background: rgba(24, 15, 34, .94); text-align: center; }
+.applab-stage-card h2 { margin: 0 0 10px; font-size: 18px; font-weight: 500; }
+.applab-stage-card p { margin: 0; font-size: 12px; line-height: 1.85; color: #c5b2d4; }
+.applab-stage-card[data-state="error"] h2 { color: #ffc1bf; }
+.applab-stage-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+.applab-stage-primary, .applab-stage-secondary { min-height: 40px; padding: 10px 16px; border-radius: 9px; font-size: 11px; font-weight: 600; letter-spacing: .06em; }
+.applab-stage-primary { background: #ba8be4; border: 1px solid #cfa1f5; color: #180b24; }
+.applab-stage-secondary { background: none; border: 1px solid #5d4370; color: #dbc3ee; }
+.applab-spinner { display: block; width: 26px; height: 26px; margin: 0 auto 14px; border-radius: 50%; border: 2px solid #4a3459; border-top-color: #c79bf0; animation: applab-spin 1s linear infinite; }
+@keyframes applab-spin { to { transform: rotate(360deg); } }
+
+.applab-touch-controls { position: absolute; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 10px; z-index: 3; opacity: .5; transition: opacity .2s ease; }
+.applab-touch-controls:hover, .applab-touch-controls:focus-within { opacity: 1; }
+.applab-touch-controls button { width: 46px; height: 42px; border-radius: 11px; border: 1px solid #5f4570; background: rgba(12, 6, 18, .8); color: #cbb2de; font-size: 17px; }
+
+.applab-keyboard-bar { position: absolute; left: 8px; right: 8px; bottom: calc(70px + env(safe-area-inset-bottom)); z-index: 4; display: flex; gap: 8px; padding: 8px; border: 1px solid #5b3d70; border-radius: 12px; background: rgba(18, 10, 27, .96); }
+.applab-keyboard-bar input { flex: 1; min-width: 0; border: 1px solid #4a3459; border-radius: 8px; background: #0d0814; color: #f0e3fb; padding: 10px 12px; font-size: 16px; }
+.applab-keyboard-bar button { border-radius: 8px; border: 1px solid #6a4b7f; background: #2b1739; color: #e0c9f5; font-size: 11px; padding: 0 12px; }
+.applab-keyboard-bar button[data-keyboard-close] { width: 40px; padding: 0; }
+
+@media (max-width: 760px) {
+    .applab-page { padding: 12px 0 40px; }
+    .applab-heading { align-items: flex-start; flex-direction: column; gap: 20px; }
+    .applab-heading .applab-primary { width: 100%; }
+    .applab-shell { padding: 18px 12px; }
+    .applab-shell-heading { gap: 8px; }
+    .applab-tabs { gap: 18px; }
+    .applab-tabs button { font-size: 11px; }
+    .applab-toolbar { gap: 10px; }
+    .applab-select { flex: 1 1 140px; }
+    .applab-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .applab-dialog { padding: 18px; }
+    .applab-dialog h2 { font-size: 18px; }
+    .applab-preview { flex-direction: column; }
+    .applab-card-actions .applab-secondary { flex: 1; }
+    .applab-player-title strong, .applab-player-title small { max-width: 32vw; }
+    .applab-session-clock { display: none; }
+}
+
+@media (max-width: 420px) {
+    .applab-grid { grid-template-columns: 1fr; }
+    .applab-player-bar { gap: 8px; padding: 8px 10px; }
+    .applab-player-title img { display: none; }
+    .applab-exit { padding: 8px 10px; font-size: 9px; }
+    .applab-player-tools button { width: 34px; height: 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .applab-card, .applab-player-bar, .applab-touch-controls { transition: none; }
+    .applab-spinner { animation-duration: 3s; }
+}

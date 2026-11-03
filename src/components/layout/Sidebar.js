@@ -54,6 +54,7 @@ function renderSidebarContent(container, context) {
                 <a class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" href="/minigames">MINIGIOCHI</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-rpg" data-context="rpg" href="/giochi-di-ruolo">GIOCHI DI RUOLO</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" href="/library">LETTURA</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-applab" data-context="applab" href="/app-lab">APP LAB</a>
                 <span class="sidebar-section-label">AL TUO FIANCO</span>
                 <a class="btn-glass sidebar-nav-item" id="nav-oracle" data-context="oracle" href="/oracolo">L’ORACOLO</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-shop" data-context="shop" href="/shop">BOTTEGA</a>
@@ -209,6 +210,7 @@ function setupEventListeners(container, context) {
     attachNav('nav-cardCounter','cardCounter');
     attachNav('nav-oracle', 'oracle');
     attachNav('nav-reading', 'reading');
+    attachNav('nav-applab', 'applab');
     attachNav('nav-shop', 'shop');
     attachNav('nav-rpg', 'rpg');
     attachNav('nav-profile', 'profile');

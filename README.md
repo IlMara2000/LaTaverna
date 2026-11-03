@@ -65,6 +65,18 @@ La voce **Lettura** è disponibile nella home e nel menu laterale. Per un nuovo 
 
 Verifica locale: `node --test scripts/tests/reading.test.mjs`. Verifica d'integrazione facoltativa: `node scripts/verify-reading-live.mjs --confirm-live` (crea due account ospite temporanei e rimuove i libri di prova; al termine stampa gli ID degli account da eliminare tramite amministrazione).
 
+## APP LAB
+
+La voce **APP LAB** (`/app-lab`, sidebar e dock della home) è la sezione per caricare APK, analizzarli, conservarli in una libreria privata e avviarli in un ambiente Android remoto. Non modifica le altre sezioni.
+
+- L'analisi avviene nel browser: ZIP, `AndroidManifest.xml` binario (AXML), `resources.arsc`, icona, permessi, SDK, ABI, firma e framework. Nessun APK viene eseguito su Vercel.
+- Gli APK finiscono nel bucket privato `app_lab_apks` (max 200 MB); metadati, sessioni e progetti di porting stanno nelle tabelle `app_lab_*` con RLS per utente. Applica `supabase/migrations/20261103120000_app_lab.sql` su un nuovo ambiente.
+- `AVVIA` richiede un gateway Android esterno con WebRTC (`APP_LAB_RUNTIME_URL`, `APP_LAB_RUNTIME_TOKEN`). Senza queste variabili la sezione lo dichiara e non simula sessioni.
+- `PORTING iOS` distingue APK-only (mai convertibile in `.ipa`) e progetto sorgente (framework riconosciuto, fattibilità, coda di build). La build richiede un servizio macOS con Xcode (`APP_LAB_BUILD_SERVICE_URL`, `APP_LAB_BUILD_SERVICE_TOKEN`). Un `.ipa` compare solo dopo una build firmata riuscita.
+- Dettagli, contratti dei servizi esterni, sicurezza e checklist di test: [docs/app-lab.md](docs/app-lab.md).
+
+Verifica: `npm run test:cards` (include `scripts/tests/applab.test.mjs`).
+
 ## Variabili Vercel
 
 Per le function AI configura su Vercel Project Settings:
