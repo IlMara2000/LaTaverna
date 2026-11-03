@@ -1,0 +1,15 @@
+{
+  "name": "applab-gateway",
+  "private": true,
+  "type": "module",
+  "description": "Gateway Android per APP LAB: emulatore, WebRTC via mediamtx, input adb.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

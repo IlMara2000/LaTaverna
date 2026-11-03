@@ -1,0 +1,17 @@
+# mediamtx — solo quello che serve ad APP LAB.
+# Pubblicazione: ffmpeg invia il flusso H.264 dell'emulatore su rtsp://127.0.0.1:8554/applab
+# Lettura: il gateway inoltra l'offerta WebRTC a http://127.0.0.1:8889/applab/whep
+logLevel: info
+rtsp: yes
+rtspAddress: 127.0.0.1:8554
+rtmp: no
+hls: no
+webrtc: yes
+webrtcAddress: 127.0.0.1:8889
+webrtcAllowOrigin: '*'
+webrtcLocalUDPAddress: 127.0.0.1:8189
+srt: no
+api: no
+paths:
+  applab:
+    source: publisher

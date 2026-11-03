@@ -271,6 +271,7 @@ export function openAppSession({ app, onLaunched = () => {}, onClose = () => {} 
         connection = await connectStream({
             signalingUrl: target.signalingUrl,
             iceServers: target.iceServers || [],
+            inputMode: target.input || 'datachannel',
             onStream: stream => {
                 attachStream(stream);
                 hideCard();

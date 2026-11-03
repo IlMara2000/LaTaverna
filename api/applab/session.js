@@ -172,9 +172,9 @@ async function startSession({ token, user, appId }) {
 
     return {
         sessionId: row?.id,
-        providerSessionId: String(providerId),
-        signalingUrl,
-        iceServers: Array.isArray(payload.iceServers) ? payload.iceServers : [],
+        providerSessionId: String(providerId),            signalingUrl,
+            input: payload.input === 'ws' ? 'ws' : 'datachannel',
+            iceServers: Array.isArray(payload.iceServers) ? payload.iceServers : [],
         expiresAt
     };
 }
@@ -202,9 +202,9 @@ async function resumeSession({ token, user, sessionId, appId }) {
     if (!signalingUrl) throw fail(502, 'Il runtime non ha fornito un nuovo canale di streaming.');
     return {
         sessionId: row.id,
-        providerSessionId: row.provider_session_id,
-        signalingUrl,
-        iceServers: Array.isArray(payload.iceServers) ? payload.iceServers : [],
+        providerSessionId: row.provider_session_id,            signalingUrl,
+            input: payload.input === 'ws' ? 'ws' : 'datachannel',
+            iceServers: Array.isArray(payload.iceServers) ? payload.iceServers : [],
         expiresAt: payload.expiresAt || null
     };
 }

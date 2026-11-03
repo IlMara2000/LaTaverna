@@ -96,7 +96,10 @@ export async function stopSession({ sessionId, appId }) {
  * Connessione WebRTC al gateway: video/audio remoti + canale dati per input.
  * Restituisce un controller con invio eventi, riconnessione e chiusura.
  */
-export async function connectStream({ signalingUrl, iceServers = [], onStream, onState = () => {}, onClose = () => {} }) {
+export async function connectStream({ signalingUrl, iceServers = [], inputMode = 'datachannel', onStream, onState = () => {}, onClose = () => {} }) {
+    // `ws`: i comandi viaggiano sul WebSocket di signaling, per i gateway che
+    // non negoziano canali dati (es. mediamtx). `datachannel`: contratto base.
+    const wsInput = inputMode === 'ws';
     if (typeof RTCPeerConnection === 'undefined') {
         throw new RuntimeError('Questo browser non supporta WebRTC: impossibile ricevere lo schermo Android.', { code: 'webrtc_unsupported' });
     }
@@ -109,12 +112,17 @@ export async function connectStream({ signalingUrl, iceServers = [], onStream, o
 
     const send = payload => {
         const text = JSON.stringify(payload);
+        if (wsInput) {
+            if (socket.readyState === WebSocket.OPEN) socket.send(text);
+            else pending.push(text);
+            return;
+        }
         if (control?.readyState === 'open') control.send(text);
         else pending.push(text);
     };
 
     pc.addTransceiver?.('video', { direction: 'recvonly' });
-    pc.addTransceiver?.('audio', { direction: 'recvonly' });
+    if (!wsInput) pc.addTransceiver?.('audio', { direction: 'recvonly' });
     pc.ontrack = event => {
         const tracks = event.streams?.[0]?.getTracks?.() || [event.track];
         tracks.forEach(track => { if (track) remote.addTrack(track); });
@@ -123,15 +131,17 @@ export async function connectStream({ signalingUrl, iceServers = [], onStream, o
     pc.onicecandidate = event => {
         if (event.candidate) send({ type: 'ice', candidate: event.candidate.toJSON?.() || event.candidate });
     };
-    pc.ondatachannel = event => {
-        if (event.channel.label !== 'control') return;
-        control = event.channel;
-        pending.splice(0).forEach(text => control.send(text));
-    };
-    control = pc.createDataChannel('control', { ordered: true });
-    control.onopen = () => {
-        pending.splice(0).forEach(text => control.send(text));
-    };
+    if (!wsInput) {
+        pc.ondatachannel = event => {
+            if (event.channel.label !== 'control') return;
+            control = event.channel;
+            pending.splice(0).forEach(text => control.send(text));
+        };
+        control = pc.createDataChannel('control', { ordered: true });
+        control.onopen = () => {
+            pending.splice(0).forEach(text => control.send(text));
+        };
+    }
 
     const closeSocket = () => {
         try { socket.close(); } catch { /* già chiuso */ }
@@ -148,6 +158,7 @@ export async function connectStream({ signalingUrl, iceServers = [], onStream, o
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
                 socket.send(JSON.stringify({ type: 'offer', sdp: offer }));
+                if (wsInput) pending.splice(0).forEach(text => socket.send(text));
             } catch (error) {
                 settle(reject, error);
             }
@@ -181,7 +192,7 @@ export async function connectStream({ signalingUrl, iceServers = [], onStream, o
     const startHeartbeat = () => {
         clearInterval(heartbeat);
         heartbeat = setInterval(() => {
-            if (control?.readyState === 'open') control.send(JSON.stringify({ type: 'ping', at: Date.now() }));
+            send({ type: 'ping', at: Date.now() });
         }, 20000);
     };
     pc.onconnectionstatechange = () => {
