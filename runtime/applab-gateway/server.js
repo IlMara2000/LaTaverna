@@ -3,7 +3,7 @@
  * APP LAB — gateway Android.
  *
  * Un emulatore per volta: scarica l'APK firmato, lo installa, apre l'activity
- * di lancio e trasmette lo schermo in WebRTC tramite mediamtx (RTSP → WHEP).
+ * di lancio e trasmette lo schermo in WebRTC tramite mediamtx (WHIP → WHEP).
  * I comandi arrivano sul WebSocket di signaling e vengono tradotti in
  * `adb shell input`: mediamtx non negozia canali dati, quindi il gateway
  * dichiara `input: "ws"` e il player usa quel canale.
@@ -31,9 +31,10 @@ const ADB = env('ADB_BIN', 'adb');
 const EMULATOR = env('EMULATOR_BIN', 'emulator');
 const AVD = env('ANDROID_AVD', 'applab');
 const FFMPEG = env('FFMPEG_BIN', 'ffmpeg');
-const RTSP = env('MEDIAMTX_RTSP', 'rtsp://127.0.0.1:8554/applab');
+const WHIP = env('MEDIAMTX_WHIP', 'http://127.0.0.1:8889/applab/whip');
 const WHEP = env('MEDIAMTX_WHEP', 'http://127.0.0.1:8889/applab/whep');
 const SESSION_MINUTES = Number(env('SESSION_MINUTES', '20'));
+const CAPTURE_FPS = Number(env('CAPTURE_FPS', '10'));
 
 if (!TOKEN) {
     console.error('APP_LAB_RUNTIME_TOKEN non impostato: il gateway non parte senza token.');
@@ -131,54 +132,72 @@ async function readScreenSize() {
     return screen;
 }
 
-/** screenrecord ha un limite di 180 s per invocazione: il ciclo riprende da solo. */
+/**
+ * Un frame PNG per volta.
+ *
+ * `screenrecord` in pipe consegna solo un paio di frame e chiude (verificato:
+ * 17 KB in 6 s contro 216 KB in 5 s su file), mentre `screencap` costa ~80 ms:
+ * a 10 fps il flusso resta continuo e senza il limite dei 180 s.
+ */
+function captureFrame(serial) {
+    return new Promise(resolve => {
+        const proc = spawn(ADB, ['-s', serial, 'exec-out', 'screencap', '-p'], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const chunks = [];
+        proc.stdout.on('data', chunk => chunks.push(chunk));
+        proc.on('error', () => resolve(null));
+        proc.on('close', code => resolve(code === 0 ? Buffer.concat(chunks) : null));
+    });
+}
+
 function startPublisher() {
     if (publishing) return publishing;
     const state = { stopped: false, proc: null };
     publishing = state;
+    const serial = emulator?.serial;
+    if (!serial) return state;
 
-    const loop = () => {
-        if (state.stopped || !emulator?.serial) return;
-        const capture = spawn(ADB, [
-            '-s', emulator.serial, 'exec-out', 'screenrecord',
-            '--bit-rate', '6000000', '--time-limit', '170', '--output-format=h264', '-'
-        ], { stdio: ['ignore', 'pipe', 'pipe'] });
-        const publish = spawn(FFMPEG, [
-            '-hide_banner', '-loglevel', 'error',
-            '-f', 'h264', '-i', 'pipe:0',
-            '-c', 'copy', '-f', 'rtsp', '-rtsp_transport', 'tcp', RTSP
-        ], { stdio: ['pipe', 'ignore', 'pipe'] });
-        children.add(capture);
-        children.add(publish);
-        state.proc = publish;
-        capture.stdout.pipe(publish.stdin);
-        capture.stderr.on('data', chunk => console.error('[capture]', String(chunk).trim().slice(0, 160)));
-        publish.stderr.on('data', chunk => console.error('[ffmpeg]', String(chunk).trim().slice(0, 160)));
+    const publish = spawn(FFMPEG, [
+        '-hide_banner', '-loglevel', 'error',
+        '-f', 'image2pipe', '-framerate', String(CAPTURE_FPS), '-i', 'pipe:0',
+        '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency',
+        '-profile:v', 'baseline', '-pix_fmt', 'yuv420p', '-g', '20',
+        '-f', 'whip', WHIP
+    ], { stdio: ['pipe', 'ignore', 'pipe'] });
+    children.add(publish);
+    state.proc = publish;
+    publish.stderr.on('data', chunk => console.error('[ffmpeg]', String(chunk).trim().slice(0, 160)));
+    publish.on('exit', () => {
+        children.delete(publish);
+        state.proc = null;
+        if (!state.stopped && publishing === state) {
+            publishing = null;
+            setTimeout(() => { if (!state.stopped) startPublisher(); }, 1500);
+        }
+    });
 
-        let finished = false;
-        const next = () => {
-            if (finished) return;
-            finished = true;
-            children.delete(capture);
-            children.delete(publish);
-            try { capture.kill('SIGKILL'); } catch { /* già chiuso */ }
-            try { publish.kill('SIGKILL'); } catch { /* già chiuso */ }
-            state.proc = null;
-            if (!state.stopped) setTimeout(loop, 1200);
-        };
-        capture.on('exit', next);
-        publish.on('exit', next);
+    const frameMs = Math.max(40, Math.round(1000 / CAPTURE_FPS));
+    const pump = async () => {
+        while (!state.stopped && publishing === state) {
+            const started = Date.now();
+            const frame = await captureFrame(serial);
+            if (state.stopped || publishing !== state) return;
+            if (frame && publish.stdin.writable) {
+                if (!publish.stdin.write(frame)) await new Promise(done => publish.stdin.once('drain', done));
+            }
+            const elapsed = Date.now() - started;
+            if (elapsed < frameMs) await new Promise(done => setTimeout(done, frameMs - elapsed));
+        }
     };
-
-    loop();
+    pump();
     return state;
 }
 
 function stopPublisher() {
     if (!publishing) return;
     publishing.stopped = true;
-    try { publishing.proc?.kill('SIGKILL'); } catch { /* già chiuso */ }
+    const proc = publishing.proc;
     publishing = null;
+    try { proc?.kill('SIGKILL'); } catch { /* già chiuso */ }
 }
 
 const KEYS = {

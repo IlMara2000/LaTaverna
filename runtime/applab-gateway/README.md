@@ -6,7 +6,7 @@ Gira su una macchina che ha `adb`, un emulatore Android e `ffmpeg`; **non** su V
 ## Come funziona
 
 ```
-browser ──WebRTC (solo video)──► mediamtx (WHEP) ◄── RTSP ◄── ffmpeg ◄── adb screenrecord
+browser ──WebRTC (solo video)──► mediamtx (WHEP) ◄── WHIP ◄── ffmpeg ◄── adb screencap
    │                                                                          ▲
    └──WebSocket /signal/{id}──► gateway ──adb shell input tap/swipe/text──────┘
 ```
@@ -53,9 +53,11 @@ APP_LAB_RUNTIME_TOKEN=<lo stesso token>
 
 ## Limiti noti
 
-- `adb screenrecord` si ferma a 170 s: il ciclo riprende da solo e il video può
-  avere una pausa di circa un secondo ogni tanto. È accettabile per una demo,
-  non per un servizio.
+- La cattura è un pump di `adb exec-out screencap -p` in `ffmpeg` (x264):
+  `screenrecord` in pipe consegna solo un paio di frame e chiude, mentre
+  `screencap` regge ~12 fps con frame da ~43 KB. Il default è 10 fps e si cambia
+  con `CAPTURE_FPS`. Niente limite dei 170 s, ma il costo CPU è più alto: il
+  flusso è adatto a una demo, non a un servizio.
 - Solo tocco singolo e trascinamento: il pinch a due dita non è implementato
   (`adb shell input` non gestisce multi-touch senza root).
 - Un utente per volta, nessun isolamento tra sessioni: non usarlo esposto su

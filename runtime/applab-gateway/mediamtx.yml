@@ -1,9 +1,10 @@
 # mediamtx — solo quello che serve ad APP LAB.
-# Pubblicazione: ffmpeg invia il flusso H.264 dell'emulatore su rtsp://127.0.0.1:8554/applab
+# Pubblicazione: ffmpeg invia il flusso H.264 dell'emulatore in WHIP su
+#   http://127.0.0.1:8889/applab/whip
 # Lettura: il gateway inoltra l'offerta WebRTC a http://127.0.0.1:8889/applab/whep
+# RTSP resta disattivato: la porta 8554 è già occupata dall'emulatore Android.
 logLevel: info
-rtsp: yes
-rtspAddress: 127.0.0.1:8554
+rtsp: no
 rtmp: no
 hls: no
 webrtc: yes
