@@ -83,24 +83,32 @@ export async function showAppLab(container) {
     root.innerHTML = `
         <header class="applab-header">
             <button type="button" class="applab-back" data-home>← LA TAVERNA</button>
-            <span class="applab-eyebrow">IL BANCO DELLE MACCHINE</span>
-            <div class="applab-heading">
-                <div>
+            <div class="applab-hero">
+                <div class="applab-hero-copy">
+                    <span class="applab-eyebrow">IL BANCO DELLE MACCHINE</span>
                     <h1>APP <span>LAB</span></h1>
-                    <p>Carica un APK, leggine struttura e permessi, avvialo in un ambiente Android remoto.
+                    <p class="applab-lead">Carica un APK, leggine struttura e permessi, avvialo in un ambiente Android remoto.
                        Da iPhone o iPad, senza installare nulla.</p>
+                    <div class="applab-hero-actions">
+                        <button type="button" class="applab-primary" data-upload>+ CARICA APK</button>
+                    </div>
                 </div>
-                <button type="button" class="applab-primary" data-upload>+ CARICA APK</button>
+                <aside class="applab-aside" aria-label="Stato del runtime e numeri della libreria">
+                    <section class="applab-runtime" data-runtime aria-live="polite">
+                        <span class="applab-runtime-dot" aria-hidden="true"></span>
+                        <div>
+                            <strong data-runtime-title>Verifico il runtime Android…</strong>
+                            <p data-runtime-text>Controllo se il gateway di esecuzione remota è collegato.</p>
+                        </div>
+                    </section>
+                    <dl class="applab-figures">
+                        <div><dt>App</dt><dd><span data-stat-apps>—</span><small>in libreria</small></dd></div>
+                        <div><dt>Online</dt><dd><span data-stat-online>—</span><small>avviabili</small></dd></div>
+                        <div><dt>Progetti</dt><dd><span data-stat-projects>—</span><small>porting iOS</small></dd></div>
+                    </dl>
+                </aside>
             </div>
         </header>
-
-        <section class="applab-runtime" data-runtime aria-live="polite">
-            <span class="applab-runtime-dot" aria-hidden="true"></span>
-            <div>
-                <strong data-runtime-title>Verifico il runtime Android…</strong>
-                <p data-runtime-text>Controllo se il gateway di esecuzione remota è collegato.</p>
-            </div>
-        </section>
 
         <nav class="applab-tabs" role="tablist" aria-label="Sezioni APP LAB">
             <button type="button" role="tab" data-tab="mine" aria-selected="true">LE MIE APP</button>
@@ -115,12 +123,15 @@ export async function showAppLab(container) {
             </div>
 
             <div class="applab-toolbar" data-toolbar>
-                <label class="applab-search">
-                    <span aria-hidden="true">⌕</span>
-                    <input type="search" data-search maxlength="120" autocomplete="off"
-                        placeholder="Cerca per nome o package…" aria-label="Cerca applicazione">
+                <label class="applab-field">
+                    <span>CERCA</span>
+                    <span class="applab-inputbox">
+                        <span aria-hidden="true">⌕</span>
+                        <input type="search" data-search maxlength="120" autocomplete="off"
+                            placeholder="Nome o package…" aria-label="Cerca applicazione">
+                    </span>
                 </label>
-                <label class="applab-select">
+                <label class="applab-field">
                     <span>FILTRO</span>
                     <select data-filter aria-label="Filtra applicazioni">
                         <option value="all">Tutte</option>
@@ -133,7 +144,7 @@ export async function showAppLab(container) {
                         <option value="native-android">Android nativo</option>
                     </select>
                 </label>
-                <label class="applab-select">
+                <label class="applab-field">
                     <span>ORDINA</span>
                     <select data-sort aria-label="Ordina applicazioni">
                         <option value="recent">Più recenti</option>
@@ -361,6 +372,10 @@ export async function showAppLab(container) {
         find('[data-toolbar]').hidden = tab === 'porting';
         find('[data-upload]').disabled = !user;
         grid.setAttribute('aria-busy', String(loading));
+        const onlineCount = apps.filter(app => ['ready', 'limited'].includes(app.compatibility)).length;
+        find('[data-stat-apps]').textContent = user ? String(apps.length) : '—';
+        find('[data-stat-online]').textContent = user ? String(onlineCount) : '—';
+        find('[data-stat-projects]').textContent = user ? String(projects.length) : '—';
 
         if (!isSupabaseConfigured) {
             grid.innerHTML = emptyMarkup('APP LAB non è attivo su questo ambiente', 'Manca la configurazione Supabase. Applica la migrazione app_lab e riavvia l’app.', false);

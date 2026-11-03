@@ -1,14 +1,86 @@
 /* APP LAB — libreria Android e sessione immersiva. */
 
-.applab-page {
+#ui #app .entry-page.applab-page {
     --lab-line: rgba(211, 189, 237, .14);
     --lab-muted: #b6a9c9;
     --lab-ink: #f7f2ff;
     --lab-accent: #c791f4;
+    /* Scala aurea: ogni gradino è il precedente × 1,618 (8 · 13 · 21 · 34 · 55). */
+    --lab-1: 8px;
+    --lab-2: 13px;
+    --lab-3: 21px;
+    --lab-4: 34px;
+    --lab-5: 55px;
     width: min(1180px, 100%);
+    max-width: 1180px;
     margin: 0 auto;
-    padding: 24px 16px 60px;
+    padding: 0 0 var(--lab-5);
     color: var(--lab-ink);
+}
+/* Hero 61,8% / 38,2%: testo a sinistra, stato e numeri nella colonna laterale. */
+#ui #app .entry-page.applab-page .applab-hero {
+    display: grid;
+    grid-template-columns: 1.618fr 1fr;
+    gap: var(--lab-4);
+    align-items: start;
+    margin: var(--lab-3) 0 0;
+    padding-bottom: var(--lab-4);
+    border-bottom: 1px solid var(--lab-line);
+}
+#ui #app .entry-page.applab-page .applab-hero-copy { min-width: 0; }
+#ui #app .entry-page.applab-page .applab-lead {
+    margin: 0;
+    max-width: 44ch;
+    color: var(--lab-muted);
+    font-size: 13px;
+    line-height: 1.8;
+}
+#ui #app .entry-page.applab-page .applab-hero-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--lab-2);
+    flex-wrap: wrap;
+    margin-top: var(--lab-3);
+}
+#ui #app .entry-page.applab-page .applab-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lab-3);
+    min-width: 0;
+    padding: var(--lab-3);
+    border: 1px solid var(--lab-line);
+    border-radius: 16px;
+    background: linear-gradient(160deg, rgba(109, 58, 153, .18), rgba(22, 13, 33, .72));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+#ui #app .entry-page.applab-page .applab-figures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--lab-2);
+    margin: 0;
+    padding-top: var(--lab-3);
+    border-top: 1px solid var(--lab-line);
+}
+#ui #app .entry-page.applab-page .applab-figures dt {
+    font-size: 9px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #9b87ab;
+}
+#ui #app .entry-page.applab-page .applab-figures dd { margin: 6px 0 0; color: #f0dcff; }
+#ui #app .entry-page.applab-page .applab-figures dd span {
+    display: block;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+#ui #app .entry-page.applab-page .applab-figures dd small {
+    display: block;
+    margin-top: 4px;
+    font-size: 9px;
+    letter-spacing: .06em;
+    color: #a996ba;
 }
 #app .applab-page * { box-sizing: border-box; }
 #app .applab-page [hidden], #app .applab-player [hidden] { display: none !important; }
@@ -20,13 +92,26 @@
     outline: 2px solid #d5acff; outline-offset: 3px;
 }
 
-.applab-header { padding-top: 4px; position: relative; }
-.applab-back { border: 0; background: none; color: var(--lab-muted); padding: 8px 0; font-size: 12px; letter-spacing: .08em; }
-.applab-eyebrow { display: block; margin-top: 34px; font-size: 10px; letter-spacing: .24em; color: #c5a3e5; }
-.applab-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 28px; margin: 14px 0 28px; flex-wrap: wrap; }
-.applab-heading h1 { margin: 0; font-size: clamp(44px, 6vw, 76px); line-height: 1; letter-spacing: -.055em; font-weight: 600; }
-.applab-heading h1 span { color: #bb82ed; }
-.applab-heading p { color: var(--lab-muted); font-size: 13px; line-height: 1.85; margin: 14px 0 0; max-width: 560px; }
+#ui #app .entry-page.applab-page .applab-header { position: relative; }
+#ui #app .entry-page.applab-page .applab-back {
+    border: 0;
+    background: none;
+    box-shadow: none;
+    min-height: 0;
+    color: var(--lab-muted);
+    padding: var(--lab-1) 0;
+    font-size: 12px;
+    letter-spacing: .08em;
+}
+#ui #app .entry-page.applab-page .applab-eyebrow {
+    display: block;
+    margin: 0 0 var(--lab-2);
+    font-size: 10px;
+    letter-spacing: .24em;
+    color: #c5a3e5;
+}
+#ui #app .entry-page.applab-page .applab-hero h1 { margin: 0 0 var(--lab-2); }
+#ui #app .entry-page.applab-page .applab-hero h1 span { color: #bb82ed; }
 .applab-primary, .applab-secondary {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 42px; padding: 11px 18px; border-radius: 10px;
@@ -39,52 +124,128 @@
 .applab-secondary:hover { background: rgba(237, 220, 255, .1); }
 .applab-secondary.is-danger { color: #f0a9b4; border-color: #6b3a48; }
 
-.applab-runtime {
-    display: flex; align-items: flex-start; gap: 14px; padding: 16px 18px;
-    border: 1px solid var(--lab-line); border-radius: 12px;
-    background: linear-gradient(120deg, rgba(109, 58, 153, .16), rgba(36, 21, 57, .08));
-}
-.applab-runtime-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #8b7f96; box-shadow: 0 0 10px #8b7f96; }
-.applab-runtime[data-state="ok"] .applab-runtime-dot { background: #79c79a; box-shadow: 0 0 12px #79c79a; }
-.applab-runtime strong { display: block; font-size: 12px; font-weight: 600; }
-.applab-runtime p { margin: 5px 0 0; font-size: 11px; line-height: 1.75; color: var(--lab-muted); }
+#ui #app .entry-page.applab-page .applab-runtime { display: flex; align-items: flex-start; gap: var(--lab-2); padding: 0; border: 0; border-radius: 0; background: none; }
+#ui #app .entry-page.applab-page .applab-runtime-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; background: #8b7f96; box-shadow: 0 0 10px #8b7f96; }
+#ui #app .entry-page.applab-page .applab-runtime[data-state="ok"] .applab-runtime-dot { background: #79c79a; box-shadow: 0 0 12px #79c79a; }
+#ui #app .entry-page.applab-page .applab-runtime strong { display: block; font-size: 12px; font-weight: 600; }
+#ui #app .entry-page.applab-page .applab-runtime p { margin: 5px 0 0; font-size: 11px; line-height: 1.75; color: var(--lab-muted); }
 
-.applab-tabs { display: flex; gap: 26px; border-bottom: 1px solid var(--lab-line); margin: 28px 0 0; overflow-x: auto; }
-.applab-tabs button {
-    white-space: nowrap; background: none; border: 0; color: var(--lab-muted);
-    padding: 16px 2px; font-size: 12px; letter-spacing: .08em; border-bottom: 2px solid transparent;
+#ui #app .entry-page.applab-page .applab-tabs {
+    display: flex;
+    gap: var(--lab-4);
+    margin: var(--lab-3) 0 0;
+    padding: 0;
+    border-bottom: 1px solid var(--lab-line);
+    overflow-x: auto;
 }
-.applab-tabs button[aria-selected="true"] { color: #e1c0ff; border-bottom-color: var(--lab-accent); }
+#ui #app .entry-page.applab-page .applab-tabs button {
+    white-space: nowrap;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 0;
+    padding: var(--lab-2) 0;
+    color: var(--lab-muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+}
+#ui #app .entry-page.applab-page .applab-tabs button[aria-selected="true"] { color: #e1c0ff; border-bottom-color: var(--lab-accent); }
 
-.applab-shell { border: 1px solid var(--lab-line); border-top: 0; border-radius: 0 0 16px 16px; padding: 26px; background: rgba(15, 8, 24, .62); }
+#ui #app .entry-page.applab-page .applab-shell {
+    border: 1px solid var(--lab-line);
+    border-top: 0;
+    border-radius: 0 0 18px 18px;
+    padding: var(--lab-4);
+    background: rgba(15, 8, 24, .62);
+}
 .applab-shell-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
 .applab-shell-heading h2 { margin: 0; font-size: 18px; font-weight: 500; }
 .applab-shell-heading p { margin: 8px 0 0; font-size: 12px; color: var(--lab-muted); line-height: 1.7; max-width: 640px; }
 .applab-counter { font-size: 10px; letter-spacing: .14em; color: var(--lab-muted); white-space: nowrap; }
 
-.applab-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin: 22px 0 6px; align-items: flex-end; }
-.applab-search { display: flex; align-items: center; gap: 10px; flex: 1 1 260px; min-width: 220px; border: 1px solid var(--lab-line); border-radius: 10px; padding: 4px 6px 4px 14px; background: #100b18; }
-.applab-search span { font-size: 24px; color: #a98bbc; }
-.applab-search input { flex: 1; min-width: 0; border: 0; background: none; color: #eee0ff; padding: 10px 2px; font-size: 12px; }
-.applab-search input::placeholder { color: #9885aa; }
-.applab-select { display: flex; flex-direction: column; gap: 6px; font-size: 9px; letter-spacing: .16em; color: #9b87ab; }
-.applab-select select {
-    appearance: none; background: #100b18; color: #e6d6f5; border: 1px solid var(--lab-line);
-    border-radius: 9px; padding: 10px 30px 10px 12px; font-size: 11px; min-width: 148px;
+#ui #app .entry-page.applab-page .applab-toolbar {
+    display: grid;
+    grid-template-columns: 1.618fr 1fr 1fr;
+    gap: var(--lab-2);
+    align-items: end;
+    margin: var(--lab-3) 0 var(--lab-2);
+}
+#ui #app .entry-page.applab-page .applab-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--lab-1);
+    min-width: 0;
+}
+#ui #app .entry-page.applab-page .applab-field > span {
+    font-size: 9px;
+    letter-spacing: .16em;
+    color: #9b87ab;
+}
+#ui #app .entry-page.applab-page .applab-inputbox {
+    display: flex;
+    align-items: center;
+    gap: var(--lab-1);
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 var(--lab-2);
+    border: 1px solid var(--lab-line);
+    border-radius: 10px;
+    background: #100b18;
+}
+#ui #app .entry-page.applab-page .applab-inputbox > span { font-size: 20px; line-height: 1; color: #a98bbc; }
+#ui #app .entry-page.applab-page .applab-inputbox input {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: var(--lab-1) 0;
+    border: 0;
+    background: none;
+    color: #eee0ff;
+    font-size: 12px;
+}
+#ui #app .entry-page.applab-page .applab-inputbox input::placeholder { color: #9885aa; }
+#ui #app .entry-page.applab-page .applab-field select {
+    appearance: none;
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 30px 10px 12px;
+    border: 1px solid var(--lab-line);
+    border-radius: 10px;
+    background-color: #100b18;
+    color: #e6d6f5;
+    font-size: 11px;
     background-image: linear-gradient(45deg, transparent 50%, #b192c7 50%), linear-gradient(135deg, #b192c7 50%, transparent 50%);
-    background-position: calc(100% - 16px) 17px, calc(100% - 11px) 17px;
-    background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+    background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
 }
 
 .applab-feedback { border: 1px solid var(--lab-line); border-radius: 10px; padding: 12px 16px; font-size: 12px; line-height: 1.7; color: #cbb4df; background: #1d122a; margin: 14px 0; }
 .applab-feedback.is-error { color: #ffc1bf; border-color: #6d3a48; }
 
-.applab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 16px; margin-top: 16px; }
+#ui #app .entry-page.applab-page .applab-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--lab-3);
+    margin-top: var(--lab-3);
+}
+#ui #app .entry-page.applab-page .applab-card-actions button {
+    min-height: 42px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+#ui #app .entry-page.applab-page .applab-empty-card { padding: var(--lab-4) var(--lab-3); }
+#ui #app .entry-page.applab-page .applab-footer { margin-top: var(--lab-4); max-width: 72ch; margin-left: auto; margin-right: auto; }
 .applab-grid > .applab-empty, .applab-grid > .applab-empty-card { grid-column: 1 / -1; }
 
 .applab-card {
-    position: relative; display: flex; flex-direction: column; gap: 14px;
-    border: 1px solid #4a3459; border-radius: 14px; padding: 16px;
+    position: relative; display: flex; flex-direction: column; gap: var(--lab-2);
+    border: 1px solid #4a3459; border-radius: 16px; padding: var(--lab-3);
     background: linear-gradient(165deg, #241531, #150d1f 70%);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
     transition: border-color .15s ease, transform .15s ease;
@@ -92,7 +253,7 @@
 .applab-card:hover { border-color: #6c467f; transform: translateY(-2px); }
 .applab-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .applab-icon {
-    width: 54px; height: 54px; border-radius: 13px; overflow: hidden; flex-shrink: 0;
+    width: 55px; height: 55px; border-radius: 14px; overflow: hidden; flex-shrink: 0;
     display: grid; place-items: center; background: #2c1a3b; border: 1px solid #4e3562;
     color: #cfa9ec; font-size: 20px; font-weight: 600;
 }
@@ -275,17 +436,16 @@ body.applab-immersive { overflow: hidden !important; }
 .applab-keyboard-bar button { border-radius: 8px; border: 1px solid #6a4b7f; background: #2b1739; color: #e0c9f5; font-size: 11px; padding: 0 12px; }
 .applab-keyboard-bar button[data-keyboard-close] { width: 40px; padding: 0; }
 
+@media (max-width: 980px) {
+    #ui #app .entry-page.applab-page .applab-hero { grid-template-columns: 1fr; gap: var(--lab-3); }
+    #ui #app .entry-page.applab-page .applab-toolbar { grid-template-columns: 1fr 1fr; }
+    #ui #app .entry-page.applab-page .applab-toolbar .applab-field:first-child { grid-column: 1 / -1; }
+    #ui #app .entry-page.applab-page .applab-grid { grid-template-columns: 1fr; }
+    #ui #app .entry-page.applab-page .applab-shell { padding: var(--lab-3); }
+}
+
 @media (max-width: 760px) {
-    .applab-page { padding: 12px 0 40px; }
-    .applab-heading { align-items: flex-start; flex-direction: column; gap: 20px; }
-    .applab-heading .applab-primary { width: 100%; }
-    .applab-shell { padding: 18px 12px; }
-    .applab-shell-heading { gap: 8px; }
-    .applab-tabs { gap: 18px; }
-    .applab-tabs button { font-size: 11px; }
-    .applab-toolbar { gap: 10px; }
-    .applab-select { flex: 1 1 140px; }
-    .applab-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    #ui #app .entry-page.applab-page { padding: 0 0 var(--lab-4); }
     .applab-dialog { padding: 18px; }
     .applab-dialog h2 { font-size: 18px; }
     .applab-preview { flex-direction: column; }
@@ -294,12 +454,48 @@ body.applab-immersive { overflow: hidden !important; }
     .applab-session-clock { display: none; }
 }
 
+@media (max-width: 560px) {
+    #ui #app .entry-page.applab-page .applab-toolbar { grid-template-columns: 1fr; }
+    #ui #app .entry-page.applab-page .applab-hero-actions .applab-primary { width: 100%; }
+    #ui #app .entry-page.applab-page .applab-tabs { gap: var(--lab-3); }
+    #ui #app .entry-page.applab-page .applab-figures { gap: var(--lab-1); }
+}
+
 @media (max-width: 420px) {
-    .applab-grid { grid-template-columns: 1fr; }
     .applab-player-bar { gap: 8px; padding: 8px 10px; }
     .applab-player-title img { display: none; }
     .applab-exit { padding: 8px 10px; font-size: 9px; }
     .applab-player-tools button { width: 34px; height: 34px; }
+}
+
+/* Le entry page condivise centrano i titoli: APP LAB resta a bandiera sinistra,
+   coerente con la griglia aurea del hero. */
+#ui #app .entry-page.applab-page { text-align: left !important; }
+#ui #app .entry-page.applab-page .applab-hero-copy,
+#ui #app .entry-page.applab-page .applab-aside,
+#ui #app .entry-page.applab-page .applab-shell-heading,
+#ui #app .entry-page.applab-page .applab-lead,
+#ui #app .entry-page.applab-page .applab-field,
+#ui #app .entry-page.applab-page .applab-shell-heading h2 { text-align: left !important; }
+#ui #app .entry-page.applab-page .applab-hero h1 { text-align: left !important; }
+#ui #app .entry-page.applab-page .applab-figures dt,
+#ui #app .entry-page.applab-page .applab-figures dd,
+#ui #app .entry-page.applab-page .applab-figures dd span,
+#ui #app .entry-page.applab-page .applab-figures dd small,
+#ui #app .entry-page.applab-page .applab-field > span,
+#ui #app .entry-page.applab-page .applab-inputbox,
+#ui #app .entry-page.applab-page .applab-inputbox input,
+#ui #app .entry-page.applab-page .applab-field select,
+#ui #app .entry-page.applab-page .applab-runtime,
+#ui #app .entry-page.applab-page .applab-runtime strong,
+#ui #app .entry-page.applab-page .applab-runtime p,
+#ui #app .entry-page.applab-page .applab-counter { text-align: left !important; }
+#ui #app .entry-page.applab-page .applab-hero-actions { justify-content: flex-start; }
+/* L'header condiviso aggiunge margine, padding e bordo: il hero ha già i suoi. */
+#ui #app .entry-page.applab-page > header {
+    margin: 0 !important;
+    padding: 0 !important;
+    border-bottom: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
