@@ -230,3 +230,14 @@ Manuale consigliato:
   Play possono non funzionare nell'ambiente remoto.
 - La distribuzione iOS fuori da TestFlight/App Store richiede canali Apple
   autorizzati (firma aziendale, dispositivi registrati).
+
+## Gateway incluso nel repository
+
+`runtime/applab-gateway/` è un'implementazione del contratto qui sopra:
+emulatore Android + mediamtx per il WebRTC + `adb shell input` per i comandi.
+Setup e limiti sono in `runtime/applab-gateway/README.md`.
+
+Il gateway dichiara `input: "ws"` perché mediamtx non negozia canali dati: il
+player invia tocchi, tasti e testo sul WebSocket di signaling. `datachannel`
+resta il comportamento predefinito quando il gateway non dichiara nulla, così
+il contratto originale non cambia per gli altri runtime.
