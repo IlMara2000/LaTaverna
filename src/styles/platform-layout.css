@@ -1,0 +1,88 @@
+/* ============================================================
+   IMPAGINAZIONE CONDIVISA DI TUTTE LE PAGINE
+   Un solo margine, un solo ritmo verticale, una sola misura di
+   lettura: vale per catalogo, libreria, MTCG, oracolo, RPG,
+   bottega, impostazioni, profilo, area legale e community.
+   ============================================================ */
+
+:root {
+    --page-gutter: clamp(16px, 4.2vw, 24px);
+    --page-rhythm-top: clamp(16px, 3.4vw, 24px);
+    --page-rhythm-bottom: calc(92px + max(14px, var(--safe-bottom, 0px)));
+    --page-measure: 1100px;
+}
+
+/* 1. Contenitore: stessi margini ovunque, safe-area compresa. */
+html body #ui #app:has(> :is(.entry-page, .community-page, .legal-page, .settings-page, .profile-page, .music-center)) {
+    padding:
+        calc(var(--safe-top, 0px) + var(--page-rhythm-top))
+        max(var(--page-gutter), var(--safe-right, 0px))
+        var(--page-rhythm-bottom)
+        max(var(--page-gutter), var(--safe-left, 0px)) !important;
+    align-items: flex-start;
+}
+
+/* 2. La pagina resta in una misura leggibile e centrata. */
+html body #ui #app > :is(.entry-page, .community-page, .legal-page, .settings-page, .profile-page, .music-center) {
+    width: min(var(--page-measure), 100%);
+    max-width: var(--page-measure);
+    min-width: 0;
+    margin-inline: auto;
+}
+
+/* 3. Ritmo verticale condiviso: intestazione, titoli, sezioni. */
+#ui #app .entry-page > header {
+    margin-bottom: clamp(18px, 4vw, 28px) !important;
+    padding-bottom: clamp(16px, 3.6vw, 24px);
+}
+
+#ui #app .entry-page :is(h1) {
+    font-size: clamp(30px, 7vw, 66px) !important;
+    line-height: 1.08;
+}
+
+#ui #app .entry-page :is(h2) {
+    font-size: clamp(22px, 4.4vw, 32px) !important;
+}
+
+#ui #app .entry-page > h2 {
+    margin-top: clamp(22px, 4.4vw, 32px);
+}
+
+#ui #app .entry-page :is(.community-grid, .grid-layout) {
+    gap: clamp(14px, 3vw, 20px);
+    margin: clamp(16px, 3.4vw, 24px) 0;
+}
+
+/* 4. Niente contenuti che sfondano il bordo dello schermo. */
+#ui #app :is(.entry-page, .community-page, .legal-page) :is(h1, h2, h3, p, li, dd, dt, summary, a) {
+    overflow-wrap: anywhere;
+}
+
+#ui #app :is(.entry-page, .community-page, .legal-page) :is(.community-panel, .reading-shelf, .catalog-game-card, .legal-card) {
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* 5. Telefono stretto: una colonna sola e carte a tutta larghezza. */
+@media (max-width: 560px) {
+    #ui #app .entry-page :is(.community-grid, .grid-layout) {
+        grid-template-columns: 1fr;
+    }
+
+    #ui #app .entry-page > header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+/* 6. La home usa lo stesso margine delle altre pagine. */
+@media (max-width: 760px) {
+    #ui .taverna-home {
+        padding-inline:
+            max(var(--page-gutter), var(--safe-left, 0px))
+            max(var(--page-gutter), var(--safe-right, 0px));
+    }
+}
