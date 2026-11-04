@@ -343,6 +343,8 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui .catalog-game-arrow { border-top-style: dashed; }
 #ui .catalog-game-arrow b { transform: rotate(-10deg); }
 #ui :is(.session-tool-switcher button.active, .dnd-tabs button.active, .reading-tabs button.active) { border-radius: 5px 9px 4px 8px !important; border-color: #b392ce77; background: #63407a; box-shadow: 2px 2px 0 #0e0a13; }
+/* Sui fondi scuri i filtri inattivi devono restare leggibili. */
+#ui #app :is(.session-tool-switcher, .dnd-tabs, .settings-nav, .reading-tabs, .shop-filters) button:not(.active):not([aria-pressed="true"]) { color: #e6d8f2 !important; }
 #ui .dnd-app .dnd-hero { border-radius: 8px 18px 7px 16px !important; border-color: #ba9acd55; }
 #ui .dnd-app .dnd-panel > strong { font-family: var(--fantasy-display) !important; font-size: 28px; font-weight: 400; letter-spacing: .035em; }
 #ui .dnd-app .dnd-panel > span, #ui .dnd-kicker { display: block; text-align: left !important; }
