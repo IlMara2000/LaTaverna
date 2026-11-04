@@ -49,7 +49,7 @@ body:has(.scala40-game) #navbar-trigger, body:has(.scala40-game) #nav-home-btn {
 .s40-turn small { color: #a993b8; font-size: .56rem; letter-spacing: 1px; }
 
 /* Tavolo ---------------------------------------------------------------- */
-.s40-table { position: relative; flex: 1 1 auto; min-height: 158px; display: grid; grid-template-rows: auto minmax(96px, 1fr) auto; gap: 10px; padding: 14px clamp(10px, 2vw, 22px); border: 1px solid #b493cc3d; border-radius: 26px; background: radial-gradient(ellipse at 50% 30%, #63397a2e, transparent 68%), repeating-linear-gradient(118deg, #ffffff02 0 1px, transparent 1px 5px), #1d0f29; box-shadow: inset 0 0 0 5px #0d07193f, inset 0 0 90px #08031170; }
+.s40-table { position: relative; flex: 1 1 auto; min-height: 132px; display: grid; grid-template-rows: auto minmax(96px, 1fr) auto; gap: 10px; padding: 14px clamp(10px, 2vw, 22px); border: 1px solid #b493cc3d; border-radius: 26px; background: radial-gradient(ellipse at 50% 30%, #63397a2e, transparent 68%), repeating-linear-gradient(118deg, #ffffff02 0 1px, transparent 1px 5px), #1d0f29; box-shadow: inset 0 0 0 5px #0d07193f, inset 0 0 90px #08031170; }
 .s40-opponent { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .s40-opponent-copy { display: grid; gap: 3px; }
 .s40-opponent-copy b { color: #e6d8ef; font-size: .62rem; letter-spacing: 2px; }
@@ -63,8 +63,7 @@ body:has(.scala40-game) #navbar-trigger, body:has(.scala40-game) #nav-home-btn {
 .s40-opponent-hand .s40-card:last-child { transform: rotate(6deg); }
 
 .s40-table-center { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 0; padding: 8px 0; border-top: 1px solid #ffffff0e; border-bottom: 1px solid #ffffff0e; }
-.s40-melds { display: flex; flex-wrap: wrap; gap: 8px; align-content: center;
-.s40-melds:has(.s40-empty-melds) { justify-content: center; } overflow: auto; max-height: 100%; padding: 2px; scrollbar-width: thin; }
+.s40-melds { display: flex; flex-wrap: wrap; gap: 8px; align-content: center; overflow: auto; max-height: 100%; padding: 2px; scrollbar-width: thin; }
 .s40-meld { display: grid; gap: 5px; padding: 7px 9px 6px; border: 1px solid #ffffff14; border-radius: 12px; background: #ffffff06; }
 .s40-meld.is-mine { border-color: #c79bea4d; background: #a674c01f; }
 .s40-meld-cards { display: flex; gap: 2px; }
@@ -74,7 +73,7 @@ body:has(.scala40-game) #navbar-trigger, body:has(.scala40-game) #nav-home-btn {
 .s40-meld-actions button { min-height: 24px; padding: 3px 8px; border: 1px solid #8f6ea6; border-radius: 7px; color: #f2e4ff; background: #ffffff0d; font: inherit; font-size: .53rem; font-weight: 700; cursor: pointer; }
 .s40-meld-actions button:hover:not(:disabled) { background: #c888ef2e; border-color: #d3a3f0; }
 .s40-meld-actions button:disabled { opacity: .35; cursor: default; }
-.s40-empty-melds { display: grid; justify-items: center; gap: 5px; color: #b79ac650; padding: 10px; text-align: center; }
+.s40-empty-melds { display: grid; justify-items: center; gap: 5px; width: 100%; color: #b79ac650; padding: 10px; text-align: center; }
 .s40-empty-melds span { font-size: 1.5rem; }
 .s40-empty-melds p { margin: 0; font-size: .68rem; }
 
@@ -108,7 +107,7 @@ button.s40-card:disabled { cursor: default; filter: brightness(.9); }
 .s40-card.is-staged { opacity: .55; }
 
 /* Mano e comandi -------------------------------------------------------- */
-.s40-player { display: grid; gap: 10px; }
+.s40-player { display: grid; gap: 8px; }
 .s40-hand-label { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; color: #ddc9ee; font-size: .56rem; font-weight: 800; letter-spacing: 1.6px; }
 .s40-hand-label span { color: #b39fc2; font-weight: 600; letter-spacing: .3px; }
 .s40-hand { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 7px; min-height: 0; padding: 9px 6px 2px; border-radius: 18px; background: #ffffff04; }
