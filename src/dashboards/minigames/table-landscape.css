@@ -216,7 +216,6 @@ html.table-compact :is(.game-chess-stage, .tictactoe-stage) {
     width: 100% !important;
     height: 100% !important;
     display: flex !important;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 6px !important;
@@ -224,6 +223,12 @@ html.table-compact :is(.game-chess-stage, .tictactoe-stage) {
     padding: 2px 8px;
     box-sizing: border-box;
 }
+
+/* Gli scacchi impilano testata e scacchiera; il tris ha due pannelli ai
+   lati della griglia: in colonna diventavano due strisce e la scacchiera
+   finiva fuori dallo stage. */
+html.table-compact .game-chess-stage { flex-direction: column; }
+html.table-compact .tictactoe-stage { flex-direction: row; }
 
 html.table-compact :is(.game-chess-board-frame, .tictactoe-board-frame) {
     /* Con width:auto l'aspect-ratio non si risolve e la scacchiera resta
@@ -259,11 +264,20 @@ html.table-compact .tictactoe-board {
     --ttt-cell-font: clamp(1.5rem, calc(var(--stage-h, 390px) * .095), 2.6rem);
 }
 
-html.table-compact .tictactoe-round-card {
+/* Solo nella schermata iniziale il riquadro è una riga di riepilogo: in
+   partita contiene la scacchiera e non va schiacciato. */
+html.table-compact .tictactoe-start-screen .tictactoe-round-card {
     width: min(100%, 520px) !important;
     max-height: 46px;
     overflow: hidden;
     padding: 4px 10px !important;
+}
+
+html.table-compact .tictactoe-wrapper .tictactoe-round-card {
+    width: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
 }
 
 /* --- ARCANEUM (blocchi) --------------------------------------------- */
