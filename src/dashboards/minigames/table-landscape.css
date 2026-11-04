@@ -32,6 +32,13 @@ html.table-rotated :is(.scala40-game, .scopa-game, .briscola-game, .solitario-ga
 /* La rotazione è già applicata: le media query verticali non servono più. */
 html.table-rotated .solitario-game { padding: 8px 16px !important; }
 
+/* I tavoli moderni non hanno l'animazione del wrapper: la rotazione resta,
+   ma la larghezza va comunque liberata dal max-width del contenitore. */
+html.table-rotated :is(.scala40-game, .scopa-game, .briscola-game, .solitario-game) {
+    max-width: none !important;
+    animation: none !important;
+}
+
 /* Uno, Burraco e gli altri tavoli "storici" usano lo stesso contenitore:
    lo ruotiamo senza toccare il loro motore di gioco. */
 html.table-rotated .game-master-wrapper:not(#start-screen) {
@@ -39,13 +46,21 @@ html.table-rotated .game-master-wrapper:not(#start-screen) {
     inset: auto !important;
     top: 0 !important;
     left: 0 !important;
+    right: auto !important;
+    bottom: auto !important;
     width: var(--stage-w, 100dvh) !important;
     height: var(--stage-h, 100vw) !important;
+    /* Il wrapper di base ha max-width:100% (largo quanto il telefono) e
+       l'animazione fadeInUp riscrive il transform: senza queste due righe
+       la rotazione resta larga 390px e dritta. */
+    max-width: none !important;
     max-height: var(--stage-h, 100vw) !important;
+    min-width: 0 !important;
     min-height: 0 !important;
     padding: 6px 12px !important;
-    transform: translateX(100vw) rotate(90deg);
+    transform: translateX(100vw) rotate(90deg) !important;
     transform-origin: top left;
+    animation: none !important;
     overflow: hidden !important;
     z-index: 80;
 }
@@ -168,6 +183,111 @@ html.table-compact .solitario-upper { margin-bottom: 12px; }
 html.table-compact .solitario-pile-label { font-size: .48rem; letter-spacing: 0; }
 html.table-compact .solitario-column > .solitario-pile-label { margin-bottom: 4px; }
 
+/* --- Scacchiere: scacchi, dama, tris -------------------------------- */
+/* Nel tavolo ruotato il lato corto è l'altezza dello stage: le scacchiere
+   si dimensionano su --stage-h, non su vw/vh del telefono. */
+html.table-compact :is(.game-chess-stage, .tictactoe-stage) {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px !important;
+    margin: 0 !important;
+    padding: 2px 8px;
+    box-sizing: border-box;
+}
+
+html.table-compact :is(.game-chess-board-frame, .tictactoe-board-frame) {
+    /* Con width:auto l'aspect-ratio non si risolve e la scacchiera resta
+       larga la metà: la larghezza va dichiarata, l'altezza la segue. */
+    width: min(calc(var(--stage-h, 390px) - 74px), calc(var(--stage-w, 844px) - 30px)) !important;
+    height: auto !important;
+    aspect-ratio: 1;
+    padding: 5px !important;
+    flex: 0 0 auto;
+}
+
+html.table-compact :is(.game-chess-topbar, .game-chess-meta, .tictactoe-toolbar, .tictactoe-status) {
+    width: min(100%, 560px) !important;
+    min-height: 0 !important;
+}
+
+html.table-compact .game-chess-meta { gap: 6px; }
+html.table-compact .game-chess-status { font-size: .68rem; line-height: 1.25; }
+html.table-compact .game-turn-indicator { padding: 5px 12px; font-size: .6rem; }
+
+/* Dama non ha la cornice: la scacchiera è figlia diretta con stile inline. */
+html.table-compact #board-ui.game-chess-board {
+    width: min(calc(var(--stage-h, 390px) - 110px), calc(var(--stage-w, 844px) - 30px)) !important;
+    height: auto !important;
+    aspect-ratio: 1;
+    margin: 0 auto !important;
+}
+
+html.table-compact .game-chess-square { font-size: .72rem; }
+html.table-compact :is(.game-chess-topbar, .game-chess-meta) { font-size: .68rem; }
+
+html.table-compact .tictactoe-board {
+    --ttt-cell-font: clamp(1.5rem, calc(var(--stage-h, 390px) * .095), 2.6rem);
+}
+
+html.table-compact .tictactoe-round-card {
+    width: min(100%, 520px) !important;
+    max-height: 46px;
+    overflow: hidden;
+    padding: 4px 10px !important;
+}
+
+/* --- ARCANEUM (blocchi) --------------------------------------------- */
+html.table-compact .blocks-stage {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    grid-template-columns: none !important;
+    grid-template-areas: none !important;
+}
+
+html.table-compact :is(.blocks-hud-left, .blocks-hud-right) {
+    display: grid !important;
+    grid-template-columns: none !important;
+    grid-template-areas: none !important;
+    flex: 0 1 168px;
+    min-width: 0;
+    gap: 5px !important;
+}
+
+html.table-compact .blocks-hud > section {
+    min-height: 0 !important;
+    padding: 6px 8px !important;
+    gap: 3px !important;
+    border-radius: 10px !important;
+}
+
+html.table-compact .blocks-hud .blocks-next-panel { min-height: 0 !important; }
+html.table-compact .blocks-hud .blocks-hold-panel { min-height: 0 !important; }
+
+html.table-compact #blocks-board {
+    width: calc((var(--stage-h, 390px) - 18px) / 2) !important;
+    min-width: 0 !important;
+    max-height: calc(var(--stage-h, 390px) - 18px) !important;
+    height: auto !important;
+    flex: 0 0 auto;
+    margin-inline: 0;
+}
+
+html.table-compact :is(.blocks-hud, .blocks-objective) {
+    max-width: 100%;
+    gap: 4px;
+}
+
+html.table-compact :is(.blocks-hud, .blocks-objective, .blocks-board-topline) { font-size: .62rem; }
+html.table-compact .blocks-hud span { font-size: .6rem; }
+html.table-compact .blocks-hud strong { font-size: 1rem; }
+
 /* 3. Comandi pensati per il pollice -------------------------------- */
 /* --- Tavoli storici (Uno, Burraco, Dama, Scacchi, Tris) ------------- */
 html.table-compact .game-master-wrapper:not(#start-screen) { padding: 6px 12px !important; }
@@ -183,6 +303,74 @@ html.table-fit :is(.scala40-game, .scopa-game, .briscola-game, .solitario-game) 
     transform: scale(var(--table-fit, 1));
     transform-origin: top center;
 }
+
+/* --- Solo e Burraco: mano e zone del giocatore ---------------------- */
+/* Le due aree avevano altezza da viewport verticale (820px) dentro un
+   tavolo alto 390: tutto finiva fuori dal bordo sinistro. */
+html.table-compact :is(.solo-player-area, .burraco-player-zone) {
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto !important;
+    max-height: 42% !important;
+    min-height: 0 !important;
+    overflow: hidden;
+}
+
+html.table-compact :is(.solo-player-hand, .game-player-hand) {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 2px 4px 0 !important;
+    align-items: center;
+    overflow: visible;
+}
+
+html.table-compact .solo-opponents-row { margin: 0; gap: 8px; }
+html.table-compact .solo-table { min-height: 0; gap: 4px; }
+
+html.table-compact .burraco-playfield {
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+    padding: 2px 0;
+}
+
+html.table-compact .burraco-meld-zone { min-height: 0; padding: 14px 8px 6px; gap: 6px; }
+html.table-compact .burraco-draw-zone { padding: 2px; gap: 14px; }
+html.table-compact .burraco-actions { gap: 6px; padding: 0 6px; }
+
+/* --- Scala 40: comandi e etichette leggibili ----------------------- */
+/* Il tavolo viene ridotto da table-fit (~0.80 su un telefono): le misure
+   base vanno pensate per reggere quella scala, altrimenti i comandi
+   scendono sotto i 32px e le etichette sotto i 9px. */
+html.table-compact .s40-button {
+    min-height: 42px !important;
+    min-width: 42px !important;
+    flex: 0 0 auto;
+    padding: 7px 11px;
+}
+html.table-compact .s40-score small { font-size: .72rem; }
+html.table-compact .s40-score span { font-size: .72rem; }
+html.table-compact .s40-opponent-copy small { font-size: .72rem; }
+html.table-compact .s40-dock .s40-button { min-height: 42px !important; }
+
+/* --- Solitario: comandi e etichette--------------------------------- */
+html.table-compact .solitario-control {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 8px 10px !important;
+}
+html.table-compact :is(.solitario-pile-label, .solitario-scoreline) { font-size: .72rem; }
+html.table-compact .solitario-table { padding: 8px 10px 10px; }
+html.table-compact .solitario-toolbar { gap: 6px; }
+
+/* --- Briscola: nessuna riga più larga del tavolo ------------------- */
+html.table-compact :is(.briscola-shell, .briscola-topbar, .briscola-scoreboard, .briscola-hand, .briscola-stock-zone) {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+html.table-compact .briscola-hand { overflow-x: auto; }
+
+/* --- Impostore / Numeri: pulsanti dei giocatori --------------------- */
+html[class*="table-"] .party-game :is(button[data-delta], .party-add) { min-width: 34px; min-height: 34px; }
 
 html.table-compact :is(.scopa-button, .s40-button, .solitario-control) { touch-action: manipulation; }
 html.table-compact button.scopa-card,

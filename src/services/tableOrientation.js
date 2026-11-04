@@ -52,6 +52,8 @@ function fitToStage() {
     // Si guarda anche il tavolo intero: il contenuto può sfuggire al guscio.
     const available = table.clientHeight - 10;
     const needed = Math.max(shell.scrollHeight, table.scrollHeight - 14);
+    // Il tavolo deve restare interamente dentro lo schermo: la scala può
+    // scendere fino a 0.6. Alzare questo minimo fa uscire i comandi dal bordo.
     const ratio = needed > available + 2 ? Math.max(0.6, available / needed) : 1;
     html.style.setProperty('--table-fit', ratio.toFixed(3));
     html.classList.toggle('table-fit', ratio < 0.999);

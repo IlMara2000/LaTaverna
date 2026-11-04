@@ -73,3 +73,6 @@ output/
 /agent/
 
 /data/
+
+# Report generato dall'audit mobile
+scripts/audit-mobile.json
