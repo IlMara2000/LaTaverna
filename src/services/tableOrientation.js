@@ -12,6 +12,21 @@ import '../dashboards/minigames/table-landscape.css';
 const CARD_TABLE_SELECTOR = '.scala40-game, .scopa-game, .briscola-game, .solitario-game, .game-master-wrapper:not(#start-screen)';
 const COMPACT_SHORT_SIDE = 560;
 
+// Schermate di avvio (scelta modalità/livello): sono menu verticali, non
+// tavoli. Ruotarle le rendeva colonne di testo illeggibili.
+const START_SCREEN_SELECTOR = '.briscola-start, .scopa-welcome, .blocks-start, .tictactoe-start-screen, #start-screen';
+
+const visibile = el => {
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    return r.width > 1 && r.height > 1 && s.display !== 'none'
+        && s.visibility !== 'hidden' && Number(s.opacity) > 0.05;
+};
+
+// Elementi puramente decorativi (cerchi, ornamenti): non occupano spazio
+// utile ma allargano le misure di overflow.
+const decorativo = el => getComputedStyle(el).pointerEvents === 'none';
+
 const html = document.documentElement;
 let table = null;
 let timer = 0;
@@ -24,7 +39,10 @@ function measure() {
     // I tavoli storici mettono la scelta modalità in un wrapper annidato: è un
     // menu verticale, non un tavolo. Ruotarlo rendeva i testi colonne
     // illeggibili, quindi la rotazione parte solo a partita avviata.
-    const menuAperto = Boolean(table && table.querySelector(':scope > .game-master-wrapper'));
+    const startAperta = Boolean(table)
+        && [...table.querySelectorAll(START_SCREEN_SELECTOR)].some(visibile);
+    const menuAperto = Boolean(table)
+        && (Boolean(table.querySelector(':scope > .game-master-wrapper')) || startAperta);
     html.classList.toggle('table-menu', menuAperto);
     const rotated = portrait && Boolean(table) && !menuAperto;
     const stageWidth = rotated ? height : width;
@@ -57,14 +75,21 @@ function fitToStage() {
     if (!shell) return;
     // La scala agisce solo con transform: la misura resta stabile, senza loop.
     // Si guarda anche il tavolo intero: il contenuto può sfuggire al guscio.
-    const available = table.clientHeight - 10;
+    const available = table.clientHeight;
     // scrollHeight non vede i figli in overflow negativo o assoluti: si guarda
-    // anche dove finisce davvero l'ultimo figlio, in coordinate locali.
-    const fondo = [...shell.children].reduce(
-        (massimo, el) => Math.max(massimo, el.offsetTop + el.offsetHeight),
-        0
-    );
-    const needed = Math.max(shell.scrollHeight, fondo, table.scrollHeight - 14);
+    // anche dove finisce davvero l'ultimo figlio. La misura è relativa al
+    // guscio e salta gli ornamenti, che non sono contenuto.
+    const base = shell.offsetTop;
+    const fondo = [...shell.children]
+        .filter(el => !decorativo(el))
+        .reduce(
+            (massimo, el) => Math.max(massimo, el.offsetTop - base + el.offsetHeight),
+            0
+        );
+    // Niente table.scrollHeight: conta anche i cerchi decorativi (::before e
+    // ::after del tavolo), che su Briscola valevano 160px in più e riducevano
+    // tutta la pagina al 72%. Il guscio vede già il contenuto reale.
+    const needed = Math.max(shell.scrollHeight, fondo);
     // Il tavolo deve restare interamente dentro lo schermo: la scala può
     // scendere fino a 0.6. Alzare questo minimo fa uscire i comandi dal bordo.
     const ratio = needed > available + 2 ? Math.max(0.6, available / needed) : 1;
