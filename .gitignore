@@ -76,3 +76,6 @@ output/
 
 # Report generato dall'audit mobile
 scripts/audit-mobile.json
+
+# Immagini di controllo (link esterni, non versionate)
+.tmp-swisstransfer/

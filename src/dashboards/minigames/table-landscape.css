@@ -65,6 +65,32 @@ html.table-rotated .game-master-wrapper:not(#start-screen) {
     z-index: 80;
 }
 
+/* Le schermate iniziali dei tavoli storici sono un secondo
+   .game-master-wrapper annidato: si teneva height: var(--viewport-height)
+   (844px) dentro un tavolo alto 390, quindi usciva dallo schermo a sinistra
+   e lasciava mezza pagina vuota. Dentro al tavolo ruotato vale lo stage. */
+html.table-rotated .game-master-wrapper:not(#start-screen) .game-master-wrapper {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 4px 10px !important;
+    transform: none !important;
+    animation: none !important;
+    /* Visibile: il ritaglio lo fa il tavolo esterno, così table-fit riesce a
+       misurare quanto contenuto c'è davvero e a ridurlo quel tanto che basta. */
+    overflow: visible !important;
+    box-sizing: border-box;
+}
+
+html.table-compact .game-master-wrapper .game-master-wrapper > * {
+    min-height: 0 !important;
+}
+
 /* 2. Tavolo compatto (telefono ruotato o finestra bassa) ------------- */
 html.table-compact :is(.s40-panel, .scopa-dialog, .solitario-dialog) {
     max-height: calc(var(--stage-h) - 20px);
@@ -296,7 +322,7 @@ html.table-compact #start-screen .pulse-logo { width: 58px !important; margin-bo
 html.table-compact #start-screen .minigame-bot-level-title { margin-bottom: 6px !important; }
 
 /* 4. Riduzione automatica quando l'altezza è davvero minima ---------- */
-html.table-fit :is(.scala40-game, .scopa-game, .briscola-game, .solitario-game) > :first-child {
+html.table-fit :is(.scala40-game, .scopa-game, .briscola-game, .solitario-game, .game-master-wrapper:not(#start-screen)) > :first-child {
     width: 100% !important;
     max-width: none !important;
     margin: 0 auto !important;

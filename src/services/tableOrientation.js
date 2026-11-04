@@ -21,10 +21,15 @@ function measure() {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const portrait = height > width;
-    const rotated = portrait && Boolean(table);
+    // I tavoli storici mettono la scelta modalità in un wrapper annidato: è un
+    // menu verticale, non un tavolo. Ruotarlo rendeva i testi colonne
+    // illeggibili, quindi la rotazione parte solo a partita avviata.
+    const menuAperto = Boolean(table && table.querySelector(':scope > .game-master-wrapper'));
+    html.classList.toggle('table-menu', menuAperto);
+    const rotated = portrait && Boolean(table) && !menuAperto;
     const stageWidth = rotated ? height : width;
     const stageHeight = rotated ? width : height;
-    const compact = Boolean(table) && (rotated || stageHeight <= COMPACT_SHORT_SIDE);
+    const compact = Boolean(table) && !menuAperto && (rotated || stageHeight <= COMPACT_SHORT_SIDE);
 
     html.classList.toggle('table-mode', Boolean(table));
     html.classList.toggle('table-rotated', rotated);
@@ -33,7 +38,9 @@ function measure() {
     html.style.setProperty('--stage-h', `${Math.round(stageHeight)}px`);
 }
 
-const SHELL_SELECTOR = ':scope > .s40-shell, :scope > .scopa-shell, :scope > .solitario-shell, :scope > .briscola-shell';
+// I tavoli storici mettono la schermata iniziale in un wrapper annidato:
+// anche quello va misurato, altrimenti resta alto 844px e finisce fuori.
+const SHELL_SELECTOR = ':scope > .s40-shell, :scope > .scopa-shell, :scope > .solitario-shell, :scope > .briscola-shell, :scope > .game-master-wrapper';
 
 /**
  * Se il tavolo non entra nell'altezza disponibile (telefoni bassi), il
@@ -41,7 +48,7 @@ const SHELL_SELECTOR = ':scope > .s40-shell, :scope > .scopa-shell, :scope > .so
  * irraggiungibile con lo scroll.
  */
 function fitToStage() {
-    if (!table || !html.classList.contains('table-compact')) {
+    if (!table || html.classList.contains('table-menu') || !html.classList.contains('table-compact')) {
         html.style.setProperty('--table-fit', '1');
         html.classList.remove('table-fit');
         return;
@@ -51,7 +58,13 @@ function fitToStage() {
     // La scala agisce solo con transform: la misura resta stabile, senza loop.
     // Si guarda anche il tavolo intero: il contenuto può sfuggire al guscio.
     const available = table.clientHeight - 10;
-    const needed = Math.max(shell.scrollHeight, table.scrollHeight - 14);
+    // scrollHeight non vede i figli in overflow negativo o assoluti: si guarda
+    // anche dove finisce davvero l'ultimo figlio, in coordinate locali.
+    const fondo = [...shell.children].reduce(
+        (massimo, el) => Math.max(massimo, el.offsetTop + el.offsetHeight),
+        0
+    );
+    const needed = Math.max(shell.scrollHeight, fondo, table.scrollHeight - 14);
     // Il tavolo deve restare interamente dentro lo schermo: la scala può
     // scendere fino a 0.6. Alzare questo minimo fa uscire i comandi dal bordo.
     const ratio = needed > available + 2 ? Math.max(0.6, available / needed) : 1;
