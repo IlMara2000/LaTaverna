@@ -86,10 +86,7 @@ function fitToStage() {
             (massimo, el) => Math.max(massimo, el.offsetTop - base + el.offsetHeight),
             0
         );
-    // Niente table.scrollHeight: conta anche i cerchi decorativi (::before e
-    // ::after del tavolo), che su Briscola valevano 160px in più e riducevano
-    // tutta la pagina al 72%. Il guscio vede già il contenuto reale.
-    const needed = Math.max(shell.scrollHeight, fondo);
+    const needed = Math.max(shell.scrollHeight, fondo, table.scrollHeight - 14);
     // Il tavolo deve restare interamente dentro lo schermo: la scala può
     // scendere fino a 0.6. Alzare questo minimo fa uscire i comandi dal bordo.
     const ratio = needed > available + 2 ? Math.max(0.6, available / needed) : 1;

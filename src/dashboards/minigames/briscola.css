@@ -34,7 +34,10 @@ body:has(.briscola-game) #nav-home-btn {
 }
 
 .briscola-game::before { top: -34%; left: -12%; }
-.briscola-game::after { right: -14%; bottom: -42%; }
+/* Il cerchio decorativo restava dentro il riquadro, ma i suoi scostamenti
+   negativi allargavano l'ingombro del tavolo: su telefono facevano ridurre
+   tutta la partita al 72% e creavano 118px di scorrimento orizzontale. */
+.briscola-game::after { right: 0; bottom: 0; }
 
 .briscola-game [hidden] { display: none !important; }
 
