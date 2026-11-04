@@ -75,7 +75,8 @@ function fitToStage() {
     if (!shell) return;
     // La scala agisce solo con transform: la misura resta stabile, senza loop.
     // Si guarda anche il tavolo intero: il contenuto può sfuggire al guscio.
-    const available = table.clientHeight;
+    // 10px di margine: senza, Scala 40 e Solitario sforano di poco sul bordo.
+    const available = table.clientHeight - 10;
     // scrollHeight non vede i figli in overflow negativo o assoluti: si guarda
     // anche dove finisce davvero l'ultimo figlio. La misura è relativa al
     // guscio e salta gli ornamenti, che non sono contenuto.
