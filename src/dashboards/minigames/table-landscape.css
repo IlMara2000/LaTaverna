@@ -1,0 +1,190 @@
+/* =======================================================================
+   MODALITÀ TAVOLO — carte sempre in vista laterale sul telefono.
+   Il modulo tableOrientation.js imposta --stage-w / --stage-h (le misure
+   reali del tavolo dopo l'eventuale rotazione) e le classi su <html>.
+   ======================================================================= */
+
+html.table-mode,
+html.table-mode body {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    background: #05010a;
+}
+
+/* 1. Rotazione del tavolo quando il telefono resta verticale ---------- */
+html.table-rotated :is(.scala40-game, .scopa-game, .briscola-game, .solitario-game) {
+    position: fixed !important;
+    inset: auto !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: var(--stage-w, 100dvh) !important;
+    height: var(--stage-h, 100vw) !important;
+    max-height: var(--stage-h, 100vw) !important;
+    padding: 8px 16px !important;
+    transform: translateX(100vw) rotate(90deg);
+    transform-origin: top left;
+    overflow: hidden !important;
+    z-index: 80;
+}
+
+/* La rotazione è già applicata: le media query verticali non servono più. */
+html.table-rotated .solitario-game { padding: 8px 16px !important; }
+
+/* Uno, Burraco e gli altri tavoli "storici" usano lo stesso contenitore:
+   lo ruotiamo senza toccare il loro motore di gioco. */
+html.table-rotated .game-master-wrapper:not(#start-screen) {
+    position: fixed !important;
+    inset: auto !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: var(--stage-w, 100dvh) !important;
+    height: var(--stage-h, 100vw) !important;
+    max-height: var(--stage-h, 100vw) !important;
+    min-height: 0 !important;
+    padding: 6px 12px !important;
+    transform: translateX(100vw) rotate(90deg);
+    transform-origin: top left;
+    overflow: hidden !important;
+    z-index: 80;
+}
+
+/* 2. Tavolo compatto (telefono ruotato o finestra bassa) ------------- */
+html.table-compact :is(.s40-panel, .scopa-dialog, .solitario-dialog) {
+    max-height: calc(var(--stage-h) - 20px);
+}
+
+/* Il tavolo occupa esattamente l'altezza visibile: niente scroll di pagina,
+   niente comandi sotto il bordo del telefono. */
+html.table-compact :is(.scala40-game, .scopa-game, .briscola-game, .solitario-game),
+html.table-compact .game-master-wrapper:not(#start-screen) {
+    height: var(--stage-h, 100dvh) !important;
+    min-height: 0 !important;
+    max-height: var(--stage-h, 100dvh) !important;
+}
+
+/* --- Scopa ---------------------------------------------------------- */
+html.table-compact .scopa-game {
+    --scopa-card-width: clamp(44px, calc(var(--stage-h) * .155), 72px);
+    padding: 6px 14px !important;
+}
+html.table-compact .scopa-shell { min-height: 0; height: 100%; gap: 6px; }
+html.table-compact .scopa-brand h1 { font-size: .95rem; letter-spacing: 2px; }
+html.table-compact .scopa-brand > span { font-size: 1.5rem; }
+html.table-compact :is(.scopa-brand small, .scopa-rank-note, .scopa-last-move, .scopa-eyebrow) { display: none; }
+html.table-compact .scopa-brand > span { display: none; }
+html.table-compact .scopa-scoreboard { padding: 6px 14px; }
+html.table-compact .scopa-scoreboard strong { font-size: 1.1rem; }
+html.table-compact .scopa-board { padding: 8px 14px 6px; border-radius: 18px; gap: 6px; grid-template-rows: auto minmax(0, 1fr) auto auto; }
+html.table-compact .scopa-opponent-hand { --scopa-card-width: 30px; --scopa-card-height: 43px; min-height: 43px; }
+html.table-compact .scopa-opponent-copy small { max-width: none; font-size: .56rem; }
+html.table-compact .scopa-table-cards { gap: 8px; padding: 4px; }
+html.table-compact .scopa-status { font-size: .68rem; line-height: 1.35; }
+html.table-compact .scopa-choices { max-height: 46px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+html.table-compact :is(.scopa-capture-choice, .scopa-cancel-choice) { min-height: 32px; padding: 5px 10px; font-size: .66rem; white-space: nowrap; }
+html.table-compact .scopa-player { gap: 4px; }
+html.table-compact .scopa-player-hand { gap: 12px; padding-top: 4px; min-height: calc(var(--scopa-card-height) + 4px); }
+html.table-compact .scopa-player > p { font-size: .5rem; }
+html.table-compact .scopa-welcome { grid-row: auto; padding: 8px; gap: 8px; justify-content: center; }
+html.table-compact .scopa-welcome h2 { font-size: 1.7rem; }
+html.table-compact .scopa-welcome > p { max-width: 520px; font-size: .8rem; }
+html.table-compact .scopa-welcome-cards { margin-bottom: 0; }
+html.table-compact .scopa-welcome-cards .scopa-card { --scopa-card-width: 58px; }
+
+/* --- Scala 40 ------------------------------------------------------- */
+html.table-compact .scala40-game {
+    --s40-card-width: clamp(38px, calc(var(--stage-h) * .122), 58px);
+    --s40-mini-width: clamp(24px, calc(var(--stage-h) * .068), 34px);
+    padding: 6px 14px !important;
+}
+html.table-compact :is(.s40-hand-label, .s40-hint) { display: none; }
+html.table-compact .scala40-shell { gap: 5px; height: 100%; }
+html.table-compact :is(.s40-brand small, .s40-hint, .s40-turn small) { display: none; }
+html.table-compact .s40-brand h1 { font-size: 1rem; letter-spacing: 2px; }
+html.table-compact .s40-brand > span { font-size: 1.4rem; }
+html.table-compact .s40-scoreboard { padding: 2px 10px; }
+html.table-compact .s40-score { grid-auto-flow: column; align-items: baseline; justify-content: start; gap: 5px; }
+html.table-compact .s40-score:last-child { justify-content: end; }
+html.table-compact .s40-score strong { font-size: .95rem; }
+html.table-compact .s40-score small { font-size: .44rem; letter-spacing: .5px; }
+html.table-compact .s40-score span { font-size: .58rem; }
+html.table-compact .s40-button { min-height: 36px; padding: 7px 12px; font-size: .72rem; }
+html.table-compact .s40-table { padding: 5px 10px; border-radius: 16px; gap: 4px; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+html.table-compact .s40-empty-melds { padding: 0; gap: 0; }
+html.table-compact .s40-empty-melds span { display: none; }
+html.table-compact .s40-empty-melds p { font-size: .56rem; }
+html.table-compact .s40-opponent-copy small { font-size: .54rem; }
+html.table-compact .s40-card.is-mini { --s40-card-width: clamp(22px, calc(var(--stage-h) * .06), 30px); }
+html.table-compact .s40-opponent { gap: 8px; }
+html.table-compact .s40-piles { gap: 7px; }
+html.table-compact .s40-pile > small { font-size: .42rem; }
+html.table-compact .s40-table-center { padding: 4px 0; min-height: 0; overflow: hidden; }
+html.table-compact .s40-melds { max-height: 100%; overflow: auto; }
+html.table-compact .s40-opponent-hand { min-height: 0; }
+html.table-compact .s40-player { gap: 4px; }
+html.table-compact .s40-hand { flex: 0 0 auto; }
+html.table-compact .s40-hand-label { font-size: .5rem; }
+html.table-compact .s40-meld-actions button { min-height: 22px; padding: 2px 7px; }
+html.table-compact .s40-opponent-hand .s40-card + .s40-card { margin-left: -14px; }
+html.table-compact .s40-hand { gap: 4px; padding: 3px 4px 0; }
+html.table-compact .s40-button { min-height: 32px; padding: 5px 10px; font-size: .68rem; }
+html.table-compact .s40-status { font-size: .64rem; line-height: 1.3; min-height: 0; }
+html.table-compact .s40-progress { height: 3px; }
+html.table-compact .s40-table { grid-template-rows: auto minmax(0, 1fr) auto; }
+html.table-compact .s40-dock .s40-button { min-height: 32px; }
+html.table-compact .s40-dock { gap: 6px; }
+html.table-compact .s40-dock .s40-button { flex: 0 1 auto; }
+
+/* --- Briscola ------------------------------------------------------- */
+html.table-compact .briscola-game {
+    --briscola-card-width: clamp(46px, calc(var(--stage-h) * .165), 78px);
+    padding: 6px 14px !important;
+}
+html.table-compact .briscola-shell { height: 100%; gap: 6px; }
+html.table-compact .briscola-topbar { min-height: 34px; }
+html.table-compact :is(.briscola-brand small, .briscola-seat-label) { display: none; }
+html.table-compact .briscola-scoreboard { min-height: 44px; padding: 4px 10px; }
+html.table-compact .briscola-stock-zone { top: 50%; }
+html.table-compact .briscola-start h1 { font-size: 2.6rem; }
+html.table-compact .briscola-start-emblem { width: 48px; height: 48px; margin-bottom: 6px; }
+html.table-compact .briscola-start > p { margin-bottom: 6px; }
+
+/* --- Solitario ------------------------------------------------------ */
+html.table-compact .solitario-game {
+    --sol-card-width: clamp(44px, calc(var(--stage-h) * .132), 66px);
+    --sol-stack-gap: clamp(12px, calc(var(--stage-h) * .042), 20px);
+    --sol-grid-gap: 5px;
+    padding: 6px 14px !important;
+}
+html.table-compact .solitario-shell { height: 100%; display: flex; flex-direction: column; }
+html.table-compact .solitario-topbar { margin-bottom: 6px; }
+html.table-compact :is(.solitario-brand small, .solitario-footer) { display: none; }
+html.table-compact .solitario-toolbar { gap: 8px; }
+html.table-compact .solitario-scoreline { margin-top: 4px; }
+html.table-compact .solitario-message { min-height: 0; margin: 4px 0 0; padding: 2px 0; font-size: .68rem; }
+html.table-compact .solitario-table { margin-top: 6px; padding: 10px 10px 12px; border-radius: 16px; flex: 1; min-height: 0; }
+html.table-compact .solitario-upper { margin-bottom: 12px; }
+html.table-compact .solitario-pile-label { font-size: .48rem; letter-spacing: 0; }
+html.table-compact .solitario-column > .solitario-pile-label { margin-bottom: 4px; }
+
+/* 3. Comandi pensati per il pollice -------------------------------- */
+/* --- Tavoli storici (Uno, Burraco, Dama, Scacchi, Tris) ------------- */
+html.table-compact .game-master-wrapper:not(#start-screen) { padding: 6px 12px !important; }
+html.table-compact #start-screen .main-title { margin: 4px 0 8px !important; font-size: clamp(1.9rem, 8vh, 2.6rem) !important; }
+html.table-compact #start-screen .pulse-logo { width: 58px !important; margin-bottom: 8px !important; }
+html.table-compact #start-screen .minigame-bot-level-title { margin-bottom: 6px !important; }
+
+/* 4. Riduzione automatica quando l'altezza è davvero minima ---------- */
+html.table-fit :is(.scala40-game, .scopa-game, .briscola-game, .solitario-game) > :first-child {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    transform: scale(var(--table-fit, 1));
+    transform-origin: top center;
+}
+
+html.table-compact :is(.scopa-button, .s40-button, .solitario-control) { touch-action: manipulation; }
+html.table-compact button.scopa-card,
+html.table-compact button.s40-card,
+html.table-compact button.solitario-card { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

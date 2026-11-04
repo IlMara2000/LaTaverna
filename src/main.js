@@ -22,6 +22,7 @@ import { applyCachedAppPreferences, loadAndApplyAppPreferences } from './service
 import { getSessionInviteFromUrl, joinSessionInvite } from './services/sessionInvites.js';
 import { initMotionPreferences, playLoaderExit } from './services/motionSystem.js';
 import './services/standalone.js';
+import './services/tableOrientation.js';
 
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
