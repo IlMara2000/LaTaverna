@@ -1,7 +1,7 @@
 // Development-only bridge for the same handlers deployed as server functions.
 // Only these server environment variables are copied; none enter Vite define.
 export function localApiPlugin(env){
-    const names=['GROQ_LLM_API_KEY','GROQ_API_KEY','GROQ_LLM_MODEL','GROQ_VISION_MODEL','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','SUPABASE_URL','SUPABASE_ANON_KEY','APP_LAB_RUNTIME_URL','APP_LAB_RUNTIME_TOKEN','APP_LAB_SESSION_MINUTES','APP_LAB_MAX_SESSIONS','APP_LAB_SESSION_CPU','APP_LAB_SESSION_MEMORY_MB','APP_LAB_BUILD_SERVICE_URL','APP_LAB_BUILD_SERVICE_TOKEN'];
+    const names=['GROQ_LLM_API_KEY','GROQ_API_KEY','GROQ_LLM_MODEL','GROQ_VISION_MODEL','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','SUPABASE_URL','SUPABASE_ANON_KEY'];
     for(const name of names)if(env[name])process.env[name]=env[name];
     const routes={
         '/api/oracle/chat':()=>import('../api/oracle/chat.js'),
@@ -9,9 +9,7 @@ export function localApiPlugin(env){
         '/api/rpg/session-event':()=>import('../api/rpg/session-event.js'),
         '/api/rpg/ai-health':()=>import('../api/rpg/ai-health.js'),
         '/api/magic/scan':()=>import('../api/magic/scan.js'),
-        '/api/magic/translate':()=>import('../api/magic/translate.js'),
-        '/api/applab/session':()=>import('../api/applab/session.js'),
-        '/api/applab/porting':()=>import('../api/applab/porting.js')
+        '/api/magic/translate':()=>import('../api/magic/translate.js')
     };
     return {name:'taverna-local-api',configureServer(server){server.middlewares.use(async(req,res,next)=>{
         const load=routes[req.url?.split('?')[0]];if(!load)return next();

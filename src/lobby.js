@@ -82,7 +82,7 @@ export function showLobby(container) {
                             <strong>${escapeHTML(lastDestinationInfo.name)}</strong>
                         </button>
                     ` : ''}
-                    <button type="button" id="hub-multiplayer">MULTIPLAYER</button><button type="button" id="hub-mtcg">MTCG</button><button type="button" id="hub-applab">APP LAB</button><button type="button" id="hub-shop">BOTTEGA</button>
+                    <button type="button" id="hub-multiplayer">MULTIPLAYER</button><button type="button" id="hub-mtcg">MTCG</button><button type="button" id="hub-shop">BOTTEGA</button>
                     <button type="button" id="hub-oracle">L’ORACOLO</button>
                 </nav>
                 <p class="taverna-home-footer"><span aria-hidden="true">✦</span> Le storie più belle si giocano insieme.</p>
@@ -117,7 +117,6 @@ export function showLobby(container) {
     gdrScene.onclick = () => openDestination('rpg');
     container.querySelector('#hub-multiplayer').onclick=()=>openDestination('multiplayer');
     container.querySelector('#hub-mtcg').onclick=()=>openDestination('mtcg');
-    container.querySelector('#hub-applab').onclick = () => openDestination('applab');
     container.querySelector('#hub-shop').onclick = () => openDestination('shop');
     container.querySelector('#hub-reading').onclick = () => openDestination('reading');
     container.querySelector('#hub-oracle').onclick = () => openDestination('oracle');

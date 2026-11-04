@@ -94,14 +94,6 @@
       "destination": "/index.html"
     },
     {
-      "source": "/app-lab/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/app-lab",
-      "destination": "/index.html"
-    },
-    {
       "source": "/magic/:path*",
       "destination": "/index.html"
     },

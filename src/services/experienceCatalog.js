@@ -150,10 +150,6 @@ export const APP_DESTINATIONS = {
         name: 'Lettura',
         description: 'Libri PDF, bacheca e raccolte personali.'
     },
-    applab: {
-        name: 'APP LAB',
-        description: 'APK in libreria ed esecuzione Android nel browser.'
-    },
     minigames: {
         name: 'Minigiochi',
         description: 'Giochi da compagnia e strategia.'

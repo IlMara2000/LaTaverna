@@ -12,7 +12,6 @@ export const PUBLIC_ROUTES = Object.freeze({
     dnd5e: '/dnd',
     shop: '/shop',
     reading: '/library',
-    applab: '/app-lab',
     magic: '/magic',
     artisanShop: '/bottega/artigiano-rituale',
     privacy: '/privacy',
