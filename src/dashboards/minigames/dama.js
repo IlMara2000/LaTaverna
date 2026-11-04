@@ -3,6 +3,7 @@ import { pickState } from './onlineMatchProtocol.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
 
 /**
@@ -266,6 +267,7 @@ function aiDamaMove(state, container) {
     }
 
     if (allMoves.length === 0) {
+        recordMinigameResult('dama', 'win', { score: state.currentLevel });
         alert(`🏆 VITTORIA!\nHai superato il Livello ${state.currentLevel}! Il bot non ha mosse.`);
         unlockNextLevel('dama', state.currentLevel);
         return quitGame(container);
@@ -322,6 +324,7 @@ function aiDamaMove(state, container) {
 
     if (!playerHasMoves) {
         setTimeout(() => {
+            recordMinigameResult('dama', 'loss', { score: state.currentLevel });
             alert(`💀 SCONFITTA!\nSei stato bloccato dal Bot di Livello ${state.currentLevel}.`);
             quitGame(container);
         }, 300);

@@ -5,6 +5,7 @@ import { renderHomeBackButton } from './components/ui/BackButton.js';
 import { loadView } from './services/navigationLoading.js';
 import { updateSidebarContext } from './components/layout/Sidebar.js';
 import { MINIGAMES, MINIGAME_CATEGORIES, getGamesByCategory } from './services/experienceCatalog.js';
+import { getMinigameRecord } from './services/minigameRecords.js';
 import { rememberDestination, navigateTo, resetAppSurface } from './services/appNavigation.js';
 import { enhanceSurfaceMotion } from './services/motionSystem.js';
 import {subscribePlatformRoom} from './services/platformMultiplayer.js';
@@ -81,6 +82,12 @@ export function showMinigamesList(container, options = {}) {
     const renderGameCatalog = () => {
         setExperienceTheme(activeFilter, 'catalog');
         const catalog = container.querySelector('#minigame-catalog');
+        const recordMarkup = gameId => {
+            const record = getMinigameRecord(gameId);
+            if (!record.played) return '';
+            const score = record.bestScore === null ? '' : ` · record ${record.bestScore}`;
+            return `<small class="catalog-game-record">${record.wins} vinte · ${record.losses} perse${record.draws ? ` · ${record.draws} patte` : ''}${score}</small>`;
+        };
         const visibleCategories = activeFilter === 'all'
             ? MINIGAME_CATEGORIES.filter(category => category.id !== 'cards')
             : MINIGAME_CATEGORIES.filter(category => category.id === activeFilter);
@@ -97,6 +104,7 @@ export function showMinigamesList(container, options = {}) {
                                 <div class="catalog-game-copy">
                                     <h3>${game.name}</h3>
                                     <small>${game.players} · ${game.duration}</small><p class="world-game-description">${game.description}</p>
+                                    ${recordMarkup(game.id)}
                                 </div>
                                 <span class="catalog-game-arrow" aria-hidden="true">Gioca <b>↗</b></span>
                             </button>

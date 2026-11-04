@@ -1,6 +1,7 @@
 import { renderOnlineModeButton, bindOnlineModeButton } from './onlineModeButton.js';
 import { startOnlineParty } from './onlineParty.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 
 // ==========================================
@@ -178,6 +179,7 @@ function renderResult(container) {
     const userOrder = [...container.querySelectorAll('.sortable-item')].map(i => i.dataset.name);
     const sorted = gameData.playerNumbers.map(p => ({name: p.name, val: p.numbers.reduce((a,b)=>a+b,0)/p.numbers.length, nums: p.numbers})).sort((a,b) => a.val - b.val);
     const isCorrect = JSON.stringify(userOrder) === JSON.stringify(sorted.map(p=>p.name));
+    recordMinigameResult('numeri', isCorrect ? 'win' : 'loss', { score: gameData.round });
     
     container.innerHTML = `
         <div class="master-wrapper" style="min-height: 80vh; justify-content: center; align-items: center; text-align: center;">

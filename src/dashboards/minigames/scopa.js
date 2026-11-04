@@ -4,6 +4,7 @@ import { scopaPerspective } from './onlineMatchProtocol.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { SCOPA_SUITS, cardName, captureOptions, createScopaMatch, nextScopaRound, playScopaMove, chooseScopaMove } from './scopaEngine.js';
+import { recordMinigameResult, describeMinigameRecord } from '../../services/minigameRecords.js';
 import './scopa.css';
 
 const suitOf = card => SCOPA_SUITS.find(suit => suit.id === card.suit);
@@ -74,6 +75,7 @@ export function initScopa(container) {
     let botTimer = null;
     let stopped = false;
     let dialogKind = null;
+    let recordedMatchOver = false;
 
     function clearBot() {
         window.clearTimeout(botTimer);
@@ -138,6 +140,7 @@ export function initScopa(container) {
         match = createScopaMatch();
         selected = null;
         choices = [];
+        recordedMatchOver = false;
         query('.scopa-welcome').hidden = true;
         query('.scopa-scoreboard').hidden = false;
         query('.scopa-board').hidden = false;
@@ -197,6 +200,10 @@ export function initScopa(container) {
 
     function showResult() {
         const result = match.round.result;
+        if (match.over && !online.onlineMode && !recordedMatchOver) {
+            recordedMatchOver = true;
+            recordMinigameResult('scopa', match.winner === 0 ? 'win' : 'loss', { score: match.totals[0] });
+        }
         const rows = [
             ['Carte', result.cardCounts.map(count => `${count} carte`), result.points.cards],
             ['Quadri ♦', result.diamondCounts.map(count => `${count} quadri`), result.points.diamonds],
@@ -209,7 +216,7 @@ export function initScopa(container) {
         const leftoverNote = last.leftovers.length ? `<p class="scopa-result-note">Le ${last.leftovers.length} carte rimaste vanno ${last.leftoversOwner === 0 ? 'a te' : 'all’Oste'}, che ha fatto l’ultima presa.</p>` : '';
         const title = match.over ? match.winner === 0 ? 'Hai vinto la partita!' : 'L’Oste vince la partita' : `Smazzata ${match.number} conclusa`;
         const note = match.over ? 'La partita è conclusa. Pronto per la rivincita?' : match.totals[0] === match.totals[1] && match.totals[0] >= 11 ? 'Siete in parità: serve un’altra smazzata per decidere il vincitore.' : 'Si gioca fino a 11 punti, con il conteggio alla fine della smazzata.';
-        showDialog('result', online.onlineMode ? title.replace('L’Oste', 'L’avversario') : title, `${online.onlineMode ? table.replace('Oste', 'Avversario') : table}${leftoverNote}<p>${note}</p>`, `<button type="button" class="scopa-button scopa-primary" data-action="${match.over ? 'restart' : 'next-round'}" ${online.onlineMode && online.onlineSeat !== 0 ? 'disabled' : ''}>${match.over ? 'RIVINCITA' : 'PROSSIMA SMAZZATA'}</button><button type="button" class="scopa-button" data-action="exit">TORNA ALLA SALA GIOCHI</button>`);
+        showDialog('result', online.onlineMode ? title.replace('L’Oste', 'L’avversario') : title, `${online.onlineMode ? table.replace('Oste', 'Avversario') : table}${leftoverNote}<p>${note}</p>${match.over && !online.onlineMode ? `<p class="scopa-result-note">Record: ${describeMinigameRecord('scopa')}</p>` : ''}`, `<button type="button" class="scopa-button scopa-primary" data-action="${match.over ? 'restart' : 'next-round'}" ${online.onlineMode && online.onlineSeat !== 0 ? 'disabled' : ''}>${match.over ? 'RIVINCITA' : 'PROSSIMA SMAZZATA'}</button><button type="button" class="scopa-button" data-action="exit">TORNA ALLA SALA GIOCHI</button>`);
     }
 
     async function handleClick(event) {

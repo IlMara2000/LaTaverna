@@ -3,6 +3,7 @@ import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { Chess } from 'chess.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
 
 /**
@@ -331,6 +332,10 @@ function handleTerminalState(state, container) {
     if (!state.game.isGameOver()) return false;
 
     window.setTimeout(() => {
+        if (!state.onlineMode) {
+            const outcome = state.game.isCheckmate() ? (state.game.turn() === 'b' ? 'win' : 'loss') : 'draw';
+            recordMinigameResult('scacchi', outcome, { score: state.currentLevel });
+        }
         if (state.game.isCheckmate()) {
             if (state.game.turn() === 'b') {
                 unlockNextLevel('scacchi', state.currentLevel);

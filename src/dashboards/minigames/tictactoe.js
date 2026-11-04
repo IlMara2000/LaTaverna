@@ -3,6 +3,7 @@ import { connectOnlineGame } from './onlineGameSession.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, renderLevelLadder, unlockNextLevel } from '../../services/levels.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 import {
     getMinigameClientId,
 } from '../../services/minigameMultiplayer.js';
@@ -447,6 +448,10 @@ function makeBotMove(container, state) {
 }
 
 function handleCompletedGame(state) {
+    if (state.mode === 'bot' && !state.resultRecorded) {
+        state.resultRecorded = true;
+        recordMinigameResult('tictactoe', state.winner === PLAYER_SYMBOL ? 'win' : state.winner ? 'loss' : 'draw', { score: state.currentLevel });
+    }
     if (state.mode === 'bot' && state.winner === PLAYER_SYMBOL && !state.levelUnlocked) {
         unlockNextLevel('tictactoe', state.currentLevel);
         state.levelUnlocked = true;

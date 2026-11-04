@@ -5,6 +5,7 @@ import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 
 /**
  * GIOCO: SOLO - MASTER EDITION (Responsive & Matte Black)
@@ -448,9 +449,11 @@ function endTurn(state, container) {
                 return;
             }
             if (i === 0) {
+                recordMinigameResult('solo', 'win', { score: state.currentLevel });
                 alert(`🏆 VITTORIA!\nHai superato il Livello ${state.currentLevel}!`);
                 unlockNextLevel('solo', state.currentLevel);
             } else {
+                recordMinigameResult('solo', 'loss', { score: state.currentLevel });
                 alert(`💀 SCONFITTA!\nIl Bot ${i} ha vinto.`);
             }
             return quitGame(container);

@@ -3,6 +3,7 @@ import { cardPerspective } from './onlineMatchProtocol.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
 
 /**
@@ -411,6 +412,7 @@ async function handlePlayerDiscard(state) {
             await state.onlineSync.commit();
             return;
         }
+        recordMinigameResult('burraco', 'win', { score: state.currentLevel });
         alert(`🏆 VITTORIA!\nHai chiuso e superato il Livello ${state.currentLevel}!`);
         unlockNextLevel('burraco', state.currentLevel);
         quitGame(state.container);
@@ -502,6 +504,7 @@ function botAction(state) {
             state.discardPile.push(dCard);
 
             if (state.hands.bot1.length === 0) {
+                recordMinigameResult('burraco', 'loss', { score: state.currentLevel });
                 alert(`💀 SCONFITTA!\nIl Bot di Livello ${state.currentLevel} ha chiuso!`);
                 return quitGame(state.container);
             }

@@ -6,6 +6,7 @@ import {
     SOLITAIRE_SUITS, createSolitaireGame, solitaireRankLabel, solitaireCardName,
     solitaireSourceCards, canMoveSolitaire, moveSolitaire, drawSolitaire, solitaireFoundationTarget
 } from './solitarioEngine.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 import './solitario.css';
 
 export function initSolitario(container) {
@@ -17,6 +18,7 @@ export function initSolitario(container) {
     let challengeFinished = false;
     let selected = null;
     let history = [];
+    let recordedWin = false;
     let message = 'Scegli una carta, poi la colonna o la base di destinazione.';
     let disposed = false;
     let helpOpen = false;
@@ -119,6 +121,10 @@ export function initSolitario(container) {
         if (next === state) return false;
         history.push(state);
         state = next;
+        if (next.won && !recordedWin && !online.onlineMode) {
+            recordedWin = true;
+            recordMinigameResult('solitario', 'win', { score: next.moves, betterWhen: 'lower' });
+        }
         selected = null;
         message = status;
         render();
@@ -187,7 +193,7 @@ export function initSolitario(container) {
         if (action === 'close-help') { setHelp(false); return; }
         if (online.onlineMode && (challengeFinished || !online.onlineReady || action === 'restart' || action === 'undo')) return;
         if (action === 'restart') {
-            history = []; state = createSolitaireGame(); selected = null;
+            history = []; state = createSolitaireGame(); selected = null; recordedWin = false;
             message = 'Nuova partita. Porta tutte le carte alle quattro basi.'; render(); return;
         }
         if (action === 'undo' && history.length) {

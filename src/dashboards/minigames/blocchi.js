@@ -3,6 +3,7 @@ import { connectOnlineChallenge, seededRandom } from './onlineChallenge.js';
 import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { renderLevelLadder, unlockNextLevel } from '../../services/levels.js';
+import { recordMinigameResult } from '../../services/minigameRecords.js';
 import './blocchi.css';
 
 const COLS = 10;
@@ -577,6 +578,10 @@ function finishLineClear(container, state, rows) {
 }
 
 function finishGame(container, state) {
+    if (!state.onlineMode && !state.resultRecorded) {
+        state.resultRecorded = true;
+        recordMinigameResult('blocchi', state.challengeComplete ? 'win' : 'loss', { score: state.score });
+    }
     state.phase = 'gameover';
     state.paused = false;
     state.active = null;

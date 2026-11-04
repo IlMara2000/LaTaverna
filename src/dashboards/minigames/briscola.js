@@ -4,6 +4,7 @@ import { setExperienceTheme } from '../../services/experienceTheme.js';
 import { updateSidebarContext } from '../../components/layout/Sidebar.js';
 import { getLevelDifficultyChance, unlockNextLevel, renderLevelLadder } from '../../services/levels.js';
 import { bindOnlineModeButton, renderOnlineModeButton } from './onlineModeButton.js';
+import { recordMinigameResult, describeMinigameRecord } from '../../services/minigameRecords.js';
 import './briscola.css';
 
 const SUITS = [
@@ -469,6 +470,7 @@ function finishMatch(container, state) {
     const won = state.scores[0] > state.scores[1];
     const draw = state.scores[0] === state.scores[1];
     if (won && !state.onlineMode) unlockNextLevel('briscola', state.currentLevel);
+    if (!state.onlineMode) recordMinigameResult('briscola', won ? 'win' : draw ? 'draw' : 'loss', { score: state.scores[0] });
     updateUI(container, state);
 
     const eyebrow = container.querySelector('#briscola-modal-eyebrow');
@@ -484,6 +486,10 @@ function finishMatch(container, state) {
     const finalScore = container.querySelector('#briscola-final-score');
     finalScore.hidden = false;
     finalScore.innerHTML = `<span><small>TU</small><strong>${state.scores[0]}</strong></span><i>—</i><span><small>${state.onlineMode ? 'ONLINE' : 'OSTE'}</small><strong>${state.scores[1]}</strong></span>`;
+    if (!state.onlineMode) {
+        const recordLine = describeMinigameRecord('briscola');
+        if (recordLine) copy.innerHTML += `<p>Record: ${recordLine}</p>`;
+    }
     container.querySelector('#briscola-modal-close').hidden = true;
     container.querySelector('#briscola-modal-primary').hidden = false;
     container.querySelector('#briscola-modal-levels').hidden = false;
