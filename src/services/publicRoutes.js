@@ -9,6 +9,7 @@ export const PUBLIC_ROUTES = Object.freeze({
     rpg: '/giochi-di-ruolo',
     oracle: '/oracolo',
     minigames: '/minigames',
+    scippo: '/scippo',
     dnd5e: '/dnd',
     shop: '/shop',
     reading: '/library',

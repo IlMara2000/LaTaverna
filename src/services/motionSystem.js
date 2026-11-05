@@ -64,11 +64,17 @@ export async function playLoaderExit(loader, app = document.getElementById('app'
     window.dispatchEvent(new CustomEvent('taverna:boot-visible'));
     if (!loader) return;
     loader.style.pointerEvents = 'none';
+    const animation = reveal(loader, { opacity: [1, 0] }, { duration: 240 });
+    // A backgrounded tab can keep an animation pending: the timeout guarantees
+    // that a deep link is never covered by an invisible, click-blocking loader.
+    let fallbackTimer;
+    const fallback = new Promise(resolve => { fallbackTimer = setTimeout(resolve, 420); });
     try {
-        await reveal(loader, { opacity: [1, 0] }, { duration: 240 })?.finished;
+        if (animation) await Promise.race([animation.finished, fallback]);
     } catch {
         // A preference change or interrupted animation must still unlock the app.
     } finally {
+        clearTimeout(fallbackTimer);
         loader.remove();
     }
 }

@@ -52,6 +52,28 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - Libreria musicale con playlist tematiche e upload file audio locale.
 - Lettura: upload di PDF privati, consenso esplicito alla pubblicazione in Bacheca, elenco alfabetico con ricerca per titolo/autore, lettore PDF, preferiti e raccolte salvati per account.
 
+## SCIPPO!
+
+SCIPPO! è il minigioco di carte 1v1 della Taverna: 20 carte, 8 turni, un solo vincitore. Si raggiunge da `/scippo`, dal catalogo Minigiochi o dal menu laterale.
+
+- **Carte:** 6 BOTTA 👊, 6 SCUDO 🛡️, 6 FINTA 🎭, 2 JOLLY 🃏. BOTTA batte FINTA, SCUDO batte BOTTA, FINTA batte SCUDO, JOLLY batte ogni carta normale. Carte uguali pareggiano e il bottino del turno resta sul tavolo.
+- **Partita:** 4 carte in mano, un bottino da 1–3 punti deciso prima della scelta, 8 turni. Se dopo gli 8 turni c'è parità si continua con le carte rimaste e bottino da 1 punto, senza generare carte extra.
+- **Modalità:** partita contro il BOT (Facile, Normale, Difficile), sfida giornaliera deterministica per tutti e sfida asincrona tramite link. Il link contiene un seed: chi lo apre gioca esattamente lo stesso scenario e poi confronta il punteggio. Non è un PvP in tempo reale.
+- **Mazzi:** editor con le regole del motore (20 carte, 3–10 copie per carta normale, massimo 2 JOLLY), fino a 6 mazzi salvati e mazzo attivo. La validazione è la stessa usata dal motore.
+- **Profilo:** partite, vittorie, sconfitte, patte, serie, record punti, vittorie per difficoltà, badge estetici, audio e riduzione effetti. I dati sono locali al dispositivo (`taverna:scippo:v1`); non esistono ancora classifiche globali né ranking competitivo.
+
+Codice:
+
+- `src/services/scippoEngine.js` — regole pure: mazzi, mescolamento con seed, turni, spareggio, punteggi.
+- `src/services/scippoBot.js` — tre difficoltà; il BOT difficile usa solo informazioni pubbliche (scarti rivelati e composizione dichiarata) e non legge la mano avversaria.
+- `src/services/scippoProfile.js` — statistiche, mazzi, badge, sfida giornaliera e preferenze locali.
+- `src/services/scippoAudio.js` — effetti sintetizzati via Web Audio, senza file esterni e senza autoplay.
+- `src/dashboards/minigames/scippo.js` + `scippo.css` — home, arena, mazziera e profilo.
+
+Verifica: `node --test scripts/tests/scippo.test.mjs` (o `npm run test:scippo`) copre tutte le combinazioni di carte, la validazione dei mazzi, 300 partite simulate, lo spareggio, la segretezza delle carte e la determinismo del BOT. La build si controlla con `npm run build`.
+
+Limiti dichiarati di questa prima versione: niente matchmaking live, tornei schedulati, classifiche globali o Elo, perché richiedono un backend autorevole con scheduler e stato partita lato server; non sono mostrati come funzionanti. Il motore è separato dalla UI proprio per poterli aggiungere senza riscrivere le regole.
+
 ## Sezione Lettura
 
 La voce **Lettura** è disponibile nella home e nel menu laterale. Per un nuovo ambiente applica anche `supabase/migrations/20260916102901_reading_library.sql` dopo lo schema iniziale (sul progetto LaTaverna è già stata applicata).

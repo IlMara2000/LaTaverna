@@ -74,6 +74,17 @@ export const MINIGAMES = [
         initFn: 'initBurraco'
     },
     {
+        id: 'scippo',
+        name: 'SCIPPO!',
+        category: 'party',
+        icon: '👊',
+        players: '1 giocatore · contro il BOT',
+        duration: '3-5 min',
+        description: '20 carte, 8 turni e un solo vincitore: batti la carta giusta e bluffa al momento giusto.',
+        color: 'linear-gradient(135deg, #ff3d7f, #d9ff3f)',
+        initFn: 'initScippo'
+    },
+    {
         id: 'impostore',
         name: 'Impostore',
         category: 'party',

@@ -11,7 +11,7 @@ import { enhanceSurfaceMotion } from './services/motionSystem.js';
 import {subscribePlatformRoom} from './services/platformMultiplayer.js';
 import {getRoomParticipants} from './services/minigameMultiplayer.js';
 
-const FANTASY_GAME_MARKS = { briscola: '♠︎', scopa: '♦︎', solitario: '♥︎', solo: '✦', burraco: '♣︎', impostore: '◈', numeri: 'Ⅶ', tictactoe: '✕', scacchi: '♞', dama: '◉', blocchi: '▦' };
+const FANTASY_GAME_MARKS = { briscola: '♠︎', scopa: '♦︎', solitario: '♥︎', solo: '✦', burraco: '♣︎', scippo: '✊', impostore: '◈', numeri: 'Ⅶ', tictactoe: '✕', scacchi: '♞', dama: '◉', blocchi: '▦' };
 
 export function showMinigamesList(container, options = {}) {
     window.__homeCleanup?.();

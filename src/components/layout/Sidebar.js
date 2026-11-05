@@ -52,6 +52,7 @@ function renderSidebarContent(container, context) {
                 <a class="btn-glass sidebar-nav-item" id="nav-cardCounter" data-context="cardCounter" href="/mtcg/segnapunti">SEGNAPUNTI</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-cards" data-context="cards" href="/carte">CARTE</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-minigames" data-context="minigames" href="/minigames">MINIGIOCHI</a>
+                <a class="btn-glass sidebar-nav-item" id="nav-scippo" data-context="scippo" href="/scippo">SCIPPO!</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-rpg" data-context="rpg" href="/giochi-di-ruolo">GIOCHI DI RUOLO</a>
                 <a class="btn-glass sidebar-nav-item" id="nav-reading" data-context="reading" href="/library">LETTURA</a>
                 <span class="sidebar-section-label">AL TUO FIANCO</span>
@@ -203,6 +204,7 @@ function setupEventListeners(container, context) {
 
     attachNav('nav-home', 'home');
     attachNav('nav-minigames', 'minigames');
+    attachNav('nav-scippo', 'scippo');
     attachNav('nav-cards', 'cards');
     attachNav('nav-multiplayer','multiplayer');
     attachNav('nav-mtcg','mtcg');

@@ -82,6 +82,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/scippo",
+      "destination": "/index.html"
+    },
+    {
       "source": "/dnd/:path*",
       "destination": "/index.html"
     },

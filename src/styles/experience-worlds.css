@@ -382,6 +382,7 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui [data-launch-game="scacchi"] { --game-art: url("/assets/games/scacchi.svg"); }
 #ui [data-launch-game="dama"] { --game-art: url("/assets/games/dama.svg"); }
 #ui [data-launch-game="blocchi"] { --game-art: url("/assets/games/blocchi.svg"); }
+#ui [data-launch-game="scippo"] { --game-art: url("/assets/games/scippo.svg"); }
 
 /* Dice controls must retain readable contrast in both day and night map modes. */
 #ui .dnd-dice-bar :is(#diceFormula, #rollMode, #rollMod) {
