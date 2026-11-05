@@ -63,7 +63,7 @@ export function createDefaultProfile() {
         },
         decks: [],
         activeDeckId: 'standard',
-        settings: { sound: true, reduceFx: false },
+        settings: { sound: true, reduceFx: false, taunts: true },
         daily: { date: '', attempts: 0, bestScore: null, completed: false, lastOutcome: null },
         challenge: { lastSeed: '', bestScore: null }
     };
@@ -108,6 +108,7 @@ export function normalizeScippoProfile(raw) {
 
     profile.settings.sound = raw.settings?.sound !== false;
     profile.settings.reduceFx = raw.settings?.reduceFx === true;
+    profile.settings.taunts = raw.settings?.taunts !== false;
 
     if (raw.daily && typeof raw.daily === 'object') {
         profile.daily.date = typeof raw.daily.date === 'string' ? raw.daily.date : '';
@@ -202,7 +203,8 @@ export function updateScippoSettings(profile, patch = {}) {
         settings: {
             ...profile.settings,
             ...(typeof patch.sound === 'boolean' ? { sound: patch.sound } : {}),
-            ...(typeof patch.reduceFx === 'boolean' ? { reduceFx: patch.reduceFx } : {})
+            ...(typeof patch.reduceFx === 'boolean' ? { reduceFx: patch.reduceFx } : {}),
+            ...(typeof patch.taunts === 'boolean' ? { taunts: patch.taunts } : {})
         }
     };
     saveScippoProfile(next);

@@ -15,6 +15,8 @@
 export const DECK_SIZE = 20;
 export const HAND_SIZE = 4;
 export const REGULATION_TURNS = 8;
+export const SCIPPO_MULTIPLIER = 2;
+export const SCIPPO_USES_PER_MATCH = 1;
 export const MIN_NORMAL_COPIES = 3;
 export const MAX_NORMAL_COPIES = 10;
 export const MAX_JOLLY_COPIES = 2;
@@ -25,19 +27,19 @@ export const NORMAL_CARD_IDS = Object.freeze(['botta', 'scudo', 'finta']);
 export const CARD_TYPES = Object.freeze({
     botta: Object.freeze({
         id: 'botta', label: 'BOTTA', name: 'Botta', icon: '👊',
-        beats: 'finta', rule: 'Batte la finta'
+        beats: 'finta', rule: 'Batte la finta', victoryLine: 'TI HO STESO.'
     }),
     scudo: Object.freeze({
         id: 'scudo', label: 'SCUDO', name: 'Scudo', icon: '🛡️',
-        beats: 'botta', rule: 'Batte la botta'
+        beats: 'botta', rule: 'Batte la botta', victoryLine: 'BEL TENTATIVO, CAMPIONE.'
     }),
     finta: Object.freeze({
         id: 'finta', label: 'FINTA', name: 'Finta', icon: '🎭',
-        beats: 'scudo', rule: 'Batte lo scudo'
+        beats: 'scudo', rule: 'Batte lo scudo', victoryLine: 'CI SEI CASCATO COME UN POLLO.'
     }),
     jolly: Object.freeze({
         id: 'jolly', label: 'JOLLY', name: 'Jolly', icon: '🃏',
-        beats: null, rule: 'Batte tutto'
+        beats: null, rule: 'Batte tutto', victoryLine: 'NON ERA NEANCHE UNA SFIDA.'
     })
 });
 
@@ -73,6 +75,12 @@ export const SCIPPO_TAUNTS = Object.freeze({
         'LA TAVERNA RICORDA.',
         'IL PROSSIMO BOTTINO È TUO?',
         'BRAVO. O FORTUNATO.'
+    ]),
+    scippo: Object.freeze([
+        'FERMI TUTTI.',
+        'QUESTO È UNO SCIPPO.',
+        'ADESSO SI FA SUL SERIO.',
+        'HO APPENA FIRMATO IL MIO CAPOLAVORO.'
     ])
 });
 
@@ -245,6 +253,8 @@ export function createMatch({
         discards: [[], []],
         scores: [0, 0],
         pending: [null, null],
+        pendingScippo: [false, false],
+        scippoUsed: [false, false],
         history: [],
         lastTurn: null,
         stats: [
@@ -271,7 +281,9 @@ function finishMatch(match, winner, endReason) {
 function resolvePending(match) {
     const plays = [0, 1].map(seat => ({ seat, card: match.pending[seat] }));
     const result = compareCards(plays[0].card, plays[1].card);
-    const points = match.bottino;
+    const scippo = match.pendingScippo[0] || match.pendingScippo[1];
+    const multiplier = scippo ? SCIPPO_MULTIPLIER : 1;
+    const points = match.bottino * multiplier;
     const winnerSeat = result === 'draw' ? null : result === 'a' ? 0 : 1;
 
     if (winnerSeat !== null) {
@@ -289,7 +301,11 @@ function resolvePending(match) {
     const entry = {
         turn: match.turn,
         overtime: match.overtime,
-        bottino: points,
+        bottino: match.bottino,
+        multiplier,
+        points: winnerSeat === null ? 0 : points,
+        scippo,
+        scippoBy: match.pendingScippo.map((declared, seat) => declared ? seat : null).filter(seat => seat !== null),
         plays,
         result,
         winnerSeat,
@@ -300,6 +316,7 @@ function resolvePending(match) {
     match.history.push(entry);
     match.lastTurn = entry;
     match.pending = [null, null];
+    match.pendingScippo = [false, false];
     match.phase = 'reveal';
 
     const tied = match.scores[0] === match.scores[1];
@@ -315,7 +332,7 @@ function resolvePending(match) {
  * Gioca una carta coperta. La partita resta in attesa dell'altra carta finché
  * entrambi i posti non hanno scelto; solo allora il turno viene risolto.
  */
-export function playCard(match, seat, cardId) {
+export function playCard(match, seat, cardId, { scippo = false } = {}) {
     if (!match || (seat !== 0 && seat !== 1)) {
         return { ok: false, error: 'Partita o giocatore non validi.', match };
     }
@@ -332,12 +349,33 @@ export function playCard(match, seat, cardId) {
     if (index < 0) {
         return { ok: false, error: 'Questa carta non è nella tua mano.', match };
     }
+    if (scippo && !scippoAvailable(match, seat)) {
+        return { ok: false, error: 'Hai già usato la SCIPPATA in questa partita.', match };
+    }
 
     const next = structuredClone(match);
     next.hands[seat].splice(index, 1);
     next.pending[seat] = cardId;
+    next.pendingScippo[seat] = Boolean(scippo);
+    if (scippo) next.scippoUsed[seat] = true;
     if (next.pending[0] && next.pending[1]) resolvePending(next);
     return { ok: true, error: null, match: next };
+}
+
+/** La SCIPPATA è disponibile una sola volta e solo prima di confermare. */
+export function scippoAvailable(match, seat) {
+    return Boolean(match) && (seat === 0 || seat === 1) && match.scippoUsed?.[seat] !== true;
+}
+
+/** Bottino che verrebbe assegnato ora, considerando le SCIPPATE già confermate. */
+export function effectiveBottino(match) {
+    if (!match) return 0;
+    const declared = Boolean(match.pendingScippo?.[0] || match.pendingScippo?.[1]);
+    return match.bottino * (declared ? SCIPPO_MULTIPLIER : 1);
+}
+
+export function cardVictoryLine(cardId) {
+    return CARD_TYPES[cardId]?.victoryLine || 'BOTTINO MIO.';
 }
 
 /**
@@ -375,6 +413,7 @@ export function advanceMatch(match) {
     next.bottino = next.overtime ? 1 : (next.bottinoQueue[next.turn - 1] ?? 1);
     next.phase = 'choose';
     next.pending = [null, null];
+    next.pendingScippo = [false, false];
     return next;
 }
 

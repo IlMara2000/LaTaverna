@@ -1,0 +1,568 @@
+/* SCIPPO! 2.0 — shell autonoma, SCIPPATA, mascotte e arena desktop. */
+
+html.scippo-shell,
+html.scippo-shell body {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    background: #08070b !important;
+}
+
+html.scippo-shell #navbar-container,
+html.scippo-shell #sidebar-container,
+html.scippo-shell .floating-trigger,
+html.scippo-shell .nav-logo-right,
+html.scippo-shell #ui > footer {
+    display: none !important;
+}
+
+html.scippo-shell #ui {
+    height: 100dvh;
+    min-height: 100dvh;
+}
+
+html.scippo-shell #ui #app {
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+html.scippo-shell .scippo-app {
+    width: 100%;
+    max-width: none;
+    min-height: 100dvh;
+    padding:
+        max(10px, env(safe-area-inset-top, 0px))
+        max(12px, env(safe-area-inset-right, 0px))
+        max(12px, env(safe-area-inset-bottom, 0px))
+        max(12px, env(safe-area-inset-left, 0px));
+}
+
+.sc-exit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+.sc-exit-long { color: var(--sc-muted); font-weight: 700; }
+
+/* ---------- Home 2.0 ---------- */
+.sc-home { gap: 14px; }
+
+.sc-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 0 0;
+    overflow: visible;
+}
+
+.sc-hero-mascot {
+    position: relative;
+    width: min(48vw, 200px);
+    margin: 0 auto -6px;
+    filter: drop-shadow(0 16px 22px #0008);
+}
+
+.sc-hero-mascot .sc-mascot { display: block; width: 100%; height: auto; }
+
+.sc-mascot { overflow: visible; }
+.sc-mascot-hand {
+    transform-origin: 128px 232px;
+    animation: sc-hand-idle 3.8s ease-in-out infinite;
+}
+.sc-mascot-stolen { animation: sc-stolen-idle 5s ease-in-out infinite; transform-origin: 196px 85px; }
+.sc-mascot-spark { animation: sc-spark-twinkle 1.8s steps(2) infinite; }
+
+.sc-mascot-bubble {
+    position: absolute;
+    right: -4px;
+    top: 2px;
+    max-width: 150px;
+    padding: 9px 11px;
+    border: 2px solid #07060a;
+    border-radius: 12px 12px 12px 3px;
+    background: var(--sc-cream);
+    color: #141018;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.35;
+    transform: rotate(3deg);
+    box-shadow: 3px 3px 0 #000;
+}
+
+.sc-hero-copy { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.sc-hero .sc-wordmark { margin: 2px 0 0; }
+.sc-hero-hint {
+    max-width: 34ch;
+    margin: 8px 0 0;
+    font-size: 11px;
+    line-height: 1.55;
+    color: #d9cbe4;
+}
+
+.sc-start-panel { display: flex; flex-direction: column; gap: 10px; }
+
+.sc-scippo-explainer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #d9ff3f55;
+    border-radius: 14px;
+    background:
+        repeating-linear-gradient(115deg, #d9ff3f08 0 1px, transparent 1px 8px),
+        #14110a;
+    text-align: left;
+}
+.sc-scippo-explainer-icon {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    border-radius: 12px;
+    background: var(--sc-lime);
+    color: #14110a;
+    font-size: 25px;
+    transform: rotate(-5deg);
+    box-shadow: 3px 3px 0 #000;
+}
+.sc-scippo-explainer div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.sc-scippo-explainer strong { font-size: 10px; letter-spacing: .09em; color: var(--sc-lime); }
+.sc-scippo-explainer small { font-size: 10px; line-height: 1.5; color: #cbbcD8; }
+
+/* ---------- Arena e carte ---------- */
+.sc-avatar--mascot {
+    padding: 0;
+    overflow: hidden;
+    background: #141018;
+    color: inherit;
+}
+.sc-avatar--mascot .sc-mascot { width: 100%; height: 100%; display: block; }
+.sc-avatar--mascot.is-me { background: #d9ff3f12; }
+
+.sc-match { position: relative; }
+
+.sc-bottino { position: relative; }
+.sc-mult {
+    position: absolute;
+    right: -13px;
+    top: -13px;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--sc-pink);
+    color: #fff;
+    border: 2px solid #07060a;
+    font-family: var(--sc-display);
+    font-size: 16px;
+    font-style: normal;
+    transform: rotate(10deg);
+    box-shadow: 2px 2px 0 #000;
+}
+
+.sc-arena.is-scippo-pot {
+    border-color: #ff3d7f88;
+    box-shadow: inset 0 0 0 5px #08060c, inset 0 0 0 6px #ff3d7f55, 0 0 34px #ff3d7f26;
+}
+
+.sc-scippo-stamp {
+    margin-bottom: 2px;
+    padding: 2px 8px;
+    border: 1px solid var(--sc-lime);
+    border-radius: 999px;
+    background: #d9ff3f16;
+    color: var(--sc-lime);
+    font-size: 8px;
+    font-weight: 900;
+    font-style: normal;
+    letter-spacing: .16em;
+}
+
+/* ---------- Bottone SCIPPATA ---------- */
+.sc-scippo-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    min-height: 52px;
+}
+
+.sc-scippo-button {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 2px dashed #d9ff3f99;
+    border-radius: 14px;
+    background:
+        repeating-linear-gradient(115deg, #d9ff3f0d 0 1px, transparent 1px 7px),
+        #17130b;
+    color: var(--sc-cream);
+    cursor: pointer;
+    text-align: left;
+    box-shadow: 0 3px 0 #000;
+    transition: translate 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+.sc-scippo-button:hover:not(:disabled) { border-color: var(--sc-lime); translate: 0 -2px; }
+.sc-scippo-button:active:not(:disabled) { translate: 0 2px; box-shadow: 0 1px 0 #000; }
+.sc-scippo-button:disabled { opacity: .42; cursor: not-allowed; filter: grayscale(.4); }
+.sc-scippo-button.is-armed {
+    background: var(--sc-lime);
+    color: #14110a;
+    border-style: solid;
+    border-color: #f6ffc4;
+    animation: sc-armed-glow 1.2s ease-in-out infinite;
+}
+.sc-scippo-hand { font-size: 23px; flex: 0 0 auto; transform: rotate(-8deg); }
+.sc-scippo-copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.sc-scippo-copy strong {
+    font-family: var(--sc-display);
+    font-size: clamp(18px, 5.6vw, 24px);
+    font-weight: 400;
+    letter-spacing: .03em;
+    line-height: 1;
+}
+.sc-scippo-copy small { font-size: 8.5px; font-weight: 700; line-height: 1.35; opacity: .8; }
+.sc-scippo-button > em {
+    font-family: var(--sc-display);
+    font-size: 32px;
+    line-height: 1;
+    color: var(--sc-pink);
+    font-style: normal;
+    flex: 0 0 auto;
+}
+.sc-scippo-button.is-armed > em { color: #14110a; }
+.sc-scippo-cancel {
+    flex: 0 0 auto;
+    min-height: 52px;
+    padding: 0 12px;
+    border: 1px solid #ff3d7f88;
+    border-radius: 12px;
+    background: #ff3d7f18;
+    color: #ffd0e1;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: .1em;
+    cursor: pointer;
+}
+
+.sc-hand.is-armed .sc-hand-card:not(:disabled) .sc-card {
+    outline: 3px solid var(--sc-lime);
+    outline-offset: 2px;
+    animation: sc-armed-card 1.4s ease-in-out infinite;
+}
+.sc-hand.is-armed .sc-hand-card:not(:disabled):hover { translate: 0 -9px; }
+
+.sc-scippo-burst {
+    position: fixed;
+    inset: 0;
+    z-index: 9200;
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    padding: 20px;
+    pointer-events: none;
+    text-align: center;
+    background:
+        radial-gradient(circle at 50% 45%, #ff3d7f4d, transparent 55%),
+        #07060acc;
+    animation: sc-fade 120ms ease-out both;
+}
+.sc-scippo-burst strong {
+    display: block;
+    font-family: var(--sc-display);
+    font-size: clamp(68px, 20vw, 190px);
+    font-weight: 400;
+    line-height: .82;
+    letter-spacing: .01em;
+    color: var(--sc-lime);
+    text-shadow:
+        5px 5px 0 var(--sc-pink),
+        10px 10px 0 #000;
+    transform: rotate(-5deg);
+    animation: sc-burst-in 420ms cubic-bezier(.22, 1.4, .36, 1) both;
+}
+.sc-scippo-burst span {
+    justify-self: center;
+    max-width: 80vw;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: var(--sc-cream);
+    color: #14110a;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: .06em;
+    transform: rotate(2deg);
+}
+.is-scippo-turn .sc-arena { animation: sc-table-shake 420ms linear both; }
+
+/* ---------- Risultato 2.0 ---------- */
+.sc-result {
+    max-height: 92dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.sc-result-mascot {
+    width: min(40vw, 150px);
+    margin: -8px auto -2px;
+    filter: drop-shadow(0 10px 14px #0008);
+}
+.sc-result-mascot .sc-mascot { display: block; width: 100%; height: auto; }
+.sc-result-line {
+    margin: 5px 0 0;
+    max-width: 32ch;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.45;
+    letter-spacing: .04em;
+    color: #f1e4fa;
+}
+.sc-result-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 6px;
+}
+.sc-result-stats span {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 6px 9px;
+    border: 1px solid #9c84ae44;
+    border-radius: 999px;
+    color: #b4a4c2;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+.sc-result-stats b { font-family: var(--sc-display); font-size: 17px; font-weight: 400; color: var(--sc-lime); }
+
+/* ---------- Sheet 2.0 ---------- */
+.sc-scippo-risk { border-color: #d9ff3f88; box-shadow: 0 8px 0 #000, 0 0 60px #d9ff3f1c; }
+.sc-risk-note {
+    margin: 0;
+    padding: 10px 12px;
+    border-left: 3px solid var(--sc-pink);
+    border-radius: 4px 8px 8px 4px;
+    background: #ff3d7f0d;
+    color: #ffc4d9;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1.5;
+}
+.sc-button--scippo {
+    background: var(--sc-lime);
+    color: #14110a;
+    border-color: #f6ffc4;
+    font-family: var(--sc-display);
+    font-size: 19px;
+    font-weight: 400;
+    letter-spacing: .04em;
+}
+.sc-button--danger { border-color: #ff3d7f99; background: #2a0d18; color: #ffc4d9; }
+.sc-exit-question {
+    margin: 2px 0 -4px;
+    font-family: var(--sc-display);
+    font-size: clamp(34px, 10vw, 48px);
+    font-weight: 400;
+    line-height: .95;
+    color: var(--sc-pink);
+    transform: rotate(-1.5deg);
+}
+
+/* ---------- Desktop: vera arena a due colonne ---------- */
+@media (min-width: 900px) {
+    .sc-home {
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(320px, .92fr);
+        gap: 18px 26px;
+        align-items: start;
+        max-width: 1180px;
+        width: 100%;
+        margin: 0 auto;
+    }
+    .sc-chrome,
+    .sc-challenge-banner,
+    .sc-action-grid,
+    .sc-rules-strip,
+    .sc-fineprint { grid-column: 1 / -1; }
+    .sc-hero { grid-column: 1; grid-row: 2 / span 3; align-self: center; }
+    .sc-hero-mascot { width: min(24vw, 280px); }
+    .sc-hero .sc-wordmark { font-size: clamp(100px, 13vw, 180px); }
+    .sc-hero-hint { font-size: 13px; max-width: 38ch; }
+    .sc-start-panel { grid-column: 2; }
+    .sc-action-grid { grid-template-columns: repeat(4, 1fr); }
+    .sc-scippo-explainer { grid-column: 2; }
+    .sc-deck-strip { grid-column: 1 / -1; }
+    .sc-levels { padding: 8px; }
+    .sc-level { min-height: 74px; }
+    .sc-cta { min-height: 92px; }
+    .sc-cta span { font-size: 46px; }
+}
+
+@media (min-width: 1024px) {
+    html.scippo-shell .scippo-app { padding: 18px 22px; }
+    html.scippo-shell .scippo-app[data-screen="match"] {
+        height: 100dvh;
+        display: flex;
+        padding: 16px 22px;
+    }
+    .sc-match {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-areas:
+            "top top"
+            "arena opp"
+            "arena scippo"
+            "arena me";
+        gap: 12px;
+        width: 100%;
+        max-width: 1480px;
+        height: 100%;
+        min-height: 0;
+        margin: 0 auto;
+    }
+    .sc-match-top { grid-area: top; }
+    .sc-arena { grid-area: arena; min-height: 0; padding: 22px; }
+    .sc-opponent { grid-area: opp; align-self: end; }
+    .sc-scippo-bar { grid-area: scippo; }
+    .sc-me { grid-area: me; align-self: start; margin-top: 0; }
+    .sc-slot { width: min(17vw, 190px); }
+    .sc-bottino { padding: 9px 18px; }
+    .sc-bottino strong { font-size: 36px; }
+    .sc-duel { gap: 28px; }
+    .sc-vs { font-size: 32px; }
+    .sc-verdict { min-height: 68px; }
+    .sc-verdict strong { font-size: clamp(22px, 2.6vw, 34px); }
+    .sc-verdict small { font-size: 11px; }
+    .sc-hand { gap: 10px; }
+    .sc-scippo-copy strong { font-size: 30px; }
+    .sc-scippo-copy small { font-size: 10px; }
+    .sc-scippo-bar { min-height: 66px; }
+    .sc-scippo-button { min-height: 66px; }
+    .sc-result { width: min(560px, 100%); }
+}
+
+@media (min-width: 1440px) {
+    .sc-match { grid-template-columns: minmax(0, 1fr) 380px; gap: 16px; }
+    .sc-slot { width: min(15vw, 210px); }
+}
+
+/* ---------- Mobile compatto: la partita sta in una schermata ---------- */
+@media (max-width: 1023px) {
+    html.scippo-shell .scippo-app[data-screen="match"] {
+        height: 100dvh;
+        min-height: 0;
+        padding:
+            max(8px, env(safe-area-inset-top, 0px))
+            max(9px, env(safe-area-inset-right, 0px))
+            max(8px, env(safe-area-inset-bottom, 0px))
+            max(9px, env(safe-area-inset-left, 0px));
+        overflow: hidden;
+        display: flex;
+    }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-match {
+        flex: 1;
+        min-height: 0;
+        height: auto;
+        gap: 6px;
+    }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-arena {
+        min-height: 150px;
+        padding: 8px 10px;
+    }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-me { padding: 8px 10px; }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-me-head { margin-bottom: 6px; }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-opponent { padding: 7px 10px; }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-chip,
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-icon-button { min-height: 38px; height: 38px; }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-chip { padding: 7px 10px; }
+}
+
+@media (max-width: 560px) {
+    .sc-exit-long { display: none; }
+    .sc-hero-mascot { width: min(50vw, 178px); }
+    .sc-mascot-bubble { max-width: 118px; font-size: 9px; padding: 7px 9px; right: -2px; }
+    .sc-scippo-copy small { display: none; }
+    .sc-scippo-button { min-height: 52px; }
+    .sc-scippo-hand { font-size: 19px; }
+    .sc-scippo-copy strong { font-size: 20px; }
+    .sc-result-mascot { width: 112px; }
+    .sc-result h2 { font-size: clamp(32px, 10vw, 46px); }
+}
+
+@media (max-height: 720px) and (max-width: 1023px) {
+    .sc-hero-mascot { width: min(32vw, 128px); }
+    .sc-hero-hint { display: none; }
+    .sc-scippo-copy small { display: none; }
+    .sc-scippo-bar { min-height: 46px; }
+    .sc-scippo-button { min-height: 46px; padding: 5px 9px; }
+    .sc-scippo-hand { font-size: 18px; }
+    .sc-scippo-copy strong { font-size: 18px; }
+    .sc-scippo-button > em { font-size: 24px; }
+    .sc-scippo-cancel { min-height: 46px; }
+}
+
+@media (max-height: 660px) and (max-width: 1023px) {
+    .sc-arena { min-height: 138px; }
+    .sc-verdict { min-height: 38px; }
+    .sc-slot { width: min(26vw, 92px); }
+    .sc-me .sc-card-rule { display: none; }
+    .sc-hand-card .sc-card { border-radius: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sc-mascot-hand,
+    .sc-mascot-stolen,
+    .sc-mascot-spark,
+    .sc-scippo-button.is-armed,
+    .sc-hand.is-armed .sc-hand-card .sc-card,
+    .is-scippo-turn .sc-arena { animation: none !important; }
+}
+
+/* ---------- Keyframes 2.0 ---------- */
+@keyframes sc-hand-idle {
+    0%, 100% { transform: rotate(0deg) translateY(0); }
+    45% { transform: rotate(-4deg) translateY(-5px); }
+    60% { transform: rotate(2deg) translateY(0); }
+}
+@keyframes sc-stolen-idle {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-7px) rotate(3deg); }
+}
+@keyframes sc-spark-twinkle {
+    0%, 100% { opacity: .4; transform: scale(.9); }
+    50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes sc-armed-glow {
+    0%, 100% { box-shadow: 0 4px 0 #000, 0 0 0 0 #d9ff3f55; }
+    50% { box-shadow: 0 4px 0 #000, 0 0 24px 4px #d9ff3f44; }
+}
+@keyframes sc-armed-card {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px) rotate(-1deg); }
+}
+@keyframes sc-burst-in {
+    0% { opacity: 0; transform: scale(.55) rotate(-14deg); }
+    60% { opacity: 1; transform: scale(1.12) rotate(-3deg); }
+    100% { opacity: 1; transform: scale(1) rotate(-5deg); }
+}
+@keyframes sc-table-shake {
+    0%, 100% { transform: translate(0, 0) rotate(0); }
+    15% { transform: translate(-7px, 3px) rotate(-.6deg); }
+    30% { transform: translate(6px, -4px) rotate(.5deg); }
+    45% { transform: translate(-5px, -2px) rotate(-.3deg); }
+    60% { transform: translate(4px, 3px) rotate(.2deg); }
+    80% { transform: translate(-2px, 1px) rotate(0); }
+}

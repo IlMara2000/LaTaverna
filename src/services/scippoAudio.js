@@ -16,7 +16,9 @@ const NOTES = {
     score: [[880, 0.05], [1175, 0.08]],
     tick: [[700, 0.03]],
     victory: [[523, 0.08], [659, 0.08], [784, 0.1], [1047, 0.22]],
-    defeat: [[392, 0.1], [311, 0.1], [233, 0.22]]
+    defeat: [[392, 0.1], [311, 0.1], [233, 0.22]],
+    scippo: [[196, 0.08], [392, 0.06], [784, 0.08], [1568, 0.14]],
+    scippoHit: [[98, 0.16], [196, 0.12], [392, 0.2], [784, 0.28]]
 };
 
 export function createScippoAudio({ enabled = () => true } = {}) {
@@ -57,7 +59,11 @@ export function createScippoAudio({ enabled = () => true } = {}) {
         if (!sequence) return;
         sequence.forEach(([frequency, duration], index) => {
             tone(frequency, duration, {
-                type: name === 'reveal' || name === 'score' ? 'triangle' : 'square',
+                type: name === 'reveal' || name === 'score'
+                    ? 'triangle'
+                    : name === 'scippo' || name === 'scippoHit'
+                        ? 'sawtooth'
+                        : 'square',
                 delay: index * 0.075,
                 gain: name === 'tick' ? 0.02 : 0.04,
                 ...options

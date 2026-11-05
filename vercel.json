@@ -2,6 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/carte/scippo",
+      "destination": "/scippo",
+      "permanent": false
+    },
+    {
       "source": "/manuals/:path*",
       "destination": "/",
       "permanent": false
@@ -82,7 +87,15 @@
       "destination": "/index.html"
     },
     {
+      "source": "/pokemmo",
+      "destination": "/index.html"
+    },
+    {
       "source": "/scippo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/scippo/:path*",
       "destination": "/index.html"
     },
     {

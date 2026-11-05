@@ -1,0 +1,22 @@
+{
+  "name": "SCIPPO! — La Taverna",
+  "short_name": "SCIPPO!",
+  "description": "20 carte, 8 turni, una SCIPPATA. Il gioco di carte più sbagliato del tavolo.",
+  "id": "/scippo",
+  "start_url": "/scippo",
+  "scope": "/scippo",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08070b",
+  "theme_color": "#08070b",
+  "lang": "it",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "/assets/games/scippo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

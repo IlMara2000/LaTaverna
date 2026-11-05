@@ -7,6 +7,7 @@ import {
     DEFAULT_DECK_COMPOSITION,
     HAND_SIZE,
     REGULATION_TURNS,
+    SCIPPO_MULTIPLIER,
     advanceMatch,
     compareCards,
     createBottinoQueue,
@@ -18,9 +19,10 @@ import {
     getPublicUnknownCards,
     outcomeForSeat,
     playCard,
+    scippoAvailable,
     validateDeckComposition
 } from '../../src/services/scippoEngine.js';
-import { chooseBotCard, isBotDifficulty } from '../../src/services/scippoBot.js';
+import { chooseBotCard, chooseBotMove, isBotDifficulty } from '../../src/services/scippoBot.js';
 import {
     createDefaultProfile,
     dailyChallengeKey,
@@ -218,6 +220,142 @@ test('SCIPPO: il BOT non legge la carta coperta né la mano dell’avversario', 
     assert.equal(unknown.length, 20);
     const afterReveal = playDeterministicTurn(base, { playerRng: createRng(1) });
     assert.equal(getPublicUnknownCards(afterReveal, 1).length, 19, 'ogni scarto rivelato riduce le carte ignote');
+});
+
+test('SCIPPO: la SCIPPATA raddoppia il bottino e si usa una sola volta', () => {
+    let verified = false;
+    for (let seed = 0; seed < 80 && !verified; seed += 1) {
+        const match = createMatch({ seed, decks: [DEFAULT_DECK_COMPOSITION, DEFAULT_DECK_COMPOSITION] });
+        const winning = match.hands[0]
+            .map(card => ({ card, opponent: match.hands[1].find(other => compareCards(card, other) === 'a') }))
+            .find(pair => pair.opponent);
+        if (!winning) continue;
+
+        const base = match.bottino;
+        const declared = playCard(match, 0, winning.card, { scippo: true });
+        assert.equal(declared.ok, true, declared.error);
+        assert.equal(scippoAvailable(declared.match, 0), false);
+        const resolved = playCard(declared.match, 1, winning.opponent);
+        assert.equal(resolved.ok, true, resolved.error);
+        const turn = resolved.match.lastTurn;
+        assert.equal(turn.scippo, true);
+        assert.equal(turn.multiplier, SCIPPO_MULTIPLIER);
+        assert.equal(turn.points, base * SCIPPO_MULTIPLIER);
+        assert.equal(resolved.match.scores[0], base * SCIPPO_MULTIPLIER);
+
+        const next = advanceMatch(resolved.match);
+        if (next.phase === 'choose') {
+            const reused = playCard(next, 0, next.hands[0][0], { scippo: true });
+            assert.equal(reused.ok, false);
+            assert.match(reused.error, /già usato/);
+        }
+        verified = true;
+    }
+    assert.equal(verified, true, 'almeno uno scenario consente di verificare la SCIPPATA');
+});
+
+test('SCIPPO: chi dichiara la SCIPPATA e perde regala il doppio all’avversario', () => {
+    let verified = false;
+    for (let seed = 0; seed < 120 && !verified; seed += 1) {
+        const match = createMatch({ seed, decks: [DEFAULT_DECK_COMPOSITION, DEFAULT_DECK_COMPOSITION] });
+        const losing = match.hands[0]
+            .map(card => ({ card, opponent: match.hands[1].find(other => compareCards(card, other) === 'b') }))
+            .find(pair => pair.opponent);
+        if (!losing) continue;
+
+        const base = match.bottino;
+        const declared = playCard(match, 0, losing.card, { scippo: true });
+        const resolved = playCard(declared.match, 1, losing.opponent);
+        assert.equal(resolved.match.lastTurn.winnerSeat, 1);
+        assert.equal(resolved.match.lastTurn.points, base * SCIPPO_MULTIPLIER);
+        assert.equal(resolved.match.scores[1], base * SCIPPO_MULTIPLIER);
+        assert.equal(resolved.match.scores[0], 0);
+        verified = true;
+    }
+    assert.equal(verified, true);
+});
+
+test('SCIPPO: pareggio con SCIPPATA non assegna punti e due dichiarazioni non si sommano', () => {
+    let drawVerified = false;
+    let doubleVerified = false;
+    for (let seed = 0; seed < 100 && !(drawVerified && doubleVerified); seed += 1) {
+        const match = createMatch({ seed, decks: [DEFAULT_DECK_COMPOSITION, DEFAULT_DECK_COMPOSITION] });
+        const equal = match.hands[0].find(card => match.hands[1].includes(card));
+        if (equal && !drawVerified) {
+            const base = match.bottino;
+            const player = playCard(match, 0, equal, { scippo: true });
+            const resolved = playCard(player.match, 1, equal);
+            assert.equal(resolved.match.lastTurn.winnerSeat, null);
+            assert.equal(resolved.match.lastTurn.multiplier, SCIPPO_MULTIPLIER);
+            assert.equal(resolved.match.lastTurn.points, 0);
+            assert.deepEqual(resolved.match.scores, [0, 0]);
+            assert.equal(base > 0, true);
+            drawVerified = true;
+        }
+
+        const winning = match.hands[0]
+            .map(card => ({ card, opponent: match.hands[1].find(other => compareCards(card, other) === 'a') }))
+            .find(pair => pair.opponent);
+        if (winning && !doubleVerified) {
+            const base = match.bottino;
+            const player = playCard(match, 0, winning.card, { scippo: true });
+            const opponent = playCard(player.match, 1, winning.opponent, { scippo: true });
+            assert.equal(opponent.match.lastTurn.multiplier, SCIPPO_MULTIPLIER);
+            assert.equal(opponent.match.lastTurn.points, base * SCIPPO_MULTIPLIER);
+            assert.equal(opponent.match.scores[0], base * SCIPPO_MULTIPLIER);
+            assert.deepEqual(opponent.match.scippoUsed, [true, true]);
+            doubleVerified = true;
+        }
+    }
+    assert.equal(drawVerified, true);
+    assert.equal(doubleVerified, true);
+});
+
+test('SCIPPO: il BOT decide la SCIPPATA senza sbirciare la carta coperta', () => {
+    const base = createMatch({ seed: 771, decks: [DEFAULT_DECK_COMPOSITION, DEFAULT_DECK_COMPOSITION] });
+    const before = chooseBotMove({ match: base, seat: 1, difficulty: 'difficile', rng: createRng(99) });
+    const hidden = playCard(base, 0, base.hands[0][0], { scippo: true }).match;
+    const after = chooseBotMove({ match: hidden, seat: 1, difficulty: 'difficile', rng: createRng(99) });
+    assert.deepEqual(after, before);
+    assert.ok(base.hands[1].includes(after.card));
+});
+
+test('SCIPPO: la SCIPPATA resta 2× e non rende il JOLLY dominante', () => {
+    let totalPoints = 0;
+    let jollyPoints = 0;
+    let scippoTurns = 0;
+    let maxMultiplier = 1;
+
+    for (let seed = 0; seed < 120; seed += 1) {
+        let match = createMatch({ seed, decks: [DEFAULT_DECK_COMPOSITION, DEFAULT_DECK_COMPOSITION] });
+        let guard = 0;
+        let declaredThisMatch = 0;
+        while (!match.finished && guard++ < 40) {
+            const player = chooseBotMove({ match, seat: 0, difficulty: 'difficile', rng: createRng(seed * 17 + match.turn) });
+            match = playCard(match, 0, player.card, { scippo: player.scippo }).match;
+            const bot = chooseBotMove({ match, seat: 1, difficulty: 'difficile', rng: createRng(seed * 31 + match.turn + 7) });
+            match = playCard(match, 1, bot.card, { scippo: bot.scippo }).match;
+
+            const turn = match.lastTurn;
+            if (turn.winnerSeat !== null) {
+                totalPoints += turn.points;
+                const winningCard = turn.plays.find(play => play.seat === turn.winnerSeat)?.card;
+                if (winningCard === 'jolly') jollyPoints += turn.points;
+            }
+            if (turn.scippo) {
+                scippoTurns += 1;
+                declaredThisMatch += turn.scippoBy.length;
+                maxMultiplier = Math.max(maxMultiplier, turn.multiplier);
+            }
+            assert.ok(match.scores[0] + match.scores[1] <= 32, 'la SCIPPATA non fa esplodere il punteggio');
+            match = advanceMatch(match);
+        }
+        assert.ok(declaredThisMatch <= 2, 'massimo una SCIPPATA per giocatore');
+    }
+
+    assert.ok(scippoTurns > 10, 'i BOT usano la meccanica');
+    assert.equal(maxMultiplier, 2);
+    assert.ok(jollyPoints / totalPoints < 0.5, `il JOLLY pesa ${(jollyPoints / totalPoints * 100).toFixed(1)}% dei punti`);
 });
 
 test('SCIPPO: BOT deterministico con lo stesso seed e più forte alle difficoltà alte', () => {

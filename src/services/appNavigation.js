@@ -61,6 +61,8 @@ export const getLastDestination = () => {
 
 export async function navigateTo(destination, container = document.getElementById('app'), options = {}) {
     if (!container) return false;
+    document.documentElement.classList.toggle('scippo-shell', destination === 'scippo');
+    if (destination !== 'scippo') document.body.classList.remove('scippo-shell-body');
     if (destination === 'minigames' && options.filter === 'cards') destination = 'cardGames';
 
     const routes = {
@@ -89,7 +91,8 @@ export async function navigateTo(destination, container = document.getElementByI
         cookies: { label: 'cookie e terzi', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'cookies') },
         community: { label: 'il regolamento community', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'community') },
         seller: { label: 'le condizioni Bottega', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'seller') },
-        takedown: { label: 'la segnalazione contenuti', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'takedown') }
+        takedown: { label: 'la segnalazione contenuti', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'takedown') },
+        pokemmo: { label: 'PokeMMO', load: () => import('../components/features/pokemmo/PokemmoHub.js'), render: module => module.showPokemmoHub(container) }
     };
     const route = routes[destination];
     if (!route) return false;

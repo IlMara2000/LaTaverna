@@ -14,7 +14,8 @@ import {
     compareCards,
     createRng,
     expandDeck,
-    getPublicUnknownCards
+    getPublicUnknownCards,
+    scippoAvailable
 } from './scippoEngine.js';
 
 export const SCIPPO_BOT_LEVELS = Object.freeze({
@@ -45,6 +46,52 @@ function scoreDifferential(match, seat) {
 
 function turnsLeft(match) {
     return match.overtime ? Math.max(match.hands[0].length, match.hands[1].length) : match.maxTurns - match.turn + 1;
+}
+
+/** Probabilità pubblica di vittoria/sconfitta della carta, senza dati nascosti. */
+function publicOdds(card, match, seat) {
+    const pool = publicOpponentPool(match, seat);
+    if (!pool.length) return { win: 0, loss: 0, draw: 1 };
+    let win = 0;
+    let loss = 0;
+    let draw = 0;
+    pool.forEach(opponentCard => {
+        const outcome = compareCards(card, opponentCard);
+        if (outcome === 'a') win += 1;
+        else if (outcome === 'b') loss += 1;
+        else draw += 1;
+    });
+    return { win: win / pool.length, loss: loss / pool.length, draw: draw / pool.length };
+}
+
+/**
+ * La SCIPPATA è una scommessa, non un pulsante da premere a caso. Il BOT
+ * decide solo su probabilità pubbliche, bottino, punteggio e turni rimasti.
+ */
+function chooseScippo({ match, seat, difficulty, card, rng }) {
+    if (!scippoAvailable(match, seat)) return false;
+    const odds = publicOdds(card, match, seat);
+    const diff = scoreDifferential(match, seat);
+    const left = turnsLeft(match);
+    const bottino = match.bottino;
+
+    if (difficulty === 'facile') {
+        return bottino >= 2 && odds.win > 0.5 && rng() < 0.16;
+    }
+
+    // Con bottino basso e partita lunga il rischio non paga.
+    if (bottino === 1 && left > 2 && diff >= 0) return false;
+    if (odds.win <= odds.loss) return false;
+
+    if (difficulty === 'normale') {
+        if (left <= 2 && diff < 0) return odds.win > 0.44;
+        return odds.win >= 0.56 && rng() < 0.55;
+    }
+
+    // Difficile: cerca il colpo che sposta davvero la partita.
+    if (left <= 2 && diff < 0) return odds.win > 0.4;
+    if (bottino === 1 && diff >= 0) return false;
+    return odds.win >= 0.54 && rng() < 0.7;
 }
 
 function playEasy(hand, match, botSeat, rng) {
@@ -146,18 +193,29 @@ function playHard(hand, match, botSeat, rng) {
     return scored[0].card;
 }
 
-/**
- * Sceglie una carta dalla propria mano. Restituisce `null` se non ci sono
- * carte giocabili.
- */
-export function chooseBotCard({ match, seat = 1, difficulty = 'normale', rng } = {}) {
+/** Sceglie carta e SCIPPATA. Non legge mai mano o carta coperta avversaria. */
+export function chooseBotMove({ match, seat = 1, difficulty = 'normale', rng } = {}) {
     const hand = match?.hands?.[seat];
-    if (!Array.isArray(hand) || !hand.length) return null;
+    if (!Array.isArray(hand) || !hand.length) return { card: null, scippo: false };
     const random = typeof rng === 'function' ? rng : createRng((match.seed >>> 0) ^ (match.turn * 2654435761));
     const level = SCIPPO_BOT_LEVELS[difficulty] ? difficulty : 'normale';
-    if (level === 'facile') return playEasy(hand, match, seat, random);
-    if (level === 'difficile') return playHard(hand, match, seat, random);
-    return playNormal(hand, match, seat, random);
+    const card = level === 'facile'
+        ? playEasy(hand, match, seat, random)
+        : level === 'difficile'
+            ? playHard(hand, match, seat, random)
+            : playNormal(hand, match, seat, random);
+    return {
+        card,
+        scippo: chooseScippo({ match, seat, difficulty: level, card, rng: random })
+    };
+}
+
+/**
+ * Compatibilità: restituisce solo la carta. La UI usa `chooseBotMove` per
+ * gestire anche la dichiarazione della SCIPPATA.
+ */
+export function chooseBotCard({ match, seat = 1, difficulty = 'normale', rng } = {}) {
+    return chooseBotMove({ match, seat, difficulty, rng }).card;
 }
 
 /**

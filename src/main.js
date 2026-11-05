@@ -28,6 +28,11 @@ import './services/tableOrientation.js';
 // Importiamo la funzione per gestire il ritorno da Discord! (Fondamentale)
 import { setupDiscordRedirect } from './components/features/auth/Discord.js';
 
+// /carte/scippo è un alias storico: il gioco vive su /scippo.
+if (location.pathname.replace(/\/+$/, '') === '/carte/scippo') {
+    history.replaceState(history.state, '', `/scippo${location.search}${location.hash}`);
+}
+
 applyCachedAppPreferences();
 const cleanupMotionPreferences = initMotionPreferences();
 if (import.meta.hot) import.meta.hot.dispose(cleanupMotionPreferences);
@@ -66,6 +71,9 @@ async function initApp() {
 
         const publicDestination = destinationFromPath(location.pathname);
         if (publicDestination) {
+            // SCIPPO! ha una shell a tutto schermo: la navbar resta montata ma
+            // viene nascosta, così Back/Forward continuano a funzionare.
+            document.documentElement.classList.toggle('scippo-shell', publicDestination === 'scippo');
             initializeNavigation(user || guestUser || { isGuest: true });
             await navigateTo(publicDestination, appContainer, { fromHistory: true });
             return;
