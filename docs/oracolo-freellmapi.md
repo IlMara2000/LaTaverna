@@ -135,26 +135,19 @@ stesse righe partono anche come `POST` JSON `{"text": "…"}`, formato accettato
 altri servizi. Lo stato precedente è in `output/gateway-watch-state.json` (cartella in `.gitignore`),
 quindi un controllo lanciato da cron ricorda cosa era già stato segnalato.
 
-Per farlo partire da solo all'accesso, con `launchd` (file da creare tu, fuori dal progetto):
+È installato come LaunchAgent (`~/Library/LaunchAgents/xyz.lataverna.gateway-watch.plist`): parte a
+ogni login, esegue `node --env-file-if-exists=.env.local scripts/gateway-watch.mjs --loop 120` dalla
+radice del progetto e ha `KeepAlive`, quindi se il processo muore `launchd` lo rilancia. Log in
+`/tmp/lataverna-gateway-watch.log`.
 
-```xml
-<!-- ~/Library/LaunchAgents/xyz.lataverna.gateway-watch.plist -->
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>Label</key><string>xyz.lataverna.gateway-watch</string>
-  <key>ProgramArguments</key><array>
-    <string>/usr/bin/env</string><string>npm</string><string>run</string><string>watch:gateway</string><string>--</string><string>--loop</string><string>120</string>
-  </array>
-  <key>WorkingDirectory</key><string>/percorso/di/LaTaverna</string>
-  <key>RunAtLoad</key><true/>
-  <key>StandardOutPath</key><string>/tmp/lataverna-gateway-watch.log</string>
-  <key>StandardErrorPath</key><string>/tmp/lataverna-gateway-watch.log</string>
-</dict></plist>
+```bash
+launchctl print gui/$(id -u)/xyz.lataverna.gateway-watch         # stato e pid
+launchctl kickstart -k gui/$(id -u)/xyz.lataverna.gateway-watch  # riavvio immediato
+launchctl bootout gui/$(id -u)/xyz.lataverna.gateway-watch       # fermarlo
 ```
 
-Poi `launchctl load ~/Library/LaunchAgents/xyz.lataverna.gateway-watch.plist`. Il watchdog dice se
-tunnel e gateway rispondono; **non** riavvia ngrok né FreeLLMAPI, che restano manuali.
+Il watchdog dice se tunnel e gateway rispondono; a riavviarli ci pensano i LaunchAgent di
+FreeLLMAPI e ngrok (`KeepAlive`), quindi resta la voce che avvisa quando la catena è davvero giù.
 
 ## Perché non passare da Claude Code
 
