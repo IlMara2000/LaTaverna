@@ -11,6 +11,7 @@
     "test:cards": "node --test scripts/tests/*.test.mjs",
     "test:scippo": "node --test scripts/tests/scippo.test.mjs",
     "tunnel": "ngrok http 31415 --log stdout",
+    "watch:gateway": "node --env-file-if-exists=.env.local scripts/gateway-watch.mjs",
     "lint": "echo \"Sguardo dell'Oste: Tutto in ordine!\""
   },
   "dependencies": {

@@ -10,6 +10,17 @@ Shared sessions have no direct `SELECT` policy for guests: `get_shared_dnd_sessi
 
 Uploads are constrained on both client and database: reading PDFs stay private until the owner records a distribution-rights confirmation, the reading quota limits books and bytes per account, `vtt_assets` accepts only JPEG/PNG/WebP up to 8 MB and only its owner can list it, and shop images require the shop-manager role. Public map URLs remain readable by design; private reading files are never public.
 
+## Limite AI per rete
+
+La quota per account non basta contro chi crea account ospite in serie: cinque richieste a testa, ma account illimitati. `supabase/migrations/20261106020000_ai_ip_limits.sql` aggiunge un tetto di **60 richieste al giorno per indirizzo di rete**, verificato prima della quota utente in `api/_lib/ipBudget.js`.
+
+Due scelte rendono il limite non aggirabile:
+
+- la funzione `public.take_ai_ip_quota` è eseguibile **solo da `service_role`**. Se fosse aperta ad `authenticated`, il client potrebbe chiamare la RPC direttamente con un IP inventato e azzerare il limite; il browser non ha mai la chiave service role, quindi non può;
+- l'indirizzo non viene salvato: si conserva solo un HMAC-SHA256 con la chiave service role come segreto, così l'hash non è reversibile per tentativi su un IPv4. L'IP si legge da `x-real-ip` (fallback `x-forwarded-for`), header che Vercel scrive all'edge.
+
+Retention: 90 giorni, come le quote Oracolo. Se `SUPABASE_SERVICE_ROLE_KEY` manca (sviluppo locale, ambienti non configurati) il limite resta spento con un avviso nei log e le quote per utente continuano a valere: fail-open deliberato, per non bloccare l'Oracolo per una variabile assente.
+
 ## Content Security Policy e terze parti
 
 `vercel.json` applica una CSP stretta a tutte le risposte: script solo same-origin (più `'wasm-unsafe-eval'` per OCR e PDF), niente frame di terzi, `object-src 'none'`, `frame-ancestors 'none'`. Le eccezioni di rete sono limitate a Supabase e Scryfall; Il gateway FreeLLMAPI viene chiamato solo dalle function server e la chiave non raggiunge mai il browser.

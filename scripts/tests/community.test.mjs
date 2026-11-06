@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {newScala40,meldInfo,scalaMove,scalaBotTurn} from '../../src/dashboards/minigames/scala40Engine.js';
 import {oracleMessages,validImage,callOracle} from '../../api/_lib/oracle.js';
 import {isSameOriginRequest,readJsonBody} from '../../api/_lib/http.js';
+import {describeTransition,probe} from '../../scripts/gateway-watch.mjs';
 import {destinationFromPath} from '../../src/services/publicRoutes.js';
 const c=(rank,suit=0,id=`${suit}-${rank}`)=>({id,rank,suit});
 test('new collection and RPG links resolve with old Magic links preserved',()=>{assert.equal(destinationFromPath('/carte/'),'cards');assert.equal(destinationFromPath('/carte/giochi'),'cardGames');assert.equal(destinationFromPath('/oracolo'),'oracle');assert.equal(destinationFromPath('/giochi-di-ruolo'),'rpg');assert.equal(destinationFromPath('/magic'),'magic');});
@@ -52,4 +53,32 @@ test('public AI health never exposes the gateway URL',async()=>{
  const response={setHeader(){},status(){return this;},json(value){payload=value;}};
  try{handler({method:'GET',headers:{host:'www.lataverna.xyz'}},response);assert.equal(payload.ok,true);assert.equal(payload.provider,'freellmapi');assert.equal(payload.gateway,undefined);assert.equal(JSON.stringify(payload).includes('http'),false);}
  finally{if(before===undefined)delete process.env.FREELLMAPI_API_KEY;else process.env.FREELLMAPI_API_KEY=before;}
+});
+test('gateway watchdog treats 401 as alive, reports outages and alerts only on change',async()=>{
+ const status=code=>async()=>({ok:code<400,status:code});
+ const alive=await probe({name:'gateway locale',url:'http://127.0.0.1:31415/v1/models',expect:[200,401]},{fetchImpl:status(401)});
+ assert.equal(alive.ok,true);assert.equal(alive.status,401);
+ const broken=await probe({name:'tunnel pubblico',url:'https://tunnel.example/v1/models',expect:[200,401]},{fetchImpl:status(530)});
+ assert.equal(broken.ok,false);assert.equal(broken.status,530);assert.match(broken.detail,/530/);
+ const offline=await probe({name:'gateway locale',url:'http://127.0.0.1:31415/v1/models',expect:[200,401]},{fetchImpl:async()=>{throw Object.assign(new Error('connect ECONNREFUSED'),{cause:{code:'ECONNREFUSED'}});}});
+ assert.equal(offline.ok,false);assert.equal(offline.detail,'ECONNREFUSED');
+ assert.equal(describeTransition(undefined,{name:'tunnel pubblico',ok:true}),null);
+ assert.match(describeTransition('up',{name:'tunnel pubblico',ok:false,detail:'HTTP 530'}),/non raggiungibile/);
+ assert.equal(describeTransition('down',{name:'tunnel pubblico',ok:false,detail:'HTTP 530'}),null);
+ assert.match(describeTransition('down',{name:'tunnel pubblico',ok:true}),/di nuovo raggiungibile/);
+});
+test('AI network budget reads the edge IP, hashes it and maps the rejection to 429',async t=>{
+ const {assertAiIpBudget,clientIp,ipHash}=await import('../../api/_lib/ipBudget.js');
+ assert.equal(clientIp({headers:{'x-real-ip':'203.0.113.7'}}),'203.0.113.7');
+ assert.equal(clientIp({headers:{'x-forwarded-for':'198.51.100.9, 10.0.0.1'}}),'198.51.100.9');
+ assert.equal(clientIp({headers:{'x-real-ip':'[2001:db8::1]:443'}}),'2001:db8::1');
+ assert.equal(clientIp({headers:{}}),'');
+ const digest=ipHash('203.0.113.7','secret');
+ assert.match(digest,/^[0-9a-f]{64}$/);assert.equal(digest,ipHash('203.0.113.7','secret'));assert.notEqual(digest,ipHash('203.0.113.8','secret'));
+ assert.equal(await assertAiIpBudget({headers:{'x-real-ip':'203.0.113.7'}}),null);
+ const before={url:process.env.SUPABASE_URL,key:process.env.SUPABASE_SERVICE_ROLE_KEY};
+ process.env.SUPABASE_URL='https://db.test';process.env.SUPABASE_SERVICE_ROLE_KEY='service-test';
+ t.mock.method(globalThis,'fetch',async()=>({ok:false,status:400,json:async()=>({message:'Troppe richieste AI da questa rete. Riprova domani.'})}));
+ try{await assert.rejects(assertAiIpBudget({headers:{'x-real-ip':'203.0.113.7'}}),e=>e.statusCode===429&&e.code==='ip_rate_limited');}
+ finally{for(const [k,v] of [['SUPABASE_URL',before.url],['SUPABASE_SERVICE_ROLE_KEY',before.key]]){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
 });

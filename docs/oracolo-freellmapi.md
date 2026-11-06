@@ -82,7 +82,7 @@ Avvertenze:
   unificata, che resta solo nell’ambiente server, ma conviene non condividere l’URL;
 - le richieste di tutti gli account della Taverna finiscono sul tuo Mac e consumano le quote dei tuoi
   provider gratuiti (le quote per account restano quelle Supabase: 5 ospite / 30 registrato / 300
-  globali al giorno);
+  globali al giorno, più un tetto di 60 richieste al giorno per rete);
 - se l’app FreeLLMAPI si chiude, il Mac va in stop o il tunnel cade, l’Oracolo risponde 503 a tutti;
   per distinguere «tunnel giù» da «chiave sbagliata»: `curl -s -o /dev/null -w '%{http_code}'
   https://<dominio>/v1/models` risponde `401` quando il gateway è raggiungibile (la chiave manca
@@ -93,6 +93,48 @@ Avvertenze:
 
 Per un uso pubblico stabile la strada corretta è un host sempre acceso (VPS o mini-server) con
 FreeLLMAPI, oppure un provider API dedicato; il tunnel è adatto a uso personale e demo.
+
+## Sorveglianza automatica
+
+`npm run watch:gateway` controlla la catena completa e avvisa **solo quando lo stato cambia**, così
+tunnel caduto o app chiusa non producono una notifica a ogni giro:
+
+```bash
+npm run watch:gateway                 # un controllo; exit 1 se qualcosa è giù
+npm run watch:gateway -- --loop 120   # controlla ogni 120 s (Ctrl+C per fermare)
+npm run watch:gateway -- --quiet      # solo log, senza notifiche di sistema
+```
+
+Sonde: gateway locale (`FREELLMAPI_LOCAL_URL`, default `http://127.0.0.1:31415`), tunnel pubblico
+(`FREELLMAPI_BASE_URL`, saltato se punta a loopback) e health dell'app (`TAVERNA_HEALTH_URL`,
+default `https://www.lataverna.xyz/api/rpg/ai-health`). Un `401` su `/v1/models` conta come
+**raggiungibile**: è la risposta attesa quando la sonda non presenta la chiave.
+
+Gli avvisi usano una notifica macOS (`osascript`). Se impostate `TAVERNA_ALERT_WEBHOOK_URL` le
+stesse righe partono anche come `POST` JSON `{"text": "…"}`, formato accettato da Slack e da molti
+altri servizi. Lo stato precedente è in `output/gateway-watch-state.json` (cartella in `.gitignore`),
+quindi un controllo lanciato da cron ricorda cosa era già stato segnalato.
+
+Per farlo partire da solo all'accesso, con `launchd` (file da creare tu, fuori dal progetto):
+
+```xml
+<!-- ~/Library/LaunchAgents/xyz.lataverna.gateway-watch.plist -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>xyz.lataverna.gateway-watch</string>
+  <key>ProgramArguments</key><array>
+    <string>/usr/bin/env</string><string>npm</string><string>run</string><string>watch:gateway</string><string>--</string><string>--loop</string><string>120</string>
+  </array>
+  <key>WorkingDirectory</key><string>/percorso/di/LaTaverna</string>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/tmp/lataverna-gateway-watch.log</string>
+  <key>StandardErrorPath</key><string>/tmp/lataverna-gateway-watch.log</string>
+</dict></plist>
+```
+
+Poi `launchctl load ~/Library/LaunchAgents/xyz.lataverna.gateway-watch.plist`. Il watchdog dice se
+tunnel e gateway rispondono; **non** riavvia ngrok né FreeLLMAPI, che restano manuali.
 
 ## Perché non passare da Claude Code
 
