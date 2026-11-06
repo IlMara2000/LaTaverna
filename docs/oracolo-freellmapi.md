@@ -94,6 +94,26 @@ Avvertenze:
 Per un uso pubblico stabile la strada corretta è un host sempre acceso (VPS o mini-server) con
 FreeLLMAPI, oppure un provider API dedicato; il tunnel è adatto a uso personale e demo.
 
+## Avvio automatico al login (macOS)
+
+Due LaunchAgent in `~/Library/LaunchAgents` tengono in piedi la catena quando il Mac si accende:
+
+- `xyz.lataverna.freellmapi` — lancia `/usr/bin/open -gja /Applications/FreeLLMAPI.app` al login e
+  riprova ogni 5 minuti: se l’app è già aperta `open` non fa nulla, se è stata chiusa la riapre.
+- `xyz.lataverna.ngrok` — avvia `ngrok http 31415 --url https://hearted-galina-artesian.ngrok-free.dev`
+  con `KeepAlive`, quindi se il tunnel cade `launchd` lo riavvia da solo; log in
+  `/tmp/lataverna-ngrok.log`.
+
+```bash
+launchctl print gui/$(id -u)/xyz.lataverna.ngrok           # stato e pid del tunnel
+launchctl kickstart -k gui/$(id -u)/xyz.lataverna.ngrok    # riavvio forzato
+launchctl bootout gui/$(id -u)/xyz.lataverna.ngrok         # fermarlo per sempre
+```
+
+I plist non contengono segreti: ngrok usa l’authtoken in `~/Library/Application Support/ngrok/ngrok.yml`
+e la chiave del gateway resta solo nelle variabili server di Vercel. Con il tunnel sotto `launchd`
+`npm run tunnel` non serve più: l’avvio manuale resta utile solo per diagnosi.
+
 ## Sorveglianza automatica
 
 `npm run watch:gateway` controlla la catena completa e avvisa **solo quando lo stato cambia**, così
