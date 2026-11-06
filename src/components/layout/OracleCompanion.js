@@ -25,22 +25,26 @@ export function mountOracleCompanion(trigger) {
     caption.innerHTML = '<span class="oracle-caption-state"></span><p role="status" aria-live="polite"></p><button type="button" aria-label="Spegni Oracolo e microfono">Spegni microfono</button>';
     document.body.append(caption);
     let captionTimer;
+    // La finestra di risposta si chiude da sola: 3 s per una riga corta, 5 s per una
+    // risposta media, un po' di più quando il testo è lungo da leggere.
+    const captionLifetime = words => {
+        if (words <= 12) return 3000;
+        if (words <= 32) return 5000;
+        return Math.min(20000, 5000 + (words - 32) * 250);
+    };
+    const hideCaption = () => {
+        caption.classList.add('is-leaving');
+        captionTimer = setTimeout(() => { caption.hidden = true; caption.classList.remove('is-leaving'); }, 320);
+    };
     function showCaption(text) {
         clearTimeout(captionTimer);
-        const words = text.trim().split(/\s+/).filter(Boolean);
+        const value = text.trim();
         const line = caption.querySelector('p');
-        if (!words.length) { caption.hidden = true; line.textContent = ''; return; }
+        caption.classList.remove('is-leaving');
+        if (!value) { caption.hidden = true; line.textContent = ''; return; }
+        line.textContent = value;
         caption.hidden = false;
-        // Short, temporary lines: each word gets approximately one second to read.
-        let index = 0;
-        const next = () => {
-            const chunk = words.slice(index, index + 9);
-            line.textContent = chunk.join(' '); index += chunk.length;
-            captionTimer = setTimeout(() => {
-                if (index < words.length) next(); else caption.hidden = true;
-            }, Math.max(2000, chunk.length * 1000));
-        };
-        next();
+        captionTimer = setTimeout(hideCaption, captionLifetime(value.split(/\s+/).filter(Boolean).length));
     }
     // Il pupazzo si tocca direttamente: un tocco apre il menu, due lo nascondono,
     // tre spengono anche il microfono. La finestra è breve, così i tocchi si contano.

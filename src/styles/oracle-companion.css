@@ -93,8 +93,12 @@
     background: linear-gradient(160deg, #14102aee, #1d0f2fee);
     box-shadow: 0 8px 25px #0006, 0 0 18px #43e7ff33;
     color: #f2f9ff; font: 14px/1.5 system-ui, sans-serif; pointer-events: none;
+    opacity: 1; transition: opacity 320ms ease, transform 320ms ease;
 }
+/* La finestra si ritira da sola: sfuma verso il basso prima di sparire. */
+.oracle-caption.is-leaving { opacity: 0; transform: translateX(-50%) translateY(6px); }
 .oracle-caption[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .oracle-caption { transition: none; } }
 .oracle-caption-state { color: #7fe9ff; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
 .oracle-caption p { margin: 4px 0; }
 .oracle-caption button { pointer-events: auto; border: 0; color: #c8b6ee; background: transparent; padding: 7px 0; font: inherit; font-size: 11px; cursor: pointer; }
