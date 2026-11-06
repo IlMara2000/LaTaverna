@@ -64,7 +64,7 @@ Per Vercel o hosting statico:
 - Build command: `npm run build`
 - Output directory: `dist`
 - Variabili ambiente frontend: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-- Variabili ambiente server/function: `GROQ_LLM_API_KEY`, opzionali `GROQ_LLM_MODEL`, `GROQ_LLM_TEMPERATURE`, `GROQ_LLM_MAX_TOKENS`
+- Variabili ambiente server/function: `FREELLMAPI_API_KEY` e `FREELLMAPI_BASE_URL`, opzionali `FREELLMAPI_MODEL`, `FREELLMAPI_VISION_MODEL`, `FREELLMAPI_TEMPERATURE`, `FREELLMAPI_MAX_TOKENS`, `FREELLMAPI_TIMEOUT_MS` (vedi `docs/oracolo-freellmapi.md`)
 
 Se usi Discord OAuth in produzione, aggiungi anche il dominio finale tra gli URL autorizzati in Supabase Auth e nella Discord Developer Console.
 

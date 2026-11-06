@@ -1,6 +1,6 @@
-import { callOracle } from '../_lib/oracle.js';
+import { callLLMChat } from '../_lib/llm.js';
 import { authorizeOracle } from '../_lib/oracleAccess.js';
-import { methodNotAllowed, publicErrorMessage, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
+import { crossOriginForbidden, isSameOriginRequest, methodNotAllowed, publicErrorMessage, readJsonBody, sanitizeText, sendJson } from '../_lib/http.js';
 
 const eventPrompt = (eventType = '', context = {}) => {
     const sessionName = context?.session?.name || 'la sessione';
@@ -20,6 +20,7 @@ const eventPrompt = (eventType = '', context = {}) => {
 export default async function handler(request, response) {
     response.setHeader('Cache-Control', 'no-store');
     if (request.method !== 'POST') return methodNotAllowed(response, ['POST']);
+    if (!isSameOriginRequest(request)) return crossOriginForbidden(response);
 
     try {
         const body = await readJsonBody(request);
@@ -32,7 +33,7 @@ export default async function handler(request, response) {
         }
 
         await authorizeOracle(request);
-        const result = await callOracle({
+        const result = await callLLMChat({
             prompt: eventPrompt(eventType, body.context || {}),
             mode: ['master','player','rules'].includes(body.mode) ? body.mode : 'master',
             systemId: body.systemId || 'dnd5e',
@@ -44,7 +45,8 @@ export default async function handler(request, response) {
             ok: true,
             eventType,
             reply: result.reply,
-            provider: 'groq',
+            provider: 'freellmapi',
+            upstream: result.upstream,
             model: result.model
         });
     } catch (error) {

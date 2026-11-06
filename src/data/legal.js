@@ -79,7 +79,7 @@ const privacy = `
             <ul>
                 <li><strong>Supabase</strong> — autenticazione, database e archiviazione file.</li>
                 <li><strong>Vercel</strong> — hosting del sito e funzioni server.</li>
-                <li><strong>Groq</strong> — modello AI dell’Oracolo; riceve la domanda, l’immagine allegata e il contesto inviato.</li>
+                <li><strong>FreeLLMAPI e i provider gratuiti collegati</strong> — modello AI dell’Oracolo; ricevono la domanda, l’immagine allegata e il contesto inviato.</li>
                 <li><strong>Servizio vocale del browser</strong> (ad esempio Google o Apple) — trascrizione delle frasi quando attivi l’Oracolo vocale; l’audio non passa dai nostri server.</li>
                 <li><strong>Discord</strong> — solo se scegli l’accesso con Discord.</li>
                 <li><strong>Scryfall</strong> — dati e immagini delle carte Magic, richiesti dal browser quando usi la sezione carte.</li>
@@ -161,7 +161,7 @@ const terms = `
 
         <section>
             <h2>7. Oracolo e intelligenza artificiale</h2>
-            <p>L’Oracolo è un assistente AI fornito tramite Groq. Le risposte possono essere inesatte, incomplete o non aggiornate e non sostituiscono i manuali ufficiali, un master umano o una consulenza professionale. Non usare l’Oracolo per decisioni legali, mediche, finanziarie o di sicurezza. Quando invii una domanda, un’immagine o il contesto di sessione, quei dati vengono trasmessi al fornitore AI.</p>
+            <p>L’Oracolo è un assistente AI fornito tramite il gateway FreeLLMAPI e i provider gratuiti collegati. Le risposte possono essere inesatte, incomplete o non aggiornate e non sostituiscono i manuali ufficiali, un master umano o una consulenza professionale. Non usare l’Oracolo per decisioni legali, mediche, finanziarie o di sicurezza. Quando invii una domanda, un’immagine o il contesto di sessione, quei dati vengono trasmessi al fornitore AI.</p>
         </section>
 
         <section>
@@ -202,7 +202,7 @@ const cookies = `
             <ul>
                 <li><strong>Supabase</strong> — autenticazione, database, storage e realtime.</li>
                 <li><strong>Vercel</strong> — hosting e funzioni server.</li>
-                <li><strong>Groq</strong> — elaborazione delle richieste all’Oracolo.</li>
+                <li><strong>FreeLLMAPI e i provider gratuiti collegati</strong> — elaborazione delle richieste all’Oracolo.</li>
                 <li><strong>Discord</strong> — accesso OAuth, solo se lo scegli.</li>
                 <li><strong>Scryfall</strong> — dati e immagini delle carte, contattato dal browser quando apri la sezione carte.</li>
                 <li><strong>Servizio vocale del browser</strong> — riconoscimento della voce quando usi l’Oracolo vocale; non riceve dati da noi se la funzione è spenta.</li>
@@ -211,7 +211,7 @@ const cookies = `
         </section>
         <section>
             <h2>4. Come limitare i servizi esterni</h2>
-            <p>Puoi usare il sito senza login Discord e senza la sezione carte: in quel caso il browser non contatta Discord o Scryfall. L’Oracolo richiede invece l’invio della domanda a Groq. Per informazioni sul trattamento: <a href="/privacy">Informativa privacy</a>.</p>
+            <p>Puoi usare il sito senza login Discord e senza la sezione carte: in quel caso il browser non contatta Discord o Scryfall. L’Oracolo richiede invece l’invio della domanda al gateway FreeLLMAPI. Per informazioni sul trattamento: <a href="/privacy">Informativa privacy</a>.</p>
         </section>
     </div>
 `;

@@ -4,6 +4,29 @@ export const sendJson = (response, status, payload) => {
     response.status(status).json(payload);
 };
 
+// Il browser allega Origin solo alle richieste cross-origin: se c'è e non
+// coincide con l'host della function, la chiamata arriva da un altro sito e va
+// rifiutata. Le chiamate server-to-server (test, job, curl) non hanno Origin e
+// restano permesse: l'autorizzazione vera resta il token Supabase + quota.
+export const isSameOriginRequest = request => {
+    const origin = request?.headers?.origin || request?.headers?.Origin || '';
+    if (!origin) return true;
+    const host = request?.headers?.host || request?.headers?.Host || '';
+    if (!host) return false;
+    try {
+        const url = new URL(origin);
+        return (url.protocol === 'https:' || url.protocol === 'http:') && url.host === host;
+    } catch {
+        return false;
+    }
+};
+
+export const crossOriginForbidden = response => sendJson(response, 403, {
+    ok: false,
+    code: 'cross_origin_forbidden',
+    error: 'Richiesta non consentita da questa origine.'
+});
+
 export const methodNotAllowed = (response, allowed = ['POST']) => {
     response.setHeader('Allow', allowed.join(', '));
     sendJson(response, 405, {

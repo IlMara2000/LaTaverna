@@ -95,7 +95,7 @@ function renderSidebarContent(container, context) {
                 </button>
 
                 <button class="btn-glass" id="sideOracleBtn" type="button" aria-pressed="${Boolean(isOracleVoiceActive())}" aria-describedby="oracle-voice-privacy">${isOracleVoiceActive() ? 'SPEGNI ORACOLO VOCALE' : 'ATTIVA ORACOLO VOCALE'}</button>
-                <p class="oracle-privacy" id="oracle-voice-privacy">Il microfono si attiva solo quando lo accendi. La trascrizione è gestita dal servizio vocale del browser (Google, Apple o altro): l’audio può essere elaborato dal fornitore del browser, non lo salviamo noi. Solo le domande attive vengono inviate a Groq. Contesto temporaneo, cancellato allo spegnimento. “Non ascoltarmi” lascia il microfono acceso per il richiamo; Spegni lo chiude. Voce al volume della musica.</p>
+                <p class="oracle-privacy" id="oracle-voice-privacy">Il microfono si attiva solo quando lo accendi. La trascrizione è gestita dal servizio vocale del browser (Google, Apple o altro): l’audio può essere elaborato dal fornitore del browser, non lo salviamo noi. Solo le domande attive vengono inviate al gateway FreeLLMAPI. Contesto temporaneo, cancellato allo spegnimento. “Non ascoltarmi” lascia il microfono acceso per il richiamo; Spegni lo chiude. Voce al volume della musica.</p>
 
                 <div class="sidebar-divider" style="margin: 15px 0; height: 1px; background: rgba(255,255,255,0.1);"></div>
                 

@@ -24,7 +24,9 @@ npm install
 ```bash
 VITE_SUPABASE_URL=https://tuo-progetto.supabase.co
 VITE_SUPABASE_ANON_KEY=la-tua-anon-key
-GROQ_LLM_API_KEY=la-tua-key-groq-server
+FREELLMAPI_BASE_URL=http://127.0.0.1:31415/v1
+FREELLMAPI_API_KEY=freellmapi-...
+FREELLMAPI_MODEL=nemotron-3-ultra-550b
 ```
 
 3. Esegui lo schema Supabase:
@@ -48,7 +50,7 @@ Vite usa `http://localhost:3000` con `strictPort: true`.
 - Briscola e Scopa usano 40 carte da poker: A, 2, 3, 4, 5, 6, 7, J, Q, K di cuori, quadri, fiori e picche. Nella Scopa i quadri sostituiscono i denari e il settebello è il 7 di quadri.
 - Solitario Klondike con mazzo da poker completo di 52 carte e pesca di una carta alla volta.
 - D&D 5e: personaggi, sessioni, dadi, token, mappe e strumenti del tavolo. Non distribuiamo copie non autorizzate di manuali; la Biblioteca personale accetta solo PDF caricati dall'utente con dichiarazione dei diritti, mentre la Bacheca pubblica resta riservata a opere autorizzate.
-- AI di sessione: bot testuale in chat, attivabile con `@oracolo` (anche `@oste`) o dal pannello Oracolo del tavolo, servito da function Vercel e Groq.
+- AI di sessione: bot testuale in chat, attivabile con `@oracolo` (anche `@oste`) o dal pannello Oracolo del tavolo, servito dalle function Vercel tramite il gateway FreeLLMAPI (vedi `docs/oracolo-freellmapi.md`).
 - Libreria musicale con playlist tematiche e upload file audio locale.
 - Lettura: upload di PDF privati, consenso esplicito alla pubblicazione in Bacheca, elenco alfabetico con ricerca per titolo/autore, lettore PDF, preferiti e raccolte salvati per account.
 
@@ -98,14 +100,16 @@ Verifica locale: `node --test scripts/tests/reading.test.mjs`. Verifica d'integr
 Per le function AI configura su Vercel Project Settings:
 
 ```bash
-GROQ_LLM_API_KEY=...
-GROQ_LLM_MODEL=openai/gpt-oss-120b
-GROQ_VISION_MODEL=qwen/qwen3.8-27b
-GROQ_LLM_TEMPERATURE=0.75
-GROQ_LLM_MAX_TOKENS=420
+FREELLMAPI_BASE_URL=http://127.0.0.1:31415/v1
+FREELLMAPI_API_KEY=freellmapi-...
+FREELLMAPI_MODEL=nemotron-3-ultra-550b
+FREELLMAPI_VISION_MODEL=
+FREELLMAPI_TEMPERATURE=0.6
+FREELLMAPI_MAX_TOKENS=420
+FREELLMAPI_TIMEOUT_MS=55000
 ```
 
-Non usare chiavi Groq con prefisso `VITE_` in produzione: le variabili `VITE_*` vengono incluse nel bundle browser.
+In produzione `FREELLMAPI_BASE_URL` non può essere `127.0.0.1` (Vercel non raggiunge il tuo Mac): usa l'URL del tunnel descritto in `docs/oracolo-freellmapi.md`. Non usare la chiave FreeLLMAPI con prefisso `VITE_`: le variabili `VITE_*` vengono incluse nel bundle browser.
 
 ## Documenti legali
 
@@ -137,7 +141,7 @@ La lettura dei PDF scansionati usa Tesseract nel browser con asset serviti dal n
 
 Percorsi: `/carte`, `/giochi-di-ruolo`, `/oracolo`, `/bottega`; `/gestione` riservato ai gestori Bottega. Visione, monetizzazione e limiti attuali sono in [La mente della Taverna](docs/mente-della-taverna.md).
 
-Per un nuovo database applicare in ordine `20261017094519_community_foundation.sql` e `20261017095644_community_metrics.sql` dopo gli schemi esistenti. Le migrazioni sono già applicate al progetto LaTaverna. Le chiavi Groq vanno solo in `.env.local` oppure nelle variabili server Vercel. Le function richiedono anche `SUPABASE_URL` e `SUPABASE_ANON_KEY` (o gli equivalenti `VITE_SUPABASE_*`).
+Per un nuovo database applicare in ordine `20261017094519_community_foundation.sql` e `20261017095644_community_metrics.sql` dopo gli schemi esistenti. Le migrazioni sono già applicate al progetto LaTaverna. La chiave FreeLLMAPI va solo in `.env.local` oppure nelle variabili server Vercel, mai in una variabile `VITE_*`. Le function richiedono anche `SUPABASE_URL` e `SUPABASE_ANON_KEY` (o gli equivalenti `VITE_SUPABASE_*`).
 
 `npm run dev` serve anche gli endpoint AI locali; `npm run preview` serve soltanto il frontend compilato. Quota condivisa tra chat, board e scansioni: 5 richieste/giorno ospite, 30 registrato, massimo 300 globali (UTC). Impostare anche limiti di spesa presso il provider prima di un lancio pubblico esteso.
 

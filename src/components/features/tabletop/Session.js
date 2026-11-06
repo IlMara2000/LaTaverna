@@ -429,7 +429,7 @@ export async function showSession(container, sessionId, options = {}) {
                 <section class="dnd-session-block session-ai-panel" data-session-tool-panel="ai" hidden>
                     <h3>L’Oracolo al tavolo</h3>
                     <p class="dnd-muted">Usa @oracolo nella chat oppure chiedi direttamente qui. Le risposte sono condivise con il tavolo e possono contenere errori.</p>
-                    <p class="dnd-muted">Le domande e il contesto della sessione vengono inviati a Groq. <a href="/privacy" target="_blank" rel="noopener noreferrer">Informativa privacy</a> · <a href="/termini" target="_blank" rel="noopener noreferrer">Termini</a>.</p>
+                    <p class="dnd-muted">Le domande e il contesto della sessione vengono inviati al gateway FreeLLMAPI. <a href="/privacy" target="_blank" rel="noopener noreferrer">Informativa privacy</a> · <a href="/termini" target="_blank" rel="noopener noreferrer">Termini</a>.</p>
                     <label>Ruolo AI
                         <select id="aiMode">
                             <option value="master" ${sessionState.aiMode === 'master' ? 'selected' : ''}>Master</option>

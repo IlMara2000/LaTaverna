@@ -12,11 +12,17 @@ Uploads are constrained on both client and database: reading PDFs stay private u
 
 ## Content Security Policy e terze parti
 
-`vercel.json` applica una CSP stretta a tutte le risposte: script solo same-origin (più `'wasm-unsafe-eval'` per OCR e PDF), niente frame di terzi, `object-src 'none'`, `frame-ancestors 'none'`. Le eccezioni di rete sono limitate a Supabase e Scryfall; Groq viene chiamato solo dalle function server e la chiave non raggiunge mai il browser.
+`vercel.json` applica una CSP stretta a tutte le risposte: script solo same-origin (più `'wasm-unsafe-eval'` per OCR e PDF), niente frame di terzi, `object-src 'none'`, `frame-ancestors 'none'`. Le eccezioni di rete sono limitate a Supabase e Scryfall; Il gateway FreeLLMAPI viene chiamato solo dalle function server e la chiave non raggiunge mai il browser.
 
 Non carichiamo analytics di terze parti e il browser non contatta servizi di tracking. Gli asset OCR (worker, core WebAssembly e modello inglese) sono self-hosted in `public/ocr`, quindi non servono CDN esterni e la CSP non deve autorizzare script di terzi. Il riconoscimento vocale usa il servizio del browser: la UI e l'informativa dichiarano che l'audio può essere elaborato dal fornitore del browser e non viene salvato da noi.
 
 Le function AI non restituiscono più i messaggi grezzi del provider: i dettagli (chiavi, limiti, parametri) restano lato server e il client riceve messaggi stabili con gli stessi codici HTTP utili (401, 413, 429).
+
+## Origine delle chiamate AI
+
+Tutti gli endpoint che parlano con il gateway (`/api/oracle/chat`, `/api/rpg/ai-chat`, `/api/rpg/session-event`, `/api/magic/scan`, `/api/magic/translate`) rifiutano con `403 cross_origin_forbidden` le richieste che arrivano con un header `Origin` diverso dall'host della function: un altro sito non può usare il browser dei visitatori come proxy verso il tuo Mac. Le chiamate senza `Origin` (test, job, `curl`, server-to-server) restano ammesse, perché l'autorizzazione vera è il token Supabase con la quota giornaliera.
+
+`/api/rpg/ai-health` è pubblico e di sola lettura, ma non stampa più né l'URL del gateway né la chiave: riporta solo `provider` e `model`. L'URL del tunnel resta noto a Vercel tramite `FREELLMAPI_BASE_URL`, che è una variabile server (Secret).
 
 Run `scripts/tests/sql/security-access.sql` through an administrative SQL connection after migration. It creates temporary fixture users and rooms inside a transaction and rolls everything back; it verifies owner isolation, successful invitation access, denial of wrong invitations and anonymous callers, and immutable ownership. The Node test suite also covers malformed API bodies and fail-closed multiplayer access.
 

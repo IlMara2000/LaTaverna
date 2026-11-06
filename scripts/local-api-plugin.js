@@ -1,7 +1,7 @@
 // Development-only bridge for the same handlers deployed as server functions.
 // Only these server environment variables are copied; none enter Vite define.
 export function localApiPlugin(env){
-    const names=['GROQ_LLM_API_KEY','GROQ_API_KEY','GROQ_LLM_MODEL','GROQ_VISION_MODEL','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','SUPABASE_URL','SUPABASE_ANON_KEY'];
+    const names=['FREELLMAPI_BASE_URL','FREELLMAPI_API_KEY','FREELLMAPI_MODEL','FREELLMAPI_VISION_MODEL','FREELLMAPI_TEMPERATURE','FREELLMAPI_MAX_TOKENS','FREELLMAPI_TIMEOUT_MS','VITE_SUPABASE_URL','VITE_SUPABASE_ANON_KEY','SUPABASE_URL','SUPABASE_ANON_KEY'];
     for(const name of names)if(env[name])process.env[name]=env[name];
     const routes={
         '/api/oracle/chat':()=>import('../api/oracle/chat.js'),
