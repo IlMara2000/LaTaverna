@@ -1,33 +1,116 @@
-/* A small original CSS puppet; it travels with the existing draggable menu. */
+/* L'Oracolo è un robottino toon in stile cyberpunk: testa tonda con bordo a inchiostro,
+   visiera al neon, antenna luminosa e manine a moffola. Viaggia col menu trascinabile. */
 #ui #navbar-trigger { overflow: visible; }
-#ui #navbar-trigger .oracle-puppet { position: absolute; inset: -9px -3px 0; pointer-events: none; opacity: 0; transform: translateY(15px) scale(.25); transition: opacity 300ms ease, transform 450ms cubic-bezier(.2,.8,.2,1); }
-#ui #navbar-trigger.has-oracle .oracle-puppet { opacity: 1; transform: translateY(0) scale(1); }
+#ui #navbar-trigger .oracle-puppet {
+    position: absolute; inset: -12px -4px 0; pointer-events: none; opacity: 0;
+    transform: translateY(15px) scale(.25);
+    transition: opacity 300ms ease, transform 450ms cubic-bezier(.2,.8,.2,1);
+    filter: drop-shadow(0 0 5px #43e7ff66);
+}
+#ui #navbar-trigger.has-oracle .oracle-puppet { opacity: 1; transform: translateY(0) scale(1); animation: oracle-hover 3200ms ease-in-out infinite; pointer-events: auto; cursor: pointer; }
+/* Due tocchi lo nascondono; il microfono resta acceso finché non arriva il terzo. */
+#ui #navbar-trigger[data-puppet-hidden="1"] .oracle-puppet { opacity: 0; transform: translateY(-10px) scale(.7); animation: none; pointer-events: none; }
 #ui #navbar-trigger.has-oracle .nav-bar { opacity: 0; transform: scale(.2); }
-.oracle-body { position: absolute; inset: 8px 9px 3px; border-radius: 48% 48% 35% 35%; background: radial-gradient(ellipse at 35% 20%, #edd5ff, #b582e7 42%, #57367a 86%); box-shadow: inset -4px -5px 8px #42215c80, 0 0 14px #c18aef55; }
-.oracle-face { position: absolute; inset: 13px 7px 11px; border-radius: 45%; background: #271737; }
-.oracle-face i { position: absolute; width: 5px; height: 8px; border-radius: 50%; top: 7px; left: 6px; background: #faf1ff; box-shadow: 0 0 6px #dbbbff; }
+
+/* testa: guscio pieno, bordo grosso, riflesso in alto e alone neon */
+.oracle-body {
+    position: absolute; inset: 10px 8px 1px;
+    border-radius: 46% 46% 36% 36% / 44% 44% 42% 42%;
+    background: linear-gradient(160deg, #8df7ff 0%, #35a2ff 34%, #6a3cff 66%, #ff4fd8 100%);
+    border: 2.5px solid #150a26;
+    box-shadow: inset -3px -4px 0 #150a2640, inset 3px 3px 0 #ffffff80,
+                0 0 10px #43e7ff99, 0 0 20px #ff4fd866;
+}
+/* visiera scura con occhi al neon */
+.oracle-face {
+    position: absolute; top: 12px; left: 5px; right: 5px; height: 20px;
+    border-radius: 11px; overflow: hidden;
+    background: linear-gradient(180deg, #131f3d, #05060d);
+    border: 2px solid #150a26;
+    box-shadow: inset 0 0 6px #43e7ff55;
+}
+.oracle-face i {
+    position: absolute; top: 7px; left: 6px; width: 6px; height: 6px;
+    border-radius: 2px; background: #9dfbff;
+    box-shadow: 0 0 6px #43e7ff, 0 0 12px #43e7ffaa;
+}
 .oracle-face i + i { left: auto; right: 6px; }
-.oracle-face b { position: absolute; bottom: 4px; left: calc(50% - 4px); width: 8px; height: 4px; border-bottom: 1px solid #efcfff; border-radius: 50%; }
-.oracle-halo { position: absolute; top: 1px; left: 19px; width: 24px; height: 7px; border: 1px solid #e2b9ff; border-radius: 50%; transform: rotate(-12deg); }
-.oracle-hand { position: absolute; top: 36px; width: 10px; height: 15px; border-radius: 60%; background: #c895ed; }
-.oracle-hand-left { left: 3px; transform: rotate(28deg); }
-.oracle-hand-right { right: 3px; transform: rotate(-28deg); }
-.oracle-gem { position: absolute; width: 5px; height: 5px; background: #f4da9f; top: 14px; left: calc(50% - 2px); transform: rotate(45deg); }
-#navbar-trigger[data-oracle-state="speaking"] .oracle-face b { animation: oracle-talk 400ms ease-in-out infinite alternate; }
-#navbar-trigger[data-oracle-state="thinking"] .oracle-halo { animation: oracle-think 1600ms ease-in-out infinite alternate; }
-#navbar-trigger[data-oracle-state="waiting"] .oracle-face i { height: 2px; top: 11px; }
+.oracle-face b {
+    position: absolute; bottom: 3px; left: 50%; width: 15px; height: 4px;
+    margin-left: -7.5px; border-radius: 2px; opacity: .85;
+    background: repeating-linear-gradient(90deg, #ff77e0 0 2px, transparent 2px 4px);
+}
+/* antenna con bulbo */
+.oracle-halo {
+    position: absolute; top: -5px; left: 50%; width: 6px; height: 6px; margin-left: -3px;
+    border-radius: 50%; background: #fff3a6; border: 1.5px solid #150a26;
+    box-shadow: 0 0 8px #ffe66d, 0 0 16px #ffb300aa;
+}
+.oracle-halo::before {
+    content: ''; position: absolute; top: 5px; left: 50%; width: 2px; height: 9px;
+    margin-left: -1px; border-radius: 1px; background: #150a26;
+}
+/* orecchie a bullone */
+.oracle-ear {
+    position: absolute; top: 21px; width: 6px; height: 9px; border-radius: 3px;
+    background: linear-gradient(#8df7ff, #2b6bff); border: 2px solid #150a26;
+}
+.oracle-ear-left { left: -5px; }
+.oracle-ear-right { right: -5px; }
+/* manine a moffola */
+.oracle-hand {
+    position: absolute; top: 39px; width: 10px; height: 11px;
+    border-radius: 50% 50% 40% 40%;
+    background: linear-gradient(#a9f6ff, #38b6ff); border: 2px solid #150a26;
+}
+.oracle-hand-left { left: 0; transform: rotate(24deg); }
+.oracle-hand-right { right: 0; transform: rotate(-24deg); }
+/* luce sul petto */
+.oracle-gem {
+    position: absolute; bottom: 3px; left: 50%; width: 6px; height: 6px; margin-left: -3px;
+    border-radius: 50%; background: #ff77e0;
+    box-shadow: 0 0 8px #ff4fd8, 0 0 14px #ff4fd899;
+}
+
+#navbar-trigger[data-oracle-state="speaking"] .oracle-face b { animation: oracle-talk 240ms steps(2, end) infinite alternate; }
+#navbar-trigger[data-oracle-state="speaking"] .oracle-gem { animation: oracle-pulse 480ms ease-in-out infinite alternate; }
+#navbar-trigger[data-oracle-state="thinking"] .oracle-halo { animation: oracle-think 800ms ease-in-out infinite alternate; }
+#navbar-trigger[data-oracle-state="thinking"] .oracle-face i { animation: oracle-scan 900ms linear infinite; }
+#navbar-trigger[data-oracle-state="waiting"] .oracle-face i { height: 2px; top: 9px; opacity: .5; box-shadow: none; }
+#navbar-trigger[data-oracle-state="listening"] .oracle-face i { animation: oracle-blink 1800ms ease-in-out infinite; }
 #navbar-trigger[data-oracle-state="listening"] .oracle-hand-right { transform: translateY(-5px) rotate(-45deg); }
-#navbar-trigger.has-oracle::after { content: ''; position: absolute; bottom: 1px; right: 1px; width: 7px; height: 7px; border-radius: 50%; background: #c3edba; border: 2px solid #31213d; }
-#navbar-trigger[data-oracle-state="waiting"]::after { background: #e7c883; }
-.oracle-caption { position: fixed; z-index: 10010; bottom: calc(92px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(360px, calc(100vw - 40px)); box-sizing: border-box; padding: 12px 16px; border: 1px solid #d9b7f339; border-radius: 20px; background: #21162def; box-shadow: 0 8px 25px #0003; color: #faf1ff; font: 14px/1.5 system-ui, sans-serif; pointer-events: none; }
+#navbar-trigger.has-oracle::after {
+    content: ''; position: absolute; bottom: 1px; right: 1px; width: 7px; height: 7px;
+    border-radius: 50%; background: #5ef2b0; border: 2px solid #150a26;
+    box-shadow: 0 0 6px #5ef2b0aa;
+}
+#navbar-trigger[data-oracle-state="waiting"]::after { background: #ffcf5e; box-shadow: 0 0 6px #ffcf5eaa; }
+
+.oracle-caption {
+    position: fixed; z-index: 10010; bottom: calc(92px + env(safe-area-inset-bottom)); left: 50%;
+    transform: translateX(-50%); width: min(360px, calc(100vw - 40px)); box-sizing: border-box;
+    padding: 12px 16px; border: 1px solid #43e7ff59; border-radius: 18px;
+    background: linear-gradient(160deg, #14102aee, #1d0f2fee);
+    box-shadow: 0 8px 25px #0006, 0 0 18px #43e7ff33;
+    color: #f2f9ff; font: 14px/1.5 system-ui, sans-serif; pointer-events: none;
+}
 .oracle-caption[hidden] { display: none; }
-.oracle-caption-state { color: #c5a4df; font-size: 11px; }
+.oracle-caption-state { color: #7fe9ff; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
 .oracle-caption p { margin: 4px 0; }
-.oracle-caption button { pointer-events: auto; border: 0; color: #dfc9ed; background: transparent; padding: 7px 0; font: inherit; font-size: 11px; cursor: pointer; }
-.oracle-caption button:focus-visible { outline: 2px solid #dfbfff; outline-offset: 3px; }
+.oracle-caption button { pointer-events: auto; border: 0; color: #c8b6ee; background: transparent; padding: 7px 0; font: inherit; font-size: 11px; cursor: pointer; }
+.oracle-caption button:focus-visible { outline: 2px solid #7fe9ff; outline-offset: 3px; }
 .oracle-privacy { color: var(--text-secondary, #c5b5d1); font-size: 11px; line-height: 1.5; margin: 0 4px; }
-@keyframes oracle-talk { to { height: 7px; background: #d8abec; } }
-@keyframes oracle-think { to { transform: rotate(12deg) translateY(-3px); opacity: .5; } }
-@media (prefers-reduced-motion: reduce) { #ui #navbar-trigger .oracle-puppet { transition: none; } .oracle-puppet * { animation: none !important; } }
-html.app-reduced-motion #ui #navbar-trigger .oracle-puppet { transition: none; }
+
+@keyframes oracle-talk { to { height: 7px; background: repeating-linear-gradient(90deg, #9dfbff 0 2px, transparent 2px 4px); } }
+@keyframes oracle-think { to { box-shadow: 0 0 14px #ffe66d, 0 0 24px #ffb300; transform: translateY(-2px); } }
+@keyframes oracle-hover { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.02); } }
+@keyframes oracle-blink { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes oracle-scan { from { transform: translateX(-2px); } to { transform: translateX(2px); } }
+@keyframes oracle-pulse { to { box-shadow: 0 0 14px #ff4fd8, 0 0 22px #ff4fd8cc; } }
+
+@media (prefers-reduced-motion: reduce) {
+    #ui #navbar-trigger .oracle-puppet { transition: none; animation: none; }
+    .oracle-puppet * { animation: none !important; }
+}
+html.app-reduced-motion #ui #navbar-trigger .oracle-puppet { transition: none; animation: none; }
 html.app-reduced-motion .oracle-puppet * { animation: none !important; }

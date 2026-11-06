@@ -1,11 +1,22 @@
 // On-device recognition is preferred: ambient speech then never leaves the machine.
 // Where the browser lacks it, the browser's own speech service is used instead, as the
 // privacy page describes; the microphone still starts only from an explicit click.
+// Friendly answers to "ehi oracolo": short, sociable, a little robotic.
+const HELLO_REPLIES = [
+    'Ehi! Sono qui, che si combina?',
+    'Eccomi! Il robottino è sveglio e ti ascolta.',
+    'Ciao! Dimmi pure, sono tutto orecchie. O quasi: sono un robottino.',
+    'Sono qui! Pronto a darti una mano, o una pinza.'
+];
+const helloReply = () => HELLO_REPLIES[Math.floor(Math.random() * HELLO_REPLIES.length)];
+
 export function voiceCommand(text) {
     const value = text.toLocaleLowerCase('it').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
     if (/\b(non ascoltarmi|smetti di ascoltare)\b/.test(value)) return 'sleep';
     if (/\b(oracolo spegniti|disattiva oracolo)\b/.test(value)) return 'off';
     if (/\boracolo mi serve il tuo aiuto\b/.test(value)) return 'wake';
+    // "Ehi oracolo", "ehi, oracolo", "ciao oracolo": a social hello, not a question.
+    if (/\b(ehi|ei|hey|ehy|ciao|salve)\s+oracolo\b/.test(value)) return 'hello';
     return 'question';
 }
 
@@ -37,6 +48,13 @@ export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onSta
         if (token !== generation) return;
         const command = voiceCommand(text);
         if (command === 'off') { stop(); return; }
+        if (command === 'hello') {
+            // Works even after the puppet is hidden: it keeps listening and answers.
+            sleeping = false;
+            stopRecognition();
+            await say(helloReply(), token);
+            return;
+        }
         if (command === 'sleep') {
             sleeping = true;
             request?.abort();

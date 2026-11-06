@@ -18,7 +18,7 @@ export function mountOracleCompanion(trigger) {
     const puppet = document.createElement('span');
     puppet.className = 'oracle-puppet';
     puppet.setAttribute('aria-hidden', 'true');
-    puppet.innerHTML = '<span class="oracle-halo"></span><span class="oracle-body"><span class="oracle-face"><i></i><i></i><b></b></span></span><span class="oracle-hand oracle-hand-left"></span><span class="oracle-hand oracle-hand-right"></span><span class="oracle-gem"></span>';
+    puppet.innerHTML = '<span class="oracle-halo"></span><span class="oracle-body"><span class="oracle-ear oracle-ear-left"></span><span class="oracle-ear oracle-ear-right"></span><span class="oracle-face"><i></i><i></i><b></b></span></span><span class="oracle-hand oracle-hand-left"></span><span class="oracle-hand oracle-hand-right"></span><span class="oracle-gem"></span>';
     trigger.append(puppet);
     const caption = document.createElement('div');
     caption.className = 'oracle-caption'; caption.hidden = true;
@@ -42,6 +42,11 @@ export function mountOracleCompanion(trigger) {
         };
         next();
     }
+    // Il pupazzo si tocca direttamente: un tocco apre il menu, due lo nascondono,
+    // tre spengono anche il microfono. La finestra è breve, così i tocchi si contano.
+    const setPuppetHidden = hidden => { trigger.dataset.puppetHidden = hidden ? '1' : '0'; };
+    let previousState = 'off';
+
     const voice = createOracleVoice({
         Recognition: window.SpeechRecognition || window.webkitSpeechRecognition,
         visible: () => !document.hidden,
@@ -51,6 +56,8 @@ export function mountOracleCompanion(trigger) {
         onCaption: showCaption,
         onState: state => {
             trigger.dataset.oracleState = state;
+            if (previousState === 'off' && state !== 'off') setPuppetHidden(false);
+            previousState = state;
             trigger.setAttribute('aria-description', state === 'off' ? 'Trascina per spostare il menu' : `Oracolo: ${labels[state]}. Apri il menu per spegnere il microfono.`);
             trigger.classList.toggle('has-oracle', state !== 'off');
             trigger.title = state === 'off' ? 'Apri menu · trascina per spostare' : `Oracolo: ${labels[state]} · apri menu o trascina`;
@@ -65,6 +72,33 @@ export function mountOracleCompanion(trigger) {
     });
     activeVoice = voice;
     caption.querySelector('button').onclick = () => voice.stop();
+
+    let taps = 0, tapTimer = 0, tapOrigin = null;
+    puppet.addEventListener('pointerdown', event => { tapOrigin = [event.clientX, event.clientY]; });
+    puppet.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        // Un trascinamento del menu non deve contare come tocco.
+        if (tapOrigin && Math.hypot(event.clientX - tapOrigin[0], event.clientY - tapOrigin[1]) > 8) return;
+        taps += 1;
+        clearTimeout(tapTimer);
+        if (taps >= 3) {
+            taps = 0;
+            voice.stop();
+            setPuppetHidden(false);
+            showCaption('Microfono spento. Per richiamarmi di’ «Oracolo mi serve il tuo aiuto» oppure usa il menu.');
+            return;
+        }
+        tapTimer = setTimeout(() => {
+            if (taps === 1) {
+                window.dispatchEvent(new CustomEvent('toggleSidebar'));
+            } else {
+                setPuppetHidden(true);
+                showCaption('Pupazzo nascosto. L’Oracolo resta in ascolto: tre tocchi spengono anche il microfono.');
+            }
+            taps = 0;
+        }, 320);
+    });
     // A hidden tab must not silently keep listening; reactivation is always explicit.
     document.addEventListener('visibilitychange', () => { if (document.hidden) voice.stop(); }, { signal: events.signal });
     window.addEventListener('pagehide', () => voice.stop(), { signal: events.signal });

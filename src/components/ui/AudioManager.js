@@ -61,18 +61,66 @@ function persistAudioPreferences() {
     void setPreference('music.track', currentTrackName).catch(console.warn);
 }
 
+// A light robot voice: a bright Italian voice, a faster tempo and a small pitch
+// wobble between phrases. Everything stays in the browser's own speech engine.
+const ORACLE_VOICE_HINTS = ['alice', 'federica', 'elsa', 'paola', 'luca'];
+const pickOracleVoice = () => {
+    if (!window.speechSynthesis) return null;
+    const italian = window.speechSynthesis.getVoices().filter(voice => voice.lang?.toLowerCase().startsWith('it'));
+    if (!italian.length) return null;
+    for (const hint of ORACLE_VOICE_HINTS) {
+        const match = italian.find(voice => voice.name.toLowerCase().includes(hint));
+        if (match) return match;
+    }
+    return italian[0];
+};
+const oracleChunks = text => {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!clean) return [];
+    const phrases = clean.match(/[^.!?…]+[.!?…]*/g) || [clean];
+    const chunks = [];
+    let buffer = '';
+    for (const phrase of phrases) {
+        if (buffer && (buffer + phrase).length > 170) { chunks.push(buffer.trim()); buffer = phrase; }
+        else buffer += phrase;
+    }
+    if (buffer.trim()) chunks.push(buffer.trim());
+    return chunks.filter(Boolean);
+};
+// Two short blips before speaking: cheap, recognizable, and silent on failure.
+const oracleChirp = volume => {
+    try {
+        const Context = window.AudioContext || window.webkitAudioContext;
+        if (!Context) return;
+        const context = new Context();
+        const start = context.currentTime;
+        const level = Math.min(0.1, 0.04 + volume * 0.08);
+        [[880, 0], [1320, 0.07]].forEach(([frequency, offset]) => {
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            oscillator.type = 'square';
+            oscillator.frequency.value = frequency;
+            gain.gain.setValueAtTime(0.0001, start + offset);
+            gain.gain.linearRampToValueAtTime(level, start + offset + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, start + offset + 0.075);
+            oscillator.connect(gain).connect(context.destination);
+            oscillator.start(start + offset);
+            oscillator.stop(start + offset + 0.09);
+        });
+        setTimeout(() => { try { void context.close(); } catch {} }, 800);
+    } catch { /* a chirp must never break speech */ }
+};
+
 export const AudioManager = {
     // Speech shares the music volume and ducks the soundtrack without changing preferences.
     speakOracle: (text) => {
         cancelOracleSpeech();
         return new Promise((resolve, reject) => {
             if (!window.speechSynthesis) { reject(new Error('Voce non disponibile')); return; }
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'it-IT';
-            utterance.volume = currentVolume;
-            utterance.rate = 0.95;
-            utterance.voice = window.speechSynthesis.getVoices().find(voice => voice.lang.startsWith('it')) || null;
-            let finished = false;
+            const chunks = oracleChunks(text);
+            if (!chunks.length) { reject(new Error('Voce non disponibile')); return; }
+            const voice = pickOracleVoice();
+            let finished = false, index = 0, watchdog;
             const finish = error => {
                 if (finished) return;
                 finished = true;
@@ -80,14 +128,28 @@ export const AudioManager = {
                 oracleSpeaking = false; applyVolume(); cancelOracleSpeech = () => {};
                 if (error) reject(error); else resolve();
             };
-            const watchdog = setTimeout(() => {
+            const speakNext = () => {
+                if (finished) return;
+                if (index >= chunks.length) { finish(); return; }
+                const utterance = new SpeechSynthesisUtterance(chunks[index++]);
+                utterance.lang = 'it-IT';
+                utterance.voice = voice;
+                utterance.volume = currentVolume;
+                utterance.rate = 1.06;
+                // Alternating pitch is the robot wobble; kept small on purpose.
+                utterance.pitch = index % 2 ? 1.5 : 1.38;
+                utterance.onend = () => { if (!finished) setTimeout(speakNext, 45); };
+                utterance.onerror = () => finish(new Error('Voce non disponibile'));
+                try { window.speechSynthesis.speak(utterance); } catch (error) { finish(error); }
+            };
+            const words = chunks.join(' ').split(/\s+/).length;
+            watchdog = setTimeout(() => {
                 window.speechSynthesis.cancel(); finish(new Error('Voce interrotta'));
-            }, Math.max(15000, text.split(/\s+/).length * 1800));
+            }, Math.max(15000, words * 1800));
             cancelOracleSpeech = () => { window.speechSynthesis.cancel(); finish(); };
-            utterance.onend = () => finish();
-            utterance.onerror = () => finish(new Error('Voce non disponibile'));
             oracleSpeaking = true; applyVolume();
-            try { window.speechSynthesis.speak(utterance); } catch (error) { finish(error); }
+            oracleChirp(currentVolume);
+            setTimeout(speakNext, 150);
         });
     },
     cancelOracleSpeech: () => cancelOracleSpeech(),
