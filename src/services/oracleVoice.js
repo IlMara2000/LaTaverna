@@ -1,4 +1,6 @@
-// Only on-device recognition is allowed: ambient speech must never leave the device.
+// On-device recognition is preferred: ambient speech then never leaves the machine.
+// Where the browser lacks it, the browser's own speech service is used instead, as the
+// privacy page describes; the microphone still starts only from an explicit click.
 export function voiceCommand(text) {
     const value = text.toLocaleLowerCase('it').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
     if (/\b(non ascoltarmi|smetti di ascoltare)\b/.test(value)) return 'sleep';
@@ -8,7 +10,7 @@ export function voiceCommand(text) {
 }
 
 export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onState, onCaption, visible = () => true }) {
-    let state = 'off', generation = 0, recognition, request, restart, history = [], failures = 0;
+    let state = 'off', generation = 0, recognition, request, restart, history = [], failures = 0, useLocal = false;
     let sleeping = false, greeted = false;
     const publish = next => { state = next; onState(next); };
     const stopRecognition = () => {
@@ -67,7 +69,7 @@ export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onSta
         const current = new Recognition();
         const startedAt = Date.now();
         recognition = current;
-        current.processLocally = true;
+        current.processLocally = useLocal;
         current.lang = 'it-IT'; current.continuous = true; current.interimResults = false;
         current.onstart = () => {
             if (recognition !== current) return;
@@ -83,7 +85,7 @@ export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onSta
             if (event.error === 'no-speech') return;
             fail(event.error === 'not-allowed' || event.error === 'service-not-allowed'
                 ? 'Microfono non autorizzato. Abilitalo nelle impostazioni del browser, poi riattiva l’Oracolo.'
-                : 'Ascolto locale interrotto o italiano non disponibile. Riattiva l’Oracolo dal menu oppure usa la pagina di testo.');
+                : 'Ascolto interrotto o italiano non disponibile. Riattiva l’Oracolo dal menu oppure usa la pagina di testo.');
         };
         current.onend = () => {
             if (recognition !== current || token !== generation) return;
@@ -100,19 +102,26 @@ export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onSta
         const token = ++generation;
         publish('preparing');
         try {
-            if (!Recognition || !('processLocally' in Recognition.prototype) || !Recognition.available) {
-                fail('Questo browser non supporta l’ascolto sul dispositivo. Usa un browser con riconoscimento locale italiano oppure la pagina Oracolo per testo e file.'); return;
+            if (!Recognition) {
+                fail('Questo browser non supporta il riconoscimento vocale. Usa la pagina Oracolo per testo e foto.'); return;
             }
-            const options = { langs: ['it-IT'], processLocally: true };
-            let availability = await Recognition.available(options);
-            if (token !== generation) return;
-            if (availability === 'downloadable' || availability === 'downloading') {
-                onCaption('Preparazione della voce italiana sul dispositivo…');
-                if (!Recognition.install || !await Recognition.install(options)) throw new Error('Pacchetto italiano non disponibile.');
-                availability = await Recognition.available(options);
+            useLocal = 'processLocally' in Recognition.prototype && typeof Recognition.available === 'function';
+            if (useLocal) {
+                try {
+                    const options = { langs: ['it-IT'], processLocally: true };
+                    let availability = await Recognition.available(options);
+                    if (token !== generation) return;
+                    if (availability === 'downloadable' || availability === 'downloading') {
+                        onCaption('Preparazione della voce italiana sul dispositivo…');
+                        if (Recognition.install && await Recognition.install(options)) availability = await Recognition.available(options);
+                    }
+                    if (token !== generation) return;
+                    if (availability !== 'available') useLocal = false;
+                } catch { useLocal = false; }
             }
-            if (token !== generation) return;
-            if (availability !== 'available') throw new Error('Ascolto locale italiano non disponibile in questo browser. Usa la pagina Oracolo per testo e file.');
+            if (!useLocal && token === generation) {
+                onCaption('Ascolto con il servizio vocale del browser. Per la trascrizione sul dispositivo serve Chrome aggiornato; la pagina Oracolo resta per testo e foto.');
+            }
             // Recognition requests microphone permission; never cache or fake a grant.
             failures = 0;
             listen(token);
