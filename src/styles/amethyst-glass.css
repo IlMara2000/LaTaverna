@@ -354,5 +354,5 @@ html[data-theme="amethyst"].app-high-contrast .amethyst-atmosphere { display: no
     #ui .taverna-scene-caption { background: rgb(38 21 53 / 95%); }
 }
 #ui .sidebar-legal-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; margin: 4px 0 8px; }
-#ui .sidebar-legal-links a { color: #a58cb8; font-size: 9px; letter-spacing: 0.08em; text-decoration: none; padding: 3px 2px; }
+#ui .sidebar-legal-links a { display: inline-flex; align-items: center; min-height: 24px; color: #a58cb8; font-size: 9px; letter-spacing: 0.08em; text-decoration: none; padding: 3px 2px; }
 #ui .sidebar-legal-links a:hover, #ui .sidebar-legal-links a:focus-visible { color: #ffffff; text-decoration: underline; }

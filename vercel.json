@@ -87,10 +87,6 @@
       "destination": "/index.html"
     },
     {
-      "source": "/pokemmo",
-      "destination": "/index.html"
-    },
-    {
       "source": "/scippo",
       "destination": "/index.html"
     },

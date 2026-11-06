@@ -91,8 +91,7 @@ export async function navigateTo(destination, container = document.getElementByI
         cookies: { label: 'cookie e terzi', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'cookies') },
         community: { label: 'il regolamento community', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'community') },
         seller: { label: 'le condizioni Bottega', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'seller') },
-        takedown: { label: 'la segnalazione contenuti', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'takedown') },
-        pokemmo: { label: 'PokeMMO', load: () => import('../components/features/pokemmo/PokemmoHub.js'), render: module => module.showPokemmoHub(container) }
+        takedown: { label: 'la segnalazione contenuti', load: () => import('../components/features/legal/Legal.js'), render: module => module.showLegal(container, 'takedown') }
     };
     const route = routes[destination];
     if (!route) return false;
