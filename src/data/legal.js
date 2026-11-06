@@ -94,6 +94,7 @@ const privacy = `
                 <li>PDF e metadati della biblioteca: fino alla cancellazione del libro o dell’account.</li>
                 <li>Ordini della Bottega: per il tempo necessario a gestire la richiesta e ad adempiere agli obblighi fiscali e contabili applicabili.</li>
                 <li>Conteggi delle quote AI: fino a 90 giorni, in forma aggregata per giorno e account.</li>
+                <li>Conteggi per rete: impronta HMAC dell’indirizzo IP (non l’indirizzo in chiaro) e numero di richieste al giorno, fino a 90 giorni, per fermare abusi da una singola connessione.</li>
                 <li>Log tecnici: secondo le impostazioni di conservazione dei fornitori di hosting e sicurezza.</li>
             </ul>
             <p>Se un contenuto è oggetto di segnalazione o contenzioso, possiamo conservarlo più a lungo nella misura necessaria a tutelare i nostri diritti.</p>
