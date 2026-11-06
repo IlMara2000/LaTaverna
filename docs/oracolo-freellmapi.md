@@ -96,13 +96,14 @@ FreeLLMAPI, oppure un provider API dedicato; il tunnel è adatto a uso personale
 
 ## Avvio automatico al login (macOS)
 
-Due LaunchAgent in `~/Library/LaunchAgents` tengono in piedi la catena quando il Mac si accende:
+Tre LaunchAgent in `~/Library/LaunchAgents` tengono in piedi la catena quando il Mac si accende:
 
 - `xyz.lataverna.freellmapi` — lancia `/usr/bin/open -gja /Applications/FreeLLMAPI.app` al login e
   riprova ogni 5 minuti: se l’app è già aperta `open` non fa nulla, se è stata chiusa la riapre.
 - `xyz.lataverna.ngrok` — avvia `ngrok http 31415 --url https://hearted-galina-artesian.ngrok-free.dev`
   con `KeepAlive`, quindi se il tunnel cade `launchd` lo riavvia da solo; log in
   `/tmp/lataverna-ngrok.log`.
+- `xyz.lataverna.gateway-watch` — sorveglia la catena e avvisa quando qualcosa cade (dettagli sotto).
 
 ```bash
 launchctl print gui/$(id -u)/xyz.lataverna.ngrok           # stato e pid del tunnel
@@ -136,14 +137,21 @@ altri servizi. Lo stato precedente è in `output/gateway-watch-state.json` (cart
 quindi un controllo lanciato da cron ricorda cosa era già stato segnalato.
 
 È installato come LaunchAgent (`~/Library/LaunchAgents/xyz.lataverna.gateway-watch.plist`): parte a
-ogni login, esegue `node --env-file-if-exists=.env.local scripts/gateway-watch.mjs --loop 120` dalla
-radice del progetto e ha `KeepAlive`, quindi se il processo muore `launchd` lo rilancia. Log in
-`/tmp/lataverna-gateway-watch.log`.
+ogni login e tiene in vita `~/Library/Application Support/LaTaverna/run-gateway-watch.sh`, che copia
+`scripts/gateway-watch.mjs` dal progetto (se il volume è montato, con attesa massima di 10 s) e lo
+esegue con `--loop 120` dalla copia locale: così la sorveglianza parte anche quando il disco esterno
+del progetto non è montato. `KeepAlive` rilancia il processo se muore. Log in
+`/tmp/lataverna-gateway-watch.log`, stato in `/tmp/lataverna-gateway-watch-state.json`.
+
+Il plist imposta `FREELLMAPI_BASE_URL` sul dominio del tunnel, così la sonda pubblica gira davvero, e
+non legge `.env.local`: una lettura lenta dal volume esterno bloccherebbe l'avvio. Per gli avvisi su
+Slack basta aggiungere `TAVERNA_ALERT_WEBHOOK_URL` tra le `EnvironmentVariables` del plist.
 
 ```bash
 launchctl print gui/$(id -u)/xyz.lataverna.gateway-watch         # stato e pid
 launchctl kickstart -k gui/$(id -u)/xyz.lataverna.gateway-watch  # riavvio immediato
 launchctl bootout gui/$(id -u)/xyz.lataverna.gateway-watch       # fermarlo
+tail -f /tmp/lataverna-gateway-watch.log                         # sonde e avvisi
 ```
 
 Il watchdog dice se tunnel e gateway rispondono; a riavviarli ci pensano i LaunchAgent di
