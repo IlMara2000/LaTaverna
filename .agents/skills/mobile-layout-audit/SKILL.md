@@ -33,8 +33,8 @@ window.__magicLayout()                          // scheda carta Magic
 
 ## Scheda carta Magic
 
-`npm run test:layout` (con il dev server attivo) misura la dashboard Magic a sei
-larghezze — 390x844, 651x900, 768x1024, 834x1112, 1024x768, 1180x900 — e **esce con
+`npm run test:layout` (con il dev server attivo) misura la dashboard Magic a otto
+larghezze — 320x568, 390x844, 844x390, 651x900, 768x1024, 834x1112, 1024x768, 1180x900 — e **esce con
 codice 1** se una misura esce dalle soglie: colonne della collezione (2 / 3 / 4 / 6),
 carte mai sotto i 140px, mazzi impilati con lista orizzontale fino a 900px, arte
 centrata nel palco e tendina che a riposo copre solo la carta e aperta arriva a

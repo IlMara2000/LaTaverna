@@ -25,7 +25,11 @@ const browser = process.env.AGENT_BROWSER || 'agent-browser';
 const sessione = `magic-layout-${process.pid}`;
 
 const VIEWPORT = [
+    { nome: 'telefono piccolo', w: 320, h: 568 },
     { nome: 'telefono', w: 390, h: 844 },
+    // Altezza scarsa: il palco è più basso dell'arte, quindi la carta resta in alto
+    // e la tendina si accontenta di meno spazio.
+    { nome: 'telefono orizzontale', w: 844, h: 390, spazioStretto: true },
     { nome: 'tablet stretto', w: 651, h: 900 },
     { nome: 'tablet', w: 768, h: 1024 },
     { nome: 'tablet grande', w: 834, h: 1112 },
@@ -115,13 +119,21 @@ for (const m of misure) {
     // La pagina non deve mai chiedere scroll orizzontale.
     verifica(m.overflowX <= 1, `${dove}: pagina più larga della viewport di ${m.overflowX}px`);
     verifica(c.cols >= 2, `${dove}: la collezione ha una sola colonna`);
-    verifica(c.cardW >= 140, `${dove}: carte larghe solo ${c.cardW}px`);
+    // A 320px le due colonne forzate lasciano 111px di carta: soglia a 100px, sotto la
+    // quale la griglia sarebbe di fatto illeggibile su un telefono così stretto.
+    const minimoCarta = m.w <= 360 ? 100 : 140;
+    verifica(c.cardW >= minimoCarta, `${dove}: carte larghe solo ${c.cardW}px (minimo ${minimoCarta}px)`);
     verifica(c.gridW <= m.w + 2, `${dove}: griglia larga ${c.gridW}px su ${m.w}px`);
     verifica(c.cards >= 6, `${dove}: la griglia mostra ${c.cards} carte invece di 6`);
 
     // Colonne attese: telefono 2, tablet 3, orizzontale 4, desktop 6.
     if (m.w <= 650) verifica(c.cols === 2, `${dove}: attese 2 colonne, trovate ${c.cols}`);
-    else if (m.w <= 900) verifica(c.cols === 3, `${dove}: attese 3 colonne, trovate ${c.cols}`);
+    else if (m.w <= 900) {
+        // In verticale il tablet deve stare su 3 colonne; in orizzontale la larghezza
+        // in più può ospitarne 4, come accade a 844x390 con carte da 165px.
+        if (m.h > m.w) verifica(c.cols === 3, `${dove}: attese 3 colonne in verticale, trovate ${c.cols}`);
+        else verifica(c.cols >= 3 && c.cols <= 4, `${dove}: attese 3 o 4 colonne in orizzontale, trovate ${c.cols}`);
+    }
     else if (m.w === 1024) verifica(c.cols === 4, `${dove}: attese 4 colonne, trovate ${c.cols}`);
     else verifica(c.cols >= 4, `${dove}: attese almeno 4 colonne, trovate ${c.cols}`);
 
@@ -140,10 +152,13 @@ for (const m of misure) {
     if (m.w <= 1024) {
         // Tendina trascinabile: a riposo l'arte deve restare centrata nel palco.
         verifica(s.enabled, `${dove}: tendina disattivata a ${m.w}px`);
-        verifica(s.min.art && s.min.copy, `${dove}: arte o tendina non misurate`);
-        if (s.min.art && s.min.copy) {
-            verifica(Math.abs(s.min.gapAbove - s.min.gapBelow) <= 2, `${dove}: arte non centrata (${s.min.gapAbove}px sopra, ${s.min.gapBelow}px sotto)`);
-            verifica(s.min.gapAbove >= 40, `${dove}: arte incollata in alto (${s.min.gapAbove}px di margine)`);
+        verifica(s.min.art && s.min.copy, `${dove}: arte o tendina non misurate`);            if (s.min.art && s.min.copy) {
+                if (m.spazioStretto) {
+                    verifica(Math.abs(s.min.gapAbove - 8) <= 2, `${dove}: con altezza scarsa l'arte deve restare in alto a 8px, non a ${s.min.gapAbove}px`);
+                } else {
+                    verifica(Math.abs(s.min.gapAbove - s.min.gapBelow) <= 2, `${dove}: arte non centrata (${s.min.gapAbove}px sopra, ${s.min.gapBelow}px sotto)`);
+                    verifica(s.min.gapAbove >= 40, `${dove}: arte incollata in alto (${s.min.gapAbove}px di margine)`);
+                }
             verifica(Math.abs(parseFloat(s.min.varMin) - s.min.copy.h) <= 2, `${dove}: --mv-sheet-min ${s.min.varMin} contro tendina ${s.min.copy.h}px`);
             verifica(s.min.close && s.min.close.y >= 0 && s.min.close.y <= 20, `${dove}: comando chiudi a ${s.min.close?.y}px`);
             verifica(s.min.close.y + s.min.close.h <= s.min.copy.y + 2, `${dove}: il chiudi finisce sotto la tendina`);
@@ -167,6 +182,8 @@ for (const m of misure) {
             const tappa = 2;
             const t = g.passi.trascinamento;
             verifica(Math.abs(g.riposo - s.min.copy.h) <= tappa, `${dove}: tendina a riposo ${g.riposo}px invece di ${s.min.copy.h}px`);
+            const attesoRiposo = Math.round(Math.min(320, Math.max(196, m.h * 0.36)));
+            verifica(Math.abs(g.riposo - attesoRiposo) <= tappa, `${dove}: tendina a riposo ${g.riposo}px invece di ${attesoRiposo}px (36% dell'altezza, fra 196 e 320)`);
             verifica(Math.abs(t.h - t.atteso) <= tappa, `${dove}: il trascinamento non segue il dito (${t.h}px invece di ${t.atteso}px)`);
             verifica(t.dragging, `${dove}: classe is-sheet-dragging assente durante il trascinamento`);
             verifica(t.transizione === '0s', `${dove}: transizione ${t.transizione} durante il trascinamento`);

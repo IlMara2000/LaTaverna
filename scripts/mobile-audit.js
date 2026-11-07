@@ -316,25 +316,29 @@
             const passi = {};
             const riposo = altezza();
             const arteRiposo = rettangolo(arte)?.y ?? null;
+            // Corse proporzionali all'escursione: su un telefono orizzontale la tendina
+            // ha solo 138px fra riposo e apertura, quindi 120px la aprirebbero del tutto.
+            const corsa = Math.max(40, tondo((max.copy.h - riposo) * 0.25));
+            const corsaLunga = Math.max(60, tondo((max.copy.h - riposo) * 0.6));
 
             // Il trascinamento segue il dito 1:1 e spegne la transizione.
             punta('pointerdown', 640);
-            punta('pointermove', 520);
+            punta('pointermove', 640 - corsa);
             passi.trascinamento = {
                 h: altezza(),
-                atteso: riposo + 120,
+                atteso: riposo + corsa,
                 dragging: modale.classList.contains('is-sheet-dragging'),
                 transizione: getComputedStyle(copia).transitionDuration,
                 arteY: rettangolo(arte)?.y ?? null
             };
-            punta('pointerup', 520);
+            punta('pointerup', 640 - corsa);
             await dormi(350);
             passi.rilascioSottoMeta = altezza();
 
             // Trascinamento lungo, rilasciato sopra metà altezza: si apre del tutto.
             punta('pointerdown', 700);
-            punta('pointermove', 240);
-            punta('pointerup', 240);
+            punta('pointermove', 700 - corsaLunga);
+            punta('pointerup', 700 - corsaLunga);
             await dormi(350);
             passi.rilascioSopraMeta = altezza();
 
@@ -353,8 +357,8 @@
 
             // Dall'alto, trascinata verso il basso sotto metà: si richiude.
             punta('pointerdown', 300);
-            punta('pointermove', 700);
-            punta('pointerup', 700);
+            punta('pointermove', 300 + corsaLunga);
+            punta('pointerup', 300 + corsaLunga);
             await dormi(350);
             passi.trascinaGiu = altezza();
 
