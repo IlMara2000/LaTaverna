@@ -4,7 +4,7 @@
 // tunnel caduto non genera una notifica ogni due minuti.
 //
 //   npm run watch:gateway                 # un controllo, exit 1 se qualcosa è giù
-//   npm run watch:gateway -- --loop 120   # controlla ogni 120 s
+//   npm run watch:gateway -- --loop 300   # controlla ogni 300 s
 //   npm run watch:gateway -- --quiet      # log senza notifiche di sistema
 //
 // Variabili: FREELLMAPI_LOCAL_URL, FREELLMAPI_BASE_URL, TAVERNA_HEALTH_URL,
@@ -138,7 +138,7 @@ const main = async () => {
         process.exitCode = ok ? 0 : 1;
         return;
     }
-    const intervalMs = Math.max(30,Number(args[loopIndex + 1]) || 120) * 1000;
+    const intervalMs = Math.max(30,Number(args[loopIndex + 1]) || 300) * 1000;
     for (;;) {
         const {ok} = await runOnce({quiet});
         process.exitCode = ok ? 0 : 1;

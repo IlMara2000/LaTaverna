@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test:cards": "node --test scripts/tests/*.test.mjs",
     "test:scippo": "node --test scripts/tests/scippo.test.mjs",
-    "tunnel": "ngrok http 31415 --log stdout",
+    "tunnel": "ngrok http 127.0.0.1:31415 --traffic-policy-file scripts/ngrok-policy.json --inspect=false --log stdout",
     "watch:gateway": "node --env-file-if-exists=.env.local scripts/gateway-watch.mjs",
     "lint": "echo \"Sguardo dell'Oste: Tutto in ordine!\""
   },

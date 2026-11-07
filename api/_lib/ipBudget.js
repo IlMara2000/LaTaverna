@@ -2,9 +2,8 @@
 // pseudonimizzato con HMAC usando la chiave service role come segreto: senza
 // quel segreto l'hash di un IPv4 sarebbe reversibile per tentativi.
 //
-// Se la chiave service role non è configurata (sviluppo locale, Preview) il
-// limite resta spento e lo segnala una volta nei log: meglio un avviso che
-// bloccare l'Oracolo per una variabile mancante. La quota per utente resta.
+// Su Vercel e in produzione il controllo deve riuscire prima dell'inferenza.
+// Solo lo sviluppo locale senza configurazione può saltare questo limite.
 
 import {createHmac} from 'node:crypto';
 
@@ -17,6 +16,10 @@ const warnOnce = () => {
 };
 
 const firstValue = value => String(value || '').split(',')[0].trim();
+const budgetUnavailable = () => Object.assign(new Error('Verifica dei limiti AI temporaneamente non disponibile. Riprova più tardi.'), {
+    statusCode: 503,
+    code: 'ip_budget_unavailable'
+});
 
 // Vercel popola x-real-ip e x-forwarded-for all'edge; il client non può
 // sovrascriverli. In assenza di entrambi non inventiamo un IP.
@@ -39,12 +42,17 @@ export const ipHash = (ip, secret) => createHmac('sha256',secret).update(ip).dig
 export async function assertAiIpBudget(request) {
     const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const deployed = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
     if (!url || !key) {
+        if (deployed) throw budgetUnavailable();
         warnOnce();
         return null;
     }
     const ip = clientIp(request);
-    if (!ip) return null;
+    if (!ip) {
+        if (deployed) throw budgetUnavailable();
+        return null;
+    }
 
     let response;
     try {
@@ -55,12 +63,12 @@ export async function assertAiIpBudget(request) {
             signal: AbortSignal.timeout(8000)
         });
     } catch (error) {
-        console.warn('[oracolo] limite per rete non verificato:',error?.message || error);
-        return null;
+        console.warn('[oracolo] controllo quota di rete non raggiungibile.');
+        throw budgetUnavailable();
     }
 
     const data = await response.json().catch(() => null);
-    if (response.ok) return {remaining: typeof data === 'number' ? data : null};
+    if (response.ok && Number.isInteger(data) && data >= 0) return {remaining: data};
 
     // PostgREST segnala con 400 l'eccezione sollevata dalla funzione.
     if (response.status === 400 && /rete/i.test(String(data?.message || ''))) {
@@ -70,6 +78,6 @@ export async function assertAiIpBudget(request) {
             retryAfterMs: 3600000
         });
     }
-    console.warn('[oracolo] limite per rete non applicato:',response.status,data?.message || '');
-    return null;
+    console.warn('[oracolo] risposta quota di rete non valida:',response.status);
+    throw budgetUnavailable();
 }

@@ -1,0 +1,50 @@
+{
+  "on_http_request": [
+    {
+      "expressions": [
+        "!((req.method == 'GET' && req.url.path == '/v1/models') || (req.method == 'POST' && req.url.path == '/v1/chat/completions'))"
+      ],
+      "actions": [
+        {
+          "type": "deny",
+          "config": {
+            "status_code": 403
+          }
+        }
+      ]
+    },
+    {
+      "actions": [
+        {
+          "type": "rate-limit",
+          "config": {
+            "name": "LaTaverna per source IP",
+            "algorithm": "sliding_window",
+            "capacity": 60,
+            "rate": "60s",
+            "bucket_key": [
+              "conn.client_ip"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "expressions": [
+        "!('authorization' in req.headers)"
+      ],
+      "actions": [
+        {
+          "type": "custom-response",
+          "config": {
+            "status_code": 401,
+            "body": "Authentication required",
+            "headers": {
+              "content-type": "text/plain"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -19,7 +19,7 @@ Due scelte rendono il limite non aggirabile:
 - la funzione `public.take_ai_ip_quota` è eseguibile **solo da `service_role`**. Se fosse aperta ad `authenticated`, il client potrebbe chiamare la RPC direttamente con un IP inventato e azzerare il limite; il browser non ha mai la chiave service role, quindi non può;
 - l'indirizzo non viene salvato: si conserva solo un HMAC-SHA256 con la chiave service role come segreto, così l'hash non è reversibile per tentativi su un IPv4. L'IP si legge da `x-real-ip` (fallback `x-forwarded-for`), header che Vercel scrive all'edge.
 
-Retention: 90 giorni, come le quote Oracolo. Se `SUPABASE_SERVICE_ROLE_KEY` manca (sviluppo locale, ambienti non configurati) il limite resta spento con un avviso nei log e le quote per utente continuano a valere: fail-open deliberato, per non bloccare l'Oracolo per una variabile assente.
+Retention: 90 giorni, come le quote Oracolo. Su Vercel e in produzione, configurazione o IP mancanti, timeout, errori del database e risposte non valide bloccano la richiesta con `503` prima dell’inferenza. La quota esaurita restituisce `429`. Solo lo sviluppo locale senza configurazione può saltare il limite; con configurazione presente, gli errori del servizio quote bloccano comunque la richiesta.
 
 ## Content Security Policy e terze parti
 
@@ -38,3 +38,9 @@ Tutti gli endpoint che parlano con il gateway (`/api/oracle/chat`, `/api/rpg/ai-
 Run `scripts/tests/sql/security-access.sql` through an administrative SQL connection after migration. It creates temporary fixture users and rooms inside a transaction and rolls everything back; it verifies owner isolation, successful invitation access, denial of wrong invitations and anonymous callers, and immutable ownership. The Node test suite also covers malformed API bodies and fail-closed multiplayer access.
 
 Scope: source and deployed access-control review, credential-pattern search and project tests/build. This is not a guarantee that every dependency or all application paths are free of vulnerabilities.
+
+## Tunnel FreeLLMAPI
+
+`scripts/ngrok-policy.json` ammette soltanto `GET /v1/models` e `POST /v1/chat/completions`. Dashboard, autenticazione amministrativa e tutte le altre rotte ricevono `403` all’edge ngrok. Un limite di 60 richieste/minuto per IP precede l’inoltro; le richieste senza Authorization ricevono `401` all’edge senza consumare il contatore locale del gateway. FreeLLMAPI verifica la validità della chiave. Il limite locale di 120 richieste/minuto resta un tetto condiviso aggiuntivo. Il limite edge non garantisce protezione da attacchi distribuiti.
+
+Il LaunchAgent usa la copia in `~/Library/Application Support/LaTaverna/ngrok-policy.json`, con `--inspect=false` per non acquisire corpi e header delle richieste nel Traffic Inspector. Il gateway e la console ngrok ascoltano solo su loopback.

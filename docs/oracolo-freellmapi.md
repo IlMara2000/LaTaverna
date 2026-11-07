@@ -58,7 +58,7 @@ del Mac:
 
 ```bash
 # App FreeLLMAPI aperta e in ascolto su 127.0.0.1:31415
-npm run tunnel          # ngrok http 31415 --log stdout
+npm run tunnel          # applica scripts/ngrok-policy.json, ispezione disattivata
 ```
 
 Poi su Vercel (ambiente Preview e/o Production):
@@ -99,7 +99,7 @@ FreeLLMAPI, oppure un provider API dedicato; il tunnel è adatto a uso personale
 Tre LaunchAgent in `~/Library/LaunchAgents` tengono in piedi la catena quando il Mac si accende:
 
 - `xyz.lataverna.freellmapi` — lancia `/usr/bin/open -gja /Applications/FreeLLMAPI.app` al login e
-  riprova ogni 5 minuti: se l’app è già aperta `open` non fa nulla, se è stata chiusa la riapre.
+  controlla ogni 5 minuti con `pgrep`: richiama `open` soltanto se il processo non esiste. Richiamare `open` su un’app già attiva riportava davanti la dashboard.
 - `xyz.lataverna.ngrok` — avvia `ngrok http 31415 --url https://hearted-galina-artesian.ngrok-free.dev`
   con `KeepAlive`, quindi se il tunnel cade `launchd` lo riavvia da solo; log in
   `/tmp/lataverna-ngrok.log`.
@@ -122,7 +122,7 @@ tunnel caduto o app chiusa non producono una notifica a ogni giro:
 
 ```bash
 npm run watch:gateway                 # un controllo; exit 1 se qualcosa è giù
-npm run watch:gateway -- --loop 120   # controlla ogni 120 s (Ctrl+C per fermare)
+npm run watch:gateway -- --loop 300   # controlla ogni 300 s (Ctrl+C per fermare)
 npm run watch:gateway -- --quiet      # solo log, senza notifiche di sistema
 ```
 
@@ -139,7 +139,7 @@ quindi un controllo lanciato da cron ricorda cosa era già stato segnalato.
 È installato come LaunchAgent (`~/Library/LaunchAgents/xyz.lataverna.gateway-watch.plist`): parte a
 ogni login e tiene in vita `~/Library/Application Support/LaTaverna/run-gateway-watch.sh`, che copia
 `scripts/gateway-watch.mjs` dal progetto (se il volume è montato, con attesa massima di 10 s) e lo
-esegue con `--loop 120` dalla copia locale: così la sorveglianza parte anche quando il disco esterno
+esegue con `--loop 300` dalla copia locale: così la sorveglianza parte anche quando il disco esterno
 del progetto non è montato. `KeepAlive` rilancia il processo se muore. Log in
 `/tmp/lataverna-gateway-watch.log`, stato in `/tmp/lataverna-gateway-watch-state.json`.
 
@@ -183,3 +183,7 @@ curl -s https://<dominio>/api/rpg/ai-health
 - `429` → quota FreeLLMAPI/provider esaurita: il gateway fa failover, ma se tutti i modelli sono in
   rate limit la richiesta fallisce;
 - `401`/`403` dal gateway → chiave unificata ruotata nella dashboard: aggiorna `FREELLMAPI_API_KEY`.
+
+### Restrizione del tunnel
+
+Dal 6 novembre 2026 la policy `scripts/ngrok-policy.json` permette soltanto i due endpoint necessari all’app e alla sonda: `POST /v1/chat/completions` e `GET /v1/models`. La dashboard resta disponibile localmente, ma non attraverso ngrok. La policy applica 60 richieste/minuto per IP all’edge e rifiuta le chiamate senza Authorization prima del gateway. La copia usata al login è `~/Library/Application Support/LaTaverna/ngrok-policy.json`; per aggiornamenti sincronizzarla e riavviare `xyz.lataverna.ngrok`. L’ispezione ngrok è disattivata.
