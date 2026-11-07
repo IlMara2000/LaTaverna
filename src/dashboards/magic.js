@@ -161,7 +161,7 @@ export function showMagicDashboard(container, options = {}) {
         const value = Math.round(Math.min(max, Math.max(min, height)));
         copy.style.height = `${value}px`;
     };
-    const sheetEnabled = () => window.matchMedia('(max-width:650px)').matches;
+    const sheetEnabled = () => window.matchMedia('(max-width:1024px)').matches;
     const onSheetResize = () => {
         const modal = container.querySelector('.mv-modal');
         if (!modal) return;
@@ -180,8 +180,8 @@ export function showMagicDashboard(container, options = {}) {
         grab.addEventListener('pointerdown', event => {
             if (event.button !== 0) return;
             drag = { y: event.clientY, height: current(), moved: false };
-            grab.setPointerCapture(event.pointerId);
             modal.classList.add('is-sheet-dragging');
+            try { grab.setPointerCapture(event.pointerId); } catch { /* pointer already gone */ }
         });
         grab.addEventListener('pointermove', event => {
             if (!drag) return;
@@ -329,11 +329,16 @@ export function showMagicDashboard(container, options = {}) {
         });
         const art = container.querySelector('.mv-modal-art');
         let swipe;
-        art?.addEventListener('pointerdown', event => { swipe = [event.clientX,event.clientY]; art.setPointerCapture(event.pointerId); });
+        art?.addEventListener('pointerdown', event => {
+            if (event.button !== 0) return;
+            swipe = [event.clientX, event.clientY];
+            try { art.setPointerCapture(event.pointerId); } catch { /* pointer already gone */ }
+        });
         art?.addEventListener('pointerup', event => {
             if (!swipe) return;
             const dx = event.clientX-swipe[0], dy = event.clientY-swipe[1]; swipe = null;
-            if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5) browseCard(dx < 0 ? 1 : -1);
+            if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)*1.5) { browseCard(dx < 0 ? 1 : -1); return; }
+            if (Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx)*1.5) browseCard(dy < 0 ? 1 : -1);
         });
         art?.addEventListener('pointercancel', () => { swipe = null; });
         art?.addEventListener('dragstart', event => event.preventDefault());
