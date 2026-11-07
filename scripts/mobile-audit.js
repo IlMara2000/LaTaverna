@@ -161,4 +161,220 @@
         }
         return report;
     };
+
+    /* ------------------------------------------------------------------------
+       SCHEDA CARTA — misure della dashboard Magic nella viewport corrente:
+       griglia della collezione, pannello mazzi e tendina dei dettagli a riposo
+       e aperta. Il driver scripts/test-magic-layout.mjs cambia larghezza,
+       richiama questa funzione e confronta i numeri con le soglie.
+       --------------------------------------------------------------------- */
+    const MAGIC_KEYS = ['taverna_magic_collection_v1', 'taverna_magic_decks_v1', 'taverna_magic_wantlist_v1'];
+    const MAGIC_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+    const preparaMagic = () => {
+        // La sincronizzazione cloud sostituirebbe i dati di prova: resta offline.
+        try {
+            Object.defineProperty(navigator, 'onLine', { get: () => false, configurable: true });
+        } catch { /* già offline */ }
+        const nomi = ['Alfa', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot'];
+        const carte = nomi.map((nome, indice) => ({
+            id: `prova-${indice}`, name: nome, image: MAGIC_PIXEL, manaCost: '{1}',
+            typeLine: 'Instant', oracleText: 'Testo di prova per misurare la tendina dei dettagli. '.repeat(6),
+            printedText: '', quantity: 1, language: 'en'
+        }));
+        localStorage.setItem(MAGIC_KEYS[0], JSON.stringify(carte));
+        localStorage.setItem(MAGIC_KEYS[1], JSON.stringify([
+            { id: 'mazzo-prova', name: 'Mazzo di prova', cards: carte.slice(0, 4).map(carta => ({ cardId: carta.id, quantity: 1 })) },
+            { id: 'mazzo-prova-2', name: 'Secondo mazzo', cards: carte.slice(2, 5).map(carta => ({ cardId: carta.id, quantity: 1 })) }
+        ]));
+        localStorage.setItem(MAGIC_KEYS[2], '[]');
+        return carte.length;
+    };
+
+    window.__magicLayout = async (opzioni = {}) => {
+        const attesa = opzioni.attesa ?? 700;
+        const dormi = ms => new Promise(resolve => setTimeout(resolve, ms));
+        const tondo = n => Math.round(n);
+        const rettangolo = el => {
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return { x: tondo(r.x), y: tondo(r.y), w: tondo(r.width), h: tondo(r.height) };
+        };
+        const colonne = el => {
+            if (!el) return 0;
+            const valore = getComputedStyle(el).gridTemplateColumns;
+            return valore && valore !== 'none' ? valore.split(/\s+/).filter(voce => parseFloat(voce) > 0).length : 0;
+        };
+        const corpo = el => (el ? { clientH: el.clientHeight, scrollH: el.scrollHeight } : null);
+
+        preparaMagic();
+        const radice = document.getElementById('app') || document.getElementById('ui') || document.body;
+        radice.innerHTML = '';
+        // Niente rete: apertura carta immediata e nessuna sincronizzazione a metà misura.
+        const fetchOriginale = window.fetch;
+        window.fetch = (risorsa, opzioniFetch) => {
+            const url = typeof risorsa === 'string' ? risorsa : risorsa?.url || '';
+            return /scryfall\.com|\/api\/magic\/translate/.test(url)
+                ? Promise.reject(new Error('rete disattivata per il test'))
+                : fetchOriginale(risorsa, opzioniFetch);
+        };
+
+        const attendi = async (prova, ms = 3000) => {
+            const fine = Date.now() + ms;
+            while (Date.now() < fine) {
+                if (prova()) return true;
+                await dormi(100);
+            }
+            return !!prova();
+        };
+
+        const modulo = await import('/src/dashboards/magic.js');
+        // Il boot della pagina può ripulire #app subito dopo il montaggio (primo caricamento
+        // a freddo del dev server): rimonto finché la griglia resta al suo posto.
+        let montata = false;
+        for (let tentativo = 0; tentativo < 4 && !montata; tentativo++) {
+            radice.innerHTML = '';
+            modulo.showMagicDashboard(radice);
+            montata = await attendi(() => radice.querySelector('[data-open-card]'), 1500);
+            if (montata) {
+                await dormi(600);
+                montata = !!radice.querySelector('[data-open-card]');
+            }
+        }
+        if (!montata) throw new Error('la dashboard Magic non resta montata nella pagina');
+        await dormi(attesa);
+
+        const tabCollezione = radice.querySelector('[data-tab="collezione"]');
+        if (tabCollezione) { tabCollezione.click(); await dormi(250); }
+        const griglia = radice.querySelector('.mv-panel .mv-grid') || radice.querySelector('.mv-grid');
+        const collection = {
+            cols: colonne(griglia),
+            cardW: tondo(griglia?.firstElementChild?.getBoundingClientRect().width || 0),
+            gridW: tondo(griglia?.getBoundingClientRect().width || 0),
+            cards: griglia ? griglia.children.length : 0
+        };
+
+        const tabMazzi = radice.querySelector('[data-tab="mazzi"]');
+        if (tabMazzi) { tabMazzi.click(); await dormi(300); }
+        const layout = radice.querySelector('.mv-deck-layout');
+        const lista = radice.querySelector('.mv-deck-list');
+        const grigliaMazzo = radice.querySelector('.mv-deck-content .mv-grid');
+        const stileLista = lista ? getComputedStyle(lista) : null;
+        const deck = {
+            layoutCols: colonne(layout),
+            listDisplay: stileLista?.display || null,
+            listOverflowX: stileLista?.overflowX || null,
+            gridCols: colonne(grigliaMazzo),
+            cards: grigliaMazzo ? grigliaMazzo.children.length : 0,
+            decks: radice.querySelectorAll('[data-select-deck]').length
+        };
+
+        if (tabCollezione) { tabCollezione.click(); await dormi(250); }
+        radice.querySelector('[data-open-card]')?.click();
+        await dormi(400);
+
+        const modale = radice.querySelector('.mv-modal');
+        const arte = radice.querySelector('.mv-modal-art');
+        const copia = radice.querySelector('.mv-modal-copy');
+        const chiudi = radice.querySelector('.mv-modal-close');
+        const maniglia = radice.querySelector('.mv-sheet-grab');
+        if (!modale || !copia) throw new Error('la scheda carta non si è aperta');
+
+        const arteRect = rettangolo(arte), copiaRect = rettangolo(copia), modaleRect = rettangolo(modale);
+        const min = {
+            modal: modaleRect, art: arteRect, copy: copiaRect, close: rettangolo(chiudi),
+            gapAbove: arteRect && modaleRect ? arteRect.y - modaleRect.y : null,
+            gapBelow: arteRect && copiaRect ? copiaRect.y - (arteRect.y + arteRect.h) : null,
+            varMin: getComputedStyle(modale).getPropertyValue('--mv-sheet-min').trim(),
+            inlineHeight: copia.style.height || '',
+            body: corpo(radice.querySelector('.mv-sheet-body'))
+        };
+
+        // La maniglia è focusabile: ArrowUp apre la tendina anche senza gesti touch.
+        maniglia?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+        await dormi(450);
+        const max = {
+            copy: rettangolo(copia), art: rettangolo(arte), close: rettangolo(chiudi), grab: rettangolo(maniglia),
+            body: corpo(radice.querySelector('.mv-sheet-body'))
+        };
+        maniglia?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+        await dormi(250);
+
+        // Gesti della tendina: pointer sintetici, come un dito che trascina la maniglia.
+        let gestures = null;
+        if (min.varMin && maniglia) {
+            const altezza = () => tondo(copia.getBoundingClientRect().height);
+            const punta = (tipo, y) => {
+                const r = maniglia.getBoundingClientRect();
+                maniglia.dispatchEvent(new PointerEvent(tipo, {
+                    bubbles: true, cancelable: true, composed: true, pointerId: 1, pointerType: 'touch',
+                    isPrimary: true, button: 0, buttons: tipo === 'pointerup' ? 0 : 1,
+                    clientX: tondo(r.left + r.width / 2), clientY: y
+                }));
+            };
+            const passi = {};
+            const riposo = altezza();
+            const arteRiposo = rettangolo(arte)?.y ?? null;
+
+            // Il trascinamento segue il dito 1:1 e spegne la transizione.
+            punta('pointerdown', 640);
+            punta('pointermove', 520);
+            passi.trascinamento = {
+                h: altezza(),
+                atteso: riposo + 120,
+                dragging: modale.classList.contains('is-sheet-dragging'),
+                transizione: getComputedStyle(copia).transitionDuration,
+                arteY: rettangolo(arte)?.y ?? null
+            };
+            punta('pointerup', 520);
+            await dormi(350);
+            passi.rilascioSottoMeta = altezza();
+
+            // Trascinamento lungo, rilasciato sopra metà altezza: si apre del tutto.
+            punta('pointerdown', 700);
+            punta('pointermove', 240);
+            punta('pointerup', 240);
+            await dormi(350);
+            passi.rilascioSopraMeta = altezza();
+
+            // Tocco singolo senza spostamento: richiude.
+            punta('pointerdown', 700);
+            punta('pointerup', 700);
+            await dormi(350);
+            passi.tocco = altezza();
+
+            // Sotto la soglia di 5px lo spostamento vale come tocco: da riposo apre.
+            punta('pointerdown', 700);
+            punta('pointermove', 696);
+            punta('pointerup', 696);
+            await dormi(350);
+            passi.microTrascinamento = altezza();
+
+            // Dall'alto, trascinata verso il basso sotto metà: si richiude.
+            punta('pointerdown', 300);
+            punta('pointermove', 700);
+            punta('pointerup', 700);
+            await dormi(350);
+            passi.trascinaGiu = altezza();
+
+            gestures = { riposo, arteRiposo, passi };
+        }
+
+        chiudi?.click();
+        await dormi(150);
+
+        const documento = document.documentElement;
+        const overflowX = Math.max(
+            documento.scrollWidth - documento.clientWidth,
+            document.body.scrollWidth - document.body.clientWidth
+        );
+
+        return {
+            viewport: { w: window.innerWidth, h: window.innerHeight },
+            overflowX: tondo(overflowX),
+            collection,
+            deck,
+            sheet: { enabled: !!min.varMin, min, max, gestures }
+        };
+    };
 })();
