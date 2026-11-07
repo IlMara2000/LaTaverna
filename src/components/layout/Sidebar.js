@@ -49,6 +49,8 @@ function renderSidebarContent(container, context) {
             </div>
 
             <div class="sidebar-actions" style="display: flex; flex-direction: column; gap: 12px;">
+                ${showLogoutItem ? `<button class="btn-glass sidebar-nav-item sidebar-logout" id="nav-logout" type="button" style="margin-bottom: 12px;">${logoutLabel}</button>` : ''}
+
                 <a class="btn-glass sidebar-nav-item" id="nav-home" data-context="home" href="/" style="font-size: 0.8rem; padding: 12px;">
                     TAVERNA
                 </a>
@@ -76,8 +78,6 @@ function renderSidebarContent(container, context) {
                 <button class="btn-glass sidebar-nav-item" id="nav-settings" data-context="settings" style="font-size: 0.8rem; padding: 12px;">
                     IMPOSTAZIONI
                 </button>
-
-                ${showLogoutItem ? `<button class="btn-glass sidebar-nav-item sidebar-logout" id="nav-logout" type="button">${logoutLabel}</button>` : ''}
 
                 <button class="btn-glass" id="sideMusicCenterBtn" style="font-size: 0.8rem; padding: 12px;">
                     LIBRERIA MUSICALE
