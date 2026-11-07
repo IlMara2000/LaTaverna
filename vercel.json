@@ -2,6 +2,17 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
     {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.lataverna.xyz"
+        }
+      ],
+      "destination": "https://lataverna.xyz/:path*",
+      "permanent": true
+    },
+    {
       "source": "/carte/scippo",
       "destination": "/scippo",
       "permanent": false
