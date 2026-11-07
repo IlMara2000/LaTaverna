@@ -31,3 +31,82 @@
 #ui .community-page .playing-card {background:#f6eddf;color:#271e30;min-width:58px;min-height:82px;padding:8px}
 #ui .community-page .playing-card[aria-pressed=true] {outline:3px solid #ba85e1;transform:translateY(-5px)}
 @media(max-width:600px){#ui .community-panel{padding:18px}#ui .community-toolbar>button{flex:1}#ui .community-page h1{font-size:40px}}
+
+/* --- L'Oracolo: schermata da assistente con i colori e i caratteri della Taverna.
+   Stessa struttura essenziale, ma prugna e carta crema al posto del nero puro,
+   Bangers nei titoli e Manrope nel testo: il robottino resta nell'angolo. --- */
+#ui #app .entry-page.oracle-console {
+    --oc-surface:#241a30; --oc-surface-2:#2c2039; --oc-line:#e8d5ff33;
+    --oc-text:#f7eefc; --oc-muted:#cbb7d9; --oc-paper:#f6eddf; --oc-ink:#271e30;
+    display:flex; flex-direction:column; gap:10px; box-sizing:border-box;
+    width:100%; max-width:720px; min-width:0; margin-inline:auto;
+    min-height:min(760px,calc(100dvh - 150px)); padding:0 0 4px;
+    color:var(--oc-text); text-align:left;
+    font-family:Manrope,system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+
+/* Barra in alto: indietro, titolo, robottino. */
+#ui #app .entry-page.oracle-console .oracle-bar {display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:12px;margin:0 0 6px;padding:0;border:0}
+#ui #app .entry-page.oracle-console .oracle-bar-title {justify-self:center;margin:0;padding:7px 20px;border:1px solid #e8d5ff40;border-radius:999px;background:var(--oc-surface-2);color:#fff0d8;font-family:Bangers,Manrope,sans-serif!important;font-size:21px!important;line-height:1.15;font-weight:400;letter-spacing:.04em;text-align:center;box-shadow:inset 0 1px 0 #ffffff12}
+#ui #app .entry-page.oracle-console .oracle-icon-btn,
+#ui #app .entry-page.oracle-console .oracle-attach,
+#ui #app .entry-page.oracle-console .oracle-send {display:grid;place-items:center;width:44px;height:44px;min-height:44px;margin:0;padding:0;border:1px solid #af88c56b;border-radius:50%;background:var(--oc-surface);color:var(--oc-text);font:400 18px/1 Manrope,sans-serif;box-shadow:none}
+#ui #app .entry-page.oracle-console .oracle-icon-btn {justify-self:start;font-size:17px}
+#ui #app .entry-page.oracle-console .oracle-icon-btn:hover:not(:disabled) {background:#33244a;border-color:#dfc1ed}
+#ui #app .entry-page.oracle-console .oracle-send {justify-self:end;border-color:#ffffffb3;background:var(--oc-paper);color:var(--oc-ink);font-size:19px;font-weight:700;box-shadow:inset 0 2px 1px #fff,0 3px 0 #a795b5}
+#ui #app .entry-page.oracle-console .oracle-send:hover:not(:disabled) {background:#fffdfa}
+#ui #app .entry-page.oracle-console .oracle-send:active:not(:disabled) {transform:translateY(2px);box-shadow:inset 0 2px 4px #4a265b22,0 1px 0 #a795b5}
+#ui #app .entry-page.oracle-console .oracle-send:disabled {opacity:.4}
+
+/* Il robottino, in un angolino. */
+#ui #app .entry-page.oracle-console .oracle-badge {position:relative;justify-self:end;width:44px;height:44px;border:1px solid #43e7ff2e;border-radius:50%;background:radial-gradient(120% 120% at 50% 20%,#33204a,#170f22 72%);box-shadow:0 0 14px #43e7ff1f}
+#ui #app .entry-page.oracle-console .oracle-badge {cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+#ui #app .entry-page.oracle-console .oracle-badge:focus-visible {outline:2px solid #7fe9ff;outline-offset:3px}
+/* Trascinato, il robottino esce dalla barra e vola sopra la pagina. */
+#ui #app .entry-page.oracle-console .oracle-badge.is-floating {position:fixed;z-index:10020;margin:0!important;box-shadow:0 10px 24px #09051d66,0 0 16px #43e7ff33}
+#ui #app .entry-page.oracle-console .oracle-badge.is-dragging {cursor:grabbing;border-color:#7fe9ff99;box-shadow:0 12px 28px #09051d80,0 0 22px #43e7ff66}
+#ui #app .entry-page.oracle-console .oracle-badge .oracle-puppet {position:absolute;left:50%;top:50%;width:84px;height:90px;margin:-45px 0 0 -42px;transform:scale(.46);transform-origin:center;animation:oracle-float 3600ms ease-in-out infinite}
+@keyframes oracle-float {0%,100% {transform:translateY(0) scale(.46)} 50% {transform:translateY(-4px) scale(.46)}}
+@media (prefers-reduced-motion: reduce) {#ui #app .entry-page.oracle-console .oracle-badge .oracle-puppet {animation:none}}
+
+/* La base dell'app centra ogni testo: qui la schermata resta allineata a sinistra. */
+#ui #app .entry-page.oracle-console :is(h1,p,span,label,div,article,textarea,input,button,small) {text-align:left!important}
+#ui #app .entry-page.oracle-console .oracle-bar-title {text-align:center!important}
+
+/* Conversazione. */
+#ui .oracle-console .oracle-chat {display:flex;flex:1 1 auto;flex-direction:column;gap:16px;min-height:180px;padding:6px 2px 12px;overflow-y:auto;text-align:left}
+#ui .oracle-console .oracle-lead {margin:8px 0 4px;color:var(--oc-muted);font-size:15px;line-height:1.6;text-align:left}
+#ui .oracle-console .oracle-suggests {display:grid;gap:2px;margin-top:6px}
+#ui #app .entry-page.oracle-console .oracle-suggests button {display:flex;align-items:center;justify-content:flex-start;gap:12px;width:100%;min-height:52px;margin:0;padding:10px;border:1px solid transparent;border-radius:14px;background:transparent;box-shadow:none;color:var(--oc-text);font:600 14.5px/1.4 Manrope,sans-serif;text-align:left;cursor:pointer}
+#ui #app .entry-page.oracle-console .oracle-suggests button:hover:not(:disabled) {background:#af88c51f;border-color:#e8d5ff26}
+#ui .oracle-console .oracle-suggest-glyph {display:grid;place-items:center;flex:0 0 auto;width:30px;height:30px;border:1px solid #e8d5ff26;border-radius:9px;background:var(--oc-surface-2);font-size:15px}
+#ui .oracle-console .oracle-msg {display:block;max-width:min(62ch,100%);min-width:0;font-size:16px;line-height:1.65;text-align:left}
+#ui .oracle-console .oracle-msg[data-role=user] {align-self:flex-end;padding:10px 14px;border:1px solid #ffffff40;border-radius:20px 20px 6px 20px;background:var(--oc-paper);color:var(--oc-ink);box-shadow:0 2px 0 #a795b544}
+#ui .oracle-console .oracle-msg[data-role=assistant] {align-self:flex-start;padding:2px 2px 2px 0;color:var(--oc-text)}
+#ui .oracle-console .oracle-msg-body {white-space:pre-wrap;overflow-wrap:anywhere}
+#ui .oracle-console .oracle-msg a {color:#e4c7fa;overflow-wrap:anywhere}
+
+/* Composer a pillola, ancorato in basso. */
+#ui .oracle-console .oracle-clear {align-self:flex-end;min-height:32px;margin:0 0 2px;padding:5px 14px;border:1px solid #af88c54d;border-radius:999px;background:transparent;box-shadow:none;color:var(--oc-muted);font:600 12.5px/1.3 Manrope,sans-serif;cursor:pointer}
+#ui .oracle-console .oracle-clear[hidden] {display:none}
+#ui .oracle-console .oracle-clear:hover:not(:disabled) {color:var(--oc-text);border-color:#dfc1ed}
+#ui .oracle-console .oracle-composer {position:sticky;bottom:0;display:grid;gap:8px;box-sizing:border-box;width:100%;padding:14px 14px 10px;border:1px solid #e8d5ff40;border-radius:24px;background:var(--oc-surface);box-shadow:inset 0 1px 0 #ffffff12,0 8px 24px #09051d33;text-align:left}
+#ui .oracle-console .oracle-field {display:grid;gap:0;margin:0}
+#ui .oracle-console .oracle-field-label {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#ui #app .entry-page.oracle-console .oracle-field textarea {width:100%;min-height:26px;max-height:150px;padding:2px 4px;border:0!important;border-radius:0;background:transparent!important;box-shadow:none!important;color:var(--oc-text);font:400 16px/1.5 Manrope,sans-serif;resize:none;text-align:left;box-shadow:none;outline:none}
+#ui #app .entry-page.oracle-console .oracle-field textarea::placeholder {color:#b9a4cb;text-align:left}
+#ui .oracle-console .oracle-composer-row {display:flex;align-items:center;justify-content:space-between;gap:10px}
+#ui #app .entry-page.oracle-console .oracle-attach {position:relative;justify-self:start;margin:0;color:#f2e7d7;background:var(--oc-surface-2);font-size:22px;line-height:1;cursor:pointer;overflow:hidden}
+#ui #app .entry-page.oracle-console .oracle-attach:hover {background:#38274c;border-color:#dfc1ed}
+#ui .oracle-console .oracle-attach input {position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+#ui .oracle-console .oracle-sr {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#ui .oracle-console .oracle-status {min-height:0;margin:0;color:#c4b0d2;font-size:12.5px;line-height:1.45;text-align:left}
+#ui .oracle-console .oracle-privacy-note {margin:6px 2px 0;padding:0 4px;color:#a794b8;font-size:11px;line-height:1.45;text-align:left}
+
+@media (max-width:600px) {
+    #ui #app .entry-page.oracle-console {min-height:calc(100dvh - 120px)}
+    /* Il pulsante del menu sta in alto a destra: il robottino gli si sposta accanto. */
+    #ui #app .entry-page.oracle-console .oracle-badge {margin-right:52px}
+    #ui .oracle-console .oracle-composer {border-radius:22px;padding:12px 12px 8px}
+    #ui .oracle-console .oracle-msg {max-width:100%}
+}

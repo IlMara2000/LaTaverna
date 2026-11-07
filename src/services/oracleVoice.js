@@ -157,5 +157,16 @@ export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onSta
             };
         } catch (error) { if (token === generation) fail(error.message); }
     }
-    return { start, stop, getState: () => state };
+    // Riascolta una risposta già pronunciata: mette in pausa l'ascolto, così il
+    // microfono non trascrive la voce dell'Oracolo, e riprende solo se era attivo.
+    async function repeat(text) {
+        const value = (text || '').trim();
+        if (!value) return;
+        if (state !== 'off') { await say(value, generation); return; }
+        onCaption(value, true);
+        try { await speak(value); }
+        catch { onCaption('Voce non disponibile. Puoi leggere la risposta nei sottotitoli.'); }
+        onSpeechEnd();
+    }
+    return { start, stop, repeat, getState: () => state };
 }

@@ -22,9 +22,10 @@ export function mountOracleCompanion(trigger) {
     trigger.append(puppet);
     const caption = document.createElement('div');
     caption.className = 'oracle-caption'; caption.hidden = true;
-    caption.innerHTML = '<span class="oracle-caption-state"></span><p role="status" aria-live="polite"></p><button type="button" aria-label="Spegni Oracolo e microfono">Spegni microfono</button>';
+    caption.innerHTML = '<span class="oracle-caption-state"></span><p role="status" aria-live="polite"></p><button type="button" aria-label="Spegni Oracolo e microfono">Spegni microfono</button><button type="button" data-replay aria-label="Riascolta l’ultima risposta" hidden>Riascolta</button>';
     document.body.append(caption);
-    let captionTimer, awaitingSpeech = false;
+    const replay = caption.querySelector('[data-replay]');
+    let captionTimer, awaitingSpeech = false, lastSpoken = '';
     // Il fumetto resta finché l'Oracolo parla e si chiude appena la voce finisce. La
     // lunghezza del testo è solo il tetto massimo, per non lasciarlo appeso se la voce
     // si blocca: 3 s / 5 s bastano ai messaggi brevi che non vengono letti ad alta voce.
@@ -46,6 +47,9 @@ export function mountOracleCompanion(trigger) {
         if (!value) { caption.hidden = true; line.textContent = ''; awaitingSpeech = false; return; }
         line.textContent = value;
         caption.hidden = false;
+        // Solo le righe davvero pronunciate si possono riascoltare.
+        if (spoken) lastSpoken = value;
+        replay.hidden = !lastSpoken;
         const words = value.split(/\s+/).filter(Boolean).length;
         awaitingSpeech = spoken;
         captionTimer = setTimeout(hideCaption, spoken ? speechCap(words) : captionLifetime(words));
@@ -87,6 +91,9 @@ export function mountOracleCompanion(trigger) {
     });
     activeVoice = voice;
     caption.querySelector('button').onclick = () => voice.stop();
+    // Riascolta l'ultima risposta: la voce sospende il microfono, parla e poi
+    // riprende l'ascolto, così l'Oracolo non trascrive sé stesso.
+    replay.onclick = () => { if (lastSpoken) void voice.repeat(lastSpoken); };
 
     let taps = 0, tapTimer = 0, tapOrigin = null;
     puppet.addEventListener('pointerdown', event => { tapOrigin = [event.clientX, event.clientY]; });

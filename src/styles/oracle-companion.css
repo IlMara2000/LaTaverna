@@ -103,6 +103,8 @@
 .oracle-caption p { margin: 4px 0; }
 .oracle-caption button { pointer-events: auto; border: 0; color: #c8b6ee; background: transparent; padding: 7px 0; font: inherit; font-size: 11px; cursor: pointer; }
 .oracle-caption button:focus-visible { outline: 2px solid #7fe9ff; outline-offset: 3px; }
+.oracle-caption [data-replay] { margin-left: 14px; }
+.oracle-caption [data-replay][hidden] { display: none; }
 .oracle-privacy { color: var(--text-secondary, #c5b5d1); font-size: 11px; line-height: 1.5; margin: 0 4px; }
 
 @keyframes oracle-talk { to { height: 7px; background: repeating-linear-gradient(90deg, #9dfbff 0 2px, transparent 2px 4px); } }
