@@ -81,7 +81,7 @@ export function showMagicDashboard(container, options = {}) {
     let exportLanguage = 'it', exportFormat = 'txt';
     let filter = '', notice = '', pending = [], busy = false, cloudUserId = null, disposed = false, modalCard = null;
     let cloudQueue = Promise.resolve(), searchResults = [];
-    let selecting = false, selected = new Set(), pressTimer = null, suppressClickUntil = 0, undoRemoval = null;
+    let selecting = false, selected = new Set(), pressTimer = null, suppressClickUntil = 0, undoRemoval = null, sheetExpanded = false;
     const clearPress = () => { clearTimeout(pressTimer); pressTimer = null; };
     const toggleSelection = cardId => { selected.has(cardId) ? selected.delete(cardId) : selected.add(cardId); render(); };
     const browseCard = direction => {
@@ -144,10 +144,70 @@ export function showMagicDashboard(container, options = {}) {
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button></div>
             ${decks.length ? `<div class="mv-deck-layout"><aside class="mv-deck-list">${decks.map(deck=>`<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id===activeDeck?.id}"><strong>${esc(deck.name)}</strong><small>${deck.cards.reduce((sum,item)=>sum+(Number(item.quantity)||1),0)} carte</small></button>`).join('')}</aside><div class="mv-deck-content"><div class="mv-deck-tools"><h3>${esc(activeDeck?.name||'')}</h3><button class="mv-text-button" id="mv-print-deck" type="button">Stampa proxy</button><button class="mv-text-button" id="mv-rename-deck" type="button">Rinomina</button><button class="mv-text-button" id="mv-delete-deck" type="button">Elimina</button></div><label class="mv-search"><span>⌕</span><input id="mv-deck-search" type="search" placeholder="Aggiungi una carta…"></label><div id="mv-search-results" class="mv-search-results">${searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div><div class="mv-deck-groups">${[['Creature','Creature'],['Instant','Istantanei'],['Sorcery','Stregonerie'],['Artifact','Artefatti'],['Enchantment','Incantesimi'],['Planeswalker','Planeswalker'],['Battle','Battaglie'],['Land','Terre'],['Other','Altre carte']].map(([type,title])=>{const group=deckCards.filter(c=>{const primary=['Land','Creature','Planeswalker','Battle','Artifact','Enchantment','Instant','Sorcery'].find(t=>c.typeLine?.includes(t))||'Other';return primary===type;});return group.length?`<section class="mv-deck-group"><h4>${title} <span>${group.reduce((sum,c)=>sum+c.quantity,0)}</span></h4><div class="mv-grid">${group.map(card=>`<div class="mv-deck-card">${cardTile(card,'deck')}<div class="mv-quantity-tools"><button data-deck-quantity="${esc(card.id)}" data-delta="-1" aria-label="Riduci copie di ${esc(card.name)}">−</button><span>${card.quantity}</span><button data-deck-quantity="${esc(card.id)}" data-delta="1" aria-label="Aumenta copie di ${esc(card.name)}">+</button></div></div>`).join('')}</div></section>`:'';}).join('')||'<p class="mv-empty">Questo mazzo è vuoto. Cerca una carta qui sopra.</p>'}</div></div></div>` : '<p class="mv-empty">Non hai ancora creato mazzi.</p>'}
           </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
-          ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><div class="mv-browse"><button type="button" data-browse="-1" aria-label="Carta precedente">←</button><span>Scorri per sfogliare</span><button type="button" data-browse="1" aria-label="Carta successiva">→</button></div><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></section></div>` : ''}
+          ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><div class="mv-sheet-grab" role="separator" aria-orientation="horizontal" aria-label="Trascina per mostrare tutti i dettagli della carta" tabindex="0"><span></span></div><div class="mv-sheet-body"><div class="mv-browse"><button type="button" data-browse="-1" aria-label="Carta precedente">←</button><span>Scorri per sfogliare</span><button type="button" data-browse="1" aria-label="Carta successiva">→</button></div><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></div></section></div>` : ''}
         </main>`;
         bind();
     };
+
+    const sheetLimits = modal => {
+        const available = modal.clientHeight || window.innerHeight;
+        const min = Math.round(Math.min(320, Math.max(196, available * 0.36)));
+        return { min, max: Math.max(min, available - 56) };
+    };
+    const applySheet = (modal, height) => {
+        const copy = modal?.querySelector('.mv-modal-copy');
+        if (!copy) return;
+        const { min, max } = sheetLimits(modal);
+        const value = Math.round(Math.min(max, Math.max(min, height)));
+        copy.style.height = `${value}px`;
+    };
+    const sheetEnabled = () => window.matchMedia('(max-width:650px)').matches;
+    const onSheetResize = () => {
+        const modal = container.querySelector('.mv-modal');
+        if (!modal) return;
+        const copy = modal.querySelector('.mv-modal-copy');
+        if (!sheetEnabled()) { if (copy) copy.style.removeProperty('height'); return; }
+        const { min, max } = sheetLimits(modal);
+        applySheet(modal, sheetExpanded ? max : min);
+    };
+    const bindSheet = modal => {
+        const copy = modal?.querySelector('.mv-modal-copy'), grab = modal?.querySelector('.mv-sheet-grab');
+        if (!modal || !copy || !grab || !sheetEnabled()) return;
+        const limits = () => sheetLimits(modal);
+        const current = () => copy.getBoundingClientRect().height;
+        applySheet(modal, sheetExpanded ? limits().max : limits().min);
+        let drag = null;
+        grab.addEventListener('pointerdown', event => {
+            if (event.button !== 0) return;
+            drag = { y: event.clientY, height: current(), moved: false };
+            grab.setPointerCapture(event.pointerId);
+            modal.classList.add('is-sheet-dragging');
+        });
+        grab.addEventListener('pointermove', event => {
+            if (!drag) return;
+            const delta = drag.y - event.clientY;
+            if (Math.abs(delta) > 5) drag.moved = true;
+            applySheet(modal, drag.height + delta);
+        });
+        const finish = cancelled => {
+            if (!drag) return;
+            const moved = drag.moved;
+            drag = null;
+            modal.classList.remove('is-sheet-dragging');
+            const { min, max } = limits();
+            if (!cancelled) sheetExpanded = moved ? current() >= (min + max) / 2 : !sheetExpanded;
+            applySheet(modal, sheetExpanded ? max : min);
+        };
+        grab.addEventListener('pointerup', () => finish(false));
+        grab.addEventListener('pointercancel', () => finish(true));
+        grab.addEventListener('keydown', event => {
+            if (!['ArrowUp', 'ArrowDown', 'Enter', ' '].includes(event.key)) return;
+            event.preventDefault(); event.stopPropagation();
+            sheetExpanded = event.key === 'ArrowUp' ? true : event.key === 'ArrowDown' ? false : !sheetExpanded;
+            applySheet(modal, sheetExpanded ? limits().max : limits().min);
+        });
+    };
+    window.addEventListener('resize', onSheetResize);
 
     const closeCard = () => { modalCard = null; render(); };
     const openCard = async card => {
@@ -254,6 +314,7 @@ export function showMagicDashboard(container, options = {}) {
             cards = undoRemoval.cards; decks = undoRemoval.decks; undoRemoval = null; persist(); render(); setNotice('Eliminazione annullata.');
         });
         container.querySelectorAll('[data-browse]').forEach(button => button.addEventListener('click', () => browseCard(Number(button.dataset.browse))));
+        bindSheet(container.querySelector('.mv-modal'));
         const dialog = container.querySelector('.mv-modal');
         dialog?.addEventListener('keydown', event => {
             if (event.key === 'Escape') { event.preventDefault(); closeCard(); }
@@ -307,7 +368,7 @@ export function showMagicDashboard(container, options = {}) {
         });
     }
 
-    window.__magicCleanup = () => { disposed = true; clearPress(); };
+    window.__magicCleanup = () => { disposed = true; clearPress(); window.removeEventListener('resize', onSheetResize); };
     render();
     if (navigator.onLine) void (async()=>{
         try {
