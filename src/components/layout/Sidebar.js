@@ -29,10 +29,17 @@ function renderSidebarContent(container, context) {
     const wasOpen = previousMenu?.classList.contains('active');
     const scrollTop = previousMenu?.scrollTop || 0;
     const focusedId = container.contains(document.activeElement) ? document.activeElement.id : null;
-    const isGuest = currentSidebarUser?.isGuest === true;
+    const isGuest = currentSidebarUser?.isGuest === true || currentSidebarUser?.is_anonymous === true || currentSidebarUser?.app_metadata?.provider === 'anonymous';
     const userName = escapeHTML(isGuest ? "OSPITE" : (currentSidebarUser?.user_metadata?.full_name || "Viandante"));
 
     let actionBtnText = context === "home" ? (isGuest ? 'ACCEDI' : 'ESCI DALLA TAVERNA') : "⬅ TORNA ALLA HOME";
+    // L'uscita deve restare a portata di mano ovunque: se il pulsante in fondo
+    // non la offre già (fuori dalla home, oppure in home come ospite), la mettiamo qui.
+    // Serve un'identità vera: sulle pagine pubbliche la nav crea un segnaposto
+    // { isGuest: true } anche senza sessione, e lì l'uscita non avrebbe senso.
+    const hasAccount = Boolean(currentSidebarUser && (currentSidebarUser.id || currentSidebarUser.email));
+    const showLogoutItem = hasAccount && !(context === 'home' && !isGuest);
+    const logoutLabel = isGuest ? 'ESCI DALLA SESSIONE OSPITE' : 'ESCI DALL’ACCOUNT';
 
     container.innerHTML = `
         <button class="sidebar-backdrop" type="button" aria-label="Chiudi menu" tabindex="-1" hidden></button>
@@ -69,6 +76,8 @@ function renderSidebarContent(container, context) {
                 <button class="btn-glass sidebar-nav-item" id="nav-settings" data-context="settings" style="font-size: 0.8rem; padding: 12px;">
                     IMPOSTAZIONI
                 </button>
+
+                ${showLogoutItem ? `<button class="btn-glass sidebar-nav-item sidebar-logout" id="nav-logout" type="button">${logoutLabel}</button>` : ''}
 
                 <button class="btn-glass" id="sideMusicCenterBtn" style="font-size: 0.8rem; padding: 12px;">
                     LIBRERIA MUSICALE
@@ -215,6 +224,37 @@ function setupEventListeners(container, context) {
     attachNav('nav-rpg', 'rpg');
     attachNav('nav-profile', 'profile');
     attachNav('nav-settings', 'settings');
+
+    // --- USCITA DALL'ACCOUNT: due tocchi, così un tap distratto non chiude la sessione ---
+    const logoutItem = container.querySelector('#nav-logout');
+    if (logoutItem) {
+        const idleLabel = logoutItem.textContent.trim();
+        let armed = false;
+        let disarmTimer = null;
+        const disarm = () => {
+            armed = false;
+            if (disarmTimer) { clearTimeout(disarmTimer); disarmTimer = null; }
+            logoutItem.textContent = idleLabel;
+            logoutItem.classList.remove('is-armed');
+        };
+        const disarmOnClose = event => { if (!event.detail?.isOpen) disarm(); };
+        if (window.__tavernaLogoutReset) window.removeEventListener('sidebarState', window.__tavernaLogoutReset);
+        window.__tavernaLogoutReset = disarmOnClose;
+        window.addEventListener('sidebarState', disarmOnClose);
+        logoutItem.onclick = () => {
+            if (!armed) {
+                armed = true;
+                logoutItem.textContent = 'CONFERMA: ESCI';
+                logoutItem.classList.add('is-armed');
+                disarmTimer = setTimeout(disarm, 5000);
+                return;
+            }
+            disarm();
+            toggle();
+            resetGlobalScroll();
+            currentLogoutFn?.();
+        };
+    }
 
     // --- TASTO AZIONE (ESCI O TORNA) ---
     const actionBtn = container.querySelector('#sideActionBtn');

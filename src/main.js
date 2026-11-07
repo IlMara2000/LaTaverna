@@ -116,7 +116,9 @@ function initializeNavigation(user) {
         } else {
             await supabase.auth.signOut();
         }
-        window.location.reload();
+        // Si torna alla porta: da una pagina pubblica il reload lascerebbe
+        // l'utente sulla stessa schermata, senza sessione e senza capire l'esito.
+        window.location.assign('/');
     });
 
 }
