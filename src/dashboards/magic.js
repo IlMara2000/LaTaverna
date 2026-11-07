@@ -81,11 +81,21 @@ export function showMagicDashboard(container, options = {}) {
     let exportLanguage = 'it', exportFormat = 'txt';
     let filter = '', notice = '', pending = [], busy = false, cloudUserId = null, disposed = false, modalCard = null;
     let cloudQueue = Promise.resolve(), searchResults = [];
-    let selecting = false, selected = new Set(), pressTimer = null, suppressClickUntil = 0, undoRemoval = null, sheetExpanded = false;
+    let selecting = false, selected = new Set(), pressTimer = null, suppressClickUntil = 0, undoRemoval = null, sheetExpanded = false, focusClose = false;
     const clearPress = () => { clearTimeout(pressTimer); pressTimer = null; };
     const toggleSelection = cardId => { selected.has(cardId) ? selected.delete(cardId) : selected.add(cardId); render(); };
+    const browseList = () => {
+        const matches = card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter));
+        if (tab === 'wantlist') return wantlist.filter(matches);
+        if (tab === 'mazzi') {
+            const deck = decks.find(item => item.id === activeDeckId) || decks[0];
+            const cardMap = byId();
+            return (deck?.cards || []).map(entry => ({ ...cardMap.get(String(entry.cardId)), quantity: entry.quantity })).filter(card => card.id && matches(card));
+        }
+        return cards.filter(matches);
+    };
     const browseCard = direction => {
-        const list = (tab === 'wantlist' ? wantlist : cards).filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)));
+        const list = browseList();
         const index = list.findIndex(card => String(card.id) === String(modalCard?.id));
         const next = list[index + direction];
         if (next) void openCard(next);
@@ -155,9 +165,12 @@ export function showMagicDashboard(container, options = {}) {
         return { min, max: Math.max(min, available - 56) };
     };
     const applySheet = (modal, height) => {
-        const copy = modal?.querySelector('.mv-modal-copy');
-        if (!copy) return;
+        if (!modal) return;
+        const copy = modal.querySelector('.mv-modal-copy');
         const { min, max } = sheetLimits(modal);
+        // The stage above the drawer derives its height from the resting drawer height.
+        modal.style.setProperty('--mv-sheet-min', `${min}px`);
+        if (!copy) return;
         const value = Math.round(Math.min(max, Math.max(min, height)));
         copy.style.height = `${value}px`;
     };
@@ -166,7 +179,11 @@ export function showMagicDashboard(container, options = {}) {
         const modal = container.querySelector('.mv-modal');
         if (!modal) return;
         const copy = modal.querySelector('.mv-modal-copy');
-        if (!sheetEnabled()) { if (copy) copy.style.removeProperty('height'); return; }
+        if (!sheetEnabled()) {
+            modal.style.removeProperty('--mv-sheet-min');
+            if (copy) copy.style.removeProperty('height');
+            return;
+        }
         const { min, max } = sheetLimits(modal);
         applySheet(modal, sheetExpanded ? max : min);
     };
@@ -209,9 +226,15 @@ export function showMagicDashboard(container, options = {}) {
     };
     window.addEventListener('resize', onSheetResize);
 
-    const closeCard = () => { modalCard = null; render(); };
+    const closeCard = () => {
+        const closingId = modalCard?.id;
+        modalCard = null; render();
+        if (closingId != null) container.querySelector(`[data-open-card="${CSS.escape(String(closingId))}"]`)?.focus();
+    };
     const openCard = async card => {
-        modalCard = { ...card }; render();
+        focusClose = true; modalCard = { ...card }; render();
+        // A new card starts at the top of the drawer instead of keeping the previous scroll position.
+        container.querySelector('.mv-sheet-body')?.scrollTo({ top: 0 });
         const textNode = container.querySelector('#mv-modal-effect'), languageNode = container.querySelector('#mv-modal-language');
         if (!textNode || !languageNode) return;
         textNode.textContent = 'Cerco la stampa italiana…';
@@ -345,7 +368,7 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelectorAll('[data-want]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); const card=byId().get(button.dataset.want)||wantlist.find(item=>String(item.id)===button.dataset.want); if(card) toggleWant(card); }));
         container.querySelectorAll('[data-remove-want]').forEach(button => button.addEventListener('click', () => { wantlist=wantlist.filter(item=>String(item.id)!==button.dataset.removeWant); persist(); render(); }));
         container.querySelector('.mv-modal-close')?.addEventListener('click', closeCard);
-        if (modalCard) container.querySelector('.mv-modal-close')?.focus();
+        if (modalCard && focusClose) { focusClose = false; container.querySelector('.mv-modal-close')?.focus(); }
         container.querySelector('.mv-modal-backdrop')?.addEventListener('click', event => { if(event.target.classList.contains('mv-modal-backdrop')) closeCard(); });
         container.querySelector('#mv-cancel-import')?.addEventListener('click', () => { pending=[]; render(); setNotice('Importazione annullata.'); });
         container.querySelectorAll('[data-resolve]').forEach(select => select.addEventListener('change', () => { const item=pending[Number(select.dataset.resolve)]; const selected=item.matches?.find(card=>card.id===select.value); if(selected) item.card=selected; else if(select.value==='') item.card=null; const button=container.querySelector('#mv-confirm-import'); if(button) button.disabled=pending.some(entry=>!entry.card); }));
