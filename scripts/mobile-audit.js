@@ -184,7 +184,8 @@
         }));
         localStorage.setItem(MAGIC_KEYS[0], JSON.stringify(carte));
         localStorage.setItem(MAGIC_KEYS[1], JSON.stringify([
-            { id: 'mazzo-prova', name: 'Mazzo di prova', cards: carte.slice(0, 4).map(carta => ({ cardId: carta.id, quantity: 1 })) },
+            // Ordine volutamente diverso dalla collezione: Delta, Bravo, Foxtrot.
+            { id: 'mazzo-prova', name: 'Mazzo di prova', cards: [carte[3], carte[1], carte[5]].map(carta => ({ cardId: carta.id, quantity: 1 })) },
             { id: 'mazzo-prova-2', name: 'Secondo mazzo', cards: carte.slice(2, 5).map(carta => ({ cardId: carta.id, quantity: 1 })) }
         ]));
         localStorage.setItem(MAGIC_KEYS[2], '[]');
@@ -360,7 +361,62 @@
             gestures = { riposo, arteRiposo, passi };
         }
 
-        chiudi?.click();
+        // Swipe sull'arte: lo sfoglio segue il contesto e si ferma ai capi dell'elenco.
+        const titolo = () => radice.querySelector('#mv-modal-title')?.textContent?.trim() || null;
+        const striscia = (dx, dy) => {
+            const nastro = radice.querySelector('.mv-modal-art');
+            if (!nastro) return false;
+            const r = nastro.getBoundingClientRect();
+            const x = tondo(r.left + r.width / 2), y = tondo(r.top + r.height / 2);
+            const invia = (tipo, px, py) => nastro.dispatchEvent(new PointerEvent(tipo, {
+                bubbles: true, cancelable: true, composed: true, pointerId: 2, pointerType: 'touch',
+                isPrimary: true, button: 0, buttons: tipo === 'pointerup' ? 0 : 1,
+                clientX: px, clientY: py
+            }));
+            invia('pointerdown', x, y);
+            invia('pointerup', x + dx, y + dy);
+            return true;
+        };
+        const swipes = { collezionePartenza: titolo() };
+        striscia(0, -80);
+        await dormi(250);
+        swipes.collezioneVerticale = titolo();
+        striscia(-80, 0);
+        await dormi(250);
+        swipes.collezioneOrizzontale = titolo();
+        striscia(80, 0);
+        await dormi(250);
+        swipes.collezioneIndietro = titolo();
+        striscia(80, 0);
+        await dormi(250);
+        swipes.collezioneInizio = titolo();
+        striscia(80, 0);
+        await dormi(250);
+        swipes.collezioneFermoInizio = titolo();
+
+        radice.querySelector('.mv-modal-close')?.click();
+        await attendi(() => !radice.querySelector('.mv-modal'), 1500);
+        radice.querySelector('[data-tab="mazzi"]')?.click();
+        await dormi(300);
+        radice.querySelector('[data-open-card="prova-3"]')?.click();
+        const apertaNelMazzo = await attendi(() => radice.querySelector('.mv-modal'), 2000);
+        swipes.mazzoPartenza = apertaNelMazzo ? titolo() : null;
+        if (apertaNelMazzo) {
+            striscia(0, -80);
+            await dormi(250);
+            swipes.mazzoDopo = titolo();
+            striscia(0, -80);
+            await dormi(250);
+            swipes.mazzoDopo2 = titolo();
+            striscia(0, -80);
+            await dormi(250);
+            swipes.mazzoFermoFine = titolo();
+            striscia(-90, 0);
+            await dormi(250);
+            swipes.mazzoFermoFineOrizzontale = titolo();
+        }
+        radice.querySelector('.mv-modal-close')?.click();
+        await attendi(() => !radice.querySelector('.mv-modal'), 1500);
         await dormi(150);
 
         const documento = document.documentElement;
@@ -374,7 +430,7 @@
             overflowX: tondo(overflowX),
             collection,
             deck,
-            sheet: { enabled: !!min.varMin, min, max, gestures }
+            sheet: { enabled: !!min.varMin, min, max, gestures, swipes }
         };
     };
 })();

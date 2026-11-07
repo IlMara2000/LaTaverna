@@ -61,9 +61,21 @@ try {
         // Ogni larghezza riparte da una pagina fresca: la tendina decide la sua
         // geometria al montaggio, quindi un semplice resize non basta.
         esegui('set', 'viewport', String(vista.w), String(vista.h));
-        esegui('reload');
-        esegui('wait', '1600');
-        const uscita = esegui('eval', `(async () => {\n${sorgente}\nreturn await window.__magicLayout();\n})()`);
+        let uscita = null;
+        for (let tentativo = 0; tentativo < 2 && uscita === null; tentativo++) {
+            esegui('reload');
+            esegui('wait', '2000');
+            try {
+                uscita = esegui('eval', `(async () => {\n${sorgente}\nreturn await window.__magicLayout();\n})()`);
+            } catch (error) {
+                // La pagina può navigare da sola durante la misura (boot, sessione, HMR):
+                // una navigazione invalida la lettura, quindi si riprova una volta sola.
+                const testo = String(error.stderr || error.message || error);
+                if (tentativo || !/navigated or closed/.test(testo)) {
+                    throw new Error(`${vista.w}x${vista.h}: misura interrotta\n${testo.slice(-800)}`);
+                }
+            }
+        }
         const inizio = uscita.indexOf('{'), fine = uscita.lastIndexOf('}');
         if (inizio < 0 || fine < 0) throw new Error(`${vista.w}x${vista.h}: la pagina non ha restituito misure\n${uscita.slice(0, 600)}`);
         misure.push({ ...vista, ...JSON.parse(uscita.slice(inizio, fine + 1)) });
@@ -76,14 +88,19 @@ try {
 
 const larghezza = (testo, colonne) => String(testo).padEnd(colonne);
 console.log(`\nSCHEDA CARTA — ${misure.length} larghezze su ${base}\n`);
-console.log(`${larghezza('VIEWPORT', 14)}${larghezza('GRIGLIA', 13)}${larghezza('MAZZI', 28)}${larghezza('TENDE', 12)}GESTI (drag→rilasci/tocco)`);
+console.log(`${larghezza('VIEWPORT', 14)}${larghezza('GRIGLIA', 13)}${larghezza('MAZZI', 26)}${larghezza('TENDE', 12)}${larghezza('GESTI (drag)', 22)}SWIPE (coll | mazzo)`);
 for (const m of misure) {
     const griglia = `${m.collection.cols}×${m.collection.cardW}px`;
     const mazzi = `${m.deck.layoutCols} col · ${m.deck.listDisplay} · ${m.deck.gridCols}×${m.deck.cards}`;
     const tende = m.sheet.enabled ? `${m.sheet.min.copy?.h}→${m.sheet.max.copy?.h}px` : 'assente';
     const g = m.sheet.gestures;
     const gesti = g ? `${g.passi.trascinamento.h} ${g.passi.rilascioSottoMeta}/${g.passi.rilascioSopraMeta}/${g.passi.tocco}` : '—';
-    console.log(`${larghezza(`${m.w}x${m.h}`, 14)}${larghezza(griglia, 13)}${larghezza(mazzi, 28)}${larghezza(tende, 12)}${gesti}`);
+    const sw = m.sheet.swipes;
+    const iniziale = nome => (nome || '?').trim().charAt(0);
+    const swipes = sw && sw.mazzoPartenza
+        ? `${iniziale(sw.collezionePartenza)}${iniziale(sw.collezioneVerticale)}${iniziale(sw.collezioneOrizzontale)} | ${iniziale(sw.mazzoPartenza)}${iniziale(sw.mazzoDopo)}${iniziale(sw.mazzoDopo2)}`
+        : '—';
+    console.log(`${larghezza(`${m.w}x${m.h}`, 14)}${larghezza(griglia, 13)}${larghezza(mazzi, 26)}${larghezza(tende, 12)}${larghezza(gesti, 22)}${swipes}`);
 }
 
 const problemi = [];
@@ -159,6 +176,25 @@ for (const m of misure) {
             verifica(Math.abs(g.passi.tocco - g.riposo) <= tappa, `${dove}: il tocco singolo non richiude (${g.passi.tocco}px)`);
             verifica(Math.abs(g.passi.microTrascinamento - s.max.copy.h) <= tappa, `${dove}: uno spostamento di 4px non vale come tocco: ${g.passi.microTrascinamento}px invece di ${s.max.copy.h}px`);
             verifica(Math.abs(g.passi.trascinaGiu - g.riposo) <= tappa, `${dove}: trascinata giù sotto metà non si richiude (${g.passi.trascinaGiu}px)`);
+        }
+
+        // Swipe sull'arte: ordine del contesto (collezione o mazzo) e stop ai capi.
+        const sw = s.swipes;
+        if (!sw || !sw.mazzoPartenza) {
+            problemi.push(`${dove}: swipe sull'arte non misurato (${sw?.collezionePartenza ?? 'nessuna carta'})`);
+        } else {
+            const atteso = (chiave, valore, etichetta) => verifica(sw[chiave] === valore, `${dove}: ${etichetta} porta a ${sw[chiave]} invece di ${valore}`);
+            atteso('collezionePartenza', 'Alfa', 'la prima carta della collezione');
+            atteso('collezioneVerticale', 'Bravo', 'lo swipe verticale in collezione');
+            atteso('collezioneOrizzontale', 'Charlie', 'lo swipe orizzontale in collezione');
+            atteso('collezioneIndietro', 'Bravo', 'lo swipe indietro in collezione');
+            atteso('collezioneInizio', 'Alfa', 'il secondo swipe indietro in collezione');
+            atteso('collezioneFermoInizio', 'Alfa', 'lo swipe indietro oltre la prima carta');
+            atteso('mazzoPartenza', 'Delta', 'la carta aperta nel mazzo');
+            atteso('mazzoDopo', 'Bravo', 'lo swipe nel mazzo (deve seguire il mazzo, non la collezione)');
+            atteso('mazzoDopo2', 'Foxtrot', 'il secondo swipe nel mazzo');
+            atteso('mazzoFermoFine', 'Foxtrot', 'lo swipe oltre la fine del mazzo');
+            atteso('mazzoFermoFineOrizzontale', 'Foxtrot', 'lo swipe orizzontale oltre la fine del mazzo');
         }
     } else {
         verifica(!s.enabled, `${dove}: tendina attiva anche su desktop`);

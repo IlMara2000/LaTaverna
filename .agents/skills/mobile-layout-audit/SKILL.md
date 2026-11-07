@@ -39,8 +39,9 @@ codice 1** se una misura esce dalle soglie: colonne della collezione (2 / 3 / 4 
 carte mai sotto i 140px, mazzi impilati con lista orizzontale fino a 900px, arte
 centrata nel palco e tendina che a riposo copre solo la carta e aperta arriva a
 56px dal bordo lasciando libero il comando chiudi. Con pointer sintetici verifica anche
-i gesti della maniglia: inseguimento 1:1, aggancio sopra e sotto metà, tocco singolo e
-soglia dei 5px.
+i gesti della maniglia (inseguimento 1:1, aggancio sopra e sotto metà, tocco singolo,
+soglia dei 5px) e lo swipe sull'arte: orizzontale e verticale, ordine della collezione
+contro quello del mazzo e arresto ai capi.
 
 Le misure vere stanno in `window.__magicLayout()` (`scripts/mobile-audit.js`); il
 driver è `scripts/test-magic-layout.mjs`. Il test monta una collezione di prova e
