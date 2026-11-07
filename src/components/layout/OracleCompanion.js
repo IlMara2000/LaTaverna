@@ -24,27 +24,31 @@ export function mountOracleCompanion(trigger) {
     caption.className = 'oracle-caption'; caption.hidden = true;
     caption.innerHTML = '<span class="oracle-caption-state"></span><p role="status" aria-live="polite"></p><button type="button" aria-label="Spegni Oracolo e microfono">Spegni microfono</button>';
     document.body.append(caption);
-    let captionTimer;
-    // La finestra di risposta si chiude da sola: 3 s per una riga corta, 5 s per una
-    // risposta media, un po' di più quando il testo è lungo da leggere.
+    let captionTimer, awaitingSpeech = false;
+    // Il fumetto resta finché l'Oracolo parla e si chiude appena la voce finisce. La
+    // lunghezza del testo è solo il tetto massimo, per non lasciarlo appeso se la voce
+    // si blocca: 3 s / 5 s bastano ai messaggi brevi che non vengono letti ad alta voce.
     const captionLifetime = words => {
         if (words <= 12) return 3000;
         if (words <= 32) return 5000;
         return Math.min(20000, 5000 + (words - 32) * 250);
     };
+    const speechCap = words => Math.min(120000, Math.max(15000, words * 1000));
     const hideCaption = () => {
         caption.classList.add('is-leaving');
         captionTimer = setTimeout(() => { caption.hidden = true; caption.classList.remove('is-leaving'); }, 320);
     };
-    function showCaption(text) {
+    function showCaption(text, spoken = false) {
         clearTimeout(captionTimer);
         const value = text.trim();
         const line = caption.querySelector('p');
         caption.classList.remove('is-leaving');
-        if (!value) { caption.hidden = true; line.textContent = ''; return; }
+        if (!value) { caption.hidden = true; line.textContent = ''; awaitingSpeech = false; return; }
         line.textContent = value;
         caption.hidden = false;
-        captionTimer = setTimeout(hideCaption, captionLifetime(value.split(/\s+/).filter(Boolean).length));
+        const words = value.split(/\s+/).filter(Boolean).length;
+        awaitingSpeech = spoken;
+        captionTimer = setTimeout(hideCaption, spoken ? speechCap(words) : captionLifetime(words));
     }
     // Il pupazzo si tocca direttamente: un tocco apre il menu, due lo nascondono,
     // tre spengono anche il microfono. La finestra è breve, così i tocchi si contano.
@@ -58,6 +62,13 @@ export function mountOracleCompanion(trigger) {
         speak: text => AudioManager.speakOracle(text),
         cancelSpeech: () => AudioManager.cancelOracleSpeech(),
         onCaption: showCaption,
+        // La voce ha finito: il fumetto si ritira subito, con una breve pausa per leggere.
+        onSpeechEnd: () => {
+            if (!awaitingSpeech) return;
+            clearTimeout(captionTimer);
+            awaitingSpeech = false;
+            captionTimer = setTimeout(hideCaption, 700);
+        },
         onState: state => {
             trigger.dataset.oracleState = state;
             if (previousState === 'off' && state !== 'off') setPuppetHidden(false);

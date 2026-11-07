@@ -20,7 +20,7 @@ export function voiceCommand(text) {
     return 'question';
 }
 
-export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onState, onCaption, visible = () => true }) {
+export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onState, onCaption, onSpeechEnd = () => {}, visible = () => true }) {
     let state = 'off', generation = 0, recognition, request, restart, history = [], failures = 0, useLocal = false;
     let sleeping = false, greeted = false;
     const publish = next => { state = next; onState(next); };
@@ -37,12 +37,15 @@ export function createOracleVoice({ Recognition, ask, speak, cancelSpeech, onSta
     };
     const fail = message => { stop(); onCaption(message); };
     async function say(text, token) {
-        stopRecognition(); publish('speaking'); onCaption(text);
+        stopRecognition(); publish('speaking'); onCaption(text, true);
         await new Promise(resolve => setTimeout(resolve, 450));
         if (token !== generation) return;
         try { await speak(text); }
         catch { if (token === generation) onCaption('Voce non disponibile. Puoi leggere la risposta nei sottotitoli.'); }
-        if (token === generation) listen(token);
+        if (token !== generation) return;
+        // La voce è finita (o ha fallito): chi è in ascolto può chiudere il fumetto.
+        onSpeechEnd();
+        listen(token);
     }
     async function receive(text, token) {
         if (token !== generation) return;
