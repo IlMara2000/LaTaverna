@@ -38,7 +38,8 @@ larghezze — 320x568, 390x844, 844x390, 651x900, 768x1024, 834x1112, 1024x768, 
 codice 1** se una misura esce dalle soglie: colonne della collezione (2 / 3 / 4 / 6),
 carte mai sotto i 140px, mazzi impilati con lista orizzontale fino a 900px, arte
 centrata nel palco e tendina che a riposo copre solo la carta e aperta arriva a
-56px dal bordo lasciando libero il comando chiudi. Con pointer sintetici verifica anche
+56px dal bordo lasciando liberi e cliccabili chiudi, maniglia e frecce di sfoglio
+(verificato con `elementFromPoint` al centro di ogni comando, a riposo e aperta). Con pointer sintetici verifica anche
 i gesti della maniglia (inseguimento 1:1, aggancio sopra e sotto metà, tocco singolo,
 soglia dei 5px) e lo swipe sull'arte: orizzontale e verticale, ordine della collezione
 contro quello del mazzo e arresto ai capi.

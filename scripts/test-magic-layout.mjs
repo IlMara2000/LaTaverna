@@ -160,14 +160,19 @@ for (const m of misure) {
                     verifica(s.min.gapAbove >= 40, `${dove}: arte incollata in alto (${s.min.gapAbove}px di margine)`);
                 }
             verifica(Math.abs(parseFloat(s.min.varMin) - s.min.copy.h) <= 2, `${dove}: --mv-sheet-min ${s.min.varMin} contro tendina ${s.min.copy.h}px`);
-            verifica(s.min.close && s.min.close.y >= 0 && s.min.close.y <= 20, `${dove}: comando chiudi a ${s.min.close?.y}px`);
-            verifica(s.min.close.y + s.min.close.h <= s.min.copy.y + 2, `${dove}: il chiudi finisce sotto la tendina`);
+            verifica(s.min.close && s.min.close.y >= 0 && s.min.close.y <= 20, `${dove}: comando chiudi a ${s.min.close?.y}px`);                verifica(s.min.close.y + s.min.close.h <= s.min.copy.y + 2, `${dove}: il chiudi finisce sotto la tendina`);
+                verifica(s.min.hit?.ok, `${dove}: con la tendina a riposo il chiudi è coperto da ${s.min.hit?.tag || 'altro elemento'}`);
+                verifica(s.min.grabHit?.ok, `${dove}: con la tendina a riposo la maniglia è coperta da ${s.min.grabHit?.tag || 'altro elemento'}`);
+                verifica(s.min.browseHit?.ok, `${dove}: con la tendina a riposo la freccia di sfoglio è coperta da ${s.min.browseHit?.tag || 'altro elemento'}`);
         }
         // Aperta: la tendina arriva a 56px dal bordo e il corpo scorre.
         if (s.max.copy && s.max.close) {
             verifica(Math.abs(s.max.copy.h - (m.h - 56)) <= 2, `${dove}: tendina aperta ${s.max.copy.h}px invece di ${m.h - 56}px`);
             verifica(Math.abs(s.max.copy.y - 56) <= 2, `${dove}: tendina aperta lascia ${s.max.copy.y}px sopra invece di 56px`);
             verifica(s.max.close.y >= 0 && s.max.close.y + s.max.close.h <= s.max.copy.y + 2, `${dove}: chiudi coperto con la tendina aperta`);
+            verifica(s.max.hit?.ok, `${dove}: con la tendina aperta il chiudi è coperto da ${s.max.hit?.tag || 'altro elemento'}`);
+            verifica(s.max.grabHit?.ok, `${dove}: con la tendina aperta la maniglia è coperta da ${s.max.grabHit?.tag || 'altro elemento'}`);
+            verifica(s.max.browseHit?.ok, `${dove}: con la tendina aperta la freccia di sfoglio è coperta da ${s.max.browseHit?.tag || 'altro elemento'}`);
             verifica(s.max.art && s.max.art.y === s.min.art?.y, `${dove}: l'arte si muove aprendo la tendina`);
             verifica(s.max.body && s.max.body.scrollH >= s.max.body.clientH, `${dove}: corpo della tendina non misurabile`);
         } else {

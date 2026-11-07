@@ -281,9 +281,23 @@
         const maniglia = radice.querySelector('.mv-sheet-grab');
         if (!modale || !copia) throw new Error('la scheda carta non si è aperta');
 
+        // I comandi devono restare raggiungibili davvero, non solo fuori dai conti:
+        // elementFromPoint dice cosa c'è sotto il dito al centro di ogni pulsante.
+        const colpisce = el => {
+            const r = el?.getBoundingClientRect();
+            if (!r || !r.width || !r.height) return null;
+            const punto = document.elementFromPoint(tondo(r.left + r.width / 2), tondo(r.top + r.height / 2));
+            return {
+                ok: !!el && (punto === el || el.contains(punto)),
+                tag: punto ? `${punto.tagName.toLowerCase()}${punto.className ? '.' + String(punto.className).trim().split(/\s+/)[0] : ''}` : null
+            };
+        };
+        const frecciaSfoglio = () => radice.querySelector('.mv-browse [data-browse="1"]');
+
         const arteRect = rettangolo(arte), copiaRect = rettangolo(copia), modaleRect = rettangolo(modale);
         const min = {
             modal: modaleRect, art: arteRect, copy: copiaRect, close: rettangolo(chiudi),
+            hit: colpisce(chiudi), grabHit: colpisce(maniglia), browseHit: colpisce(frecciaSfoglio()),
             gapAbove: arteRect && modaleRect ? arteRect.y - modaleRect.y : null,
             gapBelow: arteRect && copiaRect ? copiaRect.y - (arteRect.y + arteRect.h) : null,
             varMin: getComputedStyle(modale).getPropertyValue('--mv-sheet-min').trim(),
@@ -295,7 +309,8 @@
         maniglia?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
         await dormi(450);
         const max = {
-            copy: rettangolo(copia), art: rettangolo(arte), close: rettangolo(chiudi), grab: rettangolo(maniglia),
+            copy: rettangolo(copia), art: rettangolo(arte), close: rettangolo(chiudi),
+            hit: colpisce(chiudi), grabHit: colpisce(maniglia), browseHit: colpisce(frecciaSfoglio()), grab: rettangolo(maniglia),
             body: corpo(radice.querySelector('.mv-sheet-body'))
         };
         maniglia?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
