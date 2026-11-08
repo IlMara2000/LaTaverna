@@ -445,6 +445,31 @@
 .sc-final-score b { color: #8f7f9c; font-size: 20px; }
 .sc-result-sub { margin: 2px 0 0; font-size: 11px; color: var(--sc-muted); }
 .sc-result-taunt { margin: 8px 0 4px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: #e5d3f1; }
+/* Lo scontrino: dalla settima partita la stampante non si ferma più, e
+   l'ultima riga arriva già bruciata. */
+.sc-receipt {
+    width: 100%;
+    margin: 6px 0 0;
+    padding: 8px 10px 0;
+    border-top: 1px dashed #9c84ae66;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    color: #9c84ae;
+    text-transform: uppercase;
+}
+.sc-receipt span { display: block; }
+.sc-receipt b { display: block; margin-top: 2px; color: #d9ff3f; font-weight: 700; }
+.sc-receipt em {
+    display: block;
+    height: 10px;
+    margin-top: 6px;
+    border-radius: 2px;
+    background:
+        linear-gradient(90deg, #c2601f 0%, #6b3a1a 38%, #241a2f 62%, #120e18 100%);
+    opacity: .8;
+}
+
 .sc-result-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; width: 100%; }
 .sc-result-actions .sc-button { flex: 1 1 110px; }
 .sc-text-button {
@@ -508,6 +533,32 @@
 .sc-stepper output {
     min-width: 32px; text-align: center; font-family: var(--sc-display); font-size: 22px; color: var(--sc-cream);
 }
+
+/* La quinta riga del mazziere non esiste: zero pixel di altezza, invisibile
+   al mouse, raggiungibile col Tab. Quando la si tocca, esiste. */
+.sc-deck-row--ghost {
+    height: 0;
+    padding: 0 12px;
+    border-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+/* Il reveal è istantaneo di proposito: un indicatore di focus che aspetta una
+   transizione (o un frame) è un indicatore che a volte non c'è. */
+.sc-deck-row--ghost:focus-within {
+    height: auto;
+    padding: 10px 12px;
+    border-width: 1px;
+    opacity: 1;
+    pointer-events: auto;
+}
+.sc-deck-row--ghost .sc-deck-swatch {
+    background: #0a080c;
+    color: #4a3a56;
+    border-color: #241a2f;
+}
+.sc-deck-row--ghost .sc-deck-info strong { color: #7a6a86; }
 
 .sc-deck-total {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;

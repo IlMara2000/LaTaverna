@@ -25,6 +25,22 @@ import { SCIPPO_BOT_LEVELS, chooseBotMove, isBotDifficulty } from '../../service
 import { mascotForOutcome, mascotForTurn, scippoMascot } from './scippoArt.js';
 import { pickMessage, resetMessageMemory, resultMessage } from './scippoMessages.js';
 import { shareScippoResult } from './scippoShare.js';
+import { renderCantina, renderQuaderno, renderQuadernoEntry } from './scippoQuaderno.js';
+import {
+    CANTINA_COPY,
+    canPersistQuaderno,
+    chooseCantina,
+    isDrunkDeck,
+    isMisspelledDeckName,
+    isWitchingHour,
+    loadQuaderno,
+    noteQuadernoVisit,
+    openCantina,
+    parseChallengeCode,
+    quadernoProgress,
+    registerEgg,
+    saveQuaderno
+} from '../../services/scippoSecret.js';
 import {
     MAX_DECKS,
     dailyChallengeKey,
@@ -137,12 +153,7 @@ function installScippoChrome() {
 
 function challengeFromUrl() {
     try {
-        const raw = new URLSearchParams(location.search).get('sfida') || '';
-        const match = /^(facile|normale|difficile)-([0-9a-z]+)$/i.exec(raw);
-        if (!match) return null;
-        const seed = Number.parseInt(match[2], 36);
-        if (!Number.isFinite(seed)) return null;
-        return { code: raw, difficulty: match[1].toLowerCase(), seed: seed >>> 0 };
+        return parseChallengeCode(new URLSearchParams(location.search).get('sfida') || '');
     } catch {
         return null;
     }
@@ -185,10 +196,18 @@ export function initScippo(container) {
         timers: new Set(),
         botBusy: false,
         resultRecorded: false,
+        sessionMatches: 0,
+        exitRegrets: 0,
         scippoArmed: false,
         lastOutcome: null,
         disposed: false,
-        toastTimer: null
+        toast: null,
+        toastTimer: null,
+        quaderno: loadQuaderno(),
+        quadernoCanPersist: canPersistQuaderno(),
+        quadernoPlain: false,
+        cantinaOpen: false,
+        cantinaStage: 'table'
     };
     view.draft.composition = getActiveComposition(view.profile);
 
@@ -215,15 +234,43 @@ export function initScippo(container) {
         view.choiceInterval = null;
     };
 
+    /**
+     * Il toast vive nello stato, non solo nel DOM: `rerender()` sostituisce
+     * innerHTML di .scippo-app, quindi un nodo appeso lì muore al ridisegno
+     * successivo. Tenendolo in `view.toast` lo rimette ogni render.
+     */
     const showToast = message => {
+        view.toast = message;
         container.querySelector('.sc-toast')?.remove();
-        const toast = document.createElement('p');
-        toast.className = 'sc-toast';
-        toast.setAttribute('role', 'status');
-        toast.textContent = message;
-        container.querySelector('.scippo-app')?.appendChild(toast);
+        const app = container.querySelector('.scippo-app');
+        if (app) {
+            const toast = document.createElement('p');
+            toast.className = 'sc-toast';
+            toast.setAttribute('role', 'status');
+            toast.textContent = message;
+            app.appendChild(toast);
+        }
         clearTimeout(view.toastTimer);
-        view.toastTimer = setTimeout(() => toast.remove(), 2400);
+        view.toastTimer = setTimeout(() => {
+            view.toast = null;
+            container.querySelector('.sc-toast')?.remove();
+        }, 2400);
+    };
+
+    /**
+     * Segna uno sbaglio sul Quaderno. Ritorna true solo la prima volta, così
+     * gli easter egg non si pagano due volte e non interrompono la partita.
+     */
+    const awardEgg = (eggId, message = CANTINA_COPY.eggFound) => {
+        const result = registerEgg(view.quaderno, eggId);
+        if (!result.added) return false;
+        view.quaderno = saveQuaderno(result.quaderno);
+        view.quadernoCanPersist = canPersistQuaderno();
+        audio.play('score');
+        vibrate([8, 24, 8]);
+        const progress = quadernoProgress(view.quaderno);
+        showToast(`${message} QUADERNO ${progress.found}/${progress.total}.`);
+        return true;
     };
 
     const rerender = (options = {}) => {
@@ -284,6 +331,7 @@ export function initScippo(container) {
         view.mode = mode;
         view.screen = 'match';
         view.resultRecorded = false;
+        view.exitRegrets = 0;
         view.lastOutcome = null;
         view.scippoArmed = false;
         view.botBusy = false;
@@ -400,6 +448,10 @@ export function initScippo(container) {
             view.profile = recordChallengeResult(view.profile, { seed: view.challenge.code, score });
         }
         view.profile = syncDaily(view.profile);
+        view.sessionMatches += 1;
+        if (view.sessionMatches === 7) {
+            awardEgg('scontrino', 'SCONTRINO N. 7. TOTALE: ZERO.');
+        }
     };
 
     const leaveForTaverna = ({ forfeit = false } = {}) => {
@@ -435,8 +487,12 @@ export function initScippo(container) {
     };
 
     const startDaily = () => {
-        const daily = getDailyChallenge(new Date());
+        const now = new Date();
+        const daily = getDailyChallenge(now);
         startMatch({ difficulty: daily.difficulty, mode: 'daily', seed: daily.seed, composition: daily.composition });
+        if (isWitchingHour(now)) {
+            awardEgg('orario', 'ALLE TRE E TRENTATRÉ NON GI OCO. VA BENE, GI OCO.');
+        }
     };
 
     const startChallenge = () => {
@@ -516,7 +572,7 @@ export function initScippo(container) {
                         <p><b>8 turni.</b> Ogni turno compare un bottino da 1, 2 o 3 punti. Scegli una carta coperta: l’avversario non la vede.</p>
                         <p><b>Il giro:</b> 👊 BOTTA batte 🎭 FINTA · 🛡️ SCUDO batte 👊 BOTTA · 🎭 FINTA batte 🛡️ SCUDO · 🃏 JOLLY batte tutto.</p>
                         <p><b>SCIPPATA:</b> una volta a partita puoi raddoppiare il bottino del turno. Se vinci incassi il doppio, se perdi lo regali doppio. In pareggio non incassa nessuno. Non si cumula.</p>
-                        <p><b>Pareggio:</b> due carte uguali (anche JOLLY contro JOLLY) e il bottino resta sul tavolo.</p>
+                        <p><b>Pareggio:</b> due carte uguali (anche JOLLY contro JOLLY): non incassa nessuno e il bottino non passa al turno dopo.</p>
                         <p><b>Spareggio:</b> se dopo 8 turni siete pari, si continua con le carte rimaste e bottino da 1 punto. Finiscono le carte? È pareggio, senza carte inventate.</p>
                     </div>
                     <button type="button" class="sc-button sc-button--primary" data-action="sheet-close">HO CAPITO</button>
@@ -539,11 +595,11 @@ export function initScippo(container) {
         if (kind === 'exit') {
             return `
                 <div class="sc-sheet-panel sc-exit-sheet" role="dialog" aria-modal="true" aria-label="Conferma uscita">
-                    <header><strong>TE NE VAI DAVVERO?</strong><button type="button" data-action="sheet-close" aria-label="Resta">✕</button></header>
+                    <header><strong>TE NE VAI DAVVERO?</strong><button type="button" data-action="exit-reconsider" aria-label="Resta">✕</button></header>
                     <p class="sc-exit-question">E LA DIGNITÀ?</p>
                     <p class="sc-sheet-copy">La partita è ancora aperta. Uscire ora vale come <b>sconfitta a tavolino</b> e la sconfitta finisce nelle statistiche. Il bottino resta al BOT, che non se lo merita.</p>
                     <div class="sc-sheet-actions">
-                        <button type="button" class="sc-button sc-button--primary" data-action="sheet-close">RESTO A COMBATTERE</button>
+                        <button type="button" class="sc-button sc-button--primary" data-action="exit-reconsider">RESTO A COMBATTERE</button>
                         <button type="button" class="sc-button sc-button--danger" data-action="exit-confirm">FUGGO ALLA TAVERNA</button>
                     </div>
                 </div>
@@ -564,7 +620,11 @@ export function initScippo(container) {
     };
 
     const renderScript = () => {
-        const screen = view.screen === 'match' && view.match
+        const screen = view.screen === 'quaderno'
+            ? view.cantinaOpen
+                ? renderCantina({ quaderno: view.quaderno, stage: view.cantinaStage, plain: view.quadernoPlain })
+                : renderQuaderno({ quaderno: view.quaderno, plain: view.quadernoPlain, canPersist: view.quadernoCanPersist })
+            : view.screen === 'match' && view.match
             ? renderMatch()
             : view.screen === 'deck'
                 ? renderDeck()
@@ -575,6 +635,7 @@ export function initScippo(container) {
             <div class="scippo-app ${view.profile.settings.reduceFx ? 'is-calm' : ''}" data-screen="${view.screen}" data-calm="${view.profile.settings.reduceFx}">
                 <div class="sc-noise" aria-hidden="true"></div>
                 ${screen}
+                ${view.toast ? `<p class="sc-toast" role="status">${escapeHTML(view.toast)}</p>` : ''}
             </div>
         `;
     };
@@ -585,9 +646,11 @@ export function initScippo(container) {
         const dailyDone = view.profile.daily.date === daily.key && view.profile.daily.completed;
         const challengeBanner = view.challenge ? `
             <section class="sc-challenge-banner" aria-label="Sfida ricevuta">
-                <span class="sc-challenge-tag">SFIDA RICEVUTA</span>
-                <strong>Stesso BOT, stesse carte.</strong>
-                <p>Difficoltà ${escapeHTML(levelName(view.challenge.difficulty))} · scenario condiviso</p>
+                <span class="sc-challenge-tag">${view.challenge.unknown ? 'TAVOLO SCONOSCIUTO' : 'SFIDA RICEVUTA'}</span>
+                <strong>${view.challenge.unknown ? 'Non conosco questo tavolo. Mi sta simpatico.' : 'Stesso BOT, stesse carte.'}</strong>
+                <p>${view.challenge.unknown
+                    ? `Codice “${escapeHTML(view.challenge.requested)}” · scenario condiviso`
+                    : `Difficoltà ${escapeHTML(levelName(view.challenge.difficulty))} · scenario condiviso`}</p>
                 <button type="button" class="sc-button sc-button--primary" data-action="accept-challenge">ACCETTA LA SFIDA</button>
             </section>
         ` : '';
@@ -685,6 +748,8 @@ export function initScippo(container) {
                     <small>${deckCompositionLabel(activeDeck.composition)}</small>
                     <button type="button" data-action="deck">MODIFICA</button>
                 </section>
+
+                ${renderQuadernoEntry(view.quaderno)}
 
                 <p class="sc-rules-strip">
                     <span>👊 batte 🎭</span><span>🛡️ batte 👊</span><span>🎭 batte 🛡️</span><span>🃏 batte tutto</span>
@@ -787,6 +852,13 @@ export function initScippo(container) {
                         <span><b>${topPot}</b> BOTTINO MAX</span>
                         <span><b>${scippoTurns}</b> ${scippoTurns === 1 ? 'SCIPPATA' : 'SCIPPATE'}</span>
                     </div>
+                    ${view.sessionMatches >= 7 ? `
+                        <p class="sc-receipt" aria-label="Scontrino numero ${view.sessionMatches}: totale zero, ultima riga bruciata">
+                            <span>SCONTRINO N. ${view.sessionMatches}</span>
+                            <b>TOTALE: 0</b>
+                            <em aria-hidden="true"></em>
+                        </p>
+                    ` : ''}
                     <div class="sc-result-actions">
                         <button type="button" class="sc-button sc-button--primary" data-action="rematch">RIVINCITA</button>
                         <button type="button" class="sc-button" data-action="share-result">CONDIVIDI L’UMILIAZIONE</button>
@@ -936,6 +1008,19 @@ export function initScippo(container) {
                             </div>
                         `;
                     }).join('')}
+                    <!-- La quinta riga non esiste: sta in zero pixel e compare
+                         solo quando la si raggiunge da tastiera. -->
+                    <div class="sc-deck-row sc-deck-row--ghost">
+                        <span class="sc-deck-swatch" aria-hidden="true">🂠</span>
+                        <div class="sc-deck-info">
+                            <strong>?</strong>
+                            <small>carta non prevista dal regolamento</small>
+                        </div>
+                        <div class="sc-stepper" role="group" aria-label="carta non prevista dal regolamento">
+                            <output aria-live="polite">0</output>
+                            <button type="button" data-action="deck-ghost" aria-label="carta non prevista dal regolamento, quantità zero">+</button>
+                        </div>
+                    </div>
                 </section>
 
                 <div class="sc-deck-total ${validation.valid ? 'is-valid' : 'is-invalid'}">
@@ -1065,6 +1150,57 @@ export function initScippo(container) {
 
     const handleAction = async (action, target) => {
         switch (action) {
+            case 'quaderno':
+                view.quaderno = saveQuaderno(noteQuadernoVisit(view.quaderno));
+                view.quadernoCanPersist = canPersistQuaderno();
+                view.cantinaOpen = false;
+                view.screen = 'quaderno';
+                rerender();
+                return;
+            case 'quaderno-close':
+                view.cantinaOpen = false;
+                view.screen = 'home';
+                rerender();
+                return;
+            case 'quaderno-card':
+                showToast(CANTINA_COPY.notYourTurn);
+                return;
+            case 'quaderno-plain':
+                view.quadernoPlain = !view.quadernoPlain;
+                rerender({ keepScroll: true });
+                return;
+            case 'cantina-sit':
+                if (!quadernoProgress(view.quaderno).complete) {
+                    showToast(CANTINA_COPY.refusal);
+                    return;
+                }
+                view.cantinaOpen = true;
+                view.cantinaStage = view.quaderno.cantina === 'locked' ? 'table' : 'reveal';
+                view.screen = 'quaderno';
+                audio.play('select');
+                rerender();
+                return;
+            case 'cantina-play':
+                view.quaderno = saveQuaderno(openCantina(view.quaderno));
+                view.cantinaStage = 'reveal';
+                audio.play('reveal');
+                later(() => audio.play('defeat'), 280);
+                vibrate([12, 40, 70]);
+                rerender({ keepScroll: true });
+                return;
+            case 'cantina-choose': {
+                const mode = target.dataset.mode;
+                if (mode !== 'write' && mode !== 'keep') return;
+                view.quaderno = saveQuaderno(chooseCantina(view.quaderno, mode));
+                audio.play(mode === 'write' ? 'scippo' : 'score');
+                rerender({ keepScroll: true });
+                return;
+            }
+            case 'cantina-back':
+                view.cantinaOpen = false;
+                view.screen = 'quaderno';
+                rerender();
+                return;
             case 'exit-taverna':
                 await exitToTaverna();
                 return;
@@ -1111,7 +1247,15 @@ export function initScippo(container) {
                 goHome();
                 return;
             case 'select':
+                view.exitRegrets = 0;
                 selectCard(target.dataset.card);
+                return;
+            case 'exit-reconsider':
+                container.querySelector('.sc-sheet')?.remove();
+                view.exitRegrets += 1;
+                if (view.exitRegrets === 3) {
+                    awardEgg('annulla', 'TRE VOLTE. TRE. VA BENE, TE LA DO.');
+                }
                 return;
             case 'arm-scippo':
                 if (!view.match || !scippoAvailable(view.match, 0) || view.match.phase !== 'choose' || view.match.pending[0]) return;
@@ -1179,6 +1323,12 @@ export function initScippo(container) {
                 return;
             case 'accept-challenge':
                 startChallenge();
+                if (view.challenge?.unknown) {
+                    awardEgg('tavolo', 'NON CONOSCO IL TAVOLO. GIOCACI LO STESSO.');
+                }
+                return;
+            case 'deck-ghost':
+                awardEgg('pulsante', 'NON ESISTE. È PER QUESTO CHE HA FUNZIONATO.');
                 return;
             case 'deck-inc':
             case 'deck-dec': {
@@ -1190,11 +1340,15 @@ export function initScippo(container) {
                 const max = card === 'jolly' ? 2 : 10;
                 composition[card] = Math.max(min, Math.min(max, (composition[card] || 0) + delta));
                 updateDraft(composition);
+                if (delta > 0 && isDrunkDeck(composition)) {
+                    awardEgg('bilancia', 'LA BILANCIA È UBRIACA. HA PESATO TUTTO E DUE VOLTE.');
+                }
                 return;
             }
             case 'deck-save': {
                 const input = container.querySelector('#sc-deck-name');
                 view.draft.name = input?.value || '';
+                const misspelled = isMisspelledDeckName(view.draft.name);
                 const result = saveDeck(view.profile, { name: view.draft.name, composition: view.draft.composition });
                 view.profile = result.profile;
                 if (result.error) showToast(result.error);
@@ -1203,6 +1357,7 @@ export function initScippo(container) {
                     showToast(`Mazzo “${result.deck.name}” salvato e attivo.`);
                 }
                 rerender({ keepScroll: true });
+                if (!result.error && misspelled) awardEgg('refuso', 'MI HAI CHIAMATO MALE. UNA P. TI PERDONO UNA VOLTA.');
                 return;
             }
             case 'deck-use': {
@@ -1279,6 +1434,18 @@ export function initScippo(container) {
         if (event.target.id === 'sc-deck-name') view.draft.name = event.target.value;
     };
 
+    const onKeydown = event => {
+        if (event.key !== 'Escape' || view.screen !== 'quaderno') return;
+        event.preventDefault();
+        if (view.cantinaOpen) {
+            view.cantinaOpen = false;
+            view.screen = 'quaderno';
+        } else {
+            view.screen = 'home';
+        }
+        rerender();
+    };
+
     const cleanup = () => {
         if (view.disposed) return;
         view.disposed = true;
@@ -1287,6 +1454,7 @@ export function initScippo(container) {
         clearTimeout(view.toastTimer);
         container.removeEventListener('click', onClick);
         container.removeEventListener('input', onInput);
+        document.removeEventListener('keydown', onKeydown);
         observer.disconnect();
         audio.dispose();
         restoreChrome();
@@ -1300,6 +1468,7 @@ export function initScippo(container) {
 
     container.addEventListener('click', onClick);
     container.addEventListener('input', onInput);
+    document.addEventListener('keydown', onKeydown);
     const observer = new MutationObserver(() => {
         if (!container.querySelector('.scippo-app')) cleanup();
     });
