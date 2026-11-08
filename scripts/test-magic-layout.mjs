@@ -88,10 +88,15 @@ const portaLibera = async inizio => {
 const avviaVite = async () => {
     const numero = await portaLibera(4300);
     if (!numero) throw new Error('nessuna porta libera per un Vite temporaneo');
+    // Lo stdin resta aperto: il CLI di Vite esce quando lo stdin finisce, e con
+    // `ignore` (cioè /dev/null) si spegnerebbe a metà corsa. `CI=1` disattiva
+    // anche le scorciatoie da tastiera, che non servono qui.
     const processo = spawn(join(radice, 'node_modules', '.bin', 'vite'), ['--port', String(numero), '--strictPort'], {
         cwd: radice,
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, CI: '1' }
     });
+    processo.stdin.on('error', () => { /* stdin chiuso: pazienza */ });
     let registro = '';
     processo.stdout.on('data', pezzo => { registro += pezzo; });
     processo.stderr.on('data', pezzo => { registro += pezzo; });
@@ -126,6 +131,14 @@ const misure = [];
 try {
     esegui('open', `${base}/`);
     for (const vista of VIEWPORT) {
+        // Il Vite temporaneo può cadere a metà corsa: se non risponde più, lo
+        // riavvio invece di misurare una pagina d'errore (dove localStorage è vietato).
+        if (vite && !(await serveSorgenti(base))) {
+            console.log('Il Vite temporaneo non risponde più: lo riavvio.');
+            vite = await avviaVite();
+            base = vite.url;
+            esegui('open', `${base}/`);
+        }
         // Ogni larghezza riparte da una pagina fresca: la tendina decide la sua
         // geometria al montaggio, quindi un semplice resize non basta.
         esegui('set', 'viewport', String(vista.w), String(vista.h));
@@ -136,10 +149,11 @@ try {
             try {
                 uscita = esegui('eval', `(async () => {\n${sorgente}\nreturn await window.__magicLayout();\n})()`);
             } catch (error) {
-                // La pagina può navigare da sola durante la misura (boot, sessione, HMR):
-                // una navigazione invalida la lettura, quindi si riprova una volta sola.
+                // La pagina può navigare da sola durante la misura (boot, sessione, HMR)
+                // o ricaricarsi per l'ottimizzazione delle dipendenze di Vite: la lettura
+                // diventa invalida, quindi si riprova una volta sola.
                 const testo = String(error.stderr || error.message || error);
-                if (tentativo || !/navigated or closed/.test(testo)) {
+                if (tentativo) {
                     throw new Error(`${vista.w}x${vista.h}: misura interrotta\n${testo.slice(-800)}`);
                 }
             }
@@ -247,6 +261,12 @@ for (const m of misure) {
             verifica(lungo.closeHit, `${dove}: chiudi non raggiungibile con testo lungo`);
             verifica(lungo.maxBodyScrollH >= lungo.maxBodyClientH, `${dove}: corpo aperto non misurabile`);
             verifica(lungo.maxArteY === lungo.primaArteY, `${dove}: l'arte si sposta aprendo la tendina con testo lungo`);
+            verifica(lungo.maxScrollTop > 50, `${dove}: con la tendina aperta il corpo non scorre fino in fondo (${lungo.maxScrollTop}px)`);
+            verifica(Math.abs(lungo.maxArteDopoScroll - lungo.primaArteY) <= 1, `${dove}: scorrendo il corpo aperto l'arte si sposta di ${lungo.maxArteDopoScroll - lungo.primaArteY}px`);
+            verifica(Math.abs(lungo.maxCopiaDopoScroll - lungo.maxCopiaY) <= 1, `${dove}: scorrendo il corpo aperto la tendina si sposta di ${lungo.maxCopiaDopoScroll - lungo.maxCopiaY}px`);
+            verifica(Math.abs(lungo.paginaDelta) <= 1, `${dove}: lo scroll del corpo trascina la pagina di ${lungo.paginaDelta}px`);
+            verifica(/contain/.test(lungo.overscroll || ''), `${dove}: overscroll «${lungo.overscroll}» sul corpo della tendina`);
+            verifica(Math.abs(lungo.maxCopiaH - lungo.sogliaTendina) <= 2, `${dove}: aperta misura ${lungo.maxCopiaH}px invece di ${lungo.sogliaTendina}px con testo lungo`);
         } else {
             // Sopra i 1024px la tendina non esiste: il testo deve restare raggiungibile.
             const r = lungo.reachabile || {};
@@ -324,8 +344,24 @@ for (const m of misure) {
             atteso('mazzoFermoFineOrizzontale', 'Foxtrot', 'lo swipe orizzontale oltre la fine del mazzo');
         }
     } else {
+        // Sopra i 1024px la tendina non c'è: la scheda vive tutta nel modale, e
+        // la promessa è che la carta si veda per intero senza scorrere nulla. Se
+        // un giorno l'arte sfonda il bordo o il testo finisce sotto la piega, il
+        // desktop torna a essere una scheda mutilata come sul telefono di prima.
         verifica(!s.enabled, `${dove}: tendina attiva anche su desktop`);
         verifica(s.min.inlineHeight === '', `${dove}: altezza inline ${s.min.inlineHeight} sulla tendina desktop`);
+        const arte = s.min.art, testo = s.min.copy;
+        if (!arte || !testo) {
+            problemi.push(`${dove}: arte o testo della scheda non misurati`);
+        } else {
+            verifica(testo.h > 0, `${dove}: il testo della scheda è alto ${testo.h}px`);
+            verifica(arte.y >= 0 && arte.y + arte.h <= m.h, `${dove}: la carta esce dalla viewport (${arte.y}→${arte.y + arte.h} su ${m.h}px)`);
+            // Il margine di 8px è quello che il palco si tiene dal bordo: sotto
+            // quella soglia la carta sembra incollata al vetro.
+            verifica(arte.y >= 8, `${dove}: la carta parte a ${arte.y}px dal bordo`);
+            verifica(testo.y >= 0 && testo.y + testo.h <= m.h, `${dove}: il testo esce dalla viewport (${testo.y}→${testo.y + testo.h} su ${m.h}px)`);
+            verifica(s.min.hit?.ok, `${dove}: su desktop il chiudi è coperto da ${s.min.hit?.tag || 'altro elemento'}`);
+        }
     }
 }
 
