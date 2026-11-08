@@ -1,6 +1,7 @@
 import { renderHomeBackButton } from '../../ui/BackButton.js';
 import { navigateTo } from '../../../services/appNavigation.js';
 import { supabase } from '../../../services/supabase.js';
+import { authErrorMessage } from '../../../services/authErrors.js';
 import { applyProfileAppearance } from '../../../services/profileAppearance.js';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validatePassword } from '../../../services/passwordPolicy.js';
 import {
@@ -602,7 +603,7 @@ export async function showSettings(container, user = null, navigation = null) {
                 passwordForm.reset();
                 showStatus('Password aggiornata.');
             } catch (error) {
-                showStatus(`Password non aggiornata: ${error.message}`, true);
+                showStatus(authErrorMessage(error, 'Password non aggiornata.'), true);
             } finally {
                 submit.disabled = false;
             }

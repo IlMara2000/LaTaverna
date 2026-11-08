@@ -66,6 +66,7 @@ export const INITIAL_URL_SEARCH = typeof window === 'undefined' ? '' : window.lo
 if (/[#?&]type=recovery(&|$)/.test(`${INITIAL_URL_HASH}${INITIAL_URL_SEARCH}`)) {
     try {
         sessionStorage.setItem('taverna_password_recovery', '1');
+        sessionStorage.setItem('taverna_password_recovery_stamp', String(Date.now()));
     } catch {
         // Storage negato: resta la lettura del frammento.
     }

@@ -18,7 +18,13 @@ const MESSAGES = {
     session_expired: 'La sessione è scaduta: accedi di nuovo.',
     session_not_found: 'La sessione è scaduta: accedi di nuovo.',
     otp_expired: 'Il link è scaduto: richiedine uno nuovo.',
-    flow_state_expired: 'Il link è scaduto: riprova dall’inizio.'
+    flow_state_expired: 'Il link è scaduto: riprova dall’inizio.',
+    flow_state_not_found: 'Il link di recupero non è più valido: richiedine uno nuovo.',
+    refresh_token_not_found: 'La sessione è scaduta: accedi di nuovo.',
+    refresh_token_already_used: 'Il link è già stato usato: richiedine uno nuovo.',
+    bad_code_verifier: 'Errore di verifica: riprova dall’inizio.',
+    reauth_needed: 'Per sicurezza devi accedere di nuovo prima di cambiare la password.',
+    user_not_found: 'Account non trovato.'
 };
 
 const OFFLINE = 'Connessione assente o instabile: controlla la rete e riprova.';
@@ -31,7 +37,14 @@ const BY_MESSAGE = [
     [/password should be at least|weak password/i, 'weak_password'],
     [/should be different from the old password/i, 'same_password'],
     [/unable to validate email|invalid email|invalid format/i, 'email_address_invalid'],
-    [/rate limit|too many requests/i, 'over_request_rate_limit']
+    [/rate limit|too many requests/i, 'over_request_rate_limit'],
+    [/auth session missing/i, 'session_not_found'],
+    [/flow state not found/i, 'flow_state_not_found'],
+    [/refresh token not found/i, 'refresh_token_not_found'],
+    [/refresh token already used/i, 'refresh_token_already_used'],
+    [/bad code verifier/i, 'bad_code_verifier'],
+    [/reauthentication needed|reauth needed/i, 'reauth_needed'],
+    [/user not found/i, 'user_not_found']
 ];
 
 export function authErrorMessage(error, fallback = 'Non è stato possibile completare l’operazione. Riprova.') {

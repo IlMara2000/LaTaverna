@@ -44,14 +44,46 @@ export function initResetPassword(container) {
 
     document.getElementById('reset-to-login').onclick = backToLogin;
 
+    // Un link di recupero vale una volta sola: se la sessione non c'è già
+    // quando il modulo si monta, il token è scaduto o è stato consumato.
+    (async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                say('Il link di recupero non è più valido: richiedine uno nuovo dalla schermata di accesso.');
+                return;
+            }
+        } catch {
+            say('Non è stato possibile verificare la sessione. Riprova più tardi.');
+        }
+    })();
+
+    // Il segno in session storage ha una scadenza: un link vecchio di un'ora
+    // non deve più aprire il modulo.
+    const RECOVERY_TTL_MS = 60 * 60 * 1000;
+    try {
+        const stamp = Number(sessionStorage.getItem('taverna_password_recovery_stamp'));
+        if (stamp && Date.now() - stamp > RECOVERY_TTL_MS) {
+            sessionStorage.removeItem('taverna_password_recovery');
+            sessionStorage.removeItem('taverna_password_recovery_stamp');
+        }
+    } catch {
+        // storage negato: il controllo si basa solo sul frammento
+    }
+
+    let submitting = false;
+
     form.onsubmit = async event => {
         event.preventDefault();
+        if (submitting) return;
+        submitting = true;
+
         const password = passwordField.value;
         const confirmation = confirmField.value;
 
         const policy = validatePassword(password);
-        if (policy) { say(policy); passwordField.focus(); return; }
-        if (password !== confirmation) { say('Le due password non coincidono.'); confirmField.focus(); return; }
+        if (policy) { say(policy); passwordField.focus(); submitting = false; return; }
+        if (password !== confirmation) { say('Le due password non coincidono.'); confirmField.focus(); submitting = false; return; }
 
         say('');
         submit.disabled = true;
@@ -61,12 +93,16 @@ export function initResetPassword(container) {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 say('Il link di recupero non è più valido: richiedine uno nuovo dalla schermata di accesso.');
+                submitting = false;
+                submit.disabled = false;
+                submit.innerText = 'SALVA LA NUOVA PASSWORD';
                 return;
             }
             const { error } = await supabase.auth.updateUser({ password });
             if (error) throw error;
             localStorage.removeItem('taverna_guest_user');
             sessionStorage.removeItem('taverna_password_recovery');
+            sessionStorage.removeItem('taverna_password_recovery_stamp');
             say('Password aggiornata. Entriamo nella Taverna…', 'ok');
             window.history.replaceState({}, document.title, '/');
             setTimeout(() => window.location.reload(), 1200);
@@ -75,6 +111,7 @@ export function initResetPassword(container) {
         } finally {
             submit.disabled = false;
             submit.innerText = 'SALVA LA NUOVA PASSWORD';
+            submitting = false;
         }
     };
 }

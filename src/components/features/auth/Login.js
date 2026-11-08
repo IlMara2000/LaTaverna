@@ -100,8 +100,8 @@ function renderLoginMethods(container) {
             });
             if (error) throw error;
             loginMessage.textContent = 'Se l’indirizzo è registrato, riceverai un’email con il link per reimpostare la password.';
-        } catch {
-            loginMessage.textContent = 'Recupero non disponibile in questo momento. Riprova più tardi.';
+        } catch (err) {
+            loginMessage.textContent = authErrorMessage(err, 'Recupero non disponibile in questo momento. Riprova più tardi.');
         }
     };
 
