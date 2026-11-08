@@ -55,7 +55,9 @@ npm run test:layout
 
 Se la porta serve la build statica invece dei sorgenti (`npm run serve`, cioè `scripts/serve-dist.mjs`), il test se ne accorge e avvia da solo un Vite temporaneo su una porta libera, spegnendolo all'uscita: con una 3000 statica basta `npm run test:layout`, senza `BASE`.
 
-Ogni larghezza riparte da un `reload`, perché la tendina decide la sua geometria al montaggio e un semplice resize non basterebbe. Se la pagina naviga da sola a metà misura (boot, sessione, HMR di Vite) la lettura viene ripetuta una volta sola; se fallisce di nuovo il comando si ferma e dice su quale viewport.
+La porta si considera libera solo se nessuno l'ascolta né su `127.0.0.1` né su `::1`: Vite si lega a `localhost`, e una sonda solo IPv4 dichiarerebbe libera una porta occupata (poi `--strictPort` fa fallire l'avvio). Se il Vite temporaneo smette di rispondere, il test gli dà un'altra occasione, poi lo spegne — aspettando l'uscita effettiva, così la porta è libera — e lo riaccende; se muore durante una misura, lo rimette in piedi prima di ripeterla. Lo spegnimento finale è atteso anche quando il test esce per errore, per non lasciare un Vite in ascolto.
+
+Ogni larghezza riparte da un `reload`, perché la tendina decide la sua geometria al montaggio e un semplice resize non basterebbe. Se la pagina naviga da sola a metà misura (boot, sessione, HMR di Vite) la lettura viene ripetuta, ripristinando prima il server se è caduto; se fallisce di nuovo il comando si ferma e dice su quale viewport.
 
 #### Come leggere la tabella
 
@@ -79,7 +81,7 @@ Oltre ai numeri stampati:
 - gesti: inseguimento 1:1, aggancio sopra e sotto metà, tocco singolo, soglia dei 5px, trascinamento verso il basso che richiude;
 - swipe: ordine della collezione e del mazzo (seminati in ordine diverso apposta) e arresto ai due capi;
 - raggiungibilità con `elementFromPoint` di chiudi, maniglia, frecce di sfoglio, tessere della collezione e pulsanti dei mazzi;
-- testo lungo: il corpo della tendina scorre senza spostare arte e pannello; su desktop il testo resta raggiungibile invece di finire tagliato.
+- testo lungo: il corpo della tendina scorre senza spostare arte e pannello; con la tendina aperta, scorrere fino in fondo non muove arte, tendina né pagina e l'`overscroll` resta `contain`; su desktop il testo resta raggiungibile invece di finire tagliato.
 
 #### Se qualcosa esce dalle soglie
 

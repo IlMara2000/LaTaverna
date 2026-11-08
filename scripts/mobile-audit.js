@@ -520,6 +520,20 @@
                 testoLungo.maxBodyClientH = corpoAperto.clientHeight;
                 testoLungo.maxBodyScrollH = corpoAperto.scrollHeight;
                 testoLungo.maxArteY = arteLunga()?.y ?? null;
+                testoLungo.maxCopiaY = copiaLunga()?.y ?? null;
+                testoLungo.maxCopiaH = copiaLunga()?.h ?? null;
+                testoLungo.sogliaTendina = tondo(window.innerHeight - 56);
+                const stileCorpo = getComputedStyle(corpoAperto);
+                testoLungo.overscroll = stileCorpo.overscrollBehaviorY || stileCorpo.overscrollBehavior;
+                // Scorrere fino in fondo, come farebbe un dito sulla tendina aperta:
+                // palco, tendina e pagina devono restare fermi.
+                const paginaPrima = window.scrollY;
+                corpoAperto.scrollTop = corpoAperto.scrollHeight;
+                await dormi(150);
+                testoLungo.maxScrollTop = tondo(corpoAperto.scrollTop);
+                testoLungo.maxArteDopoScroll = arteLunga()?.y ?? null;
+                testoLungo.maxCopiaDopoScroll = copiaLunga()?.y ?? null;
+                testoLungo.paginaDelta = tondo(window.scrollY - paginaPrima);
             }
             radice.querySelector('.mv-modal-close')?.click();
             await attendi(() => !radice.querySelector('.mv-modal'), 1500);

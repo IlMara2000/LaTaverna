@@ -45,15 +45,22 @@ centrata nel palco e tendina che a riposo copre solo la carta e aperta arriva a
 (verificato con `elementFromPoint` al centro di ogni comando, a riposo e aperta).
 Lo stesso controllo copre tessere della collezione e pulsanti dei mazzi, dopo averli
 portati in vista con `scrollIntoView`. Una settima carta con testo lunghissimo verifica
-che il corpo della tendina scorra senza spostare palco e arte; su desktop, dove la
-tendina non c'è, che lo stesso testo resti raggiungibile invece di essere tagliato. Con pointer sintetici verifica anche
+che il corpo della tendina scorra senza spostare palco e arte, e — con la tendina
+aperta e il corpo portato in fondo — che arte, tendina e pagina restino ferme e
+l'`overscroll` sia `contain`; dove il testo ci sta tutto, che non scorra affatto.
+Su desktop, dove la tendina non c'è, che lo stesso testo resti raggiungibile invece
+di essere tagliato. Con pointer sintetici verifica anche
 i gesti della maniglia (inseguimento 1:1, aggancio sopra e sotto metà, tocco singolo,
 soglia dei 5px) e lo swipe sull'arte: orizzontale e verticale, ordine della collezione
 contro quello del mazzo e arresto ai capi.
 
 Le misure vere stanno in `window.__magicLayout()` (`scripts/mobile-audit.js`); il
 driver è `scripts/test-magic-layout.mjs`. Il test monta una collezione di prova e
-disattiva rete e cloud, quindi non tocca i dati della Taverna.
+disattiva rete e cloud, quindi non tocca i dati della Taverna. Se la porta serve la
+build statica anziché i sorgenti, il driver si accende un Vite temporaneo; sceglie la
+porta controllando sia `127.0.0.1` sia `::1` e, se il server smette di rispondere, lo
+riaccende dopo averne atteso lo spegnimento. `BASE` serve solo per puntare un'altra
+istanza già attiva.
 
 ## Cosa significa ogni numero
 

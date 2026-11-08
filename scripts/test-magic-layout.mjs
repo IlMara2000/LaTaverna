@@ -19,7 +19,7 @@
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { createServer } from 'node:net';
+import { connect as netConnect, createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -72,22 +72,47 @@ const serveSorgenti = async url => {
     }
 };
 
+// Una porta è libera solo se nessuno l'ascolta su nessuna delle due famiglie:
+// Vite si lega a `localhost`, che qui è `::1`, quindi una sonda legata a
+// `127.0.0.1` dichiara libera una porta occupata e `--strictPort` fa poi fallire
+// l'avvio con `Port 4300 is already in use`.
+const inAscolto = (numero, host) => new Promise(risolvi => {
+    let connessione;
+    let scadenza = null;
+    const chiudi = esito => {
+        if (scadenza) clearTimeout(scadenza);
+        try { connessione?.destroy(); } catch { /* già chiusa */ }
+        risolvi(esito);
+    };
+    try {
+        connessione = netConnect(numero, host);
+    } catch {
+        risolvi(false);
+        return;
+    }
+    // Un listener che accetta ma non risponde è comunque occupato.
+    scadenza = setTimeout(() => chiudi(true), 600);
+    connessione.once('connect', () => chiudi(true));
+    connessione.once('error', () => chiudi(false));
+});
+
+const portaOccupata = async numero => (await inAscolto(numero, '127.0.0.1')) || (await inAscolto(numero, '::1'));
+
 const portaLibera = async inizio => {
     for (let numero = inizio; numero < inizio + 40; numero++) {
+        if (await portaOccupata(numero)) continue;
         const libera = await new Promise(risolvi => {
             const prova = createServer();
             prova.once('error', () => risolvi(false));
             prova.once('listening', () => prova.close(() => risolvi(true)));
-            prova.listen(numero, '127.0.0.1');
+            prova.listen(numero);
         });
         if (libera) return numero;
     }
     return null;
 };
 
-const avviaVite = async () => {
-    const numero = await portaLibera(4300);
-    if (!numero) throw new Error('nessuna porta libera per un Vite temporaneo');
+const avviaViteSu = async numero => {
     // Lo stdin resta aperto: il CLI di Vite esce quando lo stdin finisce, e con
     // `ignore` (cioè /dev/null) si spegnerebbe a metà corsa. `CI=1` disattiva
     // anche le scorciatoie da tastiera, che non servono qui.
@@ -97,6 +122,11 @@ const avviaVite = async () => {
         env: { ...process.env, CI: '1' }
     });
     processo.stdin.on('error', () => { /* stdin chiuso: pazienza */ });
+    processo.once('exit', codice => {
+        if (typeof codice === 'number' && codice !== 0) {
+            console.error(`Vite temporaneo uscito con codice ${codice}\n${registro.slice(-600)}`);
+        }
+    });
     let registro = '';
     processo.stdout.on('data', pezzo => { registro += pezzo; });
     processo.stderr.on('data', pezzo => { registro += pezzo; });
@@ -110,7 +140,67 @@ const avviaVite = async () => {
     throw new Error(`Vite temporaneo non pronto su ${url}\n${registro.slice(-600)}`);
 };
 
+// Se la porta scelta viene presa nella corsa tra sonda e avvio, o Vite muore appena
+// partito, il tentativo successivo riparte da una porta diversa invece di ripetere
+// lo stesso numero.
+const avviaVite = async () => {
+    let ultimo = null;
+    for (let tentativo = 0; tentativo < 3; tentativo++) {
+        const numero = await portaLibera(4300 + tentativo * 10);
+        if (!numero) throw new Error('nessuna porta libera per un Vite temporaneo');
+        try {
+            return await avviaViteSu(numero);
+        } catch (errore) {
+            ultimo = errore;
+            console.error(`Vite temporaneo non avviato sulla porta ${numero}: ${String(errore.message).split('\n')[0]}`);
+        }
+    }
+    throw ultimo;
+};
+
 let vite = null;
+
+// SIGTERM e poi SIGKILL: Vite a volte ignora il primo, e i suoi pipe terrebbero
+// vivo questo processo anche dopo la stampa della tabella. Il riavvio aspetta la
+// morte effettiva, così la porta è davvero libera prima di riaccenderlo.
+const fermaVite = async () => {
+    const processo = vite?.processo;
+    vite = null;
+    if (!processo || processo.exitCode !== null) return;
+    for (const flusso of [processo.stdin, processo.stdout, processo.stderr]) {
+        try { flusso?.destroy?.(); } catch { /* già chiuso */ }
+    }
+    processo.unref?.();
+    await new Promise(risolvi => {
+        let forzatura = null;
+        let limite = null;
+        const fatto = () => {
+            clearTimeout(forzatura);
+            clearTimeout(limite);
+            risolvi();
+        };
+        processo.once('exit', fatto);
+        // SIGTERM può restare in sospeso su un processo congelato: SIGKILL lo chiude.
+        forzatura = setTimeout(() => {
+            try { processo.kill('SIGKILL'); } catch { /* già terminato */ }
+        }, 1500);
+        // Rete di sicurezza: non aspettare per sempre se nemmeno SIGKILL fa uscire.
+        limite = setTimeout(fatto, 5000);
+        try {
+            if (!processo.kill('SIGTERM')) fatto();
+        } catch {
+            fatto();
+        }
+    });
+    // I timer qui sopra non sono `unref`: mentre aspettiamo sono loro a tenere vivo
+    // il processo, altrimenti Node uscirebbe con 13 a metà attesa.
+    await new Promise(risolvi => setTimeout(risolvi, 200));
+};
+
+const spegniVite = () => {
+    void fermaVite();
+};
+
 if (!(await serveSorgenti(base))) {
     console.log(await raggiungibile()
         ? `${base} serve la build statica, non i sorgenti: avvio un Vite temporaneo.`
@@ -122,28 +212,54 @@ if (!(await serveSorgenti(base))) {
         process.exit(1);
     }
     base = vite.url;
-    const spegni = () => { try { vite?.processo.kill(); } catch { /* già chiuso */ } };
-    process.once('exit', spegni);
-    for (const segnale of ['SIGINT', 'SIGTERM']) process.once(segnale, () => { spegni(); process.exit(130); });
+    process.once('exit', spegniVite);
+    for (const segnale of ['SIGINT', 'SIGTERM']) process.once(segnale, () => { spegniVite(); process.exit(130); });
 }
+
+const viteVivo = () => Boolean(vite?.processo) && vite.processo.exitCode === null && vite.processo.signalCode === null;
+
+// Tre tentativi intervallati: un timeout isolato non deve far ripartire il server.
+const viteRisponde = async (tentativi = 3, pausa = 600) => {
+    for (let tentativo = 0; tentativo < tentativi; tentativo++) {
+        if (await serveSorgenti(base)) return true;
+        if (tentativo < tentativi - 1) await new Promise(risolvi => setTimeout(risolvi, pausa));
+    }
+    return false;
+};
+
+// Il Vite temporaneo può uscire o incantarsi a metà corsa: se non risponde più lo
+// riaccendo, invece di misurare una pagina d'errore (dove localStorage è vietato).
+const assicuraSorgenti = async () => {
+    if (!vite || await viteRisponde()) return;
+    if (viteVivo()) {
+        // Sotto carico un dev server può impiegare più dei 4s di timeout: prima di
+        // spegnerlo gli do un'altra occasione.
+        console.log('Il Vite temporaneo non risponde: aspetto che si riprenda.');
+        await new Promise(risolvi => setTimeout(risolvi, 4000));
+        if (await viteRisponde()) return;
+    }
+    console.log(viteVivo()
+        ? 'Il Vite temporaneo è bloccato: lo spengo e lo riaccendo.'
+        : 'Il Vite temporaneo è uscito: lo riaccendo.');
+    await fermaVite();
+    vite = await avviaVite();
+    base = vite.url;
+    esegui('open', `${base}/`);
+};
 
 const misure = [];
 try {
     esegui('open', `${base}/`);
     for (const vista of VIEWPORT) {
-        // Il Vite temporaneo può cadere a metà corsa: se non risponde più, lo
-        // riavvio invece di misurare una pagina d'errore (dove localStorage è vietato).
-        if (vite && !(await serveSorgenti(base))) {
-            console.log('Il Vite temporaneo non risponde più: lo riavvio.');
-            vite = await avviaVite();
-            base = vite.url;
-            esegui('open', `${base}/`);
-        }
+        await assicuraSorgenti();
         // Ogni larghezza riparte da una pagina fresca: la tendina decide la sua
         // geometria al montaggio, quindi un semplice resize non basta.
         esegui('set', 'viewport', String(vista.w), String(vista.h));
         let uscita = null;
-        for (let tentativo = 0; tentativo < 2 && uscita === null; tentativo++) {
+        for (let tentativo = 0; tentativo < 3 && uscita === null; tentativo++) {
+            // Se il server è morto durante la misura, la pagina da ricaricare non
+            // esiste: prima di riprovare lo rimetto in piedi.
+            if (tentativo) await assicuraSorgenti();
             esegui('reload');
             esegui('wait', '2000');
             try {
@@ -166,9 +282,9 @@ try {
     try {
         esegui('close');
     } catch { /* il browser può essere già chiuso */ }
-    try {
-        vite?.processo.kill();
-    } catch { /* il Vite temporaneo può essere già spento */ }
+    // Atteso, non `void`: uscendo per errore un kill non atteso lascerebbe il Vite
+    // vivo (e la porta occupata) dopo la fine del test.
+    await fermaVite();
 }
 
 const larghezza = (testo, colonne) => String(testo).padEnd(colonne);
@@ -261,9 +377,16 @@ for (const m of misure) {
             verifica(lungo.closeHit, `${dove}: chiudi non raggiungibile con testo lungo`);
             verifica(lungo.maxBodyScrollH >= lungo.maxBodyClientH, `${dove}: corpo aperto non misurabile`);
             verifica(lungo.maxArteY === lungo.primaArteY, `${dove}: l'arte si sposta aprendo la tendina con testo lungo`);
-            verifica(lungo.maxScrollTop > 50, `${dove}: con la tendina aperta il corpo non scorre fino in fondo (${lungo.maxScrollTop}px)`);
-            verifica(Math.abs(lungo.maxArteDopoScroll - lungo.primaArteY) <= 1, `${dove}: scorrendo il corpo aperto l'arte si sposta di ${lungo.maxArteDopoScroll - lungo.primaArteY}px`);
-            verifica(Math.abs(lungo.maxCopiaDopoScroll - lungo.maxCopiaY) <= 1, `${dove}: scorrendo il corpo aperto la tendina si sposta di ${lungo.maxCopiaDopoScroll - lungo.maxCopiaY}px`);
+            // Sui tablet alti il testo di prova ci sta tutto: lì il corpo non deve
+            // scorrere affatto. Dove invece avanza, deve arrivare in fondo senza
+            // trascinare arte, tendina o pagina.
+            if (lungo.maxBodyScrollH > lungo.maxBodyClientH + 40) {
+                verifica(lungo.maxScrollTop > 50, `${dove}: con la tendina aperta il corpo non scorre fino in fondo (${lungo.maxScrollTop}px su ${lungo.maxBodyScrollH - lungo.maxBodyClientH} disponibili)`);
+                verifica(Math.abs(lungo.maxArteDopoScroll - lungo.primaArteY) <= 1, `${dove}: scorrendo il corpo aperto l'arte si sposta di ${lungo.maxArteDopoScroll - lungo.primaArteY}px`);
+                verifica(Math.abs(lungo.maxCopiaDopoScroll - lungo.maxCopiaY) <= 1, `${dove}: scorrendo il corpo aperto la tendina si sposta di ${lungo.maxCopiaDopoScroll - lungo.maxCopiaY}px`);
+            } else {
+                verifica(lungo.maxScrollTop === 0, `${dove}: un corpo che ci sta tutto non dovrebbe scorrere (${lungo.maxScrollTop}px)`);
+            }
             verifica(Math.abs(lungo.paginaDelta) <= 1, `${dove}: lo scroll del corpo trascina la pagina di ${lungo.paginaDelta}px`);
             verifica(/contain/.test(lungo.overscroll || ''), `${dove}: overscroll «${lungo.overscroll}» sul corpo della tendina`);
             verifica(Math.abs(lungo.maxCopiaH - lungo.sogliaTendina) <= 2, `${dove}: aperta misura ${lungo.maxCopiaH}px invece di ${lungo.sogliaTendina}px con testo lungo`);
