@@ -423,13 +423,30 @@ for (const m of misure) {
             verifica(Math.abs(s.max.copy.y - 56) <= 2, `${dove}: tendina aperta lascia ${s.max.copy.y}px sopra invece di 56px`);
             verifica(s.max.close.y >= 0 && s.max.close.y + s.max.close.h <= s.max.copy.y + 2, `${dove}: chiudi coperto con la tendina aperta`);
             verifica(s.max.hit?.ok, `${dove}: con la tendina aperta il chiudi è coperto da ${s.max.hit?.tag || 'altro elemento'}`);
+            verifica(s.max.comandi?.close?.min >= 32, `${dove}: chiudi largo solo ${s.max.comandi?.close?.min}px (minimo 32)`);
             verifica(s.max.grabHit?.ok, `${dove}: con la tendina aperta la maniglia è coperta da ${s.max.grabHit?.tag || 'altro elemento'}`);
+            // La maniglia è un'area di trascinamento, non un pulsante: misura 26px di
+            // altezza. Non le chiedo i 32px dei comandi, ma nemmeno la lascio libera:
+            // 24px è il minimo di WCAG 2.5.8, sotto il quale diventa difficile da
+            // afferrare col dito.
+            verifica((s.max.comandi?.grab?.min ?? 0) >= 24, `${dove}: maniglia alta solo ${s.max.comandi?.grab?.min}px (minimo 24)`);
             verifica(s.max.browseHit?.ok, `${dove}: con la tendina aperta la freccia di sfoglio è coperta da ${s.max.browseHit?.tag || 'altro elemento'}`);
+            verifica(s.max.comandi?.browse?.min >= 32, `${dove}: freccia di sfoglio larga solo ${s.max.comandi?.browse?.min}px (minimo 32)`);
             verifica(s.max.art && s.max.art.y === s.min.art?.y, `${dove}: l'arte si muove aprendo la tendina`);
             verifica(s.max.body && s.max.body.scrollH >= s.max.body.clientH, `${dove}: corpo della tendina non misurabile`);
         } else {
             problemi.push(`${dove}: tendina aperta non misurata`);
         }
+
+        // I comandi devono essere toccabili, non solo visibili: un pulsante di
+        // chiusura largo 18px passerebbe tutte le verifiche di hit esistenti.
+        const comandiSotto32 = [];
+        for (const [nome, gruppo] of Object.entries(m.hitComandi || {})) {
+            for (const campione of (gruppo?.campioni || [])) {
+                if (campione.ok && campione.min < 32) comandiSotto32.push(`${nome}[${campione.indice}] ${campione.min}px`);
+            }
+        }
+        verifica(comandiSotto32.length === 0, `${dove}: comandi sotto i 32px: ${comandiSotto32.join(', ')}`);
 
         // Gesti simulati: inseguimento, aggancio sopra e sotto metà, tocco.
         const g = s.gestures;

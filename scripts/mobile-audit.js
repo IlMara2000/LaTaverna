@@ -302,6 +302,10 @@
         const frecciaSfoglio = () => radice.querySelector('.mv-browse [data-browse="1"]');
 
         const arteRect = rettangolo(arte), copiaRect = rettangolo(copia), modaleRect = rettangolo(modale);
+        const misuraComando = (el, nome) => {
+            const r = rettangolo(el);
+            return r ? { nome, w: r.w, h: r.h, min: Math.min(r.w, r.h) } : null;
+        };
         const min = {
             modal: modaleRect, art: arteRect, copy: copiaRect, close: rettangolo(chiudi),
             hit: colpisce(chiudi), grabHit: colpisce(maniglia), browseHit: colpisce(frecciaSfoglio()),
@@ -309,7 +313,12 @@
             gapBelow: arteRect && copiaRect ? copiaRect.y - (arteRect.y + arteRect.h) : null,
             varMin: getComputedStyle(modale).getPropertyValue('--mv-sheet-min').trim(),
             inlineHeight: copia.style.height || '',
-            body: corpo(radice.querySelector('.mv-sheet-body'))
+            body: corpo(radice.querySelector('.mv-sheet-body')),
+            comandi: {
+                close: misuraComando(chiudi, 'close'),
+                grab: misuraComando(maniglia, 'grab'),
+                browse: misuraComando(frecciaSfoglio(), 'browse')
+            }
         };
 
         // La maniglia è focusabile: ArrowUp apre la tendina anche senza gesti touch.
@@ -318,7 +327,12 @@
         const max = {
             copy: rettangolo(copia), art: rettangolo(arte), close: rettangolo(chiudi),
             hit: colpisce(chiudi), grabHit: colpisce(maniglia), browseHit: colpisce(frecciaSfoglio()), grab: rettangolo(maniglia),
-            body: corpo(radice.querySelector('.mv-sheet-body'))
+            body: corpo(radice.querySelector('.mv-sheet-body')),
+            comandi: {
+                close: misuraComando(radice.querySelector('.mv-modal-close'), 'close'),
+                grab: misuraComando(maniglia, 'grab'),
+                browse: misuraComando(frecciaSfoglio(), 'browse')
+            }
         };
         maniglia?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
         await dormi(250);
@@ -463,7 +477,15 @@
             const indici = [...new Set([0, Math.floor(elementi.length / 2)])];
             return {
                 totale: elementi.length,
-                campioni: indici.map(indice => ({ indice, ...(hitComando(elementi[indice]) || { ok: false, tag: 'assente' }) }))
+                campioni: indici.map(indice => {
+                    const el = elementi[indice];
+                    const r = el ? rettangolo(el) : null;
+                    return {
+                        indice,
+                        ...(hitComando(el) || { ok: false, tag: 'assente' }),
+                        ...(r ? { w: r.w, h: r.h, min: Math.min(r.w, r.h) } : {})
+                    };
+                })
             };
         };
         // Siamo nella scheda Mazzi: pulsanti dei mazzi e tessere al loro interno.

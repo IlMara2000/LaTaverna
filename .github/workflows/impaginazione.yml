@@ -59,6 +59,15 @@ jobs:
             agent-browser install --with-deps
           fi
 
+      # Il test di impaginazione gira sui sorgenti, non sulla build, quindi una push
+      # che rompe il bundling o i test unitari passerebbe inosservata: li eseguo
+      # prima, quando sono ancora veloci.
+      - name: Build
+        run: npm run build
+
+      - name: Test rapidi
+        run: npm run test:cards
+
       - name: Misura l'impaginazione
         run: npm run test:layout
 

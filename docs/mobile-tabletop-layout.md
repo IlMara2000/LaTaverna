@@ -81,6 +81,7 @@ Oltre ai numeri stampati:
 - gesti: inseguimento 1:1, aggancio sopra e sotto metà, tocco singolo, soglia dei 5px, trascinamento verso il basso che richiude;
 - swipe: ordine della collezione e del mazzo (seminati in ordine diverso apposta) e arresto ai due capi;
 - raggiungibilità con `elementFromPoint` di chiudi, maniglia, frecce di sfoglio, tessere della collezione e pulsanti dei mazzi;
+- dimensioni dei comandi: chiudi e freccia di sfoglio almeno 32px per lato, maniglia almeno 24px (è un'area di trascinamento, non un pulsante); tessere e pulsanti dei mazzi campionati restano sopra i 32px;
 - testo lungo: il corpo della tendina scorre senza spostare arte e pannello; con la tendina aperta, scorrere fino in fondo non muove arte, tendina né pagina e l'`overscroll` resta `contain`; su desktop il testo resta raggiungibile invece di finire tagliato.
 
 #### Se qualcosa esce dalle soglie
@@ -101,6 +102,8 @@ Quella è la larghezza e il comando da correggere, non un'impressione visiva. Se
 2. Cambia `src/dashboards/magic-viewer.css` per griglia, palco e tendina; `magic.js` solo se cambia la geometria calcolata (`--mv-sheet-min`, altezza inline).
 3. Rilancia lo stesso comando: verde quando l'ultima riga dice «Tutte le misure dentro le soglie».
 4. Se hai toccato anche il codice delle carte, `npm run test:cards` e `npm run build` restano i controlli complementari: il test di impaginazione non li sostituisce.
+
+Gli stessi tre passi girano da soli in CI: il workflow `.github/workflows/impaginazione.yml` parte a ogni push e a mano da *Actions → Impaginazione → Run workflow*, esegue `npm ci`, `npm run build`, `npm run test:cards` e infine `npm run test:layout` su Ubuntu con Node 24. Il browser lo scarica `agent-browser` (194 MB) e la cartella `~/.agent-browser/browsers` è in cache, quindi dal secondo giro il passo del browser dura meno di un secondo; un push nuovo annulla la misura precedente (`concurrency`). Non serve alcun secret: senza `VITE_SUPABASE_*` i servizi usano il fallback locale. Se la misura fallisce, la tabella con le righe incriminate è nel log del passo «Misura l'impaginazione».
 
 #### Dove si cambiano le regole
 
