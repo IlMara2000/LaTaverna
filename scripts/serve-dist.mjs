@@ -6,6 +6,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import { parseEnv } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { applyApiEnv, createApiMiddleware } from './local-api-bridge.js';
@@ -69,10 +70,57 @@ function cacheControl(pathname) {
     return 'public, max-age=3600';
 }
 
-function sendFile(req, res, filePath, { status = 200 } = {}) {
+// Solo testo: immagini, audio, font e wasm hanno già un formato proprio.
+const COMPRESSIBILI = new Set(['.html', '.js', '.mjs', '.css', '.json', '.svg', '.txt', '.md']);
+const SOGLIA_GZIP = 1024;
+
+// I compressi restano in memoria: la chiave include mtime e dimensione, quindi una
+// rebuild li invalida da sola. Tetto complessivo per non crescere senza limite.
+const CACHE_MAX_FILE = 8 * 1024 * 1024;
+const CACHE_MAX_BYTES = 32 * 1024 * 1024;
+const cacheCompressi = new Map();
+const compressioniInCorso = new Map();
+let cacheBytes = 0;
+
+function memorizza(chiave, buf) {
+    if (buf.length > CACHE_MAX_BYTES / 4) return;
+    const vecchio = cacheCompressi.get(chiave);
+    if (vecchio) cacheBytes -= vecchio.length;
+    cacheCompressi.delete(chiave);
+    cacheCompressi.set(chiave, buf);
+    cacheBytes += buf.length;
+    while (cacheBytes > CACHE_MAX_BYTES && cacheCompressi.size > 1) {
+        const [chiaveVecchia, bufVecchio] = cacheCompressi.entries().next().value;
+        cacheCompressi.delete(chiaveVecchia);
+        cacheBytes -= bufVecchio.length;
+    }
+}
+
+async function compresso(filePath, chiave) {
+    const inCache = cacheCompressi.get(chiave);
+    if (inCache) {
+        cacheCompressi.delete(chiave);
+        cacheCompressi.set(chiave, inCache); // rinfresca l'ordine di espulsione
+        return inCache;
+    }
+    let lavoro = compressioniInCorso.get(chiave);
+    if (!lavoro) {
+        lavoro = fs.promises.readFile(filePath)
+            .then((dati) => new Promise((ok, ko) => {
+                zlib.gzip(dati, { level: 6 }, (err, buf) => (err ? ko(err) : ok(buf)));
+            }))
+            .then((buf) => { compressioniInCorso.delete(chiave); memorizza(chiave, buf); return buf; })
+            .catch((err) => { compressioniInCorso.delete(chiave); throw err; });
+        compressioniInCorso.set(chiave, lavoro);
+    }
+    return lavoro;
+}
+
+async function sendFile(req, res, filePath, { status = 200 } = {}) {
     const ext = path.extname(filePath).toLowerCase();
+    let stat;
     let size;
-    try { size = fs.statSync(filePath).size; } catch { res.writeHead(404); res.end('Not found'); return; }
+    try { stat = fs.statSync(filePath); size = stat.size; } catch { res.writeHead(404); res.end('Not found'); return; }
 
     const headers = {
         'Content-Type': MIME[ext] || 'application/octet-stream',
@@ -97,11 +145,40 @@ function sendFile(req, res, filePath, { status = 200 } = {}) {
     }
 
     headers['Content-Length'] = end - start + 1;
+
+    // Compressione al volo: solo senza Range (206 non si comprime) e solo se il client accetta gzip.
+    const comprimibile = COMPRESSIBILI.has(ext);
+    const gzip = !partial && comprimibile && size >= SOGLIA_GZIP && /\bgzip\b/i.test(req.headers['accept-encoding'] || '');
+    if (comprimibile) headers.Vary = 'Accept-Encoding';
+    if (gzip) {
+        headers['Content-Encoding'] = 'gzip';
+        delete headers['Content-Length'];
+        // Con il compresso già in memoria si conosce la lunghezza esatta: niente chunked.
+        if (size <= CACHE_MAX_FILE) {
+            let buf = null;
+            try { buf = await compresso(filePath, `${filePath}:${stat.mtimeMs}:${size}`); } catch { buf = null; }
+            if (buf) {
+                headers['Content-Length'] = buf.length;
+                res.writeHead(status, headers);
+                if (req.method === 'HEAD') res.end(); else res.end(buf);
+                return;
+            }
+        }
+    }
     res.writeHead(partial ? 206 : status, headers);
     if (req.method === 'HEAD') { res.end(); return; }
     const stream = fs.createReadStream(filePath, { start, end });
     stream.on('error', () => { if (!res.writableEnded) res.destroy(); });
-    stream.pipe(res);
+    if (gzip) stream.pipe(zlib.createGzip({ level: 6 })).pipe(res);
+    else stream.pipe(res);
+}
+
+// sendFile è asincrona: un rifiuto non gestito farebbe terminare il processo.
+function invia(req, res, filePath, opzioni) {
+    sendFile(req, res, filePath, opzioni).catch(() => {
+        if (!res.headersSent) { try { res.writeHead(500, { 'Content-Type': 'text/plain' }); } catch {} }
+        if (!res.writableEnded) res.end();
+    });
 }
 
 function serveStatic(req, res) {
@@ -115,10 +192,10 @@ function serveStatic(req, res) {
     let isDir = false;
     try { isDir = fs.statSync(filePath).isDirectory(); } catch {}
 
-    if (!isDir && fs.existsSync(filePath)) { sendFile(req, res, filePath); return; }
+    if (!isDir && fs.existsSync(filePath)) { invia(req, res, filePath); return; }
 
     // Una rotta dell'app senza estensione ricade sull'index (SPA), un asset assente no.
-    if (!path.extname(pathname)) { sendFile(req, res, indexPath); return; }
+    if (!path.extname(pathname)) { invia(req, res, indexPath); return; }
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Non trovato');
 }
