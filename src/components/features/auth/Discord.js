@@ -1,4 +1,5 @@
 import { supabase } from '../../../services/supabase.js';
+import { isPasswordRecoveryLink } from '../../../services/recoveryLink.js';
 
 /**
  * Gestisce l'invio dell'utente al portale Discord OAuth
@@ -33,6 +34,9 @@ export function initDiscord() {
  * Centratura perfetta PC/Mobile garantita
  */
 export async function setupDiscordRedirect(container) {
+    // Il recupero password passa dagli stessi token: non è un ritorno da Discord.
+    if (isPasswordRecoveryLink()) return;
+
     const isAuthRedirect = window.location.hash.includes('access_token=') || 
                           window.location.search.includes('code=');
 

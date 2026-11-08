@@ -13,11 +13,12 @@
 .sidebar-section-label { font-size: .7rem; letter-spacing: .12em; opacity: .65; margin-top: 12px; }
 .sidebar-actions > a.sidebar-nav-item { font-size: .8rem; padding: 12px; }
 
-/* Uscita dall'account: stessa forma delle altre voci, colore d'avviso. */
-#ui #sidebar-menu .sidebar-logout { text-align: left; min-height: 48px !important; border-color: rgb(255 106 106 / 34%) !important; color: #ff9d9d !important; }
-#ui #sidebar-menu .sidebar-logout:hover:not(:disabled) { border-color: rgb(255 106 106 / 62%) !important; color: #ffd6d6 !important; background: rgb(255 106 106 / 8%) !important; }
+/* Uscita dall'account: discreta a riposo, rossa solo quando la si tocca. */
+#ui #sidebar-menu .sidebar-logout { text-align: left; min-height: 48px !important; padding: 12px 18px !important; font-size: 10px !important; letter-spacing: .06em; border-color: rgb(255 255 255 / 12%) !important; color: #c2adbd !important; }
+#ui #sidebar-menu .sidebar-logout:hover:not(:disabled, .is-armed),
+#ui #sidebar-menu .sidebar-logout:focus-visible:not(.is-armed) { border-color: rgb(255 106 106 / 45%) !important; color: #ffb8b8 !important; background: rgb(255 106 106 / 5%) !important; }
 /* Primo tocco: la voce si arma e chiede conferma prima di uscire. */
-#ui #sidebar-menu .sidebar-logout.is-armed { border-color: rgb(255 106 106 / 78%) !important; color: #ffe6e6 !important; background: rgb(255 106 106 / 18%) !important; box-shadow: inset 0 0 0 2px rgb(255 106 106 / 62%), 0 0 22px rgb(255 106 106 / 20%) !important; }
+#ui #sidebar-menu .sidebar-nav-item.sidebar-logout.is-armed { border-color: rgb(255 106 106 / 78%) !important; background-image: none !important; color: #ff7b7b !important; background: rgb(255 106 106 / 18%) !important; box-shadow: inset 0 0 0 2px rgb(255 106 106 / 62%), 0 0 22px rgb(255 106 106 / 20%) !important; }
 @media (min-width: 601px) and (max-width: 1000px) {
     #ui .taverna-home .taverna-scene-stage { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -4,8 +4,10 @@ html[data-theme="amethyst"] #app:has(.auth-page) { padding: 0; }
 #ui .entry-container #main-logo { width: clamp(280px, 38vw, 420px); height: auto; max-width: 100%; margin: 0 0 8px; filter: none; }
 #ui .entry-container .entry-description { margin: 0; font-size: 14px; color: var(--text-secondary); }
 #ui .entry-container .entry-cta { margin-top: 28px; padding: 16px 28px; border-radius: 14px; background: #7950ac; border-color: #bb94df55; box-shadow: none; font-size: 13px; letter-spacing: .02em; }
-#ui .auth-page { min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); box-sizing: border-box; }
-#ui .auth-panel { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: stretch; text-align: center; }
+/* Su schermi bassi il pannello è più alto della finestra: la pagina scorre al
+   suo interno invece di tagliare in alto e in basso ciò che non ci sta. */
+#ui .auth-page { min-height: 100svh; max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; display: flex; align-items: flex-start; justify-content: center; padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); box-sizing: border-box; }
+#ui .auth-panel { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: stretch; text-align: center; margin-block: auto; }
 #ui .auth-logo { display: block; width: 250px; height: auto; max-width: 100%; align-self: center; margin: -32px auto -14px; filter: none; animation: none; }
 #ui .auth-intro { margin: 0 0 28px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; text-align: center; }
 #ui .auth-form { display: flex; flex-direction: column; text-align: left; gap: 9px; }
@@ -17,8 +19,9 @@ html[data-theme="amethyst"] #app:has(.auth-page) { padding: 0; }
 #ui .auth-submit { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; border: 1px solid #c09be459; color: #fff; background: #7950ac; }
 #ui .auth-submit:hover { background: #8c60bd; }
 #ui .auth-submit:disabled { opacity: .65; cursor: wait; }
-#ui #login-message { margin: 0; color: #f4b8cd; font-size: 12px; line-height: 1.5; }
-#ui #login-message:empty { display: none; }
+#ui #login-message, #ui #reset-message { margin: 0; color: #f4b8cd; font-size: 12px; line-height: 1.5; }
+#ui #login-message:empty, #ui #reset-message:empty { display: none; }
+#ui .auth-note { margin: 14px 0 0; color: #ae9bbf; font-size: 11px; line-height: 1.6; text-align: center; }
 #ui .auth-divider { display: flex; align-items: center; gap: 16px; margin: 20px 0; color: #af99c0; font-size: 11px; }
 #ui .auth-divider::before, #ui .auth-divider::after { content: ''; flex: 1; height: 1px; background: #b390d02b; }
 #ui .auth-provider { color: #ebdff7; background: #241a33; border: 1px solid #ad8bca45; }
@@ -33,7 +36,6 @@ html[data-theme="amethyst"] #app:has(.auth-page) { padding: 0; }
 #ui .auth-welcome .auth-logo { width: 360px; margin: 0 auto; }
 #ui .auth-welcome .auth-submit { width: min(100%, 300px); }
 @media (max-height: 760px) {
-    #ui .auth-page { align-items: flex-start; }
     #ui .auth-logo { width: 190px; margin-top: -25px; }
     #ui .auth-intro { margin-bottom: 18px; }
     #ui .auth-register { margin-top: 10px; }

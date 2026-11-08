@@ -1,6 +1,7 @@
 import { supabase } from '../../../services/supabase.js';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, validatePassword } from '../../../services/passwordPolicy.js';
 import { showLogin } from './Login.js';
+import { authErrorMessage } from '../../../services/authErrors.js';
 
 export function showRegister(container) {
     container.innerHTML = `
@@ -89,7 +90,7 @@ export function showRegister(container) {
                 msg.style.color = "#00ff00";
             }
         } catch (err) {
-            msg.textContent = err.message;
+            msg.textContent = authErrorMessage(err, 'Registrazione non riuscita. Controlla i dati e riprova.');
             msg.style.color = "var(--error-red)";
         } finally {
             syncSubmit();

@@ -15,6 +15,8 @@ import './styles/platform-layout.css';
 import { supabase } from './services/supabase.js';
 import { renderTavernEntrance } from './components/features/auth/TavernEntrance.js';
 import { initLogin } from './components/features/auth/Login.js';
+import { initResetPassword } from './components/features/auth/ResetPassword.js';
+import { isPasswordRecoveryLink } from './services/recoveryLink.js';
 import { initNavbar } from './components/layout/Navbar.js';
 import { showLobby } from './lobby.js';
 import { updateLastAccess } from './components/ui/AuthInput.js';
@@ -51,6 +53,13 @@ async function initApp() {
     const destroyLoader = () => playLoaderExit(loader, appContainer);
 
     try {
+        // 0. Il link di recupero password arriva con i token nel frammento:
+        //    ha la precedenza su tutto, compreso il ritorno da Discord.
+        if (isPasswordRecoveryLink()) {
+            initResetPassword(appContainer);
+            return;
+        }
+
         // 1. Gestisci PRIMA DI TUTTO l'eventuale ritorno da Discord
         // Se c'è un redirect in corso, mostrerà l'overlay "Sincro Discord" creato prima
         if (typeof setupDiscordRedirect === 'function') {

@@ -1,6 +1,7 @@
 import { renderTavernEntrance } from './TavernEntrance.js';
 import { supabase } from '../../../services/supabase.js';
 import { getLocalDndUser } from '../../../services/dndLocalStore.js';
+import { authErrorMessage } from '../../../services/authErrors.js';
 
 /**
  * SISTEMA DI AUTENTICAZIONE - LA TAVERNA
@@ -79,7 +80,7 @@ function renderLoginMethods(container) {
             localStorage.removeItem('taverna_guest_user');
             window.location.reload();
         } catch (err) {
-            loginMessage.textContent = err.message || 'Accesso non riuscito.';
+            loginMessage.textContent = authErrorMessage(err, 'Accesso non riuscito. Controlla email e password e riprova.');
             emailSubmit.disabled = false;
             emailSubmit.innerText = 'ACCEDI';
         }
@@ -114,7 +115,7 @@ function renderLoginMethods(container) {
             options: { redirectTo: window.location.origin }
         });
 
-        if (error) alert("Errore durante l'accesso: " + error.message);
+        if (error) alert(authErrorMessage(error, 'Non è stato possibile aprire Discord. Riprova.'));
     };
 
     // Azione Ospite collegata a Supabase Anonymous Auth
