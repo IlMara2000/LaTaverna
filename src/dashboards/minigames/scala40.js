@@ -311,7 +311,10 @@ export function initScala40(container) {
             open: () => play({ type: 'open' }),
             cancel: () => play({ type: 'cancel' })
         };
-        view.querySelectorAll('[data-s40]').forEach(button => {
+        // Il pannello dell'aiuto vive nel guscio, fuori da `view`: cercando solo
+        // dentro la vista, il suo «HO CAPITO» restava senza gestore e il tavolo
+        // rimaneva coperto dal modale per sempre.
+        shell.querySelectorAll('[data-s40]').forEach(button => {
             const handler = actions[button.dataset.s40];
             if (handler) button.onclick = handler;
         });
