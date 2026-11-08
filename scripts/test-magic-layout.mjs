@@ -3,24 +3,29 @@
  * TEST IMPAGINAZIONE SCHEDA CARTA (dashboard Magic)
  *
  * Monta la dashboard Magic con una collezione di prova dentro il browser
- * pilotato da agent-browser e misura sei larghezze: griglia della collezione,
+ * pilotato da agent-browser e misura otto larghezze: griglia della collezione,
  * pannello mazzi e tendina dei dettagli a riposo e aperta.
  *
  *   npm run test:layout
  *   BASE=http://localhost:3000 node scripts/test-magic-layout.mjs
  *
+ * Se la porta indicata non serve i sorgenti — tipico quando `npm run serve`
+ * espone la build statica — il test avvia un Vite temporaneo su una porta
+ * libera e lo spegne all'uscita.
+ *
  * Esce con codice 1 se una misura esce dalle soglie: serve a impedire che una
  * modifica al CSS o al JS della scheda carta riporti le carte troppo strette,
  * la tendina staccata dal bordo o l'arte fuori dal palco.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), '..');
 const sorgente = readFileSync(join(radice, 'scripts/mobile-audit.js'), 'utf8');
-const base = (process.env.BASE || 'http://localhost:3000').replace(/\/+$/, '');
+let base = (process.env.BASE || 'http://localhost:3000').replace(/\/+$/, '');
 const browser = process.env.AGENT_BROWSER || 'agent-browser';
 const sessione = `magic-layout-${process.pid}`;
 
@@ -53,9 +58,68 @@ const raggiungibile = async () => {
     }
 };
 
-if (!(await raggiungibile())) {
-    console.error(`Nessuna Taverna su ${base}. Avvia il dev server con: npm run dev`);
-    process.exit(1);
+// Il test legge i moduli così come stanno in `src/`: se la porta espone la build
+// statica (`scripts/serve-dist.mjs`), `/src/...` non esiste e la misura non
+// partirebbe. In quel caso il test si accende un Vite suo, su una porta libera,
+// e lo spegne all'uscita.
+const serveSorgenti = async url => {
+    try {
+        const risposta = await fetch(`${url}/src/dashboards/magic.js`, { signal: AbortSignal.timeout(4000) });
+        if (!risposta.ok) return false;
+        return /javascript/.test(risposta.headers.get('content-type') || '') && (await risposta.text()).includes('export');
+    } catch {
+        return false;
+    }
+};
+
+const portaLibera = async inizio => {
+    for (let numero = inizio; numero < inizio + 40; numero++) {
+        const libera = await new Promise(risolvi => {
+            const prova = createServer();
+            prova.once('error', () => risolvi(false));
+            prova.once('listening', () => prova.close(() => risolvi(true)));
+            prova.listen(numero, '127.0.0.1');
+        });
+        if (libera) return numero;
+    }
+    return null;
+};
+
+const avviaVite = async () => {
+    const numero = await portaLibera(4300);
+    if (!numero) throw new Error('nessuna porta libera per un Vite temporaneo');
+    const processo = spawn(join(radice, 'node_modules', '.bin', 'vite'), ['--port', String(numero), '--strictPort'], {
+        cwd: radice,
+        stdio: ['ignore', 'pipe', 'pipe']
+    });
+    let registro = '';
+    processo.stdout.on('data', pezzo => { registro += pezzo; });
+    processo.stderr.on('data', pezzo => { registro += pezzo; });
+    const url = `http://localhost:${numero}`;
+    for (let tentativo = 0; tentativo < 60; tentativo++) {
+        if (await serveSorgenti(url)) return { processo, url };
+        if (processo.exitCode !== null) break;
+        await new Promise(risolvi => setTimeout(risolvi, 500));
+    }
+    processo.kill();
+    throw new Error(`Vite temporaneo non pronto su ${url}\n${registro.slice(-600)}`);
+};
+
+let vite = null;
+if (!(await serveSorgenti(base))) {
+    console.log(await raggiungibile()
+        ? `${base} serve la build statica, non i sorgenti: avvio un Vite temporaneo.`
+        : `Nessuna risposta da ${base}: avvio un Vite temporaneo.`);
+    try {
+        vite = await avviaVite();
+    } catch (errore) {
+        console.error(`Impossibile avviare un Vite temporaneo: ${errore.message}`);
+        process.exit(1);
+    }
+    base = vite.url;
+    const spegni = () => { try { vite?.processo.kill(); } catch { /* già chiuso */ } };
+    process.once('exit', spegni);
+    for (const segnale of ['SIGINT', 'SIGTERM']) process.once(segnale, () => { spegni(); process.exit(130); });
 }
 
 const misure = [];
@@ -88,6 +152,9 @@ try {
     try {
         esegui('close');
     } catch { /* il browser può essere già chiuso */ }
+    try {
+        vite?.processo.kill();
+    } catch { /* il Vite temporaneo può essere già spento */ }
 }
 
 const larghezza = (testo, colonne) => String(testo).padEnd(colonne);

@@ -44,7 +44,7 @@ Serve al ciclo «cambio il CSS, misuro, confronto»: una corsa sono otto larghez
 #### Prima di partire
 
 1. `npm run dev`: la Taverna risponde su http://localhost:3000 (porta fissa in `vite.config.js`; se è occupata Vite si ferma invece di sceglierne un'altra).
-2. `agent-browser` deve essere nel PATH; se sta altrove, `AGENT_BROWSER=/percorso/cli npm run test:layout`. Per puntare un altro dev server: `BASE=http://localhost:3001 npm run test:layout`.
+2. `agent-browser` deve essere nel PATH; se sta altrove, `AGENT_BROWSER=/percorso/cli npm run test:layout`. Per puntare un'altra istanza di sviluppo: `BASE=http://localhost:3001 npm run test:layout` (se invece la porta espone la build statica, il test avvia un Vite temporaneo da solo).
 
 #### La corsa
 
@@ -52,6 +52,8 @@ Serve al ciclo «cambio il CSS, misuro, confronto»: una corsa sono otto larghez
 npm run test:layout
 # SCHEDA CARTA — 8 larghezze su http://localhost:3000
 ```
+
+Se la porta serve la build statica invece dei sorgenti (`npm run serve`, cioè `scripts/serve-dist.mjs`), il test se ne accorge e avvia da solo un Vite temporaneo su una porta libera, spegnendolo all'uscita: con una 3000 statica basta `npm run test:layout`, senza `BASE`.
 
 Ogni larghezza riparte da un `reload`, perché la tendina decide la sua geometria al montaggio e un semplice resize non basterebbe. Se la pagina naviga da sola a metà misura (boot, sessione, HMR di Vite) la lettura viene ripetuta una volta sola; se fallisce di nuovo il comando si ferma e dice su quale viewport.
 
