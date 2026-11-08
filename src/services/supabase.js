@@ -55,6 +55,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.warn("Supabase non configurato: avvio in modalità locale limitata.");
 }
 
+// Il link di recupero password porta i token nel frammento, e il client li
+// consuma e li cancella appena viene creato: qui li leggiamo prima, così la
+// guardia di avvio può ancora riconoscere il tipo "recovery".
+export const INITIAL_URL_HASH = typeof window === 'undefined' ? '' : window.location.hash;
+export const INITIAL_URL_SEARCH = typeof window === 'undefined' ? '' : window.location.search;
+
 export const supabase = isSupabaseConfigured
     ? createClient(supabaseUrl, supabaseAnonKey)
     : createLocalFallbackClient();

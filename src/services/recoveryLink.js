@@ -1,3 +1,5 @@
+import { INITIAL_URL_HASH, INITIAL_URL_SEARCH } from './supabase.js';
+
 const typeOf = value => {
     try {
         return new URLSearchParams(String(value || '').replace(/^[#?]/, '')).get('type');
@@ -11,11 +13,17 @@ const typeOf = value => {
  * oppure con ?code=…&type=recovery. Riconoscere quel link serve sia a mostrare il
  * modulo della nuova password sia a non scambiarlo per un ritorno da Discord.
  */
-export function isPasswordRecoveryLink(url = window.location.href) {
-    try {
-        const link = new URL(url, window.location.origin);
-        return typeOf(link.hash) === 'recovery' || typeOf(link.search) === 'recovery';
-    } catch {
-        return false;
+export function isPasswordRecoveryLink(url) {
+    if (url) {
+        try {
+            const link = new URL(url, window.location.origin);
+            return typeOf(link.hash) === 'recovery' || typeOf(link.search) === 'recovery';
+        } catch {
+            return false;
+        }
     }
+
+    // All'avvio il client Supabase ha già ripulito l'URL: vale anche lo snapshot.
+    return [window.location.hash, window.location.search, INITIAL_URL_HASH, INITIAL_URL_SEARCH]
+        .some(part => typeOf(part) === 'recovery');
 }
