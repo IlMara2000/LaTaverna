@@ -37,6 +37,7 @@ export function initResetPassword(container) {
     };
 
     const backToLogin = () => {
+        sessionStorage.removeItem('taverna_password_recovery');
         window.history.replaceState({}, document.title, '/');
         window.location.reload();
     };
@@ -65,6 +66,7 @@ export function initResetPassword(container) {
             const { error } = await supabase.auth.updateUser({ password });
             if (error) throw error;
             localStorage.removeItem('taverna_guest_user');
+            sessionStorage.removeItem('taverna_password_recovery');
             say('Password aggiornata. Entriamo nella Taverna…', 'ok');
             window.history.replaceState({}, document.title, '/');
             setTimeout(() => window.location.reload(), 1200);

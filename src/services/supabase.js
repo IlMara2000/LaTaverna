@@ -61,6 +61,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const INITIAL_URL_HASH = typeof window === 'undefined' ? '' : window.location.hash;
 export const INITIAL_URL_SEARCH = typeof window === 'undefined' ? '' : window.location.search;
 
+// L'intento va ricordato subito: il client ripulisce il frammento e un reload
+// dell'app ripartirebbe da un URL che non dice più nulla del recupero.
+if (/[#?&]type=recovery(&|$)/.test(`${INITIAL_URL_HASH}${INITIAL_URL_SEARCH}`)) {
+    try {
+        sessionStorage.setItem('taverna_password_recovery', '1');
+    } catch {
+        // Storage negato: resta la lettura del frammento.
+    }
+}
+
 export const supabase = isSupabaseConfigured
     ? createClient(supabaseUrl, supabaseAnonKey)
     : createLocalFallbackClient();

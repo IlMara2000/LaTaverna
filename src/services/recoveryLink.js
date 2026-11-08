@@ -23,7 +23,14 @@ export function isPasswordRecoveryLink(url) {
         }
     }
 
-    // All'avvio il client Supabase ha già ripulito l'URL: vale anche lo snapshot.
-    return [window.location.hash, window.location.search, INITIAL_URL_HASH, INITIAL_URL_SEARCH]
-        .some(part => typeOf(part) === 'recovery');
+    // All'avvio il client Supabase ha già ripulito l'URL: valgono lo snapshot
+    // e il segno lasciato in sessione dal primo caricamento.
+    const parts = [window.location.hash, window.location.search, INITIAL_URL_HASH, INITIAL_URL_SEARCH];
+    if (parts.some(part => typeOf(part) === 'recovery')) return true;
+
+    try {
+        return sessionStorage.getItem('taverna_password_recovery') === '1';
+    } catch {
+        return false;
+    }
 }
