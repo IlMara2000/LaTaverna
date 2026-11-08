@@ -35,18 +35,71 @@ Sullo stesso palco si sfoglia con due gesti: trascinamento orizzontale oltre 45p
 
 La collezione sotto i 1024px usa `repeat(auto-fill, minmax(165px, 1fr))` con gap 16px: 2 colonne sul telefono (sotto 650px è forzato a 2), 3 sui tablet fra 651 e 900, 4 a 1024 orizzontale, mentre il desktop conserva le sue 6 con minimo 150px. Il minimo conta: con 180px a 651px restavano 2 colonne da 261px e a 834 ne comparivano 4 da 164px, più strette che sul telefono. Il pannello Mazzi, che teneva una sidebar da 240px lasciando una sola colonna di carte, sotto i 900px passa a una colonna con la lista dei mazzi orizzontale e scorrevole (pulsanti da almeno 145px); a 1024 e su desktop resta affiancato.
 
-Verifiche: `npm run test:layout` (misure in `scripts/mobile-audit.js`, soglie in `scripts/test-magic-layout.mjs`) su 320×568, 390×844, 844×390, 651×900, 768×1024, 834×1112, 1024×768 e 1180×900 — nessuno scroll orizzontale, colonne 2 in verticale sul telefono (carte da 111px a 320, da 144px a 390), 3 sui tablet in verticale, 4 in orizzontale a 844 e a 1024, 6 su desktop; arte centrata, tendina a riposo fra 196 e 320px e aperta sempre a `altezza − 56px`: 204→512 a 320×568, 304→788 a 390×844, 196→334 in orizzontale, 320→844, 320→968, 320→1056, 276→712, con chiudi, maniglia e frecce di sfoglio sempre raggiungibili (verificato con `elementFromPoint` al centro di ogni comando, sia a tendina a riposo sia aperta, anche a 320×568); su desktop nessuna tendina. A 844×390, dove il palco è più basso dell'arte, la carta resta in alto a 8px e la tendina si accontenta di 196→334px: la regola `36% dell'altezza fra 196 e 320` entra in gioco proprio qui e il test la verifica a ogni larghezza. I gesti touch sono stati verificati in emulazione (iPhone 16 via CDP): inseguimento 1:1 durante il drag, blocco a 788 con top 56, ritorno a 304, tocco singolo che apre e richiude. Resta da provare su Safari iOS reale per safe-area e altezze dinamiche.
+Verifiche: `npm run test:layout` (misure in `scripts/mobile-audit.js`, soglie in `scripts/test-magic-layout.mjs`) su 320×568, 390×844, 844×390, 651×900, 768×1024, 834×1112, 1024×768 e 1180×900 — nessuno scroll orizzontale, colonne 2 in verticale sul telefono (carte da 111px a 320, da 144px a 390), 3 sui tablet in verticale, 4 in orizzontale a 844 e a 1024, 6 su desktop; arte centrata, tendina a riposo fra 196 e 320px e aperta sempre a `altezza − 56px`: 204→512 a 320×568, 304→788 a 390×844, 196→334 in orizzontale, 320→844, 320→968, 320→1056, 276→712, con chiudi, maniglia e frecce di sfoglio sempre raggiungibili (verificato con `elementFromPoint` al centro di ogni comando, sia a tendina a riposo sia aperta, anche a 320×568); su desktop nessuna tendina. Lo stesso controllo copre le tessere della collezione e i pulsanti dei mazzi (con le carte che contengono), dopo averli portati in vista. Una settima carta con testo lunghissimo verifica infine che il corpo della tendina scorra davvero senza spostare di un pixel arte e pannello — è il caso di una carta con molto testo regolamentare — e che su desktop, dove la tendina non c'è, quel testo resti raggiungibile scorrendo il pannello o la pagina invece di finire tagliato. A 844×390, dove il palco è più basso dell'arte, la carta resta in alto a 8px e la tendina si accontenta di 196→334px: la regola `36% dell'altezza fra 196 e 320` entra in gioco proprio qui e il test la verifica a ogni larghezza. I gesti touch sono stati verificati in emulazione (iPhone 16 via CDP): inseguimento 1:1 durante il drag, blocco a 788 con top 56, ritorno a 304, tocco singolo che apre e richiude. Resta da provare su Safari iOS reale per safe-area e altezze dinamiche.
 
-### Guida rapida: verificare la scheda carta
+### Guida rapida: usare il test quando tocchi la scheda carta
 
-Serve per il ciclo «cambio il CSS, misuro, confronto»: una trentina di secondi, nessun dato reale toccato.
+Serve al ciclo «cambio il CSS, misuro, confronto»: una corsa sono otto larghezze e meno di un minuto. Nessun dato reale viene toccato — il test monta una collezione e due mazzi finti in `localStorage`, apre la scheda e alla fine chiude la sessione del browser da sola.
+
+#### Prima di partire
 
 1. `npm run dev`: la Taverna risponde su http://localhost:3000 (porta fissa in `vite.config.js`; se è occupata Vite si ferma invece di sceglierne un'altra).
-2. `npm run test:layout`: apre una sessione `agent-browser` dedicata, monta una collezione e due mazzi di prova, misura le otto larghezze e chiude tutto da sola. Con `BASE=http://localhost:3001 npm run test:layout` punti un'altra porta, con `AGENT_BROWSER=/percorso/cli` un altro binario.
-3. Leggi la tabella: `GRIGLIA` è colonne × larghezza carta della collezione, `MAZZI` è colonne del pannello · display della lista · carte del mazzo, `TENDE` è l'altezza a riposo e aperta.
-4. Se un valore esce dalle soglie il comando esce con codice 1 e stampa righe come `✗ 834x1112: attese 3 colonne, trovate 4`: quella è la larghezza da correggere, non un'impressione visiva.
-5. Correggi `src/dashboards/magic-viewer.css` per griglia, palco e tendina (`magic.js` solo se cambia la geometria calcolata) e rilancia lo stesso comando: verde quando l'ultima riga dice «Tutte le misure dentro le soglie».
+2. `agent-browser` deve essere nel PATH; se sta altrove, `AGENT_BROWSER=/percorso/cli npm run test:layout`. Per puntare un altro dev server: `BASE=http://localhost:3001 npm run test:layout`.
 
-Le soglie vivono in `scripts/test-magic-layout.mjs`: nessuno scroll orizzontale; colonne 2 fino a 650px, 3 fino a 900px, 4 a 1024px, almeno 4 su desktop; carte mai sotto i 140px; mazzi a una colonna con lista `flex` scorrevole fino a 900px e due colonne sopra; tendina attiva fino a 1024px con `--mv-sheet-min` uguale all'altezza a riposo, arte centrata con scarto massimo 2px e almeno 40px dal bordo, aperta a 56px dal bordo alto con il chiudi scoperto e l'arte ferma; su desktop nessuna tendina e nessuna altezza inline. Per aggiungere una larghezza basta una voce in `VIEWPORT`; per una misura nuova si aggiunge un campo in `window.__magicLayout()` dentro `scripts/mobile-audit.js`.
+#### La corsa
+
+```bash
+npm run test:layout
+# SCHEDA CARTA — 8 larghezze su http://localhost:3000
+```
+
+Ogni larghezza riparte da un `reload`, perché la tendina decide la sua geometria al montaggio e un semplice resize non basterebbe. Se la pagina naviga da sola a metà misura (boot, sessione, HMR di Vite) la lettura viene ripetuta una volta sola; se fallisce di nuovo il comando si ferma e dice su quale viewport.
+
+#### Come leggere la tabella
+
+| Colonna | Significato |
+| --- | --- |
+| `VIEWPORT` | larghezza × altezza in CSS px |
+| `GRIGLIA` | colonne × larghezza carta della collezione |
+| `MAZZI` | colonne del pannello · display della lista · colonne × carte del mazzo di prova |
+| `TENDE` | altezza della tendina a riposo → aperta; `assente` sopra i 1024px |
+| `GESTI (drag)` | corsa del trascinamento usata, poi le altezze dopo rilascio sotto metà / sopra metà / tocco |
+| `SWIPE (coll \| mazzo)` | iniziali nell'ordine ottenuto sfogliando: collezione (orizzontale, verticale, orizzontale) \| mazzo |
+
+#### Cosa controlla ogni corsa
+
+Oltre ai numeri stampati:
+
+- nessuno scroll orizzontale della pagina;
+- collezione: colonne attese, nessuna carta sotto la soglia (100px fino a 360, 140px sopra), nessuna carta schiacciata;
+- mazzi: una colonna con lista `flex` orizzontale fino a 900px, due colonne `grid` sopra;
+- tendina: `--mv-sheet-min` uguale all'altezza a riposo, arte centrata con scarto massimo 2px e almeno 40px dal bordo, aperta a `altezza − 56px` con l'arte ferma;
+- gesti: inseguimento 1:1, aggancio sopra e sotto metà, tocco singolo, soglia dei 5px, trascinamento verso il basso che richiude;
+- swipe: ordine della collezione e del mazzo (seminati in ordine diverso apposta) e arresto ai due capi;
+- raggiungibilità con `elementFromPoint` di chiudi, maniglia, frecce di sfoglio, tessere della collezione e pulsanti dei mazzi;
+- testo lungo: il corpo della tendina scorre senza spostare arte e pannello; su desktop il testo resta raggiungibile invece di finire tagliato.
+
+#### Se qualcosa esce dalle soglie
+
+Il comando esce con codice **1** e stampa le righe incriminate:
+
+```
+Misure fuori soglia:
+  ✗ 834x1112: attese 3 colonne, trovate 4
+  ✗ 320x568: tessere della collezione #0 coperta da div.mv-modal-backdrop
+```
+
+Quella è la larghezza e il comando da correggere, non un'impressione visiva. Se il messaggio nomina chi copre, il problema è di `z-index` o di ordine nel DOM, non di griglia.
+
+#### Il giro completo
+
+1. Riproduci il punto di partenza: `npm run test:layout` prima di toccare il CSS.
+2. Cambia `src/dashboards/magic-viewer.css` per griglia, palco e tendina; `magic.js` solo se cambia la geometria calcolata (`--mv-sheet-min`, altezza inline).
+3. Rilancia lo stesso comando: verde quando l'ultima riga dice «Tutte le misure dentro le soglie».
+4. Se hai toccato anche il codice delle carte, `npm run test:cards` e `npm run build` restano i controlli complementari: il test di impaginazione non li sostituisce.
+
+#### Dove si cambiano le regole
+
+Le soglie vivono in `scripts/test-magic-layout.mjs`: colonne 2 fino a 650px, 3 fino a 900px, 4 a 1024px, almeno 4 su desktop; mazzi a una colonna con lista `flex` scorrevole fino a 900px e due colonne sopra; tendina attiva fino a 1024px, aperta a 56px dal bordo alto con il chiudi scoperto e l'arte ferma; su desktop nessuna tendina e nessuna altezza inline. Per aggiungere una larghezza basta una voce in `VIEWPORT`; per una misura nuova si aggiunge un campo in `window.__magicLayout()` dentro `scripts/mobile-audit.js`. Le soglie che dipendono dalla larghezza vanno scritte come condizione e non come numero unico: a 320px due colonne danno 111px per scelta, non per difetto, ed è il motivo per cui il minimo delle carte scende a 100px sotto i 360.
 
 Il test misura anche i gesti con pointer sintetici. Per la tendina: inseguimento 1:1 durante il drag (con transizione spenta e arte ferma), aggancio a riposo se il rilascio avviene sotto metà altezza, apertura completa sopra metà, tocco singolo, spostamento sotto i 5px trattato come tocco e trascinamento verso il basso che richiude. Per lo swipe sull'arte: verso orizzontale e verticale, l'ordine seguito (la collezione contro il mazzo, seminato apposta in ordine diverso) e l'arresto ai due capi dell'elenco, sia con swipe verticale sia orizzontale. Resta manuale la prova su un dispositivo vero e su Safari iOS con safe-area e `dvh`, che in Chromium non esistono. Un riassunto delle stesse soglie sta anche in `.agents/skills/mobile-layout-audit/SKILL.md`.

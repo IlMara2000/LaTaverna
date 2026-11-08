@@ -182,6 +182,13 @@
             typeLine: 'Instant', oracleText: 'Testo di prova per misurare la tendina dei dettagli. '.repeat(6),
             printedText: '', quantity: 1, language: 'en'
         }));
+        // Settima carta con testo lunghissimo: serve a verificare che il corpo della
+        // tendina scorra davvero senza spostare palco e arte.
+        carte.push({
+            id: 'prova-lunga', name: 'Zeta Lunga', image: MAGIC_PIXEL, manaCost: '{3}{U}',
+            typeLine: 'Sorcery', oracleText: 'Testo molto lungo per verificare che il corpo della tendina scorra davvero. '.repeat(40),
+            printedText: '', quantity: 1, language: 'en'
+        });
         localStorage.setItem(MAGIC_KEYS[0], JSON.stringify(carte));
         localStorage.setItem(MAGIC_KEYS[1], JSON.stringify([
             // Ordine volutamente diverso dalla collezione: Delta, Bravo, Foxtrot.
@@ -438,6 +445,87 @@
         await attendi(() => !radice.querySelector('.mv-modal'), 1500);
         await dormi(150);
 
+        // Tessere e mazzi: portati in vista, il centro deve appartenere al comando.
+        const hitComando = el => {
+            if (!el) return null;
+            el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+            const r = el.getBoundingClientRect();
+            if (!r.width || !r.height) return { ok: false, tag: 'senza dimensioni' };
+            if (r.bottom < 0 || r.top > window.innerHeight) return { ok: false, tag: 'fuori schermo' };
+            const punto = document.elementFromPoint(tondo(r.left + r.width / 2), tondo(r.top + r.height / 2));
+            return {
+                ok: !!punto && (punto === el || el.contains(punto)),
+                tag: punto ? `${punto.tagName.toLowerCase()}${punto.className ? '.' + String(punto.className).trim().split(/\s+/)[0] : ''}` : 'nulla'
+            };
+        };
+        const campione = lista => {
+            const elementi = [...lista];
+            const indici = [...new Set([0, Math.floor(elementi.length / 2)])];
+            return {
+                totale: elementi.length,
+                campioni: indici.map(indice => ({ indice, ...(hitComando(elementi[indice]) || { ok: false, tag: 'assente' }) }))
+            };
+        };
+        // Siamo nella scheda Mazzi: pulsanti dei mazzi e tessere al loro interno.
+        const hitComandi = {
+            mazzi: campione(radice.querySelectorAll('[data-select-deck]')),
+            mazzoTessere: campione(radice.querySelectorAll('.mv-deck-content [data-open-card]'))
+        };
+        radice.querySelector('[data-tab="collezione"]')?.click();
+        await dormi(400);
+        hitComandi.collezione = campione(radice.querySelectorAll('.mv-panel [data-open-card]'));
+
+        // Testo lungo: il corpo della tendina deve scorrere senza muovere palco e arte.
+        radice.querySelector('[data-open-card="prova-lunga"]')?.click();
+        const lungaAperta = await attendi(() => radice.querySelector('.mv-modal'), 2000);
+        let testoLungo = null;
+        if (lungaAperta) {
+            await dormi(300);
+            const corpoLungo = () => radice.querySelector('.mv-sheet-body');
+            const arteLunga = () => rettangolo(radice.querySelector('.mv-modal-art'));
+            const copiaLunga = () => rettangolo(radice.querySelector('.mv-modal-copy'));
+            const primaArte = arteLunga(), primaCopia = copiaLunga();
+            const corpo0 = corpoLungo();
+            corpo0.scrollTop = 400;
+            await dormi(150);
+            testoLungo = {
+                chars: (radice.querySelector('#mv-modal-effect')?.textContent || '').length,
+                bodyClientH: corpo0.clientHeight,
+                bodyScrollH: corpo0.scrollHeight,
+                scrollTop: corpo0.scrollTop,
+                primaArteY: primaArte?.y ?? null,
+                arteDelta: (arteLunga()?.y ?? 0) - (primaArte?.y ?? 0),
+                copiaDelta: (copiaLunga()?.y ?? 0) - (primaCopia?.y ?? 0),
+                closeHit: colpisce(radice.querySelector('.mv-modal-close'))?.ok ?? false,
+                // Su desktop la tendina non c'è: il testo deve restare raggiungibile
+                // scorrendo il pannello o la pagina, non venire tagliato.
+                reachabile: (() => {
+                    const mod = radice.querySelector('.mv-modal');
+                    const sc = document.scrollingElement;
+                    return {
+                        modScroll: !!mod && mod.scrollHeight > mod.clientHeight + 1,
+                        pagScroll: !!sc && sc.scrollHeight > sc.clientHeight + 1,
+                        modClientH: mod?.clientHeight ?? null,
+                        modScrollH: mod?.scrollHeight ?? null,
+                        pagClientH: sc?.clientHeight ?? null,
+                        pagScrollH: sc?.scrollHeight ?? null
+                    };
+                })()
+            };
+            // Aperta: il corpo resta scorrevole e l'arte non si sposta.
+            if (min.varMin) {
+                radice.querySelector('.mv-sheet-grab')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+                await dormi(400);
+                const corpoAperto = corpoLungo();
+                testoLungo.maxBodyClientH = corpoAperto.clientHeight;
+                testoLungo.maxBodyScrollH = corpoAperto.scrollHeight;
+                testoLungo.maxArteY = arteLunga()?.y ?? null;
+            }
+            radice.querySelector('.mv-modal-close')?.click();
+            await attendi(() => !radice.querySelector('.mv-modal'), 1500);
+            await dormi(150);
+        }
+
         const documento = document.documentElement;
         const overflowX = Math.max(
             documento.scrollWidth - documento.clientWidth,
@@ -449,6 +537,8 @@
             overflowX: tondo(overflowX),
             collection,
             deck,
+            hitComandi,
+            testoLungo,
             sheet: { enabled: !!min.varMin, min, max, gestures, swipes }
         };
     };

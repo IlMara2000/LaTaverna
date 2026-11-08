@@ -149,6 +149,44 @@ for (const m of misure) {
         verifica(d.listDisplay === 'grid', `${dove}: lista mazzi ${d.listDisplay} invece di grid`);
     }
 
+    // Tessere e pulsanti devono essere cliccabili dopo essere stati portati in vista.
+    const hit = m.hitComandi;
+    if (!hit) {
+        problemi.push(`${dove}: hit-test di tessere e mazzi mancante`);
+    } else {
+        for (const [nome, gruppo] of [
+            ['tessere della collezione', hit.collezione],
+            ['pulsanti dei mazzi', hit.mazzi],
+            ['tessere del mazzo', hit.mazzoTessere]
+        ]) {
+            verifica(gruppo?.totale > 0, `${dove}: nessun elemento per le ${nome}`);
+            for (const voce of gruppo?.campioni || []) {
+                verifica(voce.ok, `${dove}: ${nome} #${voce.indice} coperta da ${voce.tag}`);
+            }
+        }
+    }
+
+    // Testo lungo: il corpo scorre, palco e tendina restano fermi.
+    const lungo = m.testoLungo;
+    if (!lungo) {
+        problemi.push(`${dove}: testo lungo non misurato`);
+    } else {
+        verifica(lungo.chars >= 1000, `${dove}: testo di prova troppo corto (${lungo.chars} caratteri)`);
+        if (m.sheet?.enabled) {
+            verifica(lungo.bodyScrollH > lungo.bodyClientH + 40, `${dove}: con testo lungo il corpo non scorre (${lungo.bodyScrollH} contro ${lungo.bodyClientH})`);
+            verifica(lungo.scrollTop > 0, `${dove}: lo scroll del corpo non si è mosso`);
+            verifica(Math.abs(lungo.arteDelta) <= 1, `${dove}: l'arte si sposta di ${lungo.arteDelta}px scorrendo il testo`);
+            verifica(Math.abs(lungo.copiaDelta) <= 1, `${dove}: la tendina si sposta di ${lungo.copiaDelta}px scorrendo il testo`);
+            verifica(lungo.closeHit, `${dove}: chiudi non raggiungibile con testo lungo`);
+            verifica(lungo.maxBodyScrollH >= lungo.maxBodyClientH, `${dove}: corpo aperto non misurabile`);
+            verifica(lungo.maxArteY === lungo.primaArteY, `${dove}: l'arte si sposta aprendo la tendina con testo lungo`);
+        } else {
+            // Sopra i 1024px la tendina non esiste: il testo deve restare raggiungibile.
+            const r = lungo.reachabile || {};
+            verifica(r.modScroll || r.pagScroll, `${dove}: con testo lungo il testo non è raggiungibile (pannello ${r.modScrollH}/${r.modClientH}, pagina ${r.pagScrollH}/${r.pagClientH})`);
+        }
+    }
+
     if (m.w <= 1024) {
         // Tendina trascinabile: a riposo l'arte deve restare centrata nel palco.
         verifica(s.enabled, `${dove}: tendina disattivata a ${m.w}px`);
