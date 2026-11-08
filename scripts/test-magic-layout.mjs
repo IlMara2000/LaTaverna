@@ -252,16 +252,20 @@ try {
     esegui('open', `${base}/`);
     for (const vista of VIEWPORT) {
         await assicuraSorgenti();
-        // Ogni larghezza riparte da una pagina fresca: la tendina decide la sua
-        // geometria al montaggio, quindi un semplice resize non basta.
+        // La misura rimonta la scheda da zero a ogni larghezza, quindi la tendina
+        // ricalcola la sua geometria al montaggio: non serve ricaricare la pagina,
+        // che costava un `reload` e due secondi fissi per ogni viewport. Il reload
+        // resta come recupero, quando una lettura si è invalidata.
         esegui('set', 'viewport', String(vista.w), String(vista.h));
         let uscita = null;
         for (let tentativo = 0; tentativo < 3 && uscita === null; tentativo++) {
-            // Se il server è morto durante la misura, la pagina da ricaricare non
-            // esiste: prima di riprovare lo rimetto in piedi.
-            if (tentativo) await assicuraSorgenti();
-            esegui('reload');
-            esegui('wait', '2000');
+            if (tentativo) {
+                // Se il server è morto durante la misura, la pagina da ricaricare non
+                // esiste: prima di riprovare lo rimetto in piedi.
+                await assicuraSorgenti();
+                esegui('reload');
+                esegui('wait', '--load', 'load');
+            }
             try {
                 uscita = esegui('eval', `(async () => {\n${sorgente}\nreturn await window.__magicLayout();\n})()`);
             } catch (error) {

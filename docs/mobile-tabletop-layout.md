@@ -57,7 +57,7 @@ Se la porta serve la build statica invece dei sorgenti (`npm run serve`, cioè `
 
 La porta si considera libera solo se nessuno l'ascolta né su `127.0.0.1` né su `::1`: Vite si lega a `localhost`, e una sonda solo IPv4 dichiarerebbe libera una porta occupata (poi `--strictPort` fa fallire l'avvio). Se il Vite temporaneo smette di rispondere, il test gli dà un'altra occasione, poi lo spegne — aspettando l'uscita effettiva, così la porta è libera — e lo riaccende; se muore durante una misura, lo rimette in piedi prima di ripeterla. Lo spegnimento finale è atteso anche quando il test esce per errore, per non lasciare un Vite in ascolto.
 
-Ogni larghezza riparte da un `reload`, perché la tendina decide la sua geometria al montaggio e un semplice resize non basterebbe. Se la pagina naviga da sola a metà misura (boot, sessione, HMR di Vite) la lettura viene ripetuta, ripristinando prima il server se è caduto; se fallisce di nuovo il comando si ferma e dice su quale viewport.
+Ogni larghezza ridimensiona la finestra e la misura rimonta la dashboard da zero, così la tendina ricalcola la sua geometria al montaggio: non serve ricaricare la pagina, che costava un `reload` e due secondi fissi per viewport. Il `reload` resta come recupero quando una lettura si invalida perché la pagina è cambiata (boot, sessione, HMR di Vite), dopo aver rimesso in piedi il server se è caduto; se fallisce di nuovo il comando si ferma e dice su quale viewport.
 
 #### Come leggere la tabella
 

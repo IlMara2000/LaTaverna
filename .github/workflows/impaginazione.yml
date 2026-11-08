@@ -1,0 +1,69 @@
+name: Impaginazione
+
+# Ogni push misura la scheda carta Magic a otto larghezze. Il test si accende da
+# solo un Vite temporaneo quando la porta non serve i sorgenti, quindi in CI non
+# serve né un server statico né una build: gira direttamente sui sorgenti.
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  # Un push nuovo rende inutile la misura del precedente.
+  group: impaginazione-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scheda-carta:
+    name: Scheda carta a otto larghezze
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Dipendenze del progetto
+        run: npm ci
+
+      # agent-browser scarica Chrome for Testing (194 MB) in questa cartella:
+      # conservarla evita il download a ogni push.
+      - name: Chrome di agent-browser
+        id: chrome
+        uses: actions/cache@v4
+        with:
+          path: ~/.agent-browser/browsers
+          key: agent-browser-browsers-${{ runner.os }}-v1
+
+      - name: agent-browser
+        run: |
+          npm install --global agent-browser
+          node --version
+          agent-browser --version
+
+      # Con la cache piena il browser c'è già: basta verificarlo, senza apt
+      # (--with-deps serve solo a scaricare Chrome e le sue librerie di sistema).
+      - name: Chrome for Testing
+        run: |
+          if [ -n "$(ls -d "$HOME"/.agent-browser/browsers/chrome-*/ 2>/dev/null)" ]; then
+            echo "Chrome già presente: verifico l'installazione"
+            agent-browser install
+          else
+            echo "Chrome assente: scarico browser e dipendenze"
+            agent-browser install --with-deps
+          fi
+
+      - name: Misura l'impaginazione
+        run: npm run test:layout
+
+      - name: Log del test
+        if: failure()
+        run: |
+          echo "Il test stampa la tabella su stdout: le righe con le misure sono qui sopra."
+          agent-browser close --all || true
