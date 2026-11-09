@@ -45,14 +45,16 @@ test('AI endpoints reject browser calls coming from another origin',()=>{
  assert.equal(isSameOriginRequest(req('null')),false);
  assert.equal(isSameOriginRequest(req(null)),true);
 });
-test('public AI health never exposes the gateway URL',async()=>{
- const before=process.env.FREELLMAPI_API_KEY;
- process.env.FREELLMAPI_API_KEY='test-only';
- const {default:handler}=await import('../../api/rpg/ai-health.js');
+test('public AI health never exposes the gateway URL',async t=>{
+ const before={key:process.env.FREELLMAPI_API_KEY,url:process.env.FREELLMAPI_BASE_URL};
+ process.env.FREELLMAPI_API_KEY='test-only';process.env.FREELLMAPI_BASE_URL='https://gateway.test';
+ let requested;
+ t.mock.method(globalThis,'fetch',async(url,init)=>{requested={url,authorization:init?.headers?.Authorization};return {ok:true,status:200,json:async()=>({data:[{id:'test-model',available:true}]})};});
+ const {default:handler}=await import('../../api/rpg/ai-health.js?health-test=1');
  let payload;
  const response={setHeader(){},status(){return this;},json(value){payload=value;}};
- try{handler({method:'GET',headers:{host:'www.lataverna.xyz'}},response);assert.equal(payload.ok,true);assert.equal(payload.provider,'freellmapi');assert.equal(payload.gateway,undefined);assert.equal(JSON.stringify(payload).includes('http'),false);}
- finally{if(before===undefined)delete process.env.FREELLMAPI_API_KEY;else process.env.FREELLMAPI_API_KEY=before;}
+ try{await handler({method:'GET',headers:{host:'www.lataverna.xyz'}},response);assert.equal(requested.url,'https://gateway.test/v1/models');assert.equal(requested.authorization,'Bearer test-only');assert.equal(payload.ok,true);assert.equal(payload.provider,'freellmapi');assert.equal(payload.gateway,undefined);assert.equal(JSON.stringify(payload).includes('http'),false);}
+ finally{for(const [k,v] of [['FREELLMAPI_API_KEY',before.key],['FREELLMAPI_BASE_URL',before.url]]){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
 });
 test('gateway watchdog treats 401 as alive, reports outages and alerts only on change',async()=>{
  const status=code=>async()=>({ok:code<400,status:code});
