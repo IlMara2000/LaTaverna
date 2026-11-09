@@ -122,7 +122,7 @@ export function showOracle(container,options={}){
             void recordActivity('oracle_answered');
             addMessage('user',prompt+(file?'\n[Foto allegata]':''));addMessage('assistant',result.reply);
             history.push({role:'user',content:prompt},{role:'assistant',content:result.reply});history=history.slice(-8);
-            textarea.value='';form.elements.image.value='';status.textContent=`${result.remaining} richieste disponibili oggi.`;
+            textarea.value='';form.elements.image.value='';const remaining=Number(result.remaining);status.textContent=`${remaining} ${remaining===1?'richiesta disponibile':'richieste disponibili'} oggi.`;
             textarea.focus();
         }catch(error){if(!disposed)status.textContent=error.message;}
         finally{busy=false;if(!disposed){button.disabled=false;clearButton.disabled=false;}}
