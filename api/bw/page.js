@@ -17,6 +17,20 @@ const HTML = `<!doctype html>
 </body>
 </html>`;
 
+const LOGIN_HTML = HTML.replace('id="app"', 'id="app" data-view="login"')
+  .replace('</div>', `
+    <header><h1>STENCIL LAB</h1></header>
+    <main>
+      <div class="panel" style="max-width:360px;margin:auto">
+        <form id="loginForm">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="Inserisci password">
+          <button type="submit" style="margin-top:12px;width:100%;padding:12px;background:#fff;color:#000;border:none;border-radius:12px;font-weight:700">ENTRA</button>
+        </form>
+      </div>
+    </main>
+  </div>`);
+
 export default async function handler(request, response) {
   if (request.method !== 'GET') {
     response.setHeader('Allow', 'GET');
@@ -32,7 +46,7 @@ export default async function handler(request, response) {
     // login page
     response.setHeader('Content-Type', 'text/html; charset=utf-8');
     response.setHeader('Cache-Control', 'no-store');
-    return response.send(HTML.replace('id="app"', 'id="app" data-view="login"'));
+    return response.send(LOGIN_HTML);
   } catch (err) {
     const status = err.statusCode || 500;
     return sendJson(response, status, { ok: false, error: publicErrorMessage(err, 'server_error') });
