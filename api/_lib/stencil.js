@@ -76,8 +76,6 @@ async function callImagineArt(base64, mime, key) {
 }
 
 async function callFreeLLMAPIVision(base64, mime, baseUrl, key, model) {
-  // FreeLLMAPI vision: accetta data URI, ma generazione immagini non garantita.
-  // Se il modello non supporta image-to-image, l'errore salirà come 502.
   const url = `${baseUrl.replace(/\/v1\/?$/, '')}/v1/chat/completions`;
   const payload = {
     model,
@@ -108,7 +106,6 @@ async function callFreeLLMAPIVision(base64, mime, baseUrl, key, model) {
   }
 
   const data = await res.json();
-  // Ci aspettiamo che il provider restituisca un URL immagine in choices[0].message.content
   const content = data?.choices?.[0]?.message?.content || '';
   const m = content.match(/https?:\/\/[^\s"')]+/);
   if (!m) throw Object.assign(new Error('FreeLLMAPI: nessun URL immagine nella risposta'), { statusCode: 502 });
