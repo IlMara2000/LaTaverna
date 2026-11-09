@@ -110,26 +110,6 @@
       "destination": "/index.html"
     },
     {
-      "source": "/shop/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/library/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/magic/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/carte/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/giochi-di-ruolo/:path*",
-      "destination": "/index.html"
-    },
-    {
       "source": "/oracolo/:path*",
       "destination": "/index.html"
     },
@@ -148,6 +128,14 @@
     {
       "source": "/mtcg",
       "destination": "/index.html"
+    },
+    {
+      "source": "/bw",
+      "destination": "/api/bw/page"
+    },
+    {
+      "source": "/bw/login",
+      "destination": "/api/bw/page"
     }
   ],
   "headers": [
@@ -156,14 +144,32 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.lataverna.xyz wss://*.lataverna.xyz https://api.scryfall.com; media-src 'self' blob: https://*.lataverna.xyz; frame-src 'self' blob: https://*.supabase.co https://*.lataverna.xyz; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.scrYfall.com; media-src 'self' blob: https://*.lataverna.xyz; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests"
         },
-        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(self), geolocation=(), payment=(), usb=()" },
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
       ]
     }
   ]
