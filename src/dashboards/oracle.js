@@ -4,6 +4,7 @@ import {updateSidebarContext} from '../components/layout/Sidebar.js';
 import {postOracle,readOracleImage} from '../services/oracleClient.js';
 import {esc,safeUrl} from '../services/communityUi.js';
 import {renderOracleMarkdown} from '../services/oracleMarkdown.js';
+import {formatOracleQuota} from '../services/oracleQuota.js';
 import '../styles/community.css';
 
 // Il robottino della Taverna: stessa sagoma che vive nel menu, qui sta nell'angolo in alto.
@@ -122,7 +123,7 @@ export function showOracle(container,options={}){
             void recordActivity('oracle_answered');
             addMessage('user',prompt+(file?'\n[Foto allegata]':''));addMessage('assistant',result.reply);
             history.push({role:'user',content:prompt},{role:'assistant',content:result.reply});history=history.slice(-8);
-            textarea.value='';form.elements.image.value='';const remaining=Number(result.remaining);status.textContent=`${remaining} ${remaining===1?'richiesta disponibile':'richieste disponibili'} oggi.`;
+            textarea.value='';form.elements.image.value='';status.textContent=formatOracleQuota(result.remaining);
             textarea.focus();
         }catch(error){if(!disposed)status.textContent=error.message;}
         finally{busy=false;if(!disposed){button.disabled=false;clearButton.disabled=false;}}
