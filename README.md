@@ -1,5 +1,8 @@
 # La Taverna VTT
 
+[![Test Oracolo](https://github.com/IlMara2000/LaTaverna/actions/workflows/oracolo.yml/badge.svg?branch=main)](https://github.com/IlMara2000/LaTaverna/actions/workflows/oracolo.yml)
+[![Impaginazione](https://github.com/IlMara2000/LaTaverna/actions/workflows/impaginazione.yml/badge.svg?branch=main)](https://github.com/IlMara2000/LaTaverna/actions/workflows/impaginazione.yml)
+
 La visione di prodotto, le decisioni del fondatore e la roadmap proposta sono raccolte nella [Mente della Taverna](docs/mente-della-taverna.md) (briefing del 17 ottobre 2026). Il documento distingue la direzione futura dalle funzionalità già implementate descritte qui sotto.
 
 La Taverna e una web app Vite per lobby, minigiochi e tavoli D&D 5e con Supabase per autenticazione, profili, personaggi, sessioni, token, chat e storage mappe.
