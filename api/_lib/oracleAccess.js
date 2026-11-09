@@ -1,5 +1,7 @@
 import { assertAiIpBudget } from './ipBudget.js';
 
+const QUOTA_EXHAUSTED_MESSAGE = 'Quota Oracolo esaurita per oggi. Torna domani per continuare la conversazione.';
+
 export async function authorizeOracle(request) {
     const url=process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
     const key=process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
@@ -14,6 +16,9 @@ export async function authorizeOracle(request) {
     await assertAiIpBudget(request);
     const result=await fetch(`${url}/rest/v1/rpc/take_oracle_quota`,{method:'POST',headers,body:'{}',signal:AbortSignal.timeout(10000)});
     const data=await result.json().catch(()=>null);
-    if(!result.ok)throw Object.assign(new Error(result.status===400&&data?.message?.includes('giornalier')?data.message:'Limiti Oracolo non disponibili. Riprova più tardi.'),{statusCode:result.status===400?429:503});
+    if(!result.ok){
+        const dailyLimit=result.status===400&&data?.message?.includes('giornalier');
+        throw Object.assign(new Error(dailyLimit?QUOTA_EXHAUSTED_MESSAGE:'Limiti Oracolo non disponibili. Riprova più tardi.'),{statusCode:result.status===400?429:503});
+    }
     return {remaining:data};
 }

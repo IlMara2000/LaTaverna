@@ -5,6 +5,7 @@ import {oracleMessages,validImage,callOracle} from '../../api/_lib/oracle.js';
 import {isSameOriginRequest,readJsonBody} from '../../api/_lib/http.js';
 import {describeTransition,probe} from '../../scripts/gateway-watch.mjs';
 import {destinationFromPath} from '../../src/services/publicRoutes.js';
+import {formatOracleQuota} from '../../src/services/oracleQuota.js';
 const c=(rank,suit=0,id=`${suit}-${rank}`)=>({id,rank,suit});
 test('new collection and RPG links resolve with old Magic links preserved',()=>{assert.equal(destinationFromPath('/carte/'),'cards');assert.equal(destinationFromPath('/carte/giochi'),'cardGames');assert.equal(destinationFromPath('/oracolo'),'oracle');assert.equal(destinationFromPath('/giochi-di-ruolo'),'rpg');assert.equal(destinationFromPath('/magic'),'magic');});
 test('Scala 40 deals 108 uniquely identified cards and 13 per player',()=>{const s=newScala40();assert.deepEqual(s.hands.map(h=>h.length),[13,13]);const cards=[...s.stock,...s.discard,...s.hands.flat()];assert.equal(cards.length,108);assert.equal(new Set(cards.map(c=>c.id)).size,108);});
@@ -23,6 +24,33 @@ test('Oracolo requires a bearer session before any provider request',async t=>{
  const fetchMock=t.mock.method(globalThis,'fetch',async()=>{throw Error('must not call');});
  try {await assert.rejects(authorizeOracle({headers:{}}),e=>e.statusCode===401);assert.equal(fetchMock.mock.callCount(),0);}
  finally{for(const [k,v] of [['SUPABASE_URL',before.url],['SUPABASE_ANON_KEY',before.key]]){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
+});
+for(const [scenario,message,cacheKey] of [
+ ['the daily quota is already exhausted','Quota giornaliera Oracolo esaurita. Riprova domani.','quota-429-test=1'],
+ ['the Taverna daily limit is reached','L’Oracolo ha raggiunto il limite giornaliero della Taverna. Riprova domani.','taverna-429-test=1']
+]) test(`Oracolo returns 429 when ${scenario} and never calls the provider`,async t=>{
+ const before={url:process.env.SUPABASE_URL,anon:process.env.SUPABASE_ANON_KEY,service:process.env.SUPABASE_SERVICE_ROLE_KEY};
+ process.env.SUPABASE_URL='https://db.test';process.env.SUPABASE_ANON_KEY='public-test';process.env.SUPABASE_SERVICE_ROLE_KEY='service-test';
+ const calls=[];
+ t.mock.method(globalThis,'fetch',async(url,init={})=>{
+  const target=String(url);calls.push(target);
+  if(target.endsWith('/auth/v1/user'))return {ok:true,status:200,json:async()=>({id:'user-1'})};
+  if(target.endsWith('/rest/v1/rpc/take_ai_ip_quota'))return {ok:true,status:200,json:async()=>59};
+  if(target.endsWith('/rest/v1/rpc/take_oracle_quota'))return {ok:false,status:400,json:async()=>({message})};
+  throw new Error(`unexpected fetch ${target}`);
+ });
+ const {default:handler}=await import(`../../api/oracle/chat.js?${cacheKey}`);
+ let status,payload;
+ const response={setHeader(){},status(code){status=code;return this;},json(value){payload=value;return this;}};
+ try{
+  await handler({method:'POST',headers:{host:'www.lataverna.xyz',origin:'https://www.lataverna.xyz',authorization:'Bearer test-token','x-real-ip':'203.0.113.7'},body:{prompt:'Domanda'}},response);
+  assert.equal(status,429);
+  assert.equal(payload.ok,false);
+  assert.equal(payload.error,formatOracleQuota(0));
+  assert.equal(calls.length,3);
+  assert.equal(calls.some(url=>url.endsWith('/rpc/take_oracle_quota')),true);
+  assert.equal(calls.some(url=>url.includes('/chat/completions')),false);
+ }finally{for(const [k,v] of [['SUPABASE_URL',before.url],['SUPABASE_ANON_KEY',before.anon],['SUPABASE_SERVICE_ROLE_KEY',before.service]]){if(v===undefined)delete process.env[k];else process.env[k]=v;}}
 });
 test('Oracolo uses the FreeLLMAPI gateway with a bounded budget and no provider-specific tools',async t=>{
  const before={key:process.env.FREELLMAPI_API_KEY,url:process.env.FREELLMAPI_BASE_URL};
