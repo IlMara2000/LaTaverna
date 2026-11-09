@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "serve": "node scripts/serve-dist.mjs",
     "test:cards": "node --test scripts/tests/*.test.mjs",
+    "test:oracle": "node --test scripts/tests/oracle-markdown.test.mjs",
     "test:scippo": "node --test scripts/tests/scippo.test.mjs",
     "test:view": "node --test scripts/tests/scippo-view.test.mjs scripts/tests/minigames-view.test.mjs",
     "test:layout": "node scripts/test-magic-layout.mjs",

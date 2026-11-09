@@ -8,6 +8,7 @@ import {
     isLocalDndUserId
 } from '../../../services/dndLocalStore.js';
 import { getAIResponse } from '../../../services/ai.js';
+import { renderOracleMarkdown } from '../../../services/oracleMarkdown.js';
 import { showTabletop } from './Map.js';
 import { currentPlatformRoom, sharePlatformDnd } from '../../../services/platformMultiplayer.js';
 import { navigateTo } from '../../../services/appNavigation.js';
@@ -702,7 +703,7 @@ export async function showSession(container, sessionId, options = {}) {
         div.className = `dnd-chat-message ${doc.is_roll ? 'roll' : ''} ${isAiMessage ? 'ai' : ''}`;
         div.innerHTML = `
             <strong>${escapeHTML(senderName)}</strong>
-            <p>${escapeHTML(doc.message || '')}</p>
+            ${isAiMessage && !doc.is_roll ? `<div class="oracle-md">${renderOracleMarkdown(doc.message || '')}</div>` : `<p>${escapeHTML(doc.message || '')}</p>`}
         `;
         chatMsgs.appendChild(div);
         recentChatDocs.push({

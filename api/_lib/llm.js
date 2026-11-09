@@ -120,6 +120,27 @@ export const completeChat = async ({ messages, model, temperature, maxTokens, re
     };
 };
 
+// L'interfaccia rende il Markdown e aggiunge le emoji contestuali: il modello pensa solo alla struttura.
+export const ORACLE_MARKDOWN_RULES = [
+    'Formatta la risposta in Markdown pulito, senza HTML e senza emoji (le aggiunge l’interfaccia):',
+    '- Apri con una riga di sintesi in grassetto.',
+    '- Usa sezioni brevi con titoli ## di 2-4 parole, seguite da 1-3 righe o da un elenco.',
+    '- Per parametri, statistiche, confronti o regole usa una tabella Markdown con intestazione e riga di separazione, massimo 6 righe. Esempio valido:',
+    '| Parametro | Dettaglio |',
+    '|---|---|',
+    '| Tempo di lancio | 1 azione |',
+    '- Elenchi puntati solo per passi, opzioni o note; grassetto per i termini chiave e corsivo per i nomi di opere o carte.',
+    '- Paragrafi da massimo 2-3 frasi: niente muri di testo.'
+].join('\n');
+
+export const ORACLE_RPG_FORMAT_RULES = [
+    'Formatta in Markdown pulito, senza HTML e senza emoji (le aggiunge l’interfaccia):',
+    '- Narrazione: prosa breve, grassetto solo per nomi e termini chiave.',
+    '- Regole, parametri o confronti: sezione ## breve e tabella Markdown con intestazione e riga di separazione, massimo 5 righe.',
+    '- Elenchi puntati per opzioni o conseguenze, non per la narrazione.',
+    '- Paragrafi da massimo 2-3 frasi.'
+].join('\n');
+
 const modeInstruction = (mode = 'master') => {
     if (mode === 'player') {
         return 'Agisci come giocatore extra: interpreta un compagno del party, proponi azioni in prima persona e non decidere per gli altri giocatori.';
@@ -145,7 +166,8 @@ export const buildRpgMessages = ({ prompt, mode, systemId, context, history }) =
                 `Sistema: ${normalizedSystem}.`,
                 modeInstruction(mode),
                 'Rispondi sempre in italiano.',
-                'Tieni le risposte brevi ma utili: massimo 120 parole salvo richiesta diversa.',
+                ORACLE_RPG_FORMAT_RULES,
+                'Tieni le risposte brevi ma utili: massimo 120 parole salvo richiesta diversa (una tabella resta entro 5 righe).',
                 'Non inventare dati tecnici, riferimenti a pagine o citazioni di manuali che non sono nel contesto. Se manca un dato, chiedi un tiro o una conferma.',
                 'Non rivelare note private del master se il contesto non le include esplicitamente.',
                 'Non eseguire azioni di gioco irreversibili: proponile o chiedi conferma al master.'

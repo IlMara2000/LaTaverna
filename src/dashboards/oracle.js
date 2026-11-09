@@ -3,6 +3,7 @@ import {navigateTo} from '../services/appNavigation.js';
 import {updateSidebarContext} from '../components/layout/Sidebar.js';
 import {postOracle,readOracleImage} from '../services/oracleClient.js';
 import {esc,safeUrl} from '../services/communityUi.js';
+import {renderOracleMarkdown} from '../services/oracleMarkdown.js';
 import '../styles/community.css';
 
 // Il robottino della Taverna: stessa sagoma che vive nel menu, qui sta nell'angolo in alto.
@@ -93,10 +94,15 @@ export function showOracle(container,options={}){
         const article=document.createElement('article');
         article.className='oracle-msg';article.dataset.role=role;
         const body=document.createElement('div');body.className='oracle-msg-body';
-        // Render text only; link plain HTTPS sources without executing model HTML.
-        const expression=/https?:\/\/[^\s<>"\])]+/g;let start=0;
-        for(const match of text.matchAll(expression)){body.append(document.createTextNode(text.slice(start,match.index)));const link=document.createElement('a');link.textContent=match[0];link.href=safeUrl(match[0]);link.target='_blank';link.rel='noopener noreferrer';body.append(link);start=match.index+match[0].length;}
-        body.append(document.createTextNode(text.slice(start)));
+        if(role==='assistant'){
+            // L'Oracolo risponde in Markdown: grassetti, elenchi e tabelle diventano carta da taverna.
+            body.classList.add('oracle-md');body.innerHTML=renderOracleMarkdown(text);
+        }else{
+            // Le domande restano testo semplice: solo i link HTTPS diventano cliccabili.
+            const expression=/https?:\/\/[^\s<>"\])]+/g;let start=0;
+            for(const match of text.matchAll(expression)){body.append(document.createTextNode(text.slice(start,match.index)));const link=document.createElement('a');link.textContent=match[0];link.href=safeUrl(match[0]);link.target='_blank';link.rel='noopener noreferrer';body.append(link);start=match.index+match[0].length;}
+            body.append(document.createTextNode(text.slice(start)));
+        }
         article.append(body);
         stream.append(article);
         stream.scrollTop=stream.scrollHeight;

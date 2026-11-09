@@ -86,6 +86,43 @@
 #ui .oracle-console .oracle-msg-body {white-space:pre-wrap;overflow-wrap:anywhere}
 #ui .oracle-console .oracle-msg a {color:#e4c7fa;overflow-wrap:anywhere}
 
+/* Risposte dell'Oracolo in Markdown: grassetti, elenchi e tabelle al posto dei simboli grezzi. */
+#ui .oracle-console .oracle-msg-body.oracle-md {white-space:normal}
+#ui .oracle-console .oracle-md > :first-child {margin-top:0}
+#ui .oracle-console .oracle-md > :last-child {margin-bottom:0}
+#ui .oracle-console .oracle-md p {margin:0 0 10px;line-height:1.68}
+#ui .oracle-console .oracle-md strong {color:#ffe3b0;font-weight:800}
+#ui .oracle-console .oracle-md em {color:#eadcf7;font-style:italic}
+#ui .oracle-console .oracle-md del {opacity:.65}
+#ui .oracle-console .oracle-md a {color:#e4c7fa;text-decoration:underline;text-underline-offset:2px}
+#ui .oracle-console .oracle-md :is(h1,h2,h3,h4) {margin:18px 0 8px;color:#fff0d8;font-family:Bangers,Manrope,sans-serif!important;font-weight:400;letter-spacing:.03em;line-height:1.2}
+#ui .oracle-console .oracle-md h1 {font-size:24px}
+#ui .oracle-console .oracle-md h2 {font-size:21px}
+#ui .oracle-console .oracle-md h3 {font-size:18px}
+#ui .oracle-console .oracle-md h4 {font-size:16px}
+#ui .oracle-console .oracle-md .oracle-md-sub {margin:14px 0 6px;line-height:1.4}
+#ui .oracle-console .oracle-md .oracle-md-sub strong {color:#ffe3b0;font-size:1.04em;letter-spacing:.01em}
+#ui .oracle-console .oracle-md ul {margin:0 0 10px;padding-left:18px;list-style:none}
+#ui .oracle-console .oracle-md ul > li {position:relative;margin:0 0 5px;padding-left:16px;line-height:1.6}
+#ui .oracle-console .oracle-md ul > li::before {content:'✦';position:absolute;left:0;top:0;color:#c9a3ea;font-size:11px;line-height:1.75}
+#ui .oracle-console .oracle-md ul ul {margin:5px 0 2px}
+#ui .oracle-console .oracle-md ol {margin:0 0 10px;padding-left:24px}
+#ui .oracle-console .oracle-md ol > li {margin:0 0 5px;line-height:1.6}
+#ui .oracle-console .oracle-md ol > li::marker {color:#c9a3ea;font-weight:700}
+#ui .oracle-console .oracle-md blockquote {margin:0 0 10px;padding:9px 14px;border-left:3px solid #c9a3ea99;border-radius:0 10px 10px 0;background:#1c152a;color:#e8d9f3}
+#ui .oracle-console .oracle-md blockquote::before {content:'❝';margin-right:6px;color:#c9a3ea}
+#ui .oracle-console .oracle-md blockquote p {margin:0}
+#ui .oracle-console .oracle-md code {padding:1px 6px;border:1px solid #e8d5ff26;border-radius:6px;background:#170f22;color:#ffd9a0;font:500 .88em/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+#ui .oracle-console .oracle-md pre {margin:0 0 12px;padding:12px;border:1px solid #e8d5ff26;border-radius:10px;background:#170f22;overflow-x:auto}
+#ui .oracle-console .oracle-md pre code {padding:0;border:0;background:none}
+#ui .oracle-console .oracle-md .oracle-table-wrap {margin:0 0 12px;border:1px solid #e8d5ff26;border-radius:10px;overflow-x:auto}
+#ui .oracle-console .oracle-md table {width:100%;min-width:280px;border-collapse:collapse;font-size:14.5px;line-height:1.5}
+#ui .oracle-console .oracle-md th {padding:8px 12px;border-bottom:1px solid #e8d5ff33;background:#2c2039;color:#ffe3b0;font-weight:800;text-align:left;white-space:nowrap}
+#ui .oracle-console .oracle-md td {padding:8px 12px;border-bottom:1px solid #e8d5ff14;vertical-align:top}
+#ui .oracle-console .oracle-md tbody tr:last-child td {border-bottom:0}
+#ui .oracle-console .oracle-md tbody tr:nth-child(even) td {background:#1c152a}
+#ui .oracle-console .oracle-md hr {margin:14px 0;border:0;border-top:1px solid #e8d5ff33}
+
 /* Composer a pillola, ancorato in basso. */
 #ui .oracle-console .oracle-clear {align-self:flex-end;min-height:32px;margin:0 0 2px;padding:5px 14px;border:1px solid #af88c54d;border-radius:999px;background:transparent;box-shadow:none;color:var(--oc-muted);font:600 12.5px/1.3 Manrope,sans-serif;cursor:pointer}
 #ui .oracle-console .oracle-clear[hidden] {display:none}

@@ -1,0 +1,35 @@
+name: Test Oracolo
+
+# Il renderer delle risposte dell'Oracolo è JavaScript puro: questo controllo
+# gira in pochi secondi a ogni push e su ogni pull request, senza browser.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-oracolo-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  markdown:
+    name: Markdown dell'Oracolo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Dipendenze del progetto
+        run: npm ci
+
+      - name: Test del renderer
+        run: npm run test:oracle
