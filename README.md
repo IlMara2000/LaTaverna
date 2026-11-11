@@ -27,6 +27,7 @@ npm install
 ```bash
 VITE_SUPABASE_URL=https://tuo-progetto.supabase.co
 VITE_SUPABASE_ANON_KEY=la-tua-anon-key
+VITE_PRICE_MAX_AGE_DAYS=14
 FREELLMAPI_BASE_URL=http://127.0.0.1:31415/v1
 FREELLMAPI_API_KEY=freellmapi-...
 FREELLMAPI_MODEL=nemotron-3-ultra-550b
@@ -113,6 +114,28 @@ FREELLMAPI_TIMEOUT_MS=55000
 ```
 
 In produzione `FREELLMAPI_BASE_URL` non può essere `127.0.0.1` (Vercel non raggiunge il tuo Mac): usa l'URL del tunnel descritto in `docs/oracolo-freellmapi.md`. Non usare la chiave FreeLLMAPI con prefisso `VITE_`: le variabili `VITE_*` vengono incluse nel bundle browser.
+
+### Limiti dell'aggiornamento prezzi Magic
+
+`POST /api/magic/prices` applica un limite di frequenza prima di contattare Scryfall. I predefiniti sono una pausa di 30 secondi tra due aggiornamenti dello stesso account, 10 aggiornamenti all'ora per account e 30 all'ora per rete; si cambiano con variabili server:
+
+```bash
+PRICE_REFRESH_PAUSE_SECONDS=30
+PRICE_REFRESH_USER_HOURLY_LIMIT=10
+PRICE_REFRESH_IP_HOURLY_LIMIT=30
+```
+
+`PRICE_REFRESH_PAUSE_SECONDS=0` disattiva solo l'attesa tra due aggiornamenti. I valori fuori scala vengono riportati nei limiti ammessi (pausa 0–3600 secondi, 1–1000 per account, 1–10000 per rete) sia nella function server sia nella funzione SQL, quindi una variabile sbagliata non azzera la protezione. Le modifiche valgono dopo un nuovo deploy; la function SQL corrispondente è `supabase/migrations/20261111090000_magic_price_refresh_limits.sql`.
+
+### Soglia dei prezzi vecchi
+
+La lista acquisti avvisa quando i prezzi sono più vecchi di una soglia in giorni. La scelta dell'utente (campo "Avviso prezzi vecchi", preferenza `magic_price_max_age_days`) vince sempre; il valore di partenza dell'installazione si configura al build con `VITE_PRICE_MAX_AGE_DAYS`, che sostituisce i 14 giorni usati quando manca:
+
+```bash
+VITE_PRICE_MAX_AGE_DAYS=14
+```
+
+`0` disattiva l'avviso. Valori non numerici o fuori scala (0–3650 giorni) ricadono su 14. Essendo una variabile `VITE_*` finisce nel bundle: serve perché la decisione avviene nel browser, e non deve contenere segreti. Va impostata su Vercel e richiede un nuovo deploy; il modulo che risolve la soglia è `src/services/priceAge.js`.
 
 ## Documenti legali
 

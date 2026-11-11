@@ -4,12 +4,34 @@ import {oracleHeaders} from '../services/oracleClient.js';
 import { rememberDestination, navigateTo } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import { scanMagicDocument } from '../services/magicDocumentScan.js';
-import { getMagicAccount, loadMagicLibrary, loadPublicMagicShare, saveMagicLibrary } from '../services/magicLibrary.js';
+import { getMagicAccount, loadMagicLibrary, loadMagicShoppingSummary, loadPublicMagicShare, refreshMagicPrices, saveMagicLibrary } from '../services/magicLibrary.js';
+import { getPreference, setPreference } from '../services/userPreferences.js';
+import { unpricedCards } from '../services/magicShoppingList.js';
+import { PRICE_AGE_MAX, PRICE_AGE_MIN, normalizePriceAge, resolvePriceAge } from '../services/priceAge.js';
 import './magic-viewer.css';
 
 const COLLECTION_KEY = 'taverna_magic_collection_v1';
 const DECKS_KEY = 'taverna_magic_decks_v1';
 const WANTLIST_KEY = 'taverna_magic_wantlist_v1';
+// Soglia dell'avviso "prezzi vecchi": la scelta dell'utente (campo in lista acquisti,
+// preferenza magic_price_max_age_days) vince sempre; senza scelta vale
+// VITE_PRICE_MAX_AGE_DAYS impostata al build. Il modulo è src/services/priceAge.js.
+const PRICE_AGE_KEY = 'magic_price_max_age_days';
+const PRICE_AGE_LOCAL_KEY = 'taverna_magic_price_age_v1';
+const readPriceAge = () => resolvePriceAge({
+    envValue: import.meta.env.VITE_PRICE_MAX_AGE_DAYS,
+    storedValue: localStorage.getItem(PRICE_AGE_LOCAL_KEY)
+});
+// Valuta dei totali: prima l'euro vinceva sempre, anche per chi compra in dollari.
+// Ora è una preferenza dell'utente, salvata come la soglia dei prezzi vecchi.
+const PRICE_CURRENCY_KEY = 'magic_price_currency';
+const PRICE_CURRENCY_LOCAL_KEY = 'taverna_magic_price_currency_v1';
+const PRICE_CURRENCY_OPTIONS = ['eur', 'usd'];
+const PRICE_CURRENCY_LABEL = { eur: 'Euro (€)', usd: 'Dollaro ($)' };
+const readPriceCurrency = () => {
+    const stored = String(localStorage.getItem(PRICE_CURRENCY_LOCAL_KEY) || '').toLowerCase();
+    return PRICE_CURRENCY_OPTIONS.includes(stored) ? stored : 'eur';
+};
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[char]);
 const id = () => globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
@@ -80,7 +102,36 @@ export function showMagicDashboard(container, options = {}) {
     let activeDeckId = decks[0]?.id || '';
     let exportLanguage = 'it', exportFormat = 'txt';
     let filter = '', notice = '', pending = [], busy = false, cloudUserId = null, disposed = false, modalCard = null;
+    let priceSummary = null;
+    let priceMaxAgeDays = readPriceAge();
+    let priceCurrency = readPriceCurrency();
+    let priceBusy = false;
+    let priceCooldownUntil = 0, priceTicker = null, priceAgeSaveTimer = null;
     let cloudQueue = Promise.resolve(), searchResults = [];
+    const priceCooldownLeft = () => Math.max(0, Math.ceil((priceCooldownUntil - Date.now()) / 1000));
+    const priceButtonLabel = () => {
+        if (priceBusy) return 'Aggiorno…';
+        const left = priceCooldownLeft();
+        return left > 0 ? `Attendi ${left}s` : 'Aggiorna prezzi';
+    };
+    const stopPriceTicker = () => { if (priceTicker) { clearInterval(priceTicker); priceTicker = null; } };
+    const paintPriceButton = () => {
+        const button = container.querySelector('#mv-price-refresh');
+        if (!button) return;
+        button.textContent = priceButtonLabel();
+        button.disabled = priceBusy || priceCooldownLeft() > 0;
+    };
+    // Il conto alla rovescia tocca solo l'etichetta del pulsante: un render
+    // completo ogni secondo ricostruirebbe la pagina senza motivo.
+    const startPriceTicker = () => {
+        stopPriceTicker();
+        if (priceCooldownLeft() <= 0) return;
+        priceTicker = setInterval(() => {
+            if (disposed) { stopPriceTicker(); return; }
+            if (priceCooldownLeft() <= 0) { stopPriceTicker(); paintPriceButton(); return; }
+            paintPriceButton();
+        }, 1000);
+    };
     let selecting = false, selected = new Set(), pressTimer = null, suppressClickUntil = 0, undoRemoval = null, sheetExpanded = false, focusClose = false;
     const clearPress = () => { clearTimeout(pressTimer); pressTimer = null; };
     const toggleSelection = cardId => { selected.has(cardId) ? selected.delete(cardId) : selected.add(cardId); render(); };
@@ -112,6 +163,116 @@ export function showMagicDashboard(container, options = {}) {
     };
     const setNotice = value => { notice = value || ''; const node = container.querySelector('#magic-viewer-notice'); if (node) node.textContent = notice; };
     const byId = () => new Map(cards.map(card => [String(card.id), card]));
+    const priceNotice = () => {
+        if (!priceSummary) return '';
+        // Vale la valuta scelta dall'utente. Se lì non c'è nessun prezzo ma nell'altra sì,
+        // si mostra l'altra dicendolo: un totale a zero farebbe credere che i prezzi
+        // manchino, quando invece esistono in un'altra valuta.
+        const priced = { eur: Number(priceSummary.priced_lines_eur || 0), usd: Number(priceSummary.priced_lines_usd || 0) };
+        const otherCurrency = priceCurrency === 'eur' ? 'usd' : 'eur';
+        const switchedCurrency = priced[priceCurrency] === 0 && priced[otherCurrency] > 0;
+        const currency = switchedCurrency ? otherCurrency : priceCurrency;
+        const status = priceSummary[`status_${currency}`];
+        if (!status || status === 'vuota') return '';
+        const total = Number(priceSummary[`total_${currency}`] || 0);
+        const unpriced = Number(priceSummary[`unpriced_copies_${currency}`] || 0);
+        const updated = priceSummary.prices_updated_at ? new Date(priceSummary.prices_updated_at) : null;
+        const days = updated ? Math.floor((Date.now() - updated.getTime()) / 86400000) : null;
+        const stale = priceMaxAgeDays > 0 && days !== null && days > priceMaxAgeDays;
+        const money = new Intl.NumberFormat('it-IT', { style: 'currency', currency: currency === 'eur' ? 'EUR' : 'USD' });
+        const when = updated ? updated.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+        // L'elenco è completo, così si vede sempre quali carte mancano di prezzo.
+        // I nomi aprono la carta, quindi il testo è già scappato qui e il banner non
+        // passa da un secondo esc che stamperebbe i pulsanti come testo.
+        const unpricedList = unpricedCards(priceSummary.lines, currency);
+        const unpricedLabel = unpricedList
+            .map(card => `<button type="button" class="mv-price-card" data-open-unpriced="${esc(card.cardId)}">${esc(card.name)}</button>`)
+            .join(', ');
+        const parts = [];
+        if (switchedCurrency) parts.push(`Nessun prezzo in ${priceCurrency === 'eur' ? 'euro' : 'dollari'}: mostro il totale in ${currency === 'eur' ? 'euro' : 'dollari'}.`);
+        if (status === 'senza_prezzi') parts.push(`Nessun prezzo disponibile per queste carte: il totale non è calcolabile.${unpricedLabel ? ` Senza prezzo: ${unpricedLabel}.` : ''}`);
+        else if (status === 'parziale') parts.push(`Totale parziale: ${esc(money.format(total))}, ${unpriced} ${unpriced === 1 ? 'copia' : 'copie'} senza prezzo non conteggiate.${unpricedLabel ? ` Mancano: ${unpricedLabel}.` : ''}`);
+        else parts.push(`Totale ${esc(money.format(total))}.`);
+        if (stale) parts.push(`Prezzi aggiornati al ${esc(when)}, ${days} giorni fa: ricontrollali prima di comprare.`);
+        else if (updated) parts.push(`Prezzi aggiornati al ${esc(when)}.`);
+        const warning = status !== 'completa' || stale;
+        return `<p class="mv-price ${warning ? 'is-warning' : ''}" role="status">${parts.join(' ')}</p>`;
+    };
+    const loadPriceAgePreference = async () => {
+        try {
+            const stored = normalizePriceAge(await getPreference(PRICE_AGE_KEY, priceMaxAgeDays));
+            if (stored !== null) {
+                localStorage.setItem(PRICE_AGE_LOCAL_KEY, String(stored));
+                return stored;
+            }
+        } catch {
+            // Offline: vale la scelta salvata sul dispositivo.
+        }
+        return priceMaxAgeDays;
+    };
+    // Un campo numerico cambia a ogni cifra: si salva sul profilo quando la
+    // digitazione si ferma, mentre sul dispositivo il valore è già aggiornato.
+    const savePriceAgePreference = value => {
+        clearTimeout(priceAgeSaveTimer);
+        priceAgeSaveTimer = setTimeout(() => {
+            void (async () => {
+                try {
+                    const result = await setPreference(PRICE_AGE_KEY, value);
+                    if (!disposed && result?.error) setNotice(`Soglia salvata sul dispositivo. Sincronizzazione: ${result.error.message}`);
+                } catch {
+                    // Offline: resta la scelta locale.
+                }
+            })();
+        }, 600);
+    };
+    const loadPriceCurrencyPreference = async () => {
+        try {
+            const stored = String(await getPreference(PRICE_CURRENCY_KEY, priceCurrency) || '').toLowerCase();
+            if (PRICE_CURRENCY_OPTIONS.includes(stored)) {
+                localStorage.setItem(PRICE_CURRENCY_LOCAL_KEY, stored);
+                return stored;
+            }
+        } catch {
+            // Offline: vale la scelta salvata sul dispositivo.
+        }
+        return priceCurrency;
+    };
+    const refreshPrices = async () => {
+        if (priceBusy || priceCooldownLeft() > 0) return;
+        if (!cloudUserId) { setNotice('Accedi per aggiornare i prezzi delle carte.'); return; }
+        if (!wantlist.length) { setNotice('Aggiungi almeno una carta alla wantlist per aggiornare i prezzi.'); return; }
+        priceBusy = true; render(); setNotice('Scarico i prezzi delle carte in lista…');
+        try {
+            const result = await refreshMagicPrices(wantlist.map(card => card.id));
+            await refreshPriceSummary();
+            const parts = [`Prezzi aggiornati per ${result.updated} ${result.updated === 1 ? 'stampa' : 'stampe'}`];
+            if (result.notFound) parts.push(`${result.notFound} non trovate nel catalogo`);
+            setNotice(`${parts.join(' · ')}.`);
+        } catch (error) {
+            await refreshPriceSummary();
+            if (error.status === 429 && error.retryAfterSeconds > 0) {
+                priceCooldownUntil = Date.now() + error.retryAfterSeconds * 1000;
+                setNotice(error.message);
+            } else {
+                setNotice(`Prezzi non aggiornati: ${error.message}`);
+            }
+        } finally {
+            priceBusy = false;
+            if (!disposed) render();
+            startPriceTicker();
+        }
+    };
+    const refreshPriceSummary = async () => {
+        if (!cloudUserId || disposed) return;
+        try {
+            const summary = await loadMagicShoppingSummary(cloudUserId);
+            if (disposed) return;
+            priceSummary = summary;
+            render();
+        } catch {
+            // L'avviso è un extra: senza risposta del server la lista resta utilizzabile.
+        }
+    };
     const cardTile = (card, area) => `<article class="mv-card ${area === 'collection' && selected.has(String(card.id)) ? 'is-selected' : ''}" data-card-id="${esc(card.id)}">
         <button class="mv-card-open" type="button" ${area === 'collection' && selecting ? `aria-pressed="${selected.has(String(card.id))}"` : ''} data-open-card="${esc(card.id)}" aria-label="${area === 'collection' && selecting ? 'Seleziona' : 'Apri'} ${esc(card.name)}">
           <span class="mv-art">${card.image ? `<img src="${esc(card.image)}" alt="${esc(card.name)}" loading="lazy">` : '<span class="mv-no-art">Carta</span>'}</span>
@@ -153,7 +314,7 @@ export function showMagicDashboard(container, options = {}) {
           </section>` : tab === 'mazzi' ? `<section class="mv-panel">
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button></div>
             ${decks.length ? `<div class="mv-deck-layout"><aside class="mv-deck-list">${decks.map(deck=>`<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id===activeDeck?.id}"><strong>${esc(deck.name)}</strong><small>${deck.cards.reduce((sum,item)=>sum+(Number(item.quantity)||1),0)} carte</small></button>`).join('')}</aside><div class="mv-deck-content"><div class="mv-deck-tools"><h3>${esc(activeDeck?.name||'')}</h3><button class="mv-text-button" id="mv-print-deck" type="button">Stampa proxy</button><button class="mv-text-button" id="mv-rename-deck" type="button">Rinomina</button><button class="mv-text-button" id="mv-delete-deck" type="button">Elimina</button></div><label class="mv-search"><span>⌕</span><input id="mv-deck-search" type="search" placeholder="Aggiungi una carta…"></label><div id="mv-search-results" class="mv-search-results">${searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div><div class="mv-deck-groups">${[['Creature','Creature'],['Instant','Istantanei'],['Sorcery','Stregonerie'],['Artifact','Artefatti'],['Enchantment','Incantesimi'],['Planeswalker','Planeswalker'],['Battle','Battaglie'],['Land','Terre'],['Other','Altre carte']].map(([type,title])=>{const group=deckCards.filter(c=>{const primary=['Land','Creature','Planeswalker','Battle','Artifact','Enchantment','Instant','Sorcery'].find(t=>c.typeLine?.includes(t))||'Other';return primary===type;});return group.length?`<section class="mv-deck-group"><h4>${title} <span>${group.reduce((sum,c)=>sum+c.quantity,0)}</span></h4><div class="mv-grid">${group.map(card=>`<div class="mv-deck-card">${cardTile(card,'deck')}<div class="mv-quantity-tools"><button data-deck-quantity="${esc(card.id)}" data-delta="-1" aria-label="Riduci copie di ${esc(card.name)}">−</button><span>${card.quantity}</span><button data-deck-quantity="${esc(card.id)}" data-delta="1" aria-label="Aumenta copie di ${esc(card.name)}">+</button></div></div>`).join('')}</div></section>`:'';}).join('')||'<p class="mv-empty">Questo mazzo è vuoto. Cerca una carta qui sopra.</p>'}</div></div></div>` : '<p class="mv-empty">Non hai ancora creato mazzi.</p>'}
-          </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
+          </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div>${priceNotice()}<div class="mv-price-tools"><label class="mv-price-age">Avviso prezzi vecchi<input id="mv-price-age" type="number" inputmode="numeric" min="${PRICE_AGE_MIN}" max="${PRICE_AGE_MAX}" step="1" value="${priceMaxAgeDays}" aria-describedby="mv-price-age-hint">giorni <small id="mv-price-age-hint">0 = mai</small></label><label class="mv-price-age">Valuta dei totali<select id="mv-price-currency">${PRICE_CURRENCY_OPTIONS.map(code=>`<option value="${code}" ${code===priceCurrency?'selected':''}>${PRICE_CURRENCY_LABEL[code]}</option>`).join('')}</select></label><button type="button" class="mv-button mv-soft" id="mv-price-refresh" ${priceBusy || priceCooldownLeft() > 0 ? 'disabled' : ''}>${priceButtonLabel()}</button></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
           ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><div class="mv-sheet-grab" role="separator" aria-orientation="horizontal" aria-label="Trascina per mostrare tutti i dettagli della carta" tabindex="0"><span></span></div><div class="mv-sheet-body"><div class="mv-browse"><button type="button" data-browse="-1" aria-label="Carta precedente">←</button><span>Scorri per sfogliare</span><button type="button" data-browse="1" aria-label="Carta successiva">→</button></div><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></div></section></div>` : ''}
         </main>`;
         bind();
@@ -252,6 +413,7 @@ export function showMagicDashboard(container, options = {}) {
         const exists = wantlist.some(item => String(item.id) === String(card.id));
         wantlist = exists ? wantlist.filter(item => String(item.id) !== String(card.id)) : [...wantlist, { ...card }];
         persist(); render(); setNotice(exists ? 'Carta rimossa dalla wantlist.' : 'Carta aggiunta alla wantlist.');
+        void refreshPriceSummary();
     };
 
     async function importFile(file) {
@@ -293,7 +455,7 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelectorAll('[data-mtcg-tool]').forEach(button=>button.onclick=()=>navigateTo(button.dataset.mtcgTool,container,{preset:'commander',returnTo:'magic'}));
         const printDeck=container.querySelector('#mv-print-deck');
         if(printDeck)printDeck.onclick=()=>{const deck=decks.find(d=>d.id===activeDeckId)||decks[0],map=byId();const decklist=(deck?.cards||[]).map(e=>{const card=map.get(String(e.cardId));return card?`${e.quantity} ${card.name}`:'';}).filter(Boolean).join('\n');void navigateTo('proxyPrinter',container,{decklist});};
-        container.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { tab = button.dataset.tab; filter = ''; searchResults = []; selecting = false; selected.clear(); clearPress(); render(); }));
+        container.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { tab = button.dataset.tab; filter = ''; searchResults = []; selecting = false; selected.clear(); clearPress(); render(); if (tab === 'wantlist') void refreshPriceSummary(); }));
         container.querySelector('#mv-file')?.addEventListener('change', event => { const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''; });
         container.querySelector('#mv-filter')?.addEventListener('input', event => { filter = event.target.value; const start=event.target.selectionStart; render(); const input=container.querySelector('#mv-filter'); input?.focus(); try { input?.setSelectionRange(start,start); } catch { /* search inputs may not support selection */ } });
         container.querySelectorAll('[data-open-card]').forEach(button => {
@@ -366,7 +528,7 @@ export function showMagicDashboard(container, options = {}) {
         art?.addEventListener('pointercancel', () => { swipe = null; });
         art?.addEventListener('dragstart', event => event.preventDefault());
         container.querySelectorAll('[data-want]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); const card=byId().get(button.dataset.want)||wantlist.find(item=>String(item.id)===button.dataset.want); if(card) toggleWant(card); }));
-        container.querySelectorAll('[data-remove-want]').forEach(button => button.addEventListener('click', () => { wantlist=wantlist.filter(item=>String(item.id)!==button.dataset.removeWant); persist(); render(); }));
+        container.querySelectorAll('[data-remove-want]').forEach(button => button.addEventListener('click', () => { wantlist=wantlist.filter(item=>String(item.id)!==button.dataset.removeWant); persist(); render(); void refreshPriceSummary(); }));
         container.querySelector('.mv-modal-close')?.addEventListener('click', closeCard);
         if (modalCard && focusClose) { focusClose = false; container.querySelector('.mv-modal-close')?.focus(); }
         container.querySelector('.mv-modal-backdrop')?.addEventListener('click', event => { if(event.target.classList.contains('mv-modal-backdrop')) closeCard(); });
@@ -384,6 +546,42 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelector('#mv-delete-deck')?.addEventListener('click',()=>{if(!window.confirm('Eliminare questo mazzo? Le carte resteranno nella collezione.'))return;decks=decks.filter(item=>item.id!==activeDeckId);activeDeckId=decks[0]?.id||'';persist();render();});
         container.querySelector('#mv-deck-search')?.addEventListener('input', async event=>{const value=event.target.value.trim();if(value.length<2){searchResults=[];container.querySelector('#mv-search-results').innerHTML='';return;}try{const response=await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`name:${value}`)}&unique=cards&order=name`);if(!response.ok)return;searchResults=(await response.json()).data?.slice(0,8)||[];const root=container.querySelector('#mv-search-results');if(root)root.innerHTML=searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('');root?.querySelectorAll('[data-add-deck-card]').forEach(button=>button.addEventListener('click',()=>{const found=searchResults.find(card=>card.id===button.dataset.addDeckCard);if(!found)return;let own=cards.find(card=>card.id===found.id);if(!own){own=summary(found);cards.push(own);}const deck=decks.find(item=>item.id===activeDeckId);const entry=deck.cards.find(item=>item.cardId===own.id);if(entry)entry.quantity++;else deck.cards.push({cardId:own.id,quantity:1});persist();render();setNotice(`${own.name} aggiunta al mazzo e alla collezione.`);}));}catch{setNotice('Ricerca non disponibile.');}});
         container.querySelectorAll('[data-deck-quantity]').forEach(button=>button.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId),cardId=button.dataset.deckQuantity,entry=deck?.cards.find(item=>String(item.cardId)===cardId);if(!entry)return;entry.quantity+=Number(button.dataset.delta);if(entry.quantity<=0)deck.cards=deck.cards.filter(item=>String(item.cardId)!==cardId);persist();render();}));
+        container.querySelector('#mv-price-refresh')?.addEventListener('click', () => { void refreshPrices(); });
+        // I nomi senza prezzo nell'avviso aprono la carta, come dal resto della lista.
+        container.querySelectorAll('[data-open-unpriced]').forEach(button => button.addEventListener('click', () => {
+            const cardId = button.dataset.openUnpriced;
+            const card = byId().get(cardId) || wantlist.find(item => String(item.id) === cardId);
+            void openCard(card || { id: cardId, name: button.textContent || '' });
+        }));
+        container.querySelector('#mv-price-age')?.addEventListener('input', event => {
+            const value = normalizePriceAge(event.target.value);
+            if (value === null) return;
+            priceMaxAgeDays = value;
+            localStorage.setItem(PRICE_AGE_LOCAL_KEY, String(value));
+            render();
+            // Il campo è stato ricostruito: si riporta il cursore dov'era, come per la ricerca.
+            const input = container.querySelector('#mv-price-age');
+            if (input) {
+                input.focus();
+                try { input.setSelectionRange(input.value.length, input.value.length); } catch { /* i campi numerici non sempre supportano la selezione */ }
+            }
+            savePriceAgePreference(value);
+        });
+        container.querySelector('#mv-price-currency')?.addEventListener('change', event => {
+            const value = String(event.target.value || '').toLowerCase();
+            if (!PRICE_CURRENCY_OPTIONS.includes(value)) return;
+            priceCurrency = value;
+            localStorage.setItem(PRICE_CURRENCY_LOCAL_KEY, value);
+            render();
+            void (async () => {
+                try {
+                    const result = await setPreference(PRICE_CURRENCY_KEY, value);
+                    if (!disposed && result?.error) setNotice(`Valuta salvata sul dispositivo. Sincronizzazione: ${result.error.message}`);
+                } catch {
+                    // Offline: resta la scelta locale.
+                }
+            })();
+        });
         container.querySelector('#mv-export-language')?.addEventListener('change', event => { exportLanguage = event.target.value; });
         container.querySelector('#mv-export-format')?.addEventListener('change', event => { exportFormat = event.target.value; });
         container.querySelector('#mv-export')?.addEventListener('click', () => {
@@ -396,16 +594,19 @@ export function showMagicDashboard(container, options = {}) {
         });
     }
 
-    window.__magicCleanup = () => { disposed = true; clearPress(); window.removeEventListener('resize', onSheetResize); };
+    window.__magicCleanup = () => { disposed = true; clearPress(); stopPriceTicker(); clearTimeout(priceAgeSaveTimer); window.removeEventListener('resize', onSheetResize); };
     render();
     if (navigator.onLine) void (async()=>{
         try {
             const user=await getMagicAccount(); cloudUserId=user?.id||null;
             if(!cloudUserId)return;
+            priceMaxAgeDays = await loadPriceAgePreference();
+            priceCurrency = await loadPriceCurrencyPreference();
             const remote=await loadMagicLibrary(cloudUserId);
             if(disposed)return;
             if(remote.hasCloudData){cards=remote.cards||[];decks=remote.decks||[];wantlist=remote.wantlist||[];activeDeckId=decks[0]?.id||'';save(COLLECTION_KEY,cards);save(DECKS_KEY,decks);save(WANTLIST_KEY,wantlist);render();}
             else persist();
+            await refreshPriceSummary();
         }catch(error){ if(!disposed)setNotice(`Archivio sul dispositivo pronto. Sincronizzazione cloud non disponibile: ${error.message}`); }
     })();
 }

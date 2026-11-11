@@ -46,13 +46,15 @@ export async function loadMagicLibrary(userId) {
     const deckCards = decks.length
         ? await checked(supabase.from('magic_deck_cards').select('deck_id,card_id,quantity').in('deck_id', decks.map(deck => deck.id)))
         : [];
-    const wantlist = await checked(supabase.from('magic_wantlist_cards').select('card_id,card_name,card_data').eq('user_id', userId).order('added_at'));
+    const wantlist = await checked(supabase.from('magic_wantlist_cards').select('card_id,card_name,card_data,quantity,source_deck_id').eq('user_id', userId).order('added_at'));
     return {
         collectionId: collection?.id || null,
         collectionPublic: collection?.is_public === true,
         hasCloudData: Boolean(collection || decks.length || wantlist?.length),
         cards: (cards || []).map(row => ({ ...(row.card_data || {}), id: row.card_id, name: row.card_name, quantity: row.quantity })),
-        wantlist: (wantlist || []).map(row => ({ ...(row.card_data || {}), id: row.card_id, name: row.card_name, quantity: 1 })),
+        // Le righe generate dall'analisi dei mazzi non sono modificabili a mano: la wantlist
+        // dell'interfaccia è quella manuale, senza mazzo di provenienza.
+        wantlist: (wantlist || []).filter(row => !row.source_deck_id).map(row => ({ ...(row.card_data || {}), id: row.card_id, name: row.card_name, quantity: Math.max(1, Number(row.quantity) || 1) })),
         decks: (decks || []).map(deck => ({
             id: deck.id, name: deck.name,
             commanders: Array.isArray(deck.commanders) ? deck.commanders : [],
@@ -103,14 +105,57 @@ export async function saveMagicLibrary({ userId, cards, decks, wantlist = [] }) 
         await replaceChildRows('magic_deck_cards', 'deck_id', deck.id, rows);
     }
     const wantlistRows = wantlist.filter(card => card?.id && card?.name).map(card => ({
-        user_id: userId, card_id: String(card.id), card_name: String(card.name).slice(0, 120), card_data: cardData(card), added_at: new Date().toISOString()
+        user_id: userId, source_deck_id: null, card_id: String(card.id), card_name: String(card.name).slice(0, 120),
+        card_data: cardData(card), quantity: Math.min(99, Math.max(1, Number(card.quantity) || 1)), added_at: new Date().toISOString()
     }));
-    const existingWantlist = await checked(supabase.from('magic_wantlist_cards').select('card_id').eq('user_id', userId));
+    // Solo le righe manuali: quelle legate a un mazzo appartengono all'analisi dei mancanti.
+    const existingWantlist = await checked(supabase.from('magic_wantlist_cards').select('card_id').eq('user_id', userId).is('source_deck_id', null));
     const desiredIds = new Set(wantlistRows.map(row => row.card_id));
     const removedWantlistIds = (existingWantlist || []).map(row => row.card_id).filter(cardId => !desiredIds.has(cardId));
-    if (removedWantlistIds.length) await checked(supabase.from('magic_wantlist_cards').delete().eq('user_id', userId).in('card_id', removedWantlistIds));
-    if (wantlistRows.length) await checked(supabase.from('magic_wantlist_cards').upsert(wantlistRows, { onConflict: 'user_id,card_id' }));
+    if (removedWantlistIds.length) {
+        await checked(supabase.from('magic_wantlist_cards').delete().eq('user_id', userId).is('source_deck_id', null).in('card_id', removedWantlistIds));
+    }
+    if (wantlistRows.length) await checked(supabase.from('magic_wantlist_cards').upsert(wantlistRows, { onConflict: 'user_id,source_deck_id,card_id' }));
     return { collectionId: collection.id };
+}
+
+export async function loadMagicShoppingSummary(userId) {
+    if (!isSupabaseConfigured) return null;
+    // I totali bastano per l'avviso, le righe servono per dire *quali* carte mancano di prezzo.
+    const [totals, lines] = await Promise.all([
+        checked(supabase.from('magic_shopping_list_totals').select('*').eq('user_id', userId).maybeSingle()),
+        checked(supabase.from('magic_shopping_list').select('card_id,card_name,unit_price_eur,unit_price_usd').eq('user_id', userId))
+    ]);
+    return totals ? { ...totals, lines: lines || [] } : null;
+}
+
+// Chiede al server i prezzi aggiornati delle stampe indicate: il browser non può
+// scriverli, perché la tabella è scrivibile solo con la service role key.
+export async function refreshMagicPrices(cardIds = []) {
+    const ids = [...new Set((cardIds || []).filter(Boolean).map(String))];
+    if (!ids.length) return { updated: 0, requested: 0, notFound: 0 };
+    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch('/api/magic/prices', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+        },
+        body: JSON.stringify({ card_ids: ids })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+        const message = payload?.error || `Aggiornamento prezzi non disponibile (${response.status}).`;
+        const error = new Error(message);
+        error.status = response.status;
+        error.code = payload?.code || '';
+        // Il server indica i secondi solo quando blocca per la pausa tra due
+        // aggiornamenti: in quel caso l'interfaccia può mostrare il conto alla
+        // rovescia. Per il tetto orario il messaggio resta senza secondi.
+        error.retryAfterSeconds = Number(message.match(/attendi (\d+) second/i)?.[1]) || 0;
+        throw error;
+    }
+    return payload;
 }
 
 export async function setMagicCollectionPublic(userId, collectionId, isPublic) {

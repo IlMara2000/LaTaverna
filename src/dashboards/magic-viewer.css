@@ -67,6 +67,17 @@
 #ui .mv-export { display:flex; align-items:end; gap:10px; flex-wrap:wrap; margin:-4px 0 20px; }
 #ui .mv-export label { display:grid; gap:5px; color:#62536c; font-size:12px; }
 #ui .mv-export select { min-width:140px; }
+#ui .mv-price { margin:0 0 16px; padding:11px 15px; border:1px solid #ddd2e7; border-radius:13px; color:#4d3b59; font-size:13px; line-height:1.5; background:#f8f4fc; }
+#ui .mv-price.is-warning { border-color:#e2b458; color:#6a4708; background:linear-gradient(140deg,#fff9e9,#fcefcd); box-shadow:inset 0 1px #fff; }
+#ui .mv-price.is-warning::before { content:"⚠"; margin-right:8px; font-weight:800; }
+#ui .mv-price-card { padding:0; border:0; color:inherit; font:inherit; text-decoration:underline; background:none; cursor:pointer; }
+#ui .mv-price-card:hover { text-decoration:none; }
+#ui .mv-price-tools { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 16px; }
+#ui .mv-price-tools .mv-button { min-height:34px; font-size:12px; }
+#ui .mv-price-age { display:inline-flex; align-items:center; gap:8px; color:#62536c; font-size:12px; }
+#ui .mv-price-age select { min-height:34px; padding:0 8px; border:1px solid #e0d4e8; border-radius:9px; color:#44314f; background:#fff; }
+#ui .mv-price-age input { width:78px; min-height:34px; padding:0 8px; border:1px solid #e0d4e8; border-radius:9px; color:#44314f; text-align:right; background:#fff; }
+#ui .mv-price-age small { color:#7a6b85; font-size:11px; }
 #ui .mv-modal-backdrop { position:fixed; z-index:10000; inset:0; display:grid; place-items:center; padding:18px; background:#100719cc; backdrop-filter:blur(5px); }
 #ui .mv-modal { position:relative; display:grid; grid-template-columns:minmax(180px, min(34vw,310px)) minmax(0,1fr); gap:24px; width:min(760px,100%); max-height:min(90vh,800px); overflow:auto; padding:24px; border:1px solid #ffffff8a; border-radius:22px; background:linear-gradient(145deg,#fff,#f5effa); box-shadow:0 24px 70px #08040dbb; }
 #ui .mv-modal-art { display:block; width:100%; max-height:70vh; object-fit:contain; border-radius:13px; box-shadow:0 8px 20px #28173535; }

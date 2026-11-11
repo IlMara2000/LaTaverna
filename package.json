@@ -16,6 +16,7 @@
     "test:layout": "node scripts/test-magic-layout.mjs",
     "tunnel": "ngrok http 127.0.0.1:31415 --traffic-policy-file scripts/ngrok-policy.json --inspect=false --log stdout",
     "watch:gateway": "node --env-file-if-exists=.env.local scripts/gateway-watch.mjs",
+    "prices:import": "node scripts/import-scryfall-prices.mjs",
     "lint": "echo \"Sguardo dell'Oste: Tutto in ordine!\""
   },
   "dependencies": {

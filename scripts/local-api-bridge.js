@@ -9,7 +9,8 @@ export const API_ROUTES = {
     '/api/rpg/session-event': () => import('../api/rpg/session-event.js'),
     '/api/rpg/ai-health': () => import('../api/rpg/ai-health.js'),
     '/api/magic/scan': () => import('../api/magic/scan.js'),
-    '/api/magic/translate': () => import('../api/magic/translate.js')
+    '/api/magic/translate': () => import('../api/magic/translate.js'),
+    '/api/magic/prices': () => import('../api/magic/prices.js')
 };
 
 // Copia solo le variabili server ammesse: nessun'altra finisce in process.env.
