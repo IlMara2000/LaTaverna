@@ -61,9 +61,14 @@ export function showCardCounter(container, options = {}) {
         presses.set(index, press); paintPress(index);
         press.timer = setTimeout(() => { presses.delete(index); paintPress(index); }, 1800);
     }
+    function sourceFor(index) {
+        const stored = sources.get(index);
+        if (stored !== undefined && stored !== index && state.players[stored]) return stored;
+        return index === 0 ? 1 : 0;
+    }
     function modeInfo(index) {
         const player = state.players[index], mode = modes.get(index) || 'life';
-        const source = sources.get(index) ?? (index === 0 ? 1 : 0), slot = slots.get(index) || 0;
+        const source = sourceFor(index), slot = slots.get(index) || 0;
         const poison = player.counters.find(c => c.name === 'Veleno');
         const value = mode === 'commander' ? player.commanderDamage[source][slot] : mode === 'poison' ? poison?.value || 0 : player.value;
         const label = mode === 'commander' ? `Danni comandante ${slot + 1} di ${state.players[source].name}` : mode === 'poison' ? 'Danni veleno' : PRESETS[state.preset].label;
@@ -79,7 +84,7 @@ export function showCardCounter(container, options = {}) {
     }
     function applyDelta(index, delta) {
         const mode = modes.get(index) || 'life';
-        if (mode === 'commander') state = changeCommanderDamage(state, index, sources.get(index) ?? (index === 0 ? 1 : 0), slots.get(index) || 0, delta, true);
+        if (mode === 'commander') state = changeCommanderDamage(state, index, sourceFor(index), slots.get(index) || 0, delta, true);
         else if (mode === 'poison') {
             let poison = state.players[index].counters.find(c => c.name === 'Veleno');
             if (!poison) { state = structuredClone(state); poison = { id: crypto.randomUUID(), name: 'Veleno', value: 0, step: 1 }; state.players[index].counters.push(poison); }
@@ -109,9 +114,9 @@ export function showCardCounter(container, options = {}) {
         find('.counter-board').hidden = !playing;
         find('.counter-players').innerHTML = state.players.map((player, i) => {
             const { mode, value, label } = modeInfo(i);
-            const source = sources.get(i) ?? (i === 0 ? 1 : 0), slot = slots.get(i) || 0;
+            const source = sourceFor(i), slot = slots.get(i) || 0;
             return `<article class="counter-player" data-player="${i}" data-mode="${mode}" aria-label="${escape(player.name)}">
-                ${mode === 'commander' ? `<div class="counter-damage-source"><select data-source aria-label="Comandante che infligge danni a ${escape(player.name)}">${state.players.map((p,j) => `<option value="${j}" ${j === source ? 'selected' : ''}>${escape(p.name)}</option>`).join('')}</select><button type="button" data-slot aria-label="Cambia comandante o partner">${slot ? 'Partner' : 'Comandante'}</button></div>` : ''}
+                ${mode === 'commander' ? `<div class="counter-damage-source"><select data-source aria-label="Comandante che infligge danni a ${escape(player.name)}">${state.players.map((p,j) => j === i ? '' : `<option value="${j}" ${j === source ? 'selected' : ''}>${escape(p.name)}</option>`).join('')}</select><button type="button" data-slot aria-label="Cambia comandante o partner">${slot ? 'Partner' : 'Comandante'}</button></div>` : ''}
                 <div class="counter-face"><button type="button" class="counter-tap" data-delta="-1" aria-label="Riduci ${escape(label)} di ${escape(player.name)}"><span>−</span><small data-count="-1"></small></button>
                 <output class="counter-value" style="--score-digits:${String(value.toLocaleString('it-IT')).length}" data-swipe tabindex="0" aria-label="${escape(player.name)}, ${escape(label)}: ${value}. Scorri in basso per danni comandante, in alto per danni veleno.">${value.toLocaleString('it-IT')}${mode !== 'life' ? `<small>${mode === 'poison' ? 'Veleno · / 10' : 'Comandante · / 21'}</small>` : ''}</output>
                 <button type="button" class="counter-tap" data-delta="1" aria-label="Aumenta ${escape(label)} di ${escape(player.name)}"><span>+</span><small data-count="1"></small></button></div>
