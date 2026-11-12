@@ -12,12 +12,17 @@ export function showCardCounter(container, options = {}) {
     let state = saved || createMatch(PRESETS[options.preset] ? options.preset : 'commander');
     let playing = false, gesture = null, suppressClickUntil = 0, coinTimer;
     const modes = new Map(), sources = new Map(), slots = new Map(), presses = new Map();
+    let hold = null;
     const root = document.createElement('section');
     root.className = 'card-counter';
     container.replaceChildren(root);
     const find = selector => root.querySelector(selector);
     const clearFeedback = () => { for (const press of presses.values()) clearTimeout(press.timer); presses.clear(); };
-    window.__counterCleanup = () => { clearFeedback(); clearTimeout(coinTimer); };
+    window.__counterCleanup = () => {
+        clearFeedback(); clearTimeout(coinTimer);
+        if (hold) { clearInterval(hold.timer); hold = null; }
+        window.removeEventListener('pointerup', endHold); window.removeEventListener('pointercancel', endHold);
+    };
     root.innerHTML = `<section class="counter-intro">
         <button type="button" data-home class="counter-back" aria-label="Torna a MTCG">←</button>
         <h1>Segnapunti</h1>
@@ -34,7 +39,7 @@ export function showCardCounter(container, options = {}) {
     <section class="counter-board" hidden aria-label="Segnapunti della partita">
         <div class="counter-players"></div>
         <button type="button" class="counter-menu-trigger" data-menu aria-label="Menu partita" aria-expanded="false" aria-controls="counter-menu">☰</button>
-        <dialog id="counter-menu" class="counter-menu" aria-label="Menu partita"><button type="button" data-mode="commander">Danni Comandante</button><button type="button" data-mode="poison">Danni Veleno</button><button type="button" data-new>Torna indietro</button></dialog>
+        <dialog id="counter-menu" class="counter-menu" aria-label="Menu partita"><button type="button" data-settings>Personalizzazione</button><button type="button" data-new>Torna indietro</button></dialog>
     </section><p class="counter-sr" data-status role="status" aria-live="polite"></p>`;
     const form = find('form'), menu = find('.counter-menu');
     if (options.preset && PRESETS[options.preset]) form.elements.initial.value = PRESETS[options.preset].initial;
@@ -56,21 +61,59 @@ export function showCardCounter(container, options = {}) {
         presses.set(index, press); paintPress(index);
         press.timer = setTimeout(() => { presses.delete(index); paintPress(index); }, 1800);
     }
+    function modeInfo(index) {
+        const player = state.players[index], mode = modes.get(index) || 'life';
+        const source = sources.get(index) ?? (index === 0 ? 1 : 0), slot = slots.get(index) || 0;
+        const poison = player.counters.find(c => c.name === 'Veleno');
+        const value = mode === 'commander' ? player.commanderDamage[source][slot] : mode === 'poison' ? poison?.value || 0 : player.value;
+        const label = mode === 'commander' ? `Danni comandante ${slot + 1} di ${state.players[source].name}` : mode === 'poison' ? 'Danni veleno' : PRESETS[state.preset].label;
+        return { mode, value, label };
+    }
+    function paintValue(index) {
+        const el = find(`[data-player="${index}"] [data-swipe]`);
+        if (!el) return;
+        const { mode, value, label } = modeInfo(index);
+        el.style.setProperty('--score-digits', String(value.toLocaleString('it-IT')).length);
+        el.innerHTML = `${value.toLocaleString('it-IT')}${mode !== 'life' ? `<small>${mode === 'poison' ? 'Veleno · / 10' : 'Comandante · / 21'}</small>` : ''}`;
+        el.setAttribute('aria-label', `${state.players[index].name}, ${label}: ${value}. Scorri in basso per danni comandante, in alto per danni veleno.`);
+    }
+    function applyDelta(index, delta) {
+        const mode = modes.get(index) || 'life';
+        if (mode === 'commander') state = changeCommanderDamage(state, index, sources.get(index) ?? (index === 0 ? 1 : 0), slots.get(index) || 0, delta, true);
+        else if (mode === 'poison') {
+            let poison = state.players[index].counters.find(c => c.name === 'Veleno');
+            if (!poison) { state = structuredClone(state); poison = { id: crypto.randomUUID(), name: 'Veleno', value: 0, step: 1 }; state.players[index].counters.push(poison); }
+            state = changeScore(state, index, delta, poison.id);
+        } else state = changeScore(state, index, delta * PRESETS[state.preset].steps[0]);
+        paintValue(index); registerPress(index, mode, delta); persist(); announce(state.log.at(-1));
+    }
+    function endHold() {
+        if (!hold) return;
+        clearInterval(hold.timer);
+        if (hold.fired) suppressClickUntil = Date.now() + 350;
+        hold = null;
+        root.querySelectorAll('[data-press]').forEach(card => delete card.dataset.press);
+    }
+    function beginHold(index, delta) {
+        endHold();
+        const card = find(`[data-player="${index}"]`);
+        if (card) card.dataset.press = delta > 0 ? 'plus' : 'minus';
+        const press = { index, delta, fired: false, timer: 0 };
+        press.timer = setInterval(() => { press.fired = true; applyDelta(index, delta); }, 500);
+        hold = press;
+    }
     function render() {
         root.dataset.players = state.players.length;
         root.dataset.playing = String(playing);
         find('.counter-intro').hidden = playing;
         find('.counter-board').hidden = !playing;
-        find('[data-mode="commander"]').disabled = state.preset !== 'commander';
         find('.counter-players').innerHTML = state.players.map((player, i) => {
-            const mode = modes.get(i) || 'life', source = sources.get(i) ?? (i === 0 ? 1 : 0), slot = slots.get(i) || 0;
-            const poison = player.counters.find(c => c.name === 'Veleno');
-            const value = mode === 'commander' ? player.commanderDamage[source][slot] : mode === 'poison' ? poison?.value || 0 : player.value;
-            const label = mode === 'commander' ? `Danni comandante ${slot + 1} di ${state.players[source].name}` : mode === 'poison' ? 'Danni veleno' : PRESETS[state.preset].label;
+            const { mode, value, label } = modeInfo(i);
+            const source = sources.get(i) ?? (i === 0 ? 1 : 0), slot = slots.get(i) || 0;
             return `<article class="counter-player" data-player="${i}" data-mode="${mode}" aria-label="${escape(player.name)}">
                 ${mode === 'commander' ? `<div class="counter-damage-source"><select data-source aria-label="Comandante che infligge danni a ${escape(player.name)}">${state.players.map((p,j) => `<option value="${j}" ${j === source ? 'selected' : ''}>${escape(p.name)}</option>`).join('')}</select><button type="button" data-slot aria-label="Cambia comandante o partner">${slot ? 'Partner' : 'Comandante'}</button></div>` : ''}
                 <div class="counter-face"><button type="button" class="counter-tap" data-delta="-1" aria-label="Riduci ${escape(label)} di ${escape(player.name)}"><span>−</span><small data-count="-1"></small></button>
-                <output class="counter-value" style="--score-digits:${String(value.toLocaleString('it-IT')).length}" data-swipe tabindex="0" aria-label="${escape(player.name)}, ${escape(label)}: ${value}. Scorri in basso per danni comandante, in alto per punti.">${value.toLocaleString('it-IT')}${mode !== 'life' ? `<small>${mode === 'poison' ? 'Veleno · / 10' : 'Comandante · / 21'}</small>` : ''}</output>
+                <output class="counter-value" style="--score-digits:${String(value.toLocaleString('it-IT')).length}" data-swipe tabindex="0" aria-label="${escape(player.name)}, ${escape(label)}: ${value}. Scorri in basso per danni comandante, in alto per danni veleno.">${value.toLocaleString('it-IT')}${mode !== 'life' ? `<small>${mode === 'poison' ? 'Veleno · / 10' : 'Comandante · / 21'}</small>` : ''}</output>
                 <button type="button" class="counter-tap" data-delta="1" aria-label="Aumenta ${escape(label)} di ${escape(player.name)}"><span>+</span><small data-count="1"></small></button></div>
             </article>`;
         }).join('');
@@ -82,6 +125,10 @@ export function showCardCounter(container, options = {}) {
         clearFeedback(); modes.set(index, mode); render();
         find(`[data-player="${index}"] [data-swipe]`)?.focus({ preventScroll: true });
     }
+    function toggleMode(index, mode) {
+        if (mode === 'commander' && state.preset !== 'commander') return;
+        setMode(index, (modes.get(index) || 'life') === mode ? 'life' : mode);
+    }
     form.elements.preset.onchange = () => { form.elements.initial.value = PRESETS[form.elements.preset.value].initial; };
     form.onsubmit = event => {
         event.preventDefault();
@@ -92,16 +139,12 @@ export function showCardCounter(container, options = {}) {
     find('[data-home]').onclick = () => navigateTo(options.returnTo === 'magic' ? 'magic' : 'mtcg', container);
     find('[data-resume]').onclick = () => { playing = true; render(); find('[data-menu]').focus(); };
     find('[data-menu]').onclick = () => { menu.showModal(); find('[data-menu]').setAttribute('aria-expanded', 'true'); };
-    find('[data-new]').onclick = () => {
-        closeMenu(); clearFeedback(); playing = false; render();
+    find('[data-new]').onclick = () => { closeMenu(); endHold(); navigateTo(options.returnTo === 'magic' ? 'magic' : 'mtcg', container); };
+    find('[data-settings]').onclick = () => {
+        closeMenu(); endHold(); clearFeedback(); playing = false; render();
         form.elements.preset.value = state.preset; form.elements.players.value = state.players.length; form.elements.initial.value = state.initial;
         find('[data-resume]').hidden = false; form.elements.preset.focus();
     };
-    root.querySelectorAll('[data-mode]').forEach(button => button.onclick = () => {
-        const mode = button.dataset.mode;
-        const nextMode = state.players.every((_, i) => modes.get(i) === mode) ? 'life' : mode;
-        closeMenu(); clearFeedback(); state.players.forEach((_, i) => modes.set(i, nextMode)); render();
-    });
     find('[data-coin]').onclick = () => {
         const button = find('[data-coin]'); if (button.disabled) return;
         const face = crypto.getRandomValues(new Uint32Array(1))[0] % 2;
@@ -114,17 +157,18 @@ export function showCardCounter(container, options = {}) {
         const i = Number(button.closest('[data-player]').dataset.player);
         if (button.hasAttribute('data-slot')) { slots.set(i, (slots.get(i) || 0) ? 0 : 1); clearFeedback(); render(); return; }
         if (!button.hasAttribute('data-delta')) return;
-        const mode = modes.get(i) || 'life', delta = Number(button.dataset.delta);
-        if (mode === 'commander') state = changeCommanderDamage(state, i, sources.get(i) ?? (i === 0 ? 1 : 0), slots.get(i) || 0, delta, true);
-        else if (mode === 'poison') {
-            let poison = state.players[i].counters.find(c => c.name === 'Veleno');
-            if (!poison) { state = structuredClone(state); poison = { id: crypto.randomUUID(), name: 'Veleno', value: 0, step: 1 }; state.players[i].counters.push(poison); }
-            state = changeScore(state, i, delta, poison.id);
-        } else state = changeScore(state, i, delta * PRESETS[state.preset].steps[0]);
-        render(); registerPress(i, mode, delta); persist();
+        const delta = Number(button.dataset.delta);
+        applyDelta(i, delta);
         find(`[data-player="${i}"] [data-delta="${delta}"]`)?.focus({ preventScroll: true });
-        announce(state.log.at(-1));
     };
+    area.addEventListener('pointerdown', event => {
+        const button = event.target.closest('[data-delta]');
+        if (!button || !event.isPrimary || event.button !== 0) return;
+        beginHold(Number(button.closest('[data-player]').dataset.player), Number(button.dataset.delta));
+    });
+    window.addEventListener('pointerup', endHold);
+    window.addEventListener('pointercancel', endHold);
+    area.addEventListener('contextmenu', event => { if (event.target.closest('[data-delta]')) event.preventDefault(); });
     area.onchange = event => { if (!event.target.matches('[data-source]')) return; sources.set(Number(event.target.closest('[data-player]').dataset.player), Number(event.target.value)); clearFeedback(); render(); };
     area.addEventListener('pointerdown', event => {
         const target = event.target.closest('[data-swipe]'); if (!target || !event.isPrimary || event.button !== 0) return;
@@ -134,7 +178,9 @@ export function showCardCounter(container, options = {}) {
         if (!gesture || gesture.id !== event.pointerId) return;
         const g = gesture; gesture = null; const dy = event.clientY - g.y, dx = event.clientX - g.x;
         if (Math.abs(dy) < 45 || Math.abs(dy) < Math.abs(dx) * 1.3) return;
-        suppressClickUntil = Date.now() + 400; setMode(g.index, dy > 0 ? 'commander' : 'life');
+        suppressClickUntil = Date.now() + 400;
+        // Scroll up toggles poison, scroll down toggles commander damage.
+        toggleMode(g.index, dy < 0 ? 'poison' : 'commander');
     });
     area.addEventListener('pointercancel', () => { gesture = null; });
     let wheelTotal = 0, wheelIndex, wheelTime = 0, wheelLock = 0;
@@ -144,11 +190,11 @@ export function showCardCounter(container, options = {}) {
         if (now < wheelLock) return;
         if (wheelIndex !== i || now - wheelTime > 250) wheelTotal = 0;
         wheelIndex = i; wheelTime = now; wheelTotal += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 300 : 1);
-        if (Math.abs(wheelTotal) >= 55) { setMode(i, wheelTotal > 0 ? 'commander' : 'life'); wheelTotal = 0; wheelLock = now + 350; }
+        if (Math.abs(wheelTotal) >= 55) { toggleMode(i, wheelTotal > 0 ? 'commander' : 'poison'); wheelTotal = 0; wheelLock = now + 350; }
     }, { passive: false });
     area.addEventListener('keydown', event => {
         if (!event.target.matches('[data-swipe]') || !['ArrowDown','ArrowUp'].includes(event.key)) return;
-        event.preventDefault(); setMode(Number(event.target.closest('[data-player]').dataset.player), event.key === 'ArrowDown' ? 'commander' : 'life');
+        event.preventDefault(); toggleMode(Number(event.target.closest('[data-player]').dataset.player), event.key === 'ArrowDown' ? 'commander' : 'poison');
     });
     render();
 }

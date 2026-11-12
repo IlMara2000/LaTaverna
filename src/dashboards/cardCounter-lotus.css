@@ -135,3 +135,164 @@ body:has(.card-counter) :is(#navbar-trigger, #nav-home-btn, #sidebar-menu) { dis
 @media (orientation: portrait) {
  #ui #app .card-counter:is([data-players="5"],[data-players="6"]) .counter-menu-trigger { top: 33.333333%; }
 }
+/* --- Player cards: dark neon switch --- */
+#ui #app .counter-player {
+    --player-accent: #ffb703;
+    --player-accent-soft: #ffb70345;
+    padding: 10px;
+    border: 1px solid #ffffff12;
+    border-radius: 28px;
+    overflow: hidden;
+    background:
+        radial-gradient(120% 90% at 50% -20%, #ffffff0f, transparent 60%),
+        radial-gradient(90% 70% at 50% 120%, #00000080, transparent 70%),
+        linear-gradient(165deg, #1c1628 0%, #131019 52%, #0d0a13 100%) !important;
+    box-shadow:
+        inset 0 1px 0 #ffffff1f,
+        inset 0 0 0 1px #00000075,
+        0 10px 0 #00000050,
+        0 22px 40px #000000a8,
+        0 0 0 1px var(--player-accent-soft),
+        0 0 44px -14px var(--player-accent);
+    transition: box-shadow .2s ease, transform .09s ease;
+}
+#ui #app .counter-player:nth-child(1) { --player-accent: #ffb703; --player-accent-soft: #ffb70345; }
+#ui #app .counter-player:nth-child(2) { --player-accent: #ff3d71; --player-accent-soft: #ff3d7145; }
+#ui #app .counter-player:nth-child(3) { --player-accent: #22d3ee; --player-accent-soft: #22d3ee45; }
+#ui #app .counter-player:nth-child(4) { --player-accent: #a78bfa; --player-accent-soft: #a78bfa45; }
+#ui #app .counter-player:nth-child(5) { --player-accent: #4ade80; --player-accent-soft: #4ade8045; }
+#ui #app .counter-player:nth-child(6) { --player-accent: #fb923c; --player-accent-soft: #fb923c45; }
+#ui #app .counter-player[data-mode="poison"] { --player-accent: #10e6a0; --player-accent-soft: #10e6a042; }
+#ui #app .counter-player[data-mode="commander"] { --player-accent: #ff3b5c; --player-accent-soft: #ff3b5c42; }
+#ui #app .counter-player::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 29%;
+    bottom: auto;
+    left: 29%;
+    height: 3px;
+    z-index: 2;
+    border-radius: 0 0 999px 999px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, var(--player-accent), transparent);
+    box-shadow: 0 0 18px 2px var(--player-accent-soft);
+    mix-blend-mode: normal;
+    opacity: .95;
+}
+#ui #app .counter-player::after {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    z-index: 0;
+    border-radius: 22px;
+    border: 1px solid #ffffff0f;
+    pointer-events: none;
+    box-shadow: inset 0 0 32px #00000080;
+}
+#ui #app .counter-player > * { position: relative; z-index: 1; }
+#ui #app .counter-face {
+    gap: 0;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #ffffff08, transparent 28%, #0000002e);
+    box-shadow: inset 0 1px 0 #ffffff12, inset 0 -12px 20px #0000004d;
+    transform-style: preserve-3d;
+    transition: transform 120ms cubic-bezier(.2, .7, .3, 1);
+}
+#ui #app .counter-player:has(.counter-tap:active) { transform: translateY(1px); }
+#ui #app .counter-player:has(.counter-tap[data-delta="-1"]:active) .counter-face,
+#ui #app .counter-player[data-press="minus"] .counter-face { transform: perspective(800px) rotateY(8deg); }
+#ui #app .counter-player:has(.counter-tap[data-delta="1"]:active) .counter-face,
+#ui #app .counter-player[data-press="plus"] .counter-face { transform: perspective(800px) rotateY(-8deg); }
+#ui #app .counter-player .counter-value {
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    border-radius: 0;
+    color: #f7ecd6;
+    text-shadow: 0 0 26px var(--player-accent-soft), 0 2px 10px #000000cc;
+}
+#ui #app .counter-player .counter-value small { color: #b7a9c9; opacity: .8; letter-spacing: .04em; }
+#ui #app .counter-player .counter-tap {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    animation: none !important;
+    border-radius: 20px;
+    color: #e9dcc4 !important;
+    font-weight: 400 !important;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+#ui #app .counter-player .counter-tap::after { content: none; }
+#ui #app .counter-player .counter-tap:hover { background: #ffffff08 !important; box-shadow: inset 0 0 0 1px #ffffff12 !important; }
+#ui #app .counter-player .counter-tap:active {
+    background: linear-gradient(90deg, transparent, var(--player-accent-soft)) !important;
+    box-shadow: inset 0 0 0 1px var(--player-accent-soft), inset 0 3px 12px #00000066 !important;
+}
+#ui #app .counter-player .counter-tap span { display: block; transition: transform 90ms ease, opacity 90ms ease, color 90ms ease; }
+#ui #app .counter-player .counter-tap:active span { transform: translateY(3px) scale(.92); opacity: .9; color: var(--player-accent); }
+#ui #app .counter-tap small { color: #cbb9a0; text-shadow: none; }
+@media (prefers-reduced-motion: reduce) {
+    #ui #app .counter-face,
+    #ui #app .counter-player,
+    #ui #app .counter-player .counter-tap span { transition: none; }
+}
+#ui #app .counter-player .counter-value:focus-visible {
+    outline: none !important;
+    box-shadow: inset 0 0 0 2px var(--player-accent-soft) !important;
+    border-radius: 22px;
+}
+#ui #app .counter-player .counter-value:focus:not(:focus-visible) { outline: none !important; }
+#ui #app .counter-player .counter-value:focus-visible { outline: none !important; box-shadow: none !important; }
+#ui #app .counter-player:has(.counter-value:focus-visible) .counter-face {
+    box-shadow: inset 0 0 0 2px var(--player-accent-soft), inset 0 1px 0 #ffffff12, inset 0 -12px 20px #0000004d;
+}
+/* Phone safety: keep the score on one line and give it room on narrow cards */
+#ui #app .counter-player .counter-tap { min-width: 44px; }
+@supports (font-size: 1cqw) {
+    #ui #app .counter-player .counter-value {
+        font-size: min(
+            24cqw,
+            calc((100cqw - 2 * max(44px, 25cqw)) / (var(--score-digits, 2) * .58)),
+            48cqh,
+            110px
+        ) !important;
+        white-space: nowrap;
+    }
+}
+@media (orientation: portrait) {
+    #ui #app .card-counter[data-players="5"] .counter-player:last-child { grid-column: 1 / -1; }
+}
+@media (orientation: landscape) {
+    #ui #app .card-counter:is([data-players="5"], [data-players="6"]) .counter-players { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    #ui #app .card-counter:is([data-players="5"], [data-players="6"]) .counter-player { grid-column: span 2; }
+    #ui #app .card-counter[data-players="5"] .counter-player:nth-last-child(-n + 2) { grid-column: span 3; }
+}
+/* Menu in a dedicated bottom bar: never overlaps the player cards */
+#ui #app .counter-board {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) 44px;
+    gap: 6px;
+    height: 100%;
+    min-height: 0;
+}
+#ui #app .counter-players { height: auto; min-height: 0; }
+#ui #app .counter-menu-trigger {
+    position: static;
+    top: auto;
+    left: auto;
+    transform: none;
+    justify-self: center;
+    align-self: center;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    font-size: 20px;
+    z-index: 2;
+}
+#ui #app .counter-board { grid-template-rows: minmax(0, 1fr) 48px; }
+#ui #app .card-counter .counter-menu-trigger { width: 40px; height: 40px; min-height: 40px; }

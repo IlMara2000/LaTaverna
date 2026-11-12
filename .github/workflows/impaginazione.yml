@@ -1,14 +1,16 @@
 name: Impaginazione
 
-# Ogni push misura la scheda carta Magic a otto larghezze. Il test si accende da
-# solo un Vite temporaneo quando la porta non serve i sorgenti, quindi in CI non
-# serve né un server statico né una build: gira direttamente sui sorgenti.
+# Ogni push e ogni pull request misurano la scheda carta Magic a otto larghezze
+# e la safe-area del segnapunti. I test si accendono da soli un Vite temporaneo
+# quando la porta non serve i sorgenti, quindi in CI non serve né un server
+# statico né una build: girano direttamente sui sorgenti.
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 concurrency:
-  # Un push nuovo rende inutile la misura del precedente.
+  # Un push nuovo o un aggiornamento della PR rende inutile la misura precedente.
   group: impaginazione-${{ github.ref }}
   cancel-in-progress: true
 
@@ -17,7 +19,7 @@ permissions:
 
 jobs:
   scheda-carta:
-    name: Scheda carta a otto larghezze
+    name: Scheda carta e safe-area del segnapunti
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -70,6 +72,11 @@ jobs:
 
       - name: Misura l'impaginazione
         run: npm run test:layout
+
+      # Barra e menu del segnapunti dentro gli inset di sei telefoni, per 2–6
+      # giocatori. Anche questo test si accende un Vite temporaneo da solo.
+      - name: Safe-area del segnapunti
+        run: npm run test:safe-area
 
       - name: Log del test
         if: failure()
