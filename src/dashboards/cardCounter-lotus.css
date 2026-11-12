@@ -34,10 +34,93 @@ body:has(.card-counter) :is(#navbar-trigger, #nav-home-btn, #sidebar-menu) { dis
 #ui #app .counter-value { display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 0; font: 800 clamp(28px,11vmin,110px)/1 Manrope,sans-serif !important; color: #14121c; letter-spacing: -.06em; text-shadow: 0 2px 0 #ffffff50; font-variant-numeric: tabular-nums; touch-action: none; user-select: none; -webkit-user-select: none; overflow-wrap: anywhere; }
 @supports (font-size: 1cqw) { #ui #app .counter-value { font-size: min(24cqw,calc(68cqw / var(--score-digits,2)),48cqh,110px) !important; } }
 #ui #app .counter-value small { font: 600 11px/1.4 Manrope,sans-serif !important; letter-spacing: 0; margin-top: 8px; }
-#ui #app .counter-player .counter-tap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 15px; min-width: 44px; background: transparent !important; color: #14121c !important; font-size: clamp(30px,7vmin,64px); box-shadow: inset 1px 1px 0 #ffffff35, inset -1px -2px 0 #0002; transform: none; }
-#ui #app .counter-player .counter-tap:active { background: #0000000a !important; box-shadow: inset 2px 3px 6px #0003; }
-#ui #app .counter-tap small { position: absolute; top: calc(50% + 28px); font: 800 16px/1 Manrope,sans-serif !important; transition: opacity .2s; }
-#ui #app .counter-tap small:empty { opacity: 0; }
+#ui #app .counter-player .counter-tap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 18px;
+    min-width: 52px;
+    min-height: 52px;
+    background: transparent !important;
+    color: #14121c !important;
+    font-size: clamp(28px,7vmin,56px);
+    font-weight: 800;
+    
+    /* Cartoony 3D switch base */
+    --switch-raised: 6px;
+    --switch-pressed: 1px;
+    --switch-shadow-raised: 0 6px 0 #8a6d9a, 0 8px 16px #0005;
+    --switch-shadow-pressed: 0 1px 0 #8a6d9a, 0 2px 4px #0003;
+    
+    transform: translateY(var(--switch-raised));
+    box-shadow: var(--switch-shadow-raised);
+    transition:
+        transform 60ms cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        box-shadow 60ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+#ui #app .counter-player .counter-tap:hover {
+    transform: translateY(calc(var(--switch-raised) - 1px));
+    box-shadow: 0 7px 0 #8a6d9a, 0 10px 18px #0006;
+}
+
+#ui #app .counter-player .counter-tap:active {
+    transform: translateY(var(--switch-pressed));
+    box-shadow: var(--switch-shadow-pressed);
+    background: #ffffff15 !important;
+}
+
+#ui #app .counter-player .counter-tap[data-delta="-1"] {
+    --switch-raised: 6px;
+    --switch-pressed: 1px;
+    --switch-shadow-raised: 0 6px 0 #a85c4a, 0 8px 16px #0005;
+    --switch-shadow-pressed: 0 1px 0 #a85c4a, 0 2px 4px #0003;
+}
+
+#ui #app .counter-player .counter-tap[data-delta="-1"]:hover {
+    transform: translateY(calc(var(--switch-raised) - 1px));
+    box-shadow: 0 7px 0 #a85c4a, 0 10px 18px #0006;
+}
+
+#ui #app .counter-player .counter-tap[data-delta="-1"]:active {
+    transform: translateY(var(--switch-pressed));
+    box-shadow: var(--switch-shadow-pressed);
+    background: #ffffff15 !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    #ui #app .counter-player .counter-tap:active {
+        animation: counter-squash 100ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+}
+
+@keyframes counter-squash {
+    0%   { transform: translateY(var(--switch-raised)) scale(1, 1); }
+    30%  { transform: translateY(var(--switch-pressed)) scale(1.06, 0.88); }
+    55%  { transform: translateY(calc(var(--switch-pressed) - 2px)) scale(0.96, 1.08); }
+    75%  { transform: translateY(var(--switch-pressed)) scale(1.02, 0.97); }
+    100% { transform: translateY(var(--switch-pressed)) scale(1, 1); }
+}
+
+#ui #app .counter-tap small {
+    position: absolute;
+    top: calc(50% + 32px);
+    font: 700 14px/1 Manrope,sans-serif !important;
+    letter-spacing: .08em;
+    color: #14121c;
+    opacity: .7;
+    transition: opacity .15s, transform .15s;
+    pointer-events: none;
+}
+
+#ui #app .counter-tap small:empty {
+    opacity: 0;
+    transform: translateY(4px);
+}
 #ui #app .counter-menu-trigger { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 48px; height: 48px; padding: 0; border-radius: 50%; border: 3px solid #14121c; background: #f4eff7; color: #291c35; box-shadow: 0 3px 6px #0005; font-size: 24px; z-index: 2; }
 #ui #app .counter-menu { position: fixed; inset: 0; margin: auto; width: min(320px,calc(100vw - 32px)); max-height: calc(var(--visual-viewport-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px); padding: 20px; border: 1px solid #a68ab9; border-radius: 22px; background: #21172c; }
 #ui #app .counter-menu[open] { display: grid; gap: 18px; }
