@@ -1,4 +1,4 @@
-import { PRESETS, createMatch, changeScore, changeCommanderDamage, loadMatch, saveMatch } from '../services/cardCounter.js';
+import { PRESETS, createMatch, changeScore, changeCommanderDamage, addExtraCounter, changeExtraCounter, removeExtraCounter, loadMatch, saveMatch } from '../services/cardCounter.js';
 import { navigateTo } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
 import './cardCounter-lotus.css';
@@ -39,7 +39,18 @@ export function showCardCounter(container, options = {}) {
     <section class="counter-board" hidden aria-label="Segnapunti della partita">
         <div class="counter-players"></div>
         <button type="button" class="counter-menu-trigger" data-menu aria-label="Menu partita" aria-expanded="false" aria-controls="counter-menu">☰</button>
-        <dialog id="counter-menu" class="counter-menu" aria-label="Menu partita"><button type="button" data-settings>Personalizzazione</button><button type="button" data-new>Torna indietro</button></dialog>
+        <dialog id="counter-menu" class="counter-menu" aria-label="Menu partita"><button type="button" data-other>Altri Danni</button><button type="button" data-new>Torna indietro</button></dialog>
+        <dialog id="counter-extra" class="counter-menu counter-extra" aria-label="Altri Danni">
+            <header class="counter-extra-head"><strong>Altri Danni</strong><button type="button" class="counter-extra-close" data-extra-close aria-label="Chiudi">✕</button></header>
+            <label class="counter-extra-player">Giocatore<select data-extra-player></select></label>
+            <div class="counter-extra-list" data-extra-list></div>
+            <button type="button" class="counter-extra-add" data-extra-add aria-label="Configura un nuovo contatore">+</button>
+            <form class="counter-extra-form" data-extra-form hidden>
+                <label>Nome del contatore<input name="extra-name" maxlength="30" autocomplete="off" required></label>
+                <label>Limite del danno<input name="extra-limit" type="number" min="1" max="999" step="1" value="10" required></label>
+                <div class="counter-extra-form-actions"><button type="submit">Crea</button><button type="button" data-extra-cancel>Annulla</button></div>
+            </form>
+        </dialog>
     </section><p class="counter-sr" data-status role="status" aria-live="polite"></p>`;
     const form = find('form'), menu = find('.counter-menu');
     if (options.preset && PRESETS[options.preset]) form.elements.initial.value = PRESETS[options.preset].initial;
@@ -115,8 +126,11 @@ export function showCardCounter(container, options = {}) {
         find('.counter-players').innerHTML = state.players.map((player, i) => {
             const { mode, value, label } = modeInfo(i);
             const source = sourceFor(i), slot = slots.get(i) || 0;
+            const extras = player.extras || [];
+            const chips = extras.length ? `<div class="counter-extras" aria-label="Altri danni">${extras.map(c => `<span class="counter-extra-chip"><span>${escape(c.name)}</span><b>${c.value}/${c.limit}</b></span>`).join('')}</div>` : '';
             return `<article class="counter-player" data-player="${i}" data-mode="${mode}" aria-label="${escape(player.name)}">
                 ${mode === 'commander' ? `<div class="counter-damage-source"><select data-source aria-label="Comandante che infligge danni a ${escape(player.name)}">${state.players.map((p,j) => j === i ? '' : `<option value="${j}" ${j === source ? 'selected' : ''}>${escape(p.name)}</option>`).join('')}</select><button type="button" data-slot aria-label="Cambia comandante o partner">${slot ? 'Partner' : 'Comandante'}</button></div>` : ''}
+                ${chips}
                 <div class="counter-face"><button type="button" class="counter-tap" data-delta="-1" aria-label="Riduci ${escape(label)} di ${escape(player.name)}"><span>−</span><small data-count="-1"></small></button>
                 <output class="counter-value" style="--score-digits:${String(value.toLocaleString('it-IT')).length}" data-swipe tabindex="0" aria-label="${escape(player.name)}, ${escape(label)}: ${value}. Scorri in basso per danni comandante, in alto per danni veleno.">${value.toLocaleString('it-IT')}${mode !== 'life' ? `<small>${mode === 'poison' ? 'Veleno · / 10' : 'Comandante · / 21'}</small>` : ''}</output>
                 <button type="button" class="counter-tap" data-delta="1" aria-label="Aumenta ${escape(label)} di ${escape(player.name)}"><span>+</span><small data-count="1"></small></button></div>
@@ -145,10 +159,70 @@ export function showCardCounter(container, options = {}) {
     find('[data-resume]').onclick = () => { playing = true; render(); find('[data-menu]').focus(); };
     find('[data-menu]').onclick = () => { menu.showModal(); find('[data-menu]').setAttribute('aria-expanded', 'true'); };
     find('[data-new]').onclick = () => { closeMenu(); endHold(); navigateTo(options.returnTo === 'magic' ? 'magic' : 'mtcg', container); };
-    find('[data-settings]').onclick = () => {
-        closeMenu(); endHold(); clearFeedback(); playing = false; render();
-        form.elements.preset.value = state.preset; form.elements.players.value = state.players.length; form.elements.initial.value = state.initial;
-        find('[data-resume]').hidden = false; form.elements.preset.focus();
+    // --- Altri Danni: contatori liberi con nome, limite e valore 0..limite ---
+    const extraMenu = find('.counter-extra'), extraList = find('[data-extra-list]'), extraForm = find('[data-extra-form]'), extraPlayerSelect = find('[data-extra-player]');
+    let extraPlayer = 0;
+    function renderExtraPlayers() {
+        extraPlayer = Math.max(0, Math.min(extraPlayer, state.players.length - 1));
+        extraPlayerSelect.innerHTML = state.players.map((p, i) => `<option value="${i}">${escape(p.name)}</option>`).join('');
+        extraPlayerSelect.value = String(extraPlayer);
+    }
+    function renderExtraList() {
+        const extras = state.players[extraPlayer]?.extras || [];
+        extraList.innerHTML = extras.length ? extras.map(c => `<div class="counter-extra-row" data-extra="${escape(c.id)}">
+            <span class="counter-extra-name"><span>${escape(c.name)}</span><b>${c.value} / ${c.limit}</b></span>
+            <div class="counter-extra-buttons">
+                <button type="button" data-extra-step="-1" ${c.value <= 0 ? 'disabled' : ''} aria-label="Riduci ${escape(c.name)}">−1</button>
+                <button type="button" data-extra-remove aria-label="Elimina ${escape(c.name)}">✕</button>
+                <button type="button" data-extra-step="1" ${c.value >= c.limit ? 'disabled' : ''} aria-label="Aumenta ${escape(c.name)}">+1</button>
+            </div></div>`).join('') : '<p class="counter-extra-empty">Nessun altro danno per questo giocatore.</p>';
+    }
+    function openExtras() {
+        closeMenu(); endHold(); clearFeedback();
+        extraPlayer = state.active ?? 0;
+        renderExtraPlayers(); renderExtraList();
+        extraForm.hidden = true;
+        extraMenu.showModal();
+        extraPlayerSelect.focus();
+    }
+    find('[data-other]').onclick = openExtras;
+    find('[data-extra-close]').onclick = () => extraMenu.close();
+    extraMenu.addEventListener('close', () => { extraForm.hidden = true; find('[data-menu]').focus(); });
+    extraMenu.addEventListener('click', event => {
+        if (event.target !== extraMenu) return;
+        const r = extraMenu.getBoundingClientRect();
+        if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) extraMenu.close();
+    });
+    extraPlayerSelect.onchange = () => { extraPlayer = Number(extraPlayerSelect.value); extraForm.hidden = true; renderExtraList(); };
+    extraList.addEventListener('click', event => {
+        const row = event.target.closest('[data-extra]'); if (!row) return;
+        const id = row.dataset.extra;
+        try {
+            if (event.target.closest('[data-extra-remove]')) {
+                state = removeExtraCounter(state, extraPlayer, id);
+                announce(state.log.at(-1));
+            } else {
+                const step = event.target.closest('[data-extra-step]');
+                if (!step || step.disabled) return;
+                state = changeExtraCounter(state, extraPlayer, id, Number(step.dataset.extraStep));
+                announce(state.log.at(-1));
+            }
+        } catch (error) { announce(error.message); return; }
+        persist(); render(); renderExtraList();
+    });
+    find('[data-extra-add]').onclick = () => {
+        extraForm.hidden = false; extraForm.reset(); find('[data-extra-form] [name="extra-name"]').focus();
+    };
+    find('[data-extra-cancel]').onclick = () => { extraForm.hidden = true; find('[data-extra-add]').focus(); };
+    extraForm.onsubmit = event => {
+        event.preventDefault();
+        try {
+            state = addExtraCounter(state, extraPlayer, event.target.elements['extra-name'].value, Number(event.target.elements['extra-limit'].value));
+        } catch (error) { announce(error.message); return; }
+        persist(); render(); renderExtraList();
+        extraForm.hidden = true;
+        announce(state.log.at(-1));
+        find('[data-extra-add]').focus();
     };
     find('[data-coin]').onclick = () => {
         const button = find('[data-coin]'); if (button.disabled) return;

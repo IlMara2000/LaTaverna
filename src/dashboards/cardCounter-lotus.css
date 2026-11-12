@@ -288,3 +288,32 @@ body:has(.card-counter) :is(#navbar-trigger, #nav-home-btn, #sidebar-menu) { dis
     font-size: 21px;
     z-index: 3;
 }
+
+/* --- Altri danni: chip sulla card e pannello di configurazione --- */
+#ui #app .counter-extras { display: flex; gap: 4px; flex: 0 0 auto; min-width: 0; max-width: 100%; margin: 0 0 6px; overflow-x: auto; scrollbar-width: none; }
+#ui #app .counter-extras::-webkit-scrollbar { display: none; }
+#ui #app .counter-extra-chip { display: inline-flex; align-items: baseline; gap: 5px; flex: 0 0 auto; max-width: 70%; padding: 3px 8px; border-radius: 999px; border: 1px solid #ffffff1f; background: #ffffff10; color: #cfc0ae; font: 600 9px/1.1 Manrope, sans-serif; letter-spacing: .04em; text-transform: uppercase; }
+#ui #app .counter-extra-chip > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ui #app .counter-extra-chip b { color: #fff; font-size: 10px; letter-spacing: 0; }
+#ui #app .counter-extra[open] { display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+#ui #app .counter-extra-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#ui #app .counter-extra-head strong { font: 700 15px/1 Manrope, sans-serif; letter-spacing: .06em; text-transform: uppercase; }
+#ui #app .counter-extra-close { width: 44px; min-width: 44px; padding: 0; }
+#ui #app .counter-extra-player { display: grid; gap: 4px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #cbb9a4; }
+#ui #app .counter-extra-player select { min-height: 44px; padding: 4px 8px; border-radius: 10px; border: 1px solid #ffffff26; background: #ffffff14; color: #f7ecd6; font: inherit; }
+#ui #app .counter-extra-list { display: grid; gap: 8px; }
+#ui #app .counter-extra-row { display: grid; gap: 6px; padding: 8px; border-radius: 14px; border: 1px solid #ffffff14; background: #ffffff0a; }
+#ui #app .counter-extra-name { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: #cbb9a4; }
+#ui #app .counter-extra-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ui #app .counter-extra-name b { color: #f7ecd6; font-size: 11px; }
+#ui #app .counter-extra-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+#ui #app .counter-extra-buttons button { min-height: 40px; padding: 4px; border-radius: 10px; border: 1px solid #ffffff1f; background: #ffffff14; color: #f7ecd6; font: 700 13px/1 Manrope, sans-serif; }
+#ui #app .counter-extra-buttons button:disabled { opacity: .35; }
+#ui #app .counter-extra-buttons [data-extra-remove] { color: #ff9db0; }
+#ui #app .counter-extra-add { align-self: stretch; min-height: 44px; border-radius: 12px; border: 1px dashed #ffffff33; background: #ffffff08; color: #f7ecd6; font: 700 20px/1 Manrope, sans-serif; }
+#ui #app .counter-extra-empty { margin: 0; padding: 8px; font-size: 11px; color: #b9a795; text-align: center; }
+#ui #app .counter-extra-form { display: grid; gap: 8px; padding: 10px; border-radius: 14px; border: 1px solid #ffffff1f; background: #ffffff0a; }
+#ui #app .counter-extra-form[hidden] { display: none; }
+#ui #app .counter-extra-form label { display: grid; gap: 4px; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: #cbb9a4; }
+#ui #app .counter-extra-form input { min-height: 40px; padding: 4px 8px; border-radius: 10px; border: 1px solid #ffffff26; background: #ffffff14; color: #f7ecd6; font: inherit; }
+#ui #app .counter-extra-form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
