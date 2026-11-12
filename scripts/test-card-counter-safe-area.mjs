@@ -3,9 +3,9 @@
  * TEST SAFE-AREA DEL SEGNAPUNTI
  *
  * Apre /mtcg/segnapunti in un browser reale (agent-browser), imposta gli inset
- * di sicurezza delle principali dimensioni telefono e verifica che la barra in
- * basso con il pulsante menu resti sempre sopra l'indicatore home e che nessuna
- * card finisca sotto il notch o sotto il menu.
+ * di sicurezza delle principali dimensioni telefono e verifica che il pulsante
+ * menu resti al centro del gruppo di card e dentro la safe-area, e che nessuna
+ * card finisca sotto il notch.
  *
  *   npm run test:safe-area
  *   BASE=http://localhost:3000 node scripts/test-card-counter-safe-area.mjs
@@ -117,6 +117,7 @@ const avvia = conteggio => {
 const misura = conteggio => {
     const menuNodo = root.querySelector('[data-menu]');
     const menu = menuNodo.getBoundingClientRect();
+    const board = root.querySelector('.counter-board').getBoundingClientRect();
     const card = [...root.querySelectorAll('.counter-player')].map(nodo => nodo.getBoundingClientRect());
     const tasti = [...root.querySelectorAll('[data-delta]')].map(nodo => nodo.getBoundingClientRect());
     const stile = getComputedStyle(root);
@@ -132,6 +133,10 @@ const misura = conteggio => {
         tastoMin: Math.min(...tasti.map(r => r.width)),
         cardTop: Math.min(...card.map(r => r.top)),
         cardBottom: Math.max(...card.map(r => r.bottom)),
+        menuCentroX: (menu.left + menu.right) / 2,
+        menuCentroY: (menu.top + menu.bottom) / 2,
+        boardCentroX: (board.left + board.right) / 2,
+        boardCentroY: (board.top + board.bottom) / 2,
         sovrapposizioneCard: Math.max(0, ...card.map(r => intersezione(menu, r))),
         sovrapposizioneTasti: Math.max(0, ...tasti.map(r => intersezione(menu, r))),
         cardOverflow: [...root.querySelectorAll('.counter-player')].some(nodo => nodo.scrollHeight > nodo.clientHeight + 1 || nodo.scrollWidth > nodo.clientWidth + 1),
@@ -161,8 +166,7 @@ verifica(/viewport-fit\s*=\s*cover/.test(html), 'index.html non dichiara viewpor
 for (const lato of ['top', 'right', 'bottom', 'left']) {
     verifica(new RegExp(`--safe-${lato}:\\s*env\\(safe-area-inset-${lato}`).test(globalCss), `global.css non mappa --safe-${lato} su env(safe-area-inset-${lato})`);
 }
-verifica(/\.counter-board\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)\s*48px/s.test(segnapuntiCss), 'la board non riserva una barra da 48px');
-verifica(/\.counter-menu-trigger\s*\{[^}]*position:\s*static/s.test(segnapuntiCss), 'il menu non è più statico nella barra');
+verifica(/\.counter-menu-trigger\s*\{[^}]*position:\s*absolute[^}]*top:\s*50%[^}]*left:\s*50%/s.test(segnapuntiCss), 'il menu non è posizionato al centro del gruppo di card');
 
 let base = (process.env.BASE || 'http://localhost:3000').replace(/\/+$/, '');
 if (!await raggiungibile(base)) {
@@ -220,13 +224,14 @@ for (const vista of misure) {
         verifica(Math.abs(left - insets.left) <= 0.5, `${dove}: padding-left ${arrotonda(left)}px invece di ${insets.left}px`);
 
         const lineaSicura = vista.h - insets.bottom;
-        verifica(misura.menu.bottom <= lineaSicura - 3, `${dove}: il menu finisce a ${arrotonda(misura.menu.bottom)}px, oltre la linea sicura ${lineaSicura}px`);
-        verifica(misura.menu.bottom > lineaSicura - 52, `${dove}: il menu non è nella barra in basso (${arrotonda(misura.menu.bottom)}px)`);
-        verifica(Math.abs(misura.menu.height - 40) <= 1, `${dove}: il menu è alto ${arrotonda(misura.menu.height)}px invece di 40px`);
+        verifica(misura.menu.top >= insets.top - 0.5, `${dove}: il menu entra nel notch (${arrotonda(misura.menu.top)}px contro ${insets.top}px)`);
+        verifica(misura.menu.bottom <= lineaSicura + 0.5, `${dove}: il menu esce dalla safe-area in basso (${arrotonda(misura.menu.bottom)}px contro ${lineaSicura}px)`);
+        verifica(misura.menu.left >= insets.left - 0.5, `${dove}: il menu esce dalla safe-area a sinistra (${arrotonda(misura.menu.left)}px contro ${insets.left}px)`);
+        verifica(misura.menu.right <= vista.w - insets.right + 0.5, `${dove}: il menu esce dalla safe-area a destra (${arrotonda(misura.menu.right)}px contro ${vista.w - insets.right}px)`);
+        verifica(Math.abs(misura.menu.height - 44) <= 1, `${dove}: il menu è alto ${arrotonda(misura.menu.height)}px invece di 44px`);
+        verifica(Math.abs(misura.menuCentroX - misura.boardCentroX) <= 1.5, `${dove}: il menu non è al centro orizzontale del gruppo di card (${arrotonda(misura.menuCentroX)}px contro ${arrotonda(misura.boardCentroX)}px)`);
+        verifica(Math.abs(misura.menuCentroY - misura.boardCentroY) <= 1.5, `${dove}: il menu non è al centro verticale del gruppo di card (${arrotonda(misura.menuCentroY)}px contro ${arrotonda(misura.boardCentroY)}px)`);
 
-        verifica(misura.sovrapposizioneCard === 0, `${dove}: il menu copre una card (${arrotonda(misura.sovrapposizioneCard)}px²)`);
-        verifica(misura.sovrapposizioneTasti === 0, `${dove}: il menu copre un tasto (${arrotonda(misura.sovrapposizioneTasti)}px²)`);
-        verifica(misura.cardBottom <= misura.menu.top - 1, `${dove}: la card finisce a ${arrotonda(misura.cardBottom)}px, il menu parte a ${arrotonda(misura.menu.top)}px`);
         verifica(misura.cardTop >= insets.top - 0.5, `${dove}: la card parte a ${arrotonda(misura.cardTop)}px, dentro il notch (${insets.top}px)`);
         verifica(misura.cardLeft >= insets.left - 0.5, `${dove}: card oltre il bordo sinistro sicuro (${arrotonda(misura.cardLeft)}px contro ${insets.left}px)`);
         verifica(misura.cardRight <= vista.w - insets.right + 0.5, `${dove}: card oltre il bordo destro sicuro (${arrotonda(misura.cardRight)}px contro ${vista.w - insets.right}px)`);
@@ -256,23 +261,21 @@ for (const vista of misure) {
 }
 
 console.log(`\nSAFE-AREA SEGNAPUNTI — ${misure.length}/${VIEWPORT.length} viewport su ${base}\n`);
-console.log('VIEWPORT'.padEnd(30) + 'INSET (t/r/b/l)'.padEnd(20) + 'MENU 2g / LINEA'.padEnd(22) + 'SOVRAPP. MAX'.padEnd(14) + 'TASTI MIN'.padEnd(12) + 'CARD 6g');
+console.log('VIEWPORT'.padEnd(30) + 'INSET (t/r/b/l)'.padEnd(20) + 'MENU Δ CENTRO'.padEnd(18) + 'TASTI MIN'.padEnd(12) + 'CARD 6g');
 for (const vista of misure) {
     const { insets } = vista;
     const partite = Object.values(vista.partite || {});
-    const due = vista.partite?.[2];
     const sei = vista.partite?.[6];
-    const menu = due ? `${arrotonda(due.menu.bottom)} / ${vista.h - insets.bottom}` : '—';
-    const massima = partite.length ? Math.max(...partite.map(m => m.sovrapposizioneTasti)) : null;
-    const sovrapposizione = massima === null ? '—' : `${arrotonda(massima)}px²`;
+    const scartoX = partite.length ? Math.max(...partite.map(m => Math.abs(m.menuCentroX - m.boardCentroX))) : null;
+    const scartoY = partite.length ? Math.max(...partite.map(m => Math.abs(m.menuCentroY - m.boardCentroY))) : null;
+    const centro = scartoX === null ? '—' : `${arrotonda(scartoX)}/${arrotonda(scartoY)}px`;
     const tastoMinimo = partite.length ? Math.min(...partite.map(m => m.tastoMin)) : null;
     const tasti = tastoMinimo === null ? '—' : `${arrotonda(tastoMinimo)}px`;
     const card = sei ? `${arrotonda(sei.cardTop)}→${arrotonda(sei.cardBottom)}` : '—';
     console.log(
         `${vista.nome}`.padEnd(30)
         + `${insets.top}/${insets.right}/${insets.bottom}/${insets.left}`.padEnd(20)
-        + `${menu}`.padEnd(22)
-        + `${sovrapposizione}`.padEnd(14)
+        + `${centro}`.padEnd(18)
         + `${tasti}`.padEnd(12)
         + `${card}`
     );
@@ -285,4 +288,4 @@ if (problemi.length) {
     process.exit(1);
 }
 
-console.log('\nBarra e menu sempre dentro la safe-area.');
+console.log('\nMenu al centro del gruppo di card e dentro la safe-area.');

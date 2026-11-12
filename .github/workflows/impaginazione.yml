@@ -73,8 +73,9 @@ jobs:
       - name: Misura l'impaginazione
         run: npm run test:layout
 
-      # Barra e menu del segnapunti dentro gli inset di sei telefoni, per 2–6
-      # giocatori. Anche questo test si accende un Vite temporaneo da solo.
+      # Menu del segnapunti al centro del gruppo di card e dentro gli inset di
+      # sei telefoni, per 2–6 giocatori. Anche questo test si accende un Vite
+      # temporaneo da solo.
       - name: Safe-area del segnapunti
         run: npm run test:safe-area
 
