@@ -47,7 +47,8 @@ body:has(.card-counter) :is(#navbar-trigger, #nav-home-btn, #sidebar-menu) { dis
     min-height: 52px;
     background: transparent !important;
     color: #14121c !important;
-    font-size: clamp(28px,7vmin,56px);
+    --symbol-size: clamp(28px, 7vmin, 56px);
+    font-size: var(--symbol-size);
     font-weight: 800;
     
     /* Cartoony 3D switch base */
@@ -108,7 +109,7 @@ body:has(.card-counter) :is(#navbar-trigger, #nav-home-btn, #sidebar-menu) { dis
 
 #ui #app .counter-tap small {
     position: absolute;
-    top: calc(50% + 32px);
+    bottom: calc(50% + var(--symbol-size) * .82);
     font: 700 14px/1 Manrope,sans-serif !important;
     letter-spacing: .08em;
     color: #14121c;
@@ -119,7 +120,7 @@ body:has(.card-counter) :is(#navbar-trigger, #nav-home-btn, #sidebar-menu) { dis
 
 #ui #app .counter-tap small:empty {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(-4px);
 }
 #ui #app .counter-menu-trigger { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 48px; height: 48px; padding: 0; border-radius: 50%; border: 3px solid #14121c; background: #f4eff7; color: #291c35; box-shadow: 0 3px 6px #0005; font-size: 24px; z-index: 2; }
 #ui #app .counter-menu { position: fixed; inset: 0; margin: auto; width: min(320px,calc(100vw - 32px)); max-height: calc(var(--visual-viewport-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px); padding: 20px; border: 1px solid #a68ab9; border-radius: 22px; background: #21172c; }
@@ -224,15 +225,143 @@ body:has(.card-counter) :is(#navbar-trigger, #nav-home-btn, #sidebar-menu) { dis
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
 }
+/* Nessuna evidenziazione dei tasti - e +: resta visibile solo l'animazione della card. */
 #ui #app .counter-player .counter-tap::after { content: none; }
-#ui #app .counter-player .counter-tap:hover { background: #ffffff08 !important; box-shadow: inset 0 0 0 1px #ffffff12 !important; }
-#ui #app .counter-player .counter-tap:active {
-    background: linear-gradient(90deg, transparent, var(--player-accent-soft)) !important;
-    box-shadow: inset 0 0 0 1px var(--player-accent-soft), inset 0 3px 12px #00000066 !important;
-}
-#ui #app .counter-player .counter-tap span { display: block; transition: transform 90ms ease, opacity 90ms ease, color 90ms ease; }
-#ui #app .counter-player .counter-tap:active span { transform: translateY(3px) scale(.92); opacity: .9; color: var(--player-accent); }
+#ui #app .counter-player .counter-tap:is(:hover, :active) { background: transparent !important; box-shadow: none !important; }
+#ui #app .counter-player .counter-tap span { display: block; }
 #ui #app .counter-tap small { color: #cbb9a0; text-shadow: none; }
+
+/* --- Conferma azzeramento contatori --- */
+#ui #app .counter-reset-confirm[open] { display: flex; flex-direction: column; gap: 14px; }
+#ui #app .counter-reset-text { margin: 0; font: 500 12px/1.55 Manrope, sans-serif; color: #cbb9a4; }
+#ui #app .counter-reset-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#ui #app .counter-reset-actions [data-reset-apply] { background: #ff2d55 !important; border-color: #ff2d5580 !important; color: #fff !important; font-weight: 800; box-shadow: 0 4px 0 #7d1229 !important; }
+
+/* --- Riepilogo di fine partita --- */
+#ui #app .counter-summary[open] { display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+#ui #app .counter-summary-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+#ui #app .counter-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid #ffffff1f; background: #ffffff0a; }
+#ui #app .counter-summary-row strong { font: 700 13px/1.2 Manrope, sans-serif; letter-spacing: .04em; }
+#ui #app .counter-summary-who { display: grid; gap: 3px; min-width: 0; }
+#ui #app .counter-summary-stats { font: 600 10px/1.2 Manrope, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #b9a795; }
+#ui #app .counter-summary-counters { font: 600 10px/1.2 Manrope, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #b9a795; opacity: .78; font-variant-numeric: tabular-nums; }
+#ui #app .counter-summary-reason { flex: 0 0 auto; padding: 4px 9px; border-radius: 999px; font: 700 10px/1 Manrope, sans-serif; letter-spacing: .05em; text-transform: uppercase; }
+#ui #app .counter-summary-reason--commander { background: #ff2d5522; color: #ff7d93; border: 1px solid #ff2d5566; }
+#ui #app .counter-summary-reason--poison { background: #10e6a022; color: #6ff0c6; border: 1px solid #10e6a066; }
+#ui #app .counter-summary-empty { margin: 0; padding: 10px; font-size: 12px; color: #b9a795; text-align: center; }
+
+/* --- Card letale: 21 danni da comandante oppure 10 veleno --- */
+#ui #app .counter-player[data-lethal] {
+    --player-accent: #ff2d55;
+    --player-accent-soft: #ff2d5566;
+    border-color: #ff2d5580;
+    box-shadow:
+        inset 0 1px 0 #ffffff1f,
+        inset 0 0 0 1px #ff2d5580,
+        0 10px 0 #00000050,
+        0 22px 40px #000000a8,
+        0 0 0 2px #ff2d5599,
+        0 0 46px -8px #ff2d55;
+}
+#ui #app .counter-player[data-lethal]::before {
+    right: 10%;
+    left: 10%;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #ff2d55, transparent);
+    box-shadow: 0 0 24px 4px #ff2d55aa;
+}
+@media (prefers-reduced-motion: no-preference) {
+    #ui #app .counter-player[data-lethal]::before { animation: counter-lethal-pulse 1.5s ease-in-out infinite; }
+}
+@keyframes counter-lethal-pulse {
+    0%, 100% { opacity: .55; }
+    50% { opacity: 1; }
+}
+
+/* --- Icone d'angolo: danno da comandante (sinistra) e veleno (destra) --- */
+#ui #app .counter-player .counter-corners {
+    --corner-size: clamp(30px, 8vmin, 42px);
+    --drawer-size: calc(var(--corner-size) * 1.45);
+    flex: 0 0 auto;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 4px;
+}
+#ui #app .counter-player .counter-corner {
+    position: relative;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: var(--corner-size);
+    height: var(--corner-size);
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 1px solid #ffffff1f;
+    border-radius: 12px;
+    background: #ffffff0d;
+    color: var(--player-accent);
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+}
+#ui #app .counter-player .counter-reset {
+    align-self: center;
+    display: grid;
+    place-items: center;
+    width: calc(var(--corner-size) * .76);
+    height: calc(var(--corner-size) * .76);
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+    border: 1px solid #ffffff1f;
+    border-radius: 50%;
+    background: #ffffff0d;
+    color: #b9a795;
+    -webkit-tap-highlight-color: transparent;
+}
+#ui #app .counter-player .counter-reset svg { width: 62%; height: 62%; }
+#ui #app .counter-player .counter-reset:is(:hover, :active) { background: #ffffff1f; color: #f7ecd6; }
+#ui #app .counter-player .counter-corner-icon { position: relative; z-index: 2; display: grid; place-items: center; width: 66%; height: 66%; }
+#ui #app .counter-player .counter-corner-icon svg { width: 100%; height: 100%; fill: currentColor; }
+/* Il cassettino parte da dietro l'icona ed esce verso il centro della card. */
+#ui #app .counter-player .counter-drawer {
+    position: absolute;
+    bottom: 0;
+    z-index: 1;
+    width: 0;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    pointer-events: none;
+    transition: width .26s cubic-bezier(.22, 1, .36, 1);
+}
+#ui #app .counter-player .counter-corner-commander .counter-drawer { left: 100%; }
+#ui #app .counter-player .counter-corner-poison .counter-drawer { right: 100%; }
+#ui #app .counter-player .counter-corner.is-open .counter-drawer { width: var(--drawer-size); }
+#ui #app .counter-player .counter-drawer > span {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    place-items: center;
+    width: var(--drawer-size);
+    height: 100%;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff30, #00000033), var(--player-accent);
+    color: #0d0a13;
+    font: 800 calc(var(--drawer-size) * .58)/1 Manrope, sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.03em;
+}
+#ui #app .counter-player .counter-corner-poison .counter-drawer > span {
+    background: linear-gradient(180deg, #ffffff30, #00000033), #10e6a0;
+}
+@media (prefers-reduced-motion: reduce) {
+    #ui #app .counter-player .counter-drawer { transition: none; }
+}
 @media (prefers-reduced-motion: reduce) {
     #ui #app .counter-face,
     #ui #app .counter-player,
