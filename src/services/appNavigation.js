@@ -18,6 +18,8 @@ export const resetAppSurface = () => {
     window.__scippoCleanup?.();
     window.__scippoCleanup = null;
     window.__magicCleanup?.();
+    window.__magicPlayCleanup?.();
+    window.__magicPlayCleanup = null;
     window.__settingsCleanup?.();
     window.__readingCleanup?.();
     window.__homeCleanup = null;
@@ -77,6 +79,7 @@ export async function navigateTo(destination, container = document.getElementByI
         home: { label: 'la Taverna', load: () => import('../lobby.js'), render: (module) => module.showLobby(container) },
         minigames: { label: 'la sala giochi', load: () => import('../minigamelist.js'), render: (module) => module.showMinigamesList(container, options) },
         magic: { label: 'Magic: The Gathering', load: () => import('../dashboards/magic.js'), render: (module) => module.showMagicDashboard(container, options) },
+        magicPlay: { label: 'il tavolo Magic', load: () => import('../dashboards/magicPlay.js'), render: (module) => module.showMagicPlay(container, options) },
         dnd5e: { label: 'D&D', load: () => import('../dashboards/dnd5e.js'), render: (module) => module.initDndDashboard(container) },
         scippo: { label: 'SCIPPO!', load: () => import('../dashboards/minigames/scippo.js'), render: module => module.initScippo(container) },
         cardCounter: { label: 'il Segnapunti', load: () => import('../dashboards/cardCounter.js'), render: module => module.showCardCounter(container, options) },

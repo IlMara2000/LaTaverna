@@ -14,6 +14,7 @@ export const PUBLIC_ROUTES = Object.freeze({
     shop: '/shop',
     reading: '/library',
     magic: '/magic',
+    magicPlay: '/magic/partita',
     artisanShop: '/bottega/artigiano-rituale',
     privacy: '/privacy',
     terms: '/termini',

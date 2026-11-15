@@ -234,7 +234,9 @@ export const joinMagicRoom = async (rawCode = '', deck = null) => {
             .neq('status', 'closed').gt('expires_at', new Date().toISOString()).maybeSingle();
         if (lookup.error) return { room: null, error: lookup.error, unavailable: isSchemaError(lookup.error) };
         const row = lookup.data;
-        if (!row) return { room: null, error: new Error('Codice non trovato o scaduto.'), unavailable: false };
+        // Le regole di accesso nascondono la stanza a chi non è membro: se l'invito non ha
+        // aggiunto il posto, il codice può essere sbagliato oppure la stanza è piena o già iniziata.
+        if (!row) return { room: null, error: new Error('Nessuna stanza con questo codice: controlla il codice. Se è giusto, la stanza è al completo (massimo 4 giocatori) o la partita è già iniziata.'), unavailable: false };
         const data = row.data || {};
         if (data.scope !== 'magic') return { room: null, error: new Error('Questo codice non appartiene a una partita di Magic.'), unavailable: false };
         const magic = data.magic || {};
