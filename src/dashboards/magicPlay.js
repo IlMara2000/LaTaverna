@@ -168,6 +168,16 @@ export function showMagicPlay(container, options = {}) {
             const dupAllowed = /a deck can have any number of cards named/i.test(sample?.oracleText || '');
             if (count > 1 && !isBasic && !dupAllowed) errors.push(`${name}: in Commander è consentita una sola copia, eccetto le terre base.`);
         }
+        // Identità di colore: ogni carta deve essere un sottoinsieme dei colori del comandante.
+        const commanderColors = new Set(commanderCards.flatMap(card => card?.colorIdentity || card?.colors || []));
+        if (commanderColors.size > 0) {
+            const outOfIdentity = new Set();
+            for (const card of allCards) {
+                const cardColors = card?.colorIdentity || card?.colors || [];
+                if (cardColors.some(color => !commanderColors.has(color))) outOfIdentity.add(card.name);
+            }
+            for (const name of outOfIdentity) errors.push(`${name}: identità di colore fuori dai colori del comandante.`);
+        }
         const total = allCards.length;
         return { valid: errors.length === 0, errors: [...new Set(errors)], total };
     };

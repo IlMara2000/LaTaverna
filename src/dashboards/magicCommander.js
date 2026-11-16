@@ -4,8 +4,11 @@ const isSubset = (colors, commanderColors) => [...colors].every(color => command
 export const isCommanderEligible = card => {
     const type = String(card?.typeLine || '').toLowerCase();
     const text = String(card?.oracleText || '').toLowerCase();
-    return Boolean(card && card.commanderLegality === 'legal'
-        && ((type.includes('legendary') && type.includes('creature')) || /can be your commander/.test(text)));
+    // La legalità Commander non è verificabile dai dati della collezione (resta
+    // "unknown"): si considera idoneo qualsiasi creatura leggendaria o carta che
+    // dichiara esplicitamente di poter essere comandante.
+    return Boolean(card &&
+        ((type.includes('legendary') && type.includes('creature')) || /can be your commander/.test(text)));
 };
 
 export const canPairCommanders = (first, second) => {
@@ -39,7 +42,9 @@ export function validateCommanderDeck(cards = [], commanders = []) {
     const commanderColors = new Set(selected.flatMap(card => [...identity(card)]));
     for (const card of cards) {
         if (!isSubset(identity(card), commanderColors)) errors.push(`${card.name}: identità di colore fuori dai colori del comandante.`);
-        if (card.commanderLegality !== 'legal') errors.push(`${card.name}: carta non legale in Commander o legalità non verificata.`);
+        // La legalità Commander non è verificabile dai dati della collezione (commanderLegality
+    // resta "unknown"): si applica solo il controllo dell'identità di colore, che è
+    // disponibile su ogni carta tramite colorIdentity.
     }
     const counts = new Map();
     for (const card of cards) counts.set(card.name, [...(counts.get(card.name) || []), card]);
