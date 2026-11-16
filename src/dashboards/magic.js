@@ -46,7 +46,8 @@ const summary = card => ({
     oracleText: card.oracle_text || card.card_faces?.map(item => item.oracle_text).filter(Boolean).join('\n//\n') || card.oracleText || '',
     printedText: card.printed_text || card.card_faces?.map(item => item.printed_text).filter(Boolean).join('\n//\n') || card.printedText || '',
     printedName: card.printed_name || card.printedName || '', language: card.lang || card.language || 'en', oracleId: card.oracle_id || card.oracleId || '',
-    set: card.set_name || card.set || '', rarity: card.rarity || '', quantity: Math.max(1, Number(card.quantity) || 1), cmc: card.cmc || 0
+    set: card.set_name || card.set || '', rarity: card.rarity || '', quantity: Math.max(1, Number(card.quantity) || 1), cmc: card.cmc || 0,
+    colorIdentity: card.color_identity || card.card_faces?.flatMap(face => face.color_identity || []).filter(Boolean) || card.colorIdentity || []
 });
 
 async function lookupExactCards(names) {
@@ -169,7 +170,7 @@ export function showMagicDashboard(container, options = {}) {
         try {
             const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`name:${query}`)}&unique=cards&order=name`);
             if (!response.ok) return [];
-            return (await response.json()).data?.slice(0, 8) || [];
+            return (await response.json()).data || [];
         } catch {
             return null;
         }
@@ -560,13 +561,13 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelectorAll('[data-select-deck]').forEach(button=>button.addEventListener('click',()=>{activeDeckId=button.dataset.selectDeck;searchResults=[];render();}));
         container.querySelector('#mv-rename-deck')?.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId);const name=window.prompt('Nuovo nome del mazzo:',deck?.name||'');if(name?.trim()){deck.name=name.trim().slice(0,80);persist();render();}});
         container.querySelector('#mv-delete-deck')?.addEventListener('click',()=>{if(!window.confirm('Eliminare questo mazzo? Le carte resteranno nella collezione.'))return;decks=decks.filter(item=>item.id!==activeDeckId);activeDeckId=decks[0]?.id||'';persist();render();});
-        container.querySelector('#mv-deck-search')?.addEventListener('input', async event=>{const value=event.target.value.trim();const results=await searchScryfall(value);if(results===null){setNotice('Ricerca non disponibile.');return;}searchResults=results;const root=container.querySelector('#mv-search-results');if(root)root.innerHTML=searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('');root?.querySelectorAll('[data-add-deck-card]').forEach(button=>button.addEventListener('click',()=>{const found=searchResults.find(card=>card.id===button.dataset.addDeckCard);if(!found)return;let own=cards.find(card=>card.id===found.id);if(!own){own=summary(found);cards.push(own);}const deck=decks.find(item=>item.id===activeDeckId);const entry=deck.cards.find(item=>item.cardId===own.id);if(entry)entry.quantity++;else deck.cards.push({cardId:own.id,quantity:1});persist();render();setNotice(`${own.name} aggiunta al mazzo e alla collezione.`);}));});
+        container.querySelector('#mv-deck-search')?.addEventListener('input', async event=>{const value=event.target.value.trim();const results=await searchScryfall(value);if(results===null){setNotice('Ricerca non disponibile.');return;}searchResults=results.slice(0, 8);const root=container.querySelector('#mv-search-results');if(root)root.innerHTML=searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('');root?.querySelectorAll('[data-add-deck-card]').forEach(button=>button.addEventListener('click',()=>{const found=searchResults.find(card=>card.id===button.dataset.addDeckCard);if(!found)return;let own=cards.find(card=>card.id===found.id);if(!own){own=summary(found);cards.push(own);}const deck=decks.find(item=>item.id===activeDeckId);const entry=deck.cards.find(item=>item.cardId===own.id);if(entry)entry.quantity++;else deck.cards.push({cardId:own.id,quantity:1});persist();render();setNotice(`${own.name} aggiunta al mazzo e alla collezione.`);}));});
         container.querySelectorAll('[data-deck-quantity]').forEach(button=>button.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId),cardId=button.dataset.deckQuantity,entry=deck?.cards.find(item=>String(item.cardId)===cardId);if(!entry)return;entry.quantity+=Number(button.dataset.delta);if(entry.quantity<=0)deck.cards=deck.cards.filter(item=>String(item.cardId)!==cardId);persist();render();}));
         container.querySelector('#mv-commander-search')?.addEventListener('input', async event => {
             const value = event.target.value.trim();
             const results = await searchScryfall(value);
             if (results === null) { setNotice('Ricerca non disponibile.'); return; }
-            commanderSearchResults = results.filter(isCommanderEligible);
+            commanderSearchResults = results.filter(isCommanderEligible).slice(0, 8);
             const root = container.querySelector('#mv-commander-results');
             if (root) root.innerHTML = commanderSearchResults.map(card => `<button type="button" data-add-commander="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('');
             root?.querySelectorAll('[data-add-commander]').forEach(button => button.addEventListener('click', () => {

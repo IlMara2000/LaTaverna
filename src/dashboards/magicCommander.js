@@ -2,8 +2,8 @@ const identity = card => new Set(card?.colorIdentity || []);
 const isSubset = (colors, commanderColors) => [...colors].every(color => commanderColors.has(color));
 
 export const isCommanderEligible = card => {
-    const type = String(card?.typeLine || '').toLowerCase();
-    const text = String(card?.oracleText || '').toLowerCase();
+    const type = String(card?.typeLine || card?.type_line || '').toLowerCase();
+    const text = String(card?.oracleText || card?.oracle_text || '').toLowerCase();
     // La legalità Commander non è verificabile dai dati della collezione (resta
     // "unknown"): si considera idoneo qualsiasi creatura leggendaria o carta che
     // dichiara esplicitamente di poter essere comandante.
