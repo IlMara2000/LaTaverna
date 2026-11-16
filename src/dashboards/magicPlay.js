@@ -98,7 +98,10 @@ export function showMagicPlay(container, options = {}) {
     const clientId = getMinigameClientId();
     const collection = new Map(read(COLLECTION_KEY).map(card => [String(card.id), card]));
     let decks = read(DECKS_KEY);
-    let chosenDeck = options.deck || localStorage.getItem(DECK_CHOICE_KEY) || decks[0]?.id || '';
+    // Il mazzo ricordato può non esistere più: senza questo controllo la tendina ne
+    // mostrerebbe un altro e i comandi di avvio cercherebbero un mazzo fantasma.
+    const savedChoice = options.deck || localStorage.getItem(DECK_CHOICE_KEY) || '';
+    let chosenDeck = decks.some(deck => deck.id === savedChoice) ? savedChoice : (decks[0]?.id || '');
     // Una stanza lasciata non deve riaprirsi da sola: la copia salvata resta finché
     // un aggiornamento in ritardo non la sostituisce, quindi la ricordiamo per codice.
     const savedRoom = getSavedMagicRoom()?.data?.scope === 'magic' ? getSavedMagicRoom() : null;
@@ -927,7 +930,11 @@ export function showMagicPlay(container, options = {}) {
             <span class="mp-overline">CONTRO IL BOT</span>
             <h2>Partita in solitaria</h2>
             <p>Sfida il Bot della Taverna: stesso mazzo per entrambi, nessun collegamento richiesto.</p>
+            ${deck
+                ? `<p class="${check.valid ? 'mp-ok' : 'mp-error'}">${check.valid ? `✓ Mazzo pronto: ${esc(deck.name)} · ${check.total} carte.` : check.errors.map(esc).join('<br>')}</p>`
+                : '<p class="mp-error">Crea un mazzo dalla sezione Mazzi per giocare.</p>'}
             <button type="button" class="mp-button mp-start" data-start-bot ${busy ? 'disabled' : ''}>AVVIA CONTRO IL BOT</button>
+            <p id="play-bot-status" class="mp-note" role="status" aria-live="polite"></p>
         </section>
         ${room?.code ? `<section class="mp-panel">
             <span class="mp-overline">TAVOLO · ${order.length}/${MATCH_RULES.maxPlayers}</span>
