@@ -861,16 +861,18 @@ export function showMagicPlay(container, options = {}) {
             <header class="mp-hud">
                 <div><span class="mp-overline">TURNO ${current.turn} · ${esc(PHASE_LABEL[current.phase] || current.phase)}</span>
                 <strong>${current.activePlayer === clientId ? 'Tocca a te' : `Tocca a ${esc(activeName)}`}</strong>
-                <small>Vite ${mine.life} · mano ${mine.hand.length} · grimorio ${mine.library.length}${current.pendingDiscard && mine.hand.length > 7 ? ' · devi scartare' : ''}</small></div>
+                <small>Vite ${mine.life} · mano ${mine.hand.length} · grimorio ${mine.library.length}${(() => { const cmd = Math.max(0, ...Object.values(mine.commanderDamage || {})); return cmd > 0 ? ` · Cmd ${cmd}/21` : ''; })()}${current.pendingDiscard && mine.hand.length > 7 ? ' · devi scartare' : ''}</small></div>
                 <div class="mp-row">${phaseButton(mine)}<button type="button" class="mp-small" data-leave>Lascia il tavolo</button></div>
             </header>
             ${mulliganPanel()}
             <div class="mp-opponents">${opponents.map(id => {
                 const foe = current.playersData[id];
-                return `<article class="mp-opponent"><header><strong>${esc(nameOf(id))}</strong><span>${foe.life} vite</span></header>${board(foe.battlefield, false)}</article>`;
+                const cmd = Math.max(0, ...Object.values(foe.commanderDamage || {}));
+                const cmdLabel = cmd > 0 ? ` · Cmd ${cmd}/21` : '';
+                return `<article class="mp-opponent"><header><strong>${esc(nameOf(id))}</strong><span>${foe.life} vite${cmdLabel}</span></header>${board(foe.battlefield, false)}</article>`;
             }).join('')}</div>
             <div class="mp-own">
-                <header><strong>Il tuo campo</strong><span>${mine.life} vite</span></header>
+                <header><strong>Il tuo campo</strong><span>${mine.life} vite${(() => { const cmd = Math.max(0, ...Object.values(mine.commanderDamage || {})); return cmd > 0 ? ` · Cmd ${cmd}/21` : ''; })()}</span></header>
                 ${board(mine.battlefield, true)}
                 ${(mine.commandZone || []).length ? `<div class="mp-command-zone"><strong>Comandante</strong>${mine.commandZone.map(card => {
                     const tax = (mine.commanderCasts?.[card.uid] || 0) * 2;
