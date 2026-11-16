@@ -47,7 +47,8 @@ const summary = card => ({
     printedText: card.printed_text || card.card_faces?.map(item => item.printed_text).filter(Boolean).join('\n//\n') || card.printedText || '',
     printedName: card.printed_name || card.printedName || '', language: card.lang || card.language || 'en', oracleId: card.oracle_id || card.oracleId || '',
     set: card.set_name || card.set || '', rarity: card.rarity || '', quantity: Math.max(1, Number(card.quantity) || 1), cmc: card.cmc || 0,
-    colorIdentity: card.color_identity || card.card_faces?.flatMap(face => face.color_identity || []).filter(Boolean) || card.colorIdentity || []
+    colorIdentity: card.color_identity || card.card_faces?.flatMap(face => face.color_identity || []).filter(Boolean) || card.colorIdentity || [],
+    colors: card.colors || card.card_faces?.flatMap(face => face.colors || []).filter(Boolean) || card.colors || []
 });
 
 async function lookupExactCards(names) {
