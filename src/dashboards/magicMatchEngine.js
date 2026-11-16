@@ -10,7 +10,8 @@ import {
 // multiplayer ufficiale). Il motore è puro: ogni azione restituisce un nuovo
 // stato e lancia un errore in italiano quando la mossa non è legale.
 export const MATCH_RULES = Object.freeze({
-    minDeck: 60, maxCopies: 4, startingLife: 20, openingHand: 7, maxPlayers: 4
+    minDeck: 100, maxCopies: 1, startingLife: 40, openingHand: 7, maxPlayers: 4,
+    commanderDamageLethal: 21
 });
 
 export const PHASES = Object.freeze(['main1', 'combat', 'main2', 'end']);
@@ -57,7 +58,7 @@ const requireTurn = (state, playerId) => {
 };
 const log = (state, line) => { state.log = [line, ...(state.log || [])].slice(0, 40); };
 
-/** Regole di costruzione: minimo 60 carte, massimo quattro copie per carta non terra base. */
+/** Regole di costruzione Commander: minimo 100 carte, singleton (una copia per carta non terra base). */
 export function validateMatchDeck(entries = [], cards = new Map()) {
     const errors = [];
     let total = 0;
@@ -75,7 +76,7 @@ export function validateMatchDeck(entries = [], cards = new Map()) {
     }
     if (total < MATCH_RULES.minDeck) errors.push(`Servono almeno ${MATCH_RULES.minDeck} carte per giocare: il mazzo ne ha ${total}.`);
     for (const [name, copies] of names) {
-        if (copies > MATCH_RULES.maxCopies) errors.push(`${name}: ${copies} copie. Il massimo è ${MATCH_RULES.maxCopies} per carta, terre base escluse.`);
+        if (copies > MATCH_RULES.maxCopies) errors.push(`${name}: ${copies} copie. In Commander è consentita una sola copia per carta non terra base.`);
     }
     return { valid: errors.length === 0, errors: [...new Set(errors)], total };
 }
@@ -94,8 +95,9 @@ export function expandDeck(cards = [], ownerId = 'p') {
 
 const colorIdentityOf = cards => [...new Set(cards.flatMap(card => card.colorIdentity || card.colors || []).filter(color => COLORS.includes(color)))];
 
-function preparePlayer(cards, name, ownerId) {
+function preparePlayer(cards, name, ownerId, commanders = []) {
     const library = shuffle(expandDeck(cards, ownerId));
+    const commanderCards = (commanders || []).map(card => ({ ...card, isCommander: true, uid: `${ownerId}:commander:${card.id}` }));
     return {
         name,
         life: MATCH_RULES.startingLife,
@@ -104,8 +106,11 @@ function preparePlayer(cards, name, ownerId) {
         battlefield: [],
         graveyard: [],
         exile: [],
+        commandZone: commanderCards,
+        commanderCasts: Object.fromEntries(commanderCards.map(card => [card.uid, 0])),
+        commanderDamage: {},
         manaPool: emptyManaPool(),
-        colorIdentity: colorIdentityOf(cards),
+        colorIdentity: colorIdentityOf([...cards, ...commanderCards]),
         landsPlayed: 0,
         mulligans: 0,
         cardsToBottom: 0,
@@ -124,7 +129,7 @@ export function createMatch({ players = [], startingPlayer = null } = {}) {
     for (const entry of players) {
         if (!entry?.id) throw new Error('Giocatore senza identificativo.');
         if (!Array.isArray(entry.cards) || !entry.cards.length) throw new Error(`${entry.name || 'Un giocatore'} non ha confermato un mazzo.`);
-        playersData[entry.id] = preparePlayer(entry.cards, entry.name || '', entry.id);
+        playersData[entry.id] = preparePlayer(entry.cards, entry.name || '', entry.id, entry.commanders || []);
         playerNames[entry.id] = entry.name || `Giocatore ${players.indexOf(entry) + 1}`;
     }
     const first = startingPlayer && playersData[startingPlayer] ? startingPlayer : players[0].id;
@@ -328,12 +333,26 @@ export function castSpell(currentState, playerId, uid, target = '') {
     if (!['main1', 'main2'].includes(state.phase) && !(state.phase === 'combat' && instantSpeed)) {
         throw new Error('Durante il combattimento puoi lanciare solo istantanei.');
     }
-    const index = player.hand.findIndex(card => card.uid === uid);
-    if (index < 0) throw new Error('La carta non è nella tua mano.');
-    const card = player.hand[index];
+    let index = player.hand.findIndex(card => card.uid === uid);
+    let fromCommandZone = false;
+    if (index < 0) {
+        const czIndex = (player.commandZone || []).findIndex(card => card.uid === uid);
+        if (czIndex >= 0) { fromCommandZone = true; index = czIndex; }
+        else throw new Error('La carta non è nella tua mano.');
+    }
+    const card = fromCommandZone ? player.commandZone[index] : player.hand[index];
     if (isLand(card)) throw new Error('Le terre si giocano dal pulsante Gioca terra.');
-    autoPay(state, player, card.manaCost || '');
-    player.hand.splice(index, 1);
+    // Tax del comandante: +2 incolore per ogni lancio precedente.
+    const tax = fromCommandZone ? (player.commanderCasts?.[card.uid] || 0) * 2 : 0;
+    const cost = tax > 0 ? `${card.manaCost || ''}{${tax}}` : (card.manaCost || '');
+    autoPay(state, player, cost);
+    if (fromCommandZone) {
+        player.commandZone.splice(index, 1);
+        player.commanderCasts = player.commanderCasts || {};
+        player.commanderCasts[card.uid] = (player.commanderCasts[card.uid] || 0) + 1;
+    } else {
+        player.hand.splice(index, 1);
+    }
     if (isPermanentCard(card)) {
         const permanent = {
             ...card,
@@ -459,6 +478,11 @@ function damagePass(state, firstStrikeOnly) {
         if (!blockerId) {
             // Attaccante non bloccato: il danno va al giocatore attaccato.
             toPlayer += damage;
+            if (attacker.isCommander) {
+                defender.commanderDamage = defender.commanderDamage || {};
+                const key = attacker.uid || uid;
+                defender.commanderDamage[key] = (defender.commanderDamage[key] || 0) + damage;
+            }
             if (hasKeyword(attacker, 'lifelink')) active.life += damage;
             continue;
         }
@@ -475,7 +499,14 @@ function damagePass(state, firstStrikeOnly) {
         const toBlocker = trample ? Math.min(damage, needed) : damage;
         note(blocker, toBlocker);
         if (hasKeyword(attacker, 'lifelink')) active.life += toBlocker;
-        if (trample) toPlayer += damage - toBlocker;
+        if (trample) {
+            toPlayer += damage - toBlocker;
+            if (attacker.isCommander && (damage - toBlocker) > 0) {
+                defender.commanderDamage = defender.commanderDamage || {};
+                const key = attacker.uid || uid;
+                defender.commanderDamage[key] = (defender.commanderDamage[key] || 0) + (damage - toBlocker);
+            }
+        }
     }
     for (const [uid, amount] of damageTo) {
         const owner = Object.values(state.playersData)
@@ -491,14 +522,22 @@ function damagePass(state, firstStrikeOnly) {
         const dead = player.battlefield.filter(card => (card.damageMarked || 0) > 0 && lethal(card, card.damageMarked || 0));
         if (!dead.length) continue;
         player.battlefield = player.battlefield.filter(card => !dead.includes(card));
-        player.graveyard.push(...dead.map(card => {
-            const { instanceId, damageMarked, turnBoost, counters, attacking, blocking, summoningSick, tapped, ...rest } = card;
-            return rest;
-        }));
+        for (const card of dead) {
+            const cleaned = (() => { const { instanceId, damageMarked, turnBoost, counters, attacking, blocking, summoningSick, tapped, ...rest } = card; return rest; })();
+            if (card.isCommander) { player.commandZone = player.commandZone || []; player.commandZone.push(cleaned); }
+            else { player.graveyard.push(cleaned); }
+        }
         for (const card of dead) log(state, `${card.name} muore.`);
     }
     const defenderId = state.combat.defender;
     if (state.playersData[defenderId]?.life <= 0) eliminate(state, defenderId, 'punti vita a zero');
+    // Danni da comandante: 21 da un singolo comandante eliminano il giocatore.
+    const def = state.playersData[defenderId];
+    if (def && !def.eliminated && def.commanderDamage) {
+        for (const [key, amount] of Object.entries(def.commanderDamage)) {
+            if (amount >= MATCH_RULES.commanderDamageLethal) { eliminate(state, defenderId, '21 danni da un singolo comandante'); break; }
+        }
+    }
     return state;
 }
 

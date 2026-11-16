@@ -5,7 +5,7 @@ import {
     createMinigameRoom, getMinigameClientId, getMinigameRoomByCode, getRoomParticipants,
     getSavedMagicRoom, isMinigameRoomConnected, joinMagicRoom, updateMinigameRoomData, watchMinigameRoom
 } from '../services/minigameMultiplayer.js';
-import { emptyManaPool, isManaSource, manaPoolLabel, manaProductionOptions } from './magicRules.js';
+import { canPayMana, emptyManaPool, isManaSource, manaAbilityOptions, manaPoolLabel, manaProductionOptions, payMana } from './magicRules.js';
 import {
     MATCH_RULES, PHASE_LABEL, advancePhase, adjustLife, castSpell, concedeMatch, createMatch,
     declareAttackers, declareBlockers, discardCards, mulliganAction, playLand, powerOf,
@@ -112,6 +112,9 @@ export function showMagicPlay(container, options = {}) {
     let detached = false;
     let stopWatch = null;
     let pollTimer = null;
+    let botMode = false;
+    let localGame = null;
+    let botTimer = null;
     let selectedAttackers = new Set();
     let selectedDiscards = new Set();
     // Aggiornamento immediato quando la finestra torna in primo piano: i browser
@@ -119,9 +122,9 @@ export function showMagicPlay(container, options = {}) {
     let syncNow = () => {};
 
     const idOf = item => item?.instanceId || item?.uid || '';
-    const state = () => room?.data?.magic?.game || null;
+    const state = () => botMode ? localGame : (room?.data?.magic?.game || null);
     const loadouts = () => room?.data?.magic?.loadouts || {};
-    const participants = () => (room ? getRoomParticipants(room) : []);
+    const participants = () => botMode ? [clientId, 'bot'] : (room ? getRoomParticipants(room) : []);
     const label = id => (id === clientId ? 'Tu' : `Giocatore ${participants().indexOf(id) + 1}`);
     // Il nome salvato nello stato è neutro: ognuno deve leggere «Tu» solo per sé.
     const nameOf = id => (id === clientId ? 'Tu' : (gameState()?.playerNames?.[id] || label(id)));
@@ -140,7 +143,34 @@ export function showMagicPlay(container, options = {}) {
         .map(entry => ({ ...collection.get(String(entry.cardId)), quantity: Math.max(0, Number(entry.quantity) || 0) }))
         .filter(card => card.id && card.quantity > 0);
 
-    const deckCheck = deck => validateMatchDeck(deck?.cards || [], collection);
+    const deckCheck = deck => {
+        // Espande le quantità in copie fisiche, come fa il motore di partita.
+        const expanded = [];
+        for (const entry of deck?.cards || []) {
+            const card = collection.get(String(entry.cardId));
+            if (!card) continue;
+            const quantity = Math.max(0, Number(entry.quantity) || 0);
+            for (let i = 0; i < quantity; i += 1) expanded.push({ ...card });
+        }
+        const commanderCards = (deck?.commanders || [])
+            .map(id => collection.get(String(id)))
+            .filter(Boolean)
+            .map(card => ({ ...card }));
+        const allCards = [...expanded, ...commanderCards];
+        const errors = [];
+        if ((deck?.commanders || []).length < 1) errors.push('Scegli almeno un comandante nel mazzo.');
+        if (allCards.length !== 100) errors.push(`Il mazzo deve contenere esattamente 100 carte, comandanti inclusi (ora ${allCards.length}).`);
+        const counts = new Map();
+        for (const card of allCards) counts.set(card.name, (counts.get(card.name) || 0) + 1);
+        for (const [name, count] of counts) {
+            const sample = allCards.find(card => card.name === name);
+            const isBasic = /\bbasic\b/i.test(sample?.typeLine || '') && /\bland\b/i.test(sample?.typeLine || '');
+            const dupAllowed = /a deck can have any number of cards named/i.test(sample?.oracleText || '');
+            if (count > 1 && !isBasic && !dupAllowed) errors.push(`${name}: in Commander è consentita una sola copia, eccetto le terre base.`);
+        }
+        const total = allCards.length;
+        return { valid: errors.length === 0, errors: [...new Set(errors)], total };
+    };
 
     const persistRoom = next => {
         if (detached || !next || next.data?.scope !== 'magic') return;
@@ -160,6 +190,23 @@ export function showMagicPlay(container, options = {}) {
     };
 
     async function commit(updater) {
+        if (botMode) {
+            if (busy || disposed || !localGame) return false;
+            busy = true;
+            try {
+                const next = updater(structuredClone(localGame));
+                next.revision = (localGame.revision || 0) + 1;
+                localGame = next;
+                render();
+                scheduleBotIfNeeded();
+                return true;
+            } catch (error) {
+                setNotice(error.message || 'Mossa non valida.');
+                return false;
+            } finally {
+                busy = false;
+            }
+        }
         if (!room?.code || busy || disposed) return false;
         busy = true;
         warnIfSomeoneAway();
@@ -240,7 +287,8 @@ export function showMagicPlay(container, options = {}) {
         try {
             const deck = decks.find(item => item.id === chosenDeck);
             const cards = deck ? await hydrateCards(deckCards(deck)) : null;
-            const loadout = cards && deckCheck(deck).valid ? { name: deck.name, cards } : null;
+            const commanderCards = deck?.commanders?.length ? await hydrateCards(deck.commanders.map(id => collection.get(String(id))).filter(Boolean)) : [];
+            const loadout = cards && deckCheck(deck).valid ? { name: deck.name, cards, commanders: commanderCards } : null;
             const result = mode === 'create'
                 ? await createMinigameRoom({ scope: 'magic' })
                 : await joinMagicRoom(code, loadout);
@@ -276,11 +324,12 @@ export function showMagicPlay(container, options = {}) {
         setNotice('Preparo il mazzo…');
         try {
             const cards = await hydrateCards(deckCards(deck));
+            const commanderCards = deck?.commanders?.length ? await hydrateCards(deck.commanders.map(id => collection.get(String(id))).filter(Boolean)) : [];
             const result = await updateMinigameRoomData(room.code, data => ({
                 ...data,
                 magic: {
                     ...(data.magic || {}),
-                    loadouts: { ...(data.magic?.loadouts || {}), [clientId]: { name: deck.name, cards } },
+                    loadouts: { ...(data.magic?.loadouts || {}), [clientId]: { name: deck.name, cards, commanders: commanderCards } },
                     presence: { ...(data.magic?.presence || {}), [clientId]: Date.now() }
                 }
             }));
@@ -307,7 +356,7 @@ export function showMagicPlay(container, options = {}) {
         setNotice('Distribuisco le carte…');
         try {
             const match = createMatch({
-                players: order.map(id => ({ id, name: `Giocatore ${order.indexOf(id) + 1}`, cards: ready[id].cards }))
+                players: order.map(id => ({ id, name: `Giocatore ${order.indexOf(id) + 1}`, cards: ready[id].cards, commanders: ready[id].commanders || [] }))
             });
             const result = await updateMinigameRoomData(room.code, data => ({
                 ...data,
@@ -347,6 +396,15 @@ export function showMagicPlay(container, options = {}) {
     }
 
     async function leaveRoom() {
+        if (botMode) {
+            botMode = false;
+            localGame = null;
+            if (botTimer) { clearTimeout(botTimer); botTimer = null; }
+            busy = false;
+            setNotice('Hai lasciato il tavolo.');
+            render();
+            return;
+        }
         if (!room?.code) return;
         if (gameState() && !gameState().winner && !window.confirm('Lasciare il tavolo? La partita resta agli altri giocatori.')) return;
         detached = true;
@@ -372,6 +430,268 @@ export function showMagicPlay(container, options = {}) {
         room = null; busy = false;
         setNotice('Hai lasciato il tavolo.');
         render();
+    }
+
+    function scheduleBotIfNeeded() {
+        if (!botMode || disposed) return;
+        if (botTimer) { clearTimeout(botTimer); botTimer = null; }
+        const current = localGame;
+        if (!current || current.winner) return;
+        if (current.mulliganActive) {
+            if (!current.playersData?.[BOT_ID]?.keptHand) botTimer = setTimeout(() => botMulliganChoice(), 350);
+            return;
+        }
+        // In attesa dei blocchi: li dichiara il bot se è lui il difensore,
+        // altrimenti si aspetta la mossa del giocatore senza fare polling.
+        if (current.phase === 'combat' && current.combat?.step === 'blockers') {
+            if (current.combat.defender === BOT_ID) botTimer = setTimeout(() => botBlock(), 350);
+            return;
+        }
+        // Un turno da finire, anche ripreso dopo che il giocatore ha dichiarato i blocchi.
+        if (current.activePlayer === BOT_ID) botTimer = setTimeout(() => botTurn(), 450);
+    }
+
+    function botBlock() {
+        if (!botMode || disposed || busy) return;
+        try {
+            const current = structuredClone(localGame);
+            const combat = current.combat;
+            const defenderData = current.playersData[BOT_ID];
+            const blockerCandidates = defenderData.battlefield.filter(card => isCreature(card) && !card.tapped);
+            const assignments = {};
+            const used = new Set();
+            const attackers = (combat.attackerIds || []).map(uid => {
+                const ownerId = current.players.find(id => (current.playersData[id]?.battlefield || []).some(card => idOf(card) === uid));
+                const card = ownerId ? (current.playersData[ownerId]?.battlefield || []).find(item => idOf(item) === uid) : null;
+                return { uid, card };
+            });
+            for (const att of attackers) {
+                if (!att.card) continue;
+                let best = null;
+                for (const blk of blockerCandidates) {
+                    if (used.has(idOf(blk))) continue;
+                    const blkTough = toughnessOf(blk);
+                    const attPow = powerOf(att.card);
+                    const blkPow = powerOf(blk);
+                    const attTough = toughnessOf(att.card);
+                    if (blkTough > attPow || blkPow >= attTough) {
+                        if (!best || powerOf(blk) < powerOf(best)) best = blk;
+                    }
+                }
+                if (best) {
+                    assignments[att.uid] = idOf(best);
+                    used.add(idOf(best));
+                }
+            }
+            const next = declareBlockers(current, BOT_ID, assignments);
+            next.revision = (localGame.revision || 0) + 1;
+            localGame = next;
+            render();
+            scheduleBotIfNeeded();
+        } catch (error) { setNotice(error.message || 'Blocco bot non riuscito.'); }
+    }
+
+    // Il turno del bot è una macchina a stati: si ferma quando serve una mossa del
+    // giocatore (i blocchi) e riparte da dove era, invece di rifare tutto da capo.
+    const BOT_ID = 'bot';
+
+    // Tappa le fonti di mana (terre, artefatti, creature) che aiutano a lanciare
+    // le magie in mano: preferisce le fonti non-creatura, per non sprecare un
+    // attaccante, e tappa solo se serve davvero mana per una magia non lanciabile.
+    function botTapManaSources(current) {
+        let next = current;
+        for (let outer = 0; outer < 12; outer += 1) {
+            const player = next.playersData[BOT_ID];
+            const uncastable = player.hand.filter(card => !isLand(card) && !canPayMana(player.manaPool, card.manaCost || ''));
+            if (!uncastable.length) break;
+            const hasHaste = card => (card?.keywords || []).some(k => String(k).toLowerCase() === 'haste') || /\bhaste\b/i.test(card?.oracleText || '');
+            const usable = card => isManaSource(card, player.colorIdentity || [])
+                && !card.tapped
+                && !(isCreature(card) && card.summoningSick && !hasHaste(card));
+            const candidates = player.battlefield
+                .filter(card => usable(card))
+                .sort((a, b) => (isCreature(a) ? 1 : 0) - (isCreature(b) ? 1 : 0));
+            let tapped = false;
+            for (const source of candidates) {
+                const abilities = manaAbilityOptions(source, player.colorIdentity || []);
+                const options = manaProductionOptions(source, player.colorIdentity || []);
+                if (!abilities.length || !options.length) continue;
+                // Simula il tap prima di farlo davvero: evita di sprecare una fonte.
+                let helpful = false;
+                for (let i = 0; i < options.length; i += 1) {
+                    const paid = payMana(player.manaPool, abilities[i].cost);
+                    if (!paid) continue;
+                    const simulated = { ...paid };
+                    for (const color of options[i]) simulated[color] = (simulated[color] || 0) + 1;
+                    if (uncastable.some(card => canPayMana(simulated, card.manaCost || ''))) { helpful = true; break; }
+                }
+                if (!helpful) continue;
+                try {
+                    next = tapMana(next, BOT_ID, idOf(source), 'auto');
+                    tapped = true;
+                    break;
+                } catch { /* fonte già tappata o non attivabile */ }
+            }
+            if (!tapped) break;
+        }
+        return next;
+    }
+
+    function botPlayLandAndSpells(current) {
+        let next = current;
+        const player = () => next.playersData[BOT_ID];
+        if (player().landsPlayed < 1) {
+            const landCard = player().hand.find(isLand);
+            if (landCard) { try { next = playLand(next, BOT_ID, landCard.uid); } catch { /* terra non giocabile */ } }
+        }
+        // Attiva le abilità di mana disponibili prima di lanciare, per sfruttare
+        // anche artefatti e creature mana, non solo le terre.
+        next = botTapManaSources(next);
+        // Lancia prima i comandanti dalla zona di comando, se possibile.
+        for (let guard = 0; guard < 4; guard += 1) {
+            const cmd = (player().commandZone || [])[0];
+            if (!cmd) break;
+            try { next = castSpell(next, BOT_ID, cmd.uid, ''); } catch { break; }
+            next = botTapManaSources(next);
+        }
+        // Dal costo più alto al più basso: sfrutta tutta la mana disponibile.
+        for (let guard = 0; guard < 12; guard += 1) {
+            const candidates = player().hand
+                .filter(card => !isLand(card))
+                .sort((a, b) => (Number(b.cmc) || 0) - (Number(a.cmc) || 0));
+            const castable = candidates.find(card => {
+                try { next = castSpell(next, BOT_ID, card.uid, ''); return true; } catch { return false; }
+            });
+            if (!castable) break;
+        }
+        return next;
+    }
+
+    function botMulliganChoice() {
+        const data = localGame?.playersData?.[BOT_ID];
+        if (!data || data.keptHand) return;
+        const lands = data.hand.filter(isLand).length;
+        const mulligans = data.mulligans || 0;
+        let next = structuredClone(localGame);
+        try {
+            if ((lands < 2 || lands > 5) && mulligans < 2) {
+                next = mulliganAction(next, BOT_ID, 'redraw');
+            } else {
+                // Se il mulligan non è gratuito, bisogna mettere in fondo le carte peggiori.
+                const needed = Math.max(0, next.playersData[BOT_ID].cardsToBottom || 0);
+                if (needed > 0) {
+                    const hand = next.playersData[BOT_ID].hand;
+                    const order = [...hand.keys()]
+                        .sort((a, b) => (isLand(hand[b]) ? 1 : 0) - (isLand(hand[a]) ? 1 : 0) || (Number(hand[a].cmc) || 0) - (Number(hand[b].cmc) || 0))
+                        .slice(0, needed);
+                    for (const index of order) next = mulliganAction(next, BOT_ID, 'select', index);
+                }
+                next = mulliganAction(next, BOT_ID, 'keep');
+            }
+        } catch {
+            try { next = mulliganAction(next, BOT_ID, 'keep'); } catch { /* mano già tenuta */ }
+        }
+        next.revision = (localGame.revision || 0) + 1;
+        localGame = next;
+        render();
+        scheduleBotIfNeeded();
+    }
+
+    function botTurn() {
+        if (!botMode || disposed || !localGame) return;
+        busy = true;
+        try {
+            let current = structuredClone(localGame);
+            if (current.mulliganActive || current.winner || current.activePlayer !== BOT_ID) {
+                busy = false;
+                scheduleBotIfNeeded();
+                return;
+            }
+            for (let guard = 0; guard < 6 && current.activePlayer === BOT_ID && !current.winner; guard += 1) {
+                if (current.phase === 'main1' || current.phase === 'main2') {
+                    current = botPlayLandAndSpells(current);
+                    current = advancePhase(current, BOT_ID);
+                    continue;
+                }
+                if (current.phase === 'combat') {
+                    if (!current.combat) {
+                        const attackers = current.playersData[BOT_ID].battlefield
+                            .filter(card => isCreature(card) && !card.tapped && !card.summoningSick)
+                            .map(card => idOf(card));
+                        const opponents = current.players.filter(id => id !== BOT_ID && !current.playersData[id]?.eliminated);
+                        try { current = declareAttackers(current, BOT_ID, attackers, opponents[0] || ''); }
+                        catch { current = advancePhase(current, BOT_ID); }
+                        continue;
+                    }
+                    // Gli attaccanti aspettano i blocchi del giocatore: si riprende dopo.
+                    if (current.combat.step === 'blockers') break;
+                    if (current.combat.step === 'damage') {
+                        current = resolveCombat(current, BOT_ID);
+                        if (current.winner) break;
+                        continue;
+                    }
+                    current = advancePhase(current, BOT_ID);
+                    continue;
+                }
+                if (current.phase === 'end') {
+                    const hand = current.playersData[BOT_ID].hand;
+                    const overflow = hand.length - 7;
+                    if (overflow > 0) {
+                        // Scarta prima le terre di troppo, poi le carte più economiche.
+                        const uids = [...hand]
+                            .sort((a, b) => (isLand(b) ? 1 : 0) - (isLand(a) ? 1 : 0) || (Number(a.cmc) || 0) - (Number(b.cmc) || 0))
+                            .slice(0, overflow)
+                            .map(card => card.uid);
+                        try { current = discardCards(current, BOT_ID, uids); } catch { /* scarto non necessario */ }
+                    }
+                    current = advancePhase(current, BOT_ID);
+                    continue;
+                }
+                break;
+            }
+            current.revision = (localGame.revision || 0) + 1;
+            localGame = current;
+            render();
+        } catch (error) {
+            setNotice(error.message || 'Turno bot non riuscito.');
+        } finally {
+            busy = false;
+            scheduleBotIfNeeded();
+        }
+    }
+
+    async function startBotMatch() {
+        if (busy) return;
+        const deck = decks.find(item => item.id === chosenDeck);
+        if (!deck) { setNotice('Scegli un mazzo dalla sezione Mazzi.'); return; }
+        const check = deckCheck(deck);
+        if (!check.valid) { setNotice(check.errors[0]); return; }
+        busy = true;
+        setNotice('Preparo il mazzo…');
+        try {
+            const cards = await hydrateCards(deckCards(deck));
+            const commanderCards = deck?.commanders?.length ? await hydrateCards(deck.commanders.map(id => collection.get(String(id))).filter(Boolean)) : [];
+            const match = createMatch({
+                players: [
+                    { id: clientId, name: 'Tu', cards: structuredClone(cards), commanders: structuredClone(commanderCards) },
+                    { id: BOT_ID, name: 'Bot', cards: structuredClone(cards), commanders: structuredClone(commanderCards) }
+                ],
+                startingPlayer: clientId
+            });
+            botMode = true;
+            // Il bot tiene o rimischia da solo; il giocatore sceglie la sua mano.
+            localGame = match;
+            localGame.revision = (localGame.revision || 0) + 1;
+            selectedAttackers = new Set();
+            selectedDiscards = new Set();
+            setNotice('Partita avviata contro il Bot.');
+        } catch (error) {
+            setNotice(error.message || 'Avvio non riuscito.');
+        } finally {
+            busy = false;
+            render();
+            scheduleBotIfNeeded();
+        }
     }
 
     // Le mosse si accodano: un tocco rapido (le vite, per esempio) non deve andare
@@ -542,6 +862,11 @@ export function showMagicPlay(container, options = {}) {
             <div class="mp-own">
                 <header><strong>Il tuo campo</strong><span>${mine.life} vite</span></header>
                 ${board(mine.battlefield, true)}
+                ${(mine.commandZone || []).length ? `<div class="mp-command-zone"><strong>Comandante</strong>${mine.commandZone.map(card => {
+                    const tax = (mine.commanderCasts?.[card.uid] || 0) * 2;
+                    const cost = tax > 0 ? `${card.manaCost || ''} +${tax}` : (card.manaCost || '');
+                    return `<button type="button" class="mp-board-card" data-cast-commander="${esc(card.uid)}" ${isMyTurn() && ['main1','main2'].includes(gameState().phase) ? '' : 'disabled'}>${zoomableArt(card)}<strong>${esc(card.name)}</strong><small>${esc(cost)}</small></button>`;
+                }).join('')}</div>` : ''}
             </div>
             <div class="mp-mana">
                 <span>Riserva: ${esc(manaPoolLabel(mine.manaPool))}</span>
@@ -585,6 +910,12 @@ export function showMagicPlay(container, options = {}) {
             <p class="${check.valid ? 'mp-ok' : 'mp-error'}">${check.valid ? `✓ Mazzo valido: ${check.total} carte, massimo ${MATCH_RULES.maxCopies} copie per carta.` : check.errors.map(esc).join('<br>')}</p>
             <button type="button" class="mp-button" data-confirm-deck ${!check.valid || !room?.code || busy ? 'disabled' : ''}>Conferma mazzo</button>
             ${!room?.code ? '<small>Collegati prima al tavolo: il mazzo viene inviato agli altri solo dopo la conferma.</small>' : ''}
+        </section>
+        <section class="mp-panel">
+            <span class="mp-overline">CONTRO IL BOT</span>
+            <h2>Partita in solitaria</h2>
+            <p>Sfida il Bot della Taverna: stesso mazzo per entrambi, nessun collegamento richiesto.</p>
+            <button type="button" class="mp-button mp-start" data-start-bot ${busy ? 'disabled' : ''}>AVVIA CONTRO IL BOT</button>
         </section>
         ${room?.code ? `<section class="mp-panel">
             <span class="mp-overline">TAVOLO · ${order.length}/${MATCH_RULES.maxPlayers}</span>
@@ -679,6 +1010,7 @@ export function showMagicPlay(container, options = {}) {
         });
         container.querySelector('[data-confirm-deck]')?.addEventListener('click', () => void confirmDeck());
         container.querySelector('[data-start]')?.addEventListener('click', () => void startMatch());
+        container.querySelector('[data-start-bot]')?.addEventListener('click', () => void startBotMatch());
         container.querySelector('[data-new-match]')?.addEventListener('click', () => void returnToLobby());
         container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => advancePhase(current, clientId)));
         // Tutta la scheda apre la carta, tranne i suoi comandi: i pulsanti interni
@@ -701,6 +1033,10 @@ export function showMagicPlay(container, options = {}) {
             act(current => isLand(card)
                 ? playLand(current, clientId, uid)
                 : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
+        }));
+        container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
+            const uid = button.dataset.castCommander;
+            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
         }));
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
             act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
