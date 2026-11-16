@@ -100,7 +100,7 @@ export function showMagicDashboard(container, options = {}) {
     if (sharedCollectionId || sharedDeckId) { renderShare(container, { collectionId: sharedCollectionId, deckId: sharedDeckId }); return; }
     window.__magicCleanup?.(); updateSidebarContext('magic'); rememberDestination('magic', options);
 
-    let cards = read(COLLECTION_KEY), decks = read(DECKS_KEY), wantlist = read(WANTLIST_KEY);
+    let cards = read(COLLECTION_KEY), decks = read(DECKS_KEY).map(deck => ({ ...deck, commanders: deck.commanders || [] })), wantlist = read(WANTLIST_KEY);
     let tab = options.tab === 'wantlist' ? 'wantlist' : ['collezione','mazzi'].includes(options.tab) ? options.tab : 'collezione';
     let activeDeckId = decks[0]?.id || '';
     let exportLanguage = 'it', exportFormat = 'txt';
@@ -303,7 +303,7 @@ export function showMagicDashboard(container, options = {}) {
         const activeDeck = decks.find(deck => deck.id === activeDeckId) || decks[0];
         const cardMap = byId();
         const deckCards = activeDeck ? activeDeck.cards.map(entry => ({ ...cardMap.get(String(entry.cardId)), quantity: entry.quantity })).filter(card => card.id) : [];
-        const commanderCards = activeDeck ? (activeDeck.commanders || []).map(id => cardMap.get(String(id))).filter(Boolean) : [];
+        const commanderCards = activeDeck ? activeDeck.commanders.map(id => cardMap.get(String(id))).filter(Boolean) : [];
         const commanderSection = activeDeck ? `<section class="mv-commanders"><div class="mv-panel-heading"><div><span class="mv-eyebrow">COMMANDER</span><h3>Comandanti <span>${commanderCards.length}/2</span></h3><p>Scegli uno o due creature leggendarie idonee.</p></div></div><div class="mv-commander-list">${commanderCards.map(card => `<div class="mv-deck-card">${cardTile(card,'deck')}<div class="mv-quantity-tools"><button class="mv-text-button" type="button" data-remove-commander="${esc(card.id)}">Rimuovi</button></div></div>`).join('') || '<p class="mv-empty">Nessun comandante selezionato.</p>'}</div><label class="mv-search"><span>⌕</span><input id="mv-commander-search" type="search" placeholder="Cerca un comandante…"></label><div id="mv-commander-results" class="mv-search-results">${commanderSearchResults.map(card => `<button type="button" data-add-commander="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div></section>` : '';
         container.innerHTML = `<main class="magic-page magic-viewer">
           <div class="mv-platform-tools"><button type="button" data-mtcg-tool="mtcg">← MTCG</button><button type="button" data-mtcg-tool="cardCounter">Segnapunti</button><button type="button" data-mtcg-tool="proxyPrinter">MTG Proxy Printer</button></div><header class="mv-heading"><div><span class="mv-eyebrow">LA TAVERNA · ARCHIVIO MAGIC</span><h1>Le tue carte</h1><p>Cerca, consulta e organizza la tua raccolta.</p><p class="legal-inline-note">Magic: The Gathering è un marchio di Wizards of the Coast. Dati e immagini da Scryfall; nessuna affiliazione.</p></div></header>
@@ -460,7 +460,7 @@ export function showMagicDashboard(container, options = {}) {
             else cards.push(card);
         }
         if (makeDeck) {
-            const deck = { id: id(), name: deckName.trim().slice(0,80) || 'Nuovo mazzo', cards: accepted.map(card=>({cardId:card.id,quantity:card.quantity})) };
+            const deck = { id: id(), name: deckName.trim().slice(0,80) || 'Nuovo mazzo', cards: accepted.map(card=>({cardId:card.id,quantity:card.quantity})), commanders: [] };
             decks.push(deck); activeDeckId = deck.id; tab = 'mazzi';
         }
         pending = []; persist(); render(); setNotice(makeDeck ? 'Carte aggiunte alla collezione e salvate nel nuovo mazzo.' : 'Carte aggiunte alla collezione.');
@@ -578,7 +578,6 @@ export function showMagicDashboard(container, options = {}) {
                 if (!own) { own = summary(found); cards.push(own); }
                 const deck = decks.find(item => item.id === activeDeckId);
                 if (!deck) return;
-                deck.commanders = deck.commanders || [];
                 if (deck.commanders.includes(own.id)) { setNotice('Comandante già selezionato.'); return; }
                 if (deck.commanders.length >= 2) { setNotice('Massimo due comandanti.'); return; }
                 if (deck.commanders.length === 1) {
@@ -593,7 +592,7 @@ export function showMagicDashboard(container, options = {}) {
                 setNotice(violations.length ? `${own.name} aggiunto. Attenzione: ${violations.join(', ')} fuori dall'identità di colore.` : `${own.name} aggiunto come comandante.`);
             }));
         });
-        container.querySelectorAll('[data-remove-commander]').forEach(button=>button.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId);if(!deck)return;deck.commanders=(deck.commanders||[]).filter(id=>String(id)!==String(button.dataset.removeCommander));persist();render();setNotice('Comandante rimosso.');}));
+        container.querySelectorAll('[data-remove-commander]').forEach(button=>button.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId);if(!deck)return;deck.commanders=deck.commanders.filter(id=>String(id)!==String(button.dataset.removeCommander));persist();render();setNotice('Comandante rimosso.');}));
         container.querySelector('#mv-price-refresh')?.addEventListener('click', () => { void refreshPrices(); });
         // I nomi senza prezzo nell'avviso aprono la carta, come dal resto della lista.
         container.querySelectorAll('[data-open-unpriced]').forEach(button => button.addEventListener('click', () => {
