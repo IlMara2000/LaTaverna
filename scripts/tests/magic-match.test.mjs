@@ -19,7 +19,7 @@ const creature = card('Elfo', {});
 const forest = card('Foresta', { typeLine: 'Basic Land — Forest', manaCost: '', cmc: 0, power: '', toughness: '', oracleText: '{T}: Add {G}.' });
 const bears = card('Orsi', {});
 
-const sixty = () => Array.from({ length: 60 }, (_, index) => ({ ...(index < 24 ? forest : creature), quantity: 1 }));
+const hundred = () => Array.from({ length: 100 }, (_, index) => ({ ...(index < 40 ? forest : creature), quantity: 1 }));
 
 const permanent = (uid, overrides = {}) => ({
     uid, instanceId: uid, id: uid, name: uid, manaCost: '{1}{G}', typeLine: 'Creature — Human',
@@ -31,8 +31,8 @@ const permanent = (uid, overrides = {}) => ({
 const started = () => {
     let state = createMatch({
         players: [
-            { id: 'a', name: 'Tu', cards: sixty() },
-            { id: 'b', name: 'Giocatore 2', cards: sixty() }
+            { id: 'a', name: 'Tu', cards: hundred() },
+            { id: 'b', name: 'Giocatore 2', cards: hundred() }
         ]
     });
     state = mulliganAction(state, 'a', 'keep');
@@ -40,14 +40,14 @@ const started = () => {
     return state;
 };
 
-test('un mazzo da tavolo richiede almeno 60 carte e quattro copie al massimo', () => {
-    const shortDeck = [{ cardId: 'Elfo', quantity: 59 }];
+test('un mazzo da tavolo richiede almeno 100 carte e una sola copia al massimo', () => {
+    const shortDeck = [{ cardId: 'Elfo', quantity: 99 }];
     assert.equal(validateMatchDeck(shortDeck, cards).valid, false);
-    const fiveCopies = [{ cardId: 'Elfo', quantity: 5 }, { cardId: 'Foresta', quantity: 55 }];
+    const fiveCopies = [{ cardId: 'Elfo', quantity: 2 }, { cardId: 'Foresta', quantity: 98 }];
     const five = validateMatchDeck(fiveCopies, cards);
     assert.equal(five.valid, false);
     assert.match(five.errors.join(' '), /Elfo/);
-    const basicLands = [{ cardId: 'Foresta', quantity: 60 }];
+    const basicLands = [{ cardId: 'Foresta', quantity: 100 }];
     assert.equal(validateMatchDeck(basicLands, cards).valid, true);
 });
 
@@ -57,7 +57,7 @@ test('la partita distribuisce sette carte, 20 vite e salta la prima pesca', () =
     assert.equal(state.playersData.a.life, MATCH_RULES.startingLife);
     assert.equal(state.playersData.a.hand.length, 7);
     assert.equal(state.playersData.b.hand.length, 7);
-    assert.equal(state.playersData.a.library.length, 53);
+    assert.equal(state.playersData.a.library.length, 93);
     assert.equal(state.activePlayer, 'a');
     assert.equal(state.phase, 'main1');
 });
@@ -65,8 +65,8 @@ test('la partita distribuisce sette carte, 20 vite e salta la prima pesca', () =
 test('mulligan londinese: il primo è gratuito, dal secondo si mette in fondo', () => {
     let state = createMatch({
         players: [
-            { id: 'a', name: 'Tu', cards: sixty() },
-            { id: 'b', name: 'Giocatore 2', cards: sixty() }
+            { id: 'a', name: 'Tu', cards: hundred() },
+            { id: 'b', name: 'Giocatore 2', cards: hundred() }
         ]
     });
     state = mulliganAction(state, 'a', 'redraw');
@@ -77,7 +77,7 @@ test('mulligan londinese: il primo è gratuito, dal secondo si mette in fondo', 
     state = mulliganAction(state, 'a', 'select', 0);
     state = mulliganAction(state, 'a', 'keep');
     assert.equal(state.playersData.a.hand.length, 6);
-    assert.equal(state.playersData.a.library.length, 54);
+    assert.equal(state.playersData.a.library.length, 94);
 });
 
 test('una terra per turno, solo in fase principale', () => {
@@ -108,7 +108,7 @@ test('un attaccante non bloccato toglie vita al giocatore attaccato', () => {
     state = declareAttackers(state, 'a', ['attaccante'], 'b');
     state = declareBlockers(state, 'b', {});
     state = resolveCombat(state, 'a');
-    assert.equal(state.playersData.b.life, 18);
+    assert.equal(state.playersData.b.life, 38);
     assert.equal(state.playersData.a.battlefield[0].tapped, true);
 });
 
@@ -124,13 +124,13 @@ test('bloccante e attaccante si scambiano danno simultaneo e muoiono entrambi', 
     assert.equal(state.playersData.b.battlefield.length, 0);
     assert.equal(state.playersData.a.graveyard.length, 1);
     assert.equal(state.playersData.b.graveyard.length, 1);
-    assert.equal(state.playersData.b.life, 20);
+    assert.equal(state.playersData.b.life, 40);
 });
 
 // Tavolo da quattro: stessa preparazione, turni in ordine e difensore scelto.
 const fourPlayers = () => {
     let state = createMatch({
-        players: ['a', 'b', 'c', 'd'].map(id => ({ id, name: `Giocatore ${id.toUpperCase()}`, cards: sixty() }))
+        players: ['a', 'b', 'c', 'd'].map(id => ({ id, name: `Giocatore ${id.toUpperCase()}`, cards: hundred() }))
     });
     for (const id of ['a', 'b', 'c', 'd']) state = mulliganAction(state, id, 'keep');
     return state;
@@ -172,14 +172,14 @@ test('si attacca il difensore scelto e solo lui può bloccare', () => {
     const blocked = declareBlockers(state, 'c', { attaccante: 'bloccante-c' });
     assert.equal(blocked.combat.blockers.attaccante, 'bloccante-c');
     const resolved = resolveCombat(blocked, 'a');
-    assert.equal(resolved.playersData.c.life, 20);
-    assert.equal(resolved.playersData.b.life, 20);
+    assert.equal(resolved.playersData.c.life, 40);
+    assert.equal(resolved.playersData.b.life, 40);
     assert.equal(resolved.playersData.c.battlefield.length, 0);
 });
 
 test('un giocatore eliminato viene saltato nel giro di turni', () => {
     let state = fourPlayers();
-    state = adjustLife(state, 'a', 'c', -20);
+    state = adjustLife(state, 'a', 'c', -40);
     assert.equal(state.playersData.c.eliminated, true);
     assert.equal(state.winner, null);
     state = passTurn(state, 'a');
@@ -191,17 +191,17 @@ test('un giocatore eliminato viene saltato nel giro di turni', () => {
 
 test('con quattro giocatori vince l\'ultimo rimasto in gioco', () => {
     let state = fourPlayers();
-    state = adjustLife(state, 'a', 'b', -20);
-    state = adjustLife(state, 'a', 'c', -20);
+    state = adjustLife(state, 'a', 'b', -40);
+    state = adjustLife(state, 'a', 'c', -40);
     assert.equal(state.winner, null);
-    state = adjustLife(state, 'a', 'd', -20);
+    state = adjustLife(state, 'a', 'd', -40);
     assert.equal(state.winner, 'a');
     assert.equal(state.playersData.b.life, 0);
 });
 
 test('il vincitore viene annunciato una volta sola', () => {
     let state = started();
-    state = adjustLife(state, 'a', 'b', -20);
+    state = adjustLife(state, 'a', 'b', -40);
     assert.equal(state.winner, 'a');
     state = adjustLife(state, 'a', 'b', -1);
     assert.equal(state.log.filter(line => /vince la partita/.test(line)).length, 1);
@@ -239,7 +239,7 @@ test('prima colpo uccide il bloccante senza subire danno di ritorno', () => {
     state = resolveCombat(state, 'a');
     assert.equal(state.playersData.b.battlefield.length, 0);
     assert.equal(state.playersData.a.battlefield.length, 1);
-    assert.equal(state.playersData.b.life, 20);
+    assert.equal(state.playersData.b.life, 40);
 });
 
 test('trapassare trasferisce al giocatore il danno che avanza', () => {
@@ -251,6 +251,6 @@ test('trapassare trasferisce al giocatore il danno che avanza', () => {
     state = declareBlockers(state, 'b', { grande: 'bloccante' });
     state = resolveCombat(state, 'a');
     assert.equal(state.playersData.b.battlefield.length, 0);
-    assert.equal(state.playersData.b.life, 18);
+    assert.equal(state.playersData.b.life, 38);
     assert.equal(powerOf(state.playersData.a.battlefield[0]), 4);
 });
