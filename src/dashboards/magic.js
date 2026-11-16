@@ -166,6 +166,34 @@ export function showMagicDashboard(container, options = {}) {
     };
     const setNotice = value => { notice = value || ''; const node = container.querySelector('#magic-viewer-notice'); if (node) node.textContent = notice; };
     const byId = () => new Map(cards.map(card => [String(card.id), card]));
+    const CARD_CACHE_KEY = 'taverna_magic_card_details_v1';
+    const hydrateCollection = async () => {
+        let cache = {};
+        try { cache = JSON.parse(localStorage.getItem(CARD_CACHE_KEY) || '{}'); } catch { cache = {}; }
+        const missing = cards.filter(card => !card.colorIdentity?.length || !card.colors?.length);
+        const ids = [...new Set(missing.map(card => card.id).filter(Boolean))];
+        for (let offset = 0; offset < ids.length; offset += 75) {
+            const identifiers = ids.slice(offset, offset + 75).map(id => ({ id }));
+            try {
+                const response = await fetch('https://api.scryfall.com/cards/collection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ identifiers }) });
+                if (!response.ok) continue;
+                const payload = await response.json();
+                for (const card of payload.data || []) {
+                    cache[card.id] = { ...(cache[card.id] || {}), colors: card.colors || [], colorIdentity: card.color_identity || [] };
+                }
+                localStorage.setItem(CARD_CACHE_KEY, JSON.stringify(cache));
+            } catch { /* offline: keep saved data */ }
+        }
+        let changed = false;
+        cards = cards.map(card => {
+            const details = cache[card.id] || {};
+            const newCI = card.colorIdentity?.length ? card.colorIdentity : (details.colorIdentity || []);
+            const newColors = card.colors?.length ? card.colors : (details.colors || []);
+            if (newCI !== card.colorIdentity || newColors !== card.colors) changed = true;
+            return { ...card, colorIdentity: newCI, colors: newColors };
+        });
+        if (changed) { save(COLLECTION_KEY, cards); render(); }
+    };
     const searchScryfall = async query => {
         if (query.length < 2) return [];
         try {
@@ -643,6 +671,7 @@ export function showMagicDashboard(container, options = {}) {
 
     window.__magicCleanup = () => { disposed = true; clearPress(); stopPriceTicker(); clearTimeout(priceAgeSaveTimer); window.removeEventListener('resize', onSheetResize); };
     render();
+    if (!navigator.onLine) void hydrateCollection();
     if (navigator.onLine) void (async()=>{
         try {
             const user=await getMagicAccount(); cloudUserId=user?.id||null;
@@ -651,8 +680,9 @@ export function showMagicDashboard(container, options = {}) {
             priceCurrency = await loadPriceCurrencyPreference();
             const remote=await loadMagicLibrary(cloudUserId);
             if(disposed)return;
-            if(remote.hasCloudData){cards=remote.cards||[];decks=remote.decks||[];wantlist=remote.wantlist||[];activeDeckId=decks[0]?.id||'';save(COLLECTION_KEY,cards);save(DECKS_KEY,decks);save(WANTLIST_KEY,wantlist);render();}
+            if(remote.hasCloudData){cards=remote.cards||[];decks=(remote.decks||[]).map(deck=>({...deck,commanders:deck.commanders||[]}));wantlist=remote.wantlist||[];activeDeckId=decks[0]?.id||'';save(COLLECTION_KEY,cards);save(DECKS_KEY,decks);save(WANTLIST_KEY,wantlist);render();}
             else persist();
+            await hydrateCollection();
             await refreshPriceSummary();
         }catch(error){ if(!disposed)setNotice(`Archivio sul dispositivo pronto. Sincronizzazione cloud non disponibile: ${error.message}`); }
     })();
