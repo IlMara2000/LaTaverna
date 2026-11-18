@@ -143,19 +143,32 @@ export function showMatchTable(host, options = {}) {
   };
 
   // Gate di rotazione: osserva il viewport e mostra il gate in verticale.
+  // Il solo evento 'change' di matchMedia non scatta in alcuni browser/ambienti
+  // (es. ridimensionamento programmatico o schermo che non emette orientationchange),
+  // quindi si rivaluta anche su resize e orientationchange.
   const PORTRAIT_QUERY = '(orientation: portrait)';
   let portraitMql = null;
   let onOrientationChange = null;
+  let onResize = null;
   const applyRotation = (portrait) => {
     const needs = Boolean(portrait);
     if (slots.rotateGate) slots.rotateGate.classList.toggle('is-visible', needs);
     if (stage) stage.inert = needs;
   };
-  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-    portraitMql = window.matchMedia(PORTRAIT_QUERY);
-    onOrientationChange = event => applyRotation(event.matches);
-    portraitMql.addEventListener('change', onOrientationChange);
-    applyRotation(portraitMql.matches);
+  const recomputeRotation = () => {
+    if (portraitMql) applyRotation(portraitMql.matches);
+    else if (typeof window !== 'undefined') applyRotation(window.innerHeight > window.innerWidth);
+  };
+  if (typeof window !== 'undefined') {
+    if (typeof window.matchMedia === 'function') {
+      portraitMql = window.matchMedia(PORTRAIT_QUERY);
+      onOrientationChange = () => recomputeRotation();
+      portraitMql.addEventListener('change', onOrientationChange);
+    }
+    onResize = () => recomputeRotation();
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    recomputeRotation();
   }
 
   const activeOpponent = () =>
@@ -283,6 +296,10 @@ export function showMatchTable(host, options = {}) {
       if (state.disposed) return;
       state.disposed = true;
       if (portraitMql && onOrientationChange) portraitMql.removeEventListener('change', onOrientationChange);
+      if (onResize) {
+        window.removeEventListener('resize', onResize);
+        window.removeEventListener('orientationchange', onResize);
+      }
       root.removeEventListener('click', onClick);
       root.removeEventListener('keydown', markKeyboard);
       document.removeEventListener('keydown', onEscape);
