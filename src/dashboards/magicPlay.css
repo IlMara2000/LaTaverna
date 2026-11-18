@@ -57,6 +57,8 @@
     min-height: 32px; padding: 6px 12px; border-radius: 9px; cursor: pointer;
     border: 1px solid var(--mp-line); background: rgba(196, 164, 255, 0.1); color: var(--mp-text); font: inherit; font-size: .8rem;
 }
+.magic-play .mp-commander-cast { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.magic-play .mp-commander-cast small { color: var(--mp-muted); }
 .magic-play .mp-code { padding: 8px 14px; border-radius: 10px; background: rgba(12, 7, 22, .9); letter-spacing: .3em; font-weight: 700; }
 .magic-play .mp-ok { color: var(--mp-ok); }
 .magic-play .mp-error { color: var(--mp-error); }

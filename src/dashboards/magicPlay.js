@@ -881,11 +881,6 @@ export function showMagicPlay(container, options = {}) {
             <div class="mp-own">
                 <header><strong>Il tuo campo</strong><span>${mine.life} vite${(() => { const cmd = Math.max(0, ...Object.values(mine.commanderDamage || {})); return cmd > 0 ? ` · Cmd ${cmd}/21` : ''; })()}</span></header>
                 ${board(mine.battlefield, true)}
-                ${(mine.commandZone || []).length ? `<div class="mp-command-zone"><strong>Comandante</strong>${mine.commandZone.map(card => {
-                    const tax = (mine.commanderCasts?.[card.uid] || 0) * 2;
-                    const cost = tax > 0 ? `${card.manaCost || ''} +${tax}` : (card.manaCost || '');
-                    return `<button type="button" class="mp-board-card" data-cast-commander="${esc(card.uid)}" ${isMyTurn() && ['main1','main2'].includes(gameState().phase) ? '' : 'disabled'}>${zoomableArt(card)}<strong>${esc(card.name)}</strong><small>${esc(cost)}</small></button>`;
-                }).join('')}</div>` : ''}
             </div>
             <div class="mp-mana">
                 <span>Riserva: ${esc(manaPoolLabel(mine.manaPool))}</span>
@@ -1032,9 +1027,17 @@ export function showMagicPlay(container, options = {}) {
         const discard = current.pendingDiscard && overflow > 0
             ? `<div class="mp-discard"><span>Fine turno: scarta ${overflow} ${overflow === 1 ? 'carta' : 'carte'} (${selectedDiscards.size} ${selectedDiscards.size === 1 ? 'scelta' : 'scelte'})</span><button type="button" class="mp-button" data-confirm-discard ${selectedDiscards.size === overflow ? '' : 'disabled'}>Scarta</button></div>`
             : '';
+        // Il comandante resta lanciabile da un pulsante nella banda comandi: una
+        // carta intera qui occuperebbe mezza schermata senza aggiungere nulla.
+        const commanderButtons = (mine.commandZone || []).map(card => {
+            const tax = (mine.commanderCasts?.[card.uid] || 0) * 2;
+            const cost = tax > 0 ? `${card.manaCost || ''} +${tax}` : (card.manaCost || '');
+            const canCast = isMyTurn() && ['main1', 'main2'].includes(current.phase);
+            return `<button type="button" class="mp-small mp-commander-cast" data-cast-commander="${esc(card.uid)}" ${canCast ? '' : 'disabled'}>Comandante · ${esc(card.name)} <small>${esc(cost)}</small></button>`;
+        }).join('');
         return `<p id="play-notice" class="mp-notice" role="status" aria-live="polite">${esc(notice)}</p>
             <div class="mp-mana"><span>Riserva: ${esc(manaPoolLabel(mine.manaPool))}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>
-            <div class="mp-toolbar">${phaseButton(mine)}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave>Lascia il tavolo</button></div>
+            <div class="mp-toolbar">${phaseButton(mine)}${commanderButtons}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave>Lascia il tavolo</button></div>
             ${current.phase !== 'combat' ? `<label class="mp-target">Bersaglio della magia<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
             ${combatPanel()}
             <details class="mp-log"><summary>Diario della partita</summary><ol>${(current.log || []).slice(0, 12).map(line => `<li>${esc(line)}</li>`).join('')}</ol></details>`;
