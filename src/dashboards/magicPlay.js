@@ -11,6 +11,7 @@ import {
     declareAttackers, declareBlockers, discardCards, mulliganAction, playLand, powerOf,
     resolveCombat, tapMana, toughnessOf, validateMatchDeck
 } from './magicMatchEngine.js';
+import { showMatchTable } from '../match/table.js';
 import './magicPlay.css';
 
 const COLLECTION_KEY = 'taverna_magic_collection_v1';
@@ -994,9 +995,109 @@ export function showMagicPlay(container, options = {}) {
         overlay.querySelector('.mp-zoom-close')?.focus();
     };
 
+    let table = null;
+
+    const teardownTable = () => {
+        table?.destroy();
+        table = null;
+        closeCardZoom();
+    };
+
+    // Le liste che il tavolo legge. Gli avversari restano separati: il selettore
+    // mostra quello attivo, così le carte di due giocatori non si mescolano.
+    const tableView = current => {
+        const mine = current.playersData[clientId] || {};
+        return {
+            own: mine.battlefield || [],
+            hand: mine.hand || [],
+            opponents: current.players
+                .filter(id => id !== clientId)
+                .map(id => {
+                    const data = current.playersData[id] || {};
+                    return { id, name: nameOf(id), life: data.life ?? 0, eliminated: Boolean(data.eliminated), cards: data.battlefield || [] };
+                })
+        };
+    };
+
+    // I pannelli comandi che stavano in tableMarkup() restano gli stessi: cambia
+    // solo dove finiscono, cioè nella banda centrale del tavolo.
+    const commandsMarkup = () => {
+        const current = gameState();
+        const mine = myData();
+        if (!current || !mine) return '';
+        const overflow = mine.hand.length - MATCH_RULES.openingHand;
+        const discard = current.pendingDiscard && overflow > 0
+            ? `<div class="mp-discard"><span>Fine turno: scarta ${overflow} ${overflow === 1 ? 'carta' : 'carte'} (${selectedDiscards.size} ${selectedDiscards.size === 1 ? 'scelta' : 'scelte'})</span><button type="button" class="mp-button" data-confirm-discard ${selectedDiscards.size === overflow ? '' : 'disabled'}>Scarta</button></div>`
+            : '';
+        return `<p id="play-notice" class="mp-notice" role="status" aria-live="polite">${esc(notice)}</p>
+            <div class="mp-toolbar">${phaseButton(mine)}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave>Lascia il tavolo</button></div>
+            ${current.phase !== 'combat' ? `<label class="mp-target">Bersaglio della magia<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
+            ${combatPanel()}
+            <details class="mp-log"><summary>Diario della partita</summary><ol>${(current.log || []).slice(0, 12).map(line => `<li>${esc(line)}</li>`).join('')}</ol></details>`;
+    };
+
+    // Un pulsante per carta, con le stesse condizioni di boardCard() e handPanel().
+    const cardActions = card => {
+        const current = gameState();
+        const mine = myData();
+        if (!current || !mine) return '';
+        const uid = card.uid || '';
+        const nodeId = idOf(card);
+        if ((mine.hand || []).some(item => item.uid === uid)) {
+            if (!isMyTurn()) return '';
+            if (current.pendingDiscard && mine.hand.length > MATCH_RULES.openingHand) {
+                return `<button type="button" class="mp-small" data-discard="${esc(uid)}">${selectedDiscards.has(uid) ? 'Non scartare' : 'Scarta'}</button>`;
+            }
+            const land = isLand(card);
+            const disabled = land && (mine.landsPlayed >= 1 || !['main1', 'main2'].includes(current.phase)) ? 'disabled' : '';
+            return `<button type="button" class="mp-small" data-play="${esc(uid)}" ${disabled}>${land ? 'Gioca terra' : 'Lancia'}</button>`;
+        }
+        if (current.phase === 'combat' && isCreature(card) && !card.tapped && !card.summoningSick && isMyTurn()) {
+            const attacking = selectedAttackers.has(nodeId);
+            return `<button type="button" class="mp-small" data-attacker="${esc(nodeId)}">${attacking ? 'Non attacca' : 'Attacca'}</button>`;
+        }
+        if (isMyTurn() && isManaSource(card, mine.colorIdentity || []) && !card.tapped) {
+            return `<button type="button" class="mp-small" data-tap="${esc(nodeId)}">Mana</button>`;
+        }
+        return '';
+    };
+
+    // Il tap non scrive la carta: chiede al motore, che è l'unico a poterla tappare.
+    const requestTap = ({ id }) => {
+        const mine = myData();
+        const card = (mine?.battlefield || []).find(item => idOf(item) === id);
+        if (!card || card.tapped || !isManaSource(card, mine?.colorIdentity || [])) return;
+        void commit(current => tapMana(current, clientId, id, 'auto'));
+    };
+
+    function renderPlaying(current) {
+        const views = tableView(current);
+        if (!table) {
+            container.innerHTML = '<main class="magic-page magic-play"><div id="play-table"></div></main>';
+            table = showMatchTable(container.querySelector('#play-table'), {
+                own: views.own,
+                hand: views.hand,
+                opponents: views.opponents,
+                commands: commandsMarkup(),
+                tileExtra: cardActions,
+                onTogglePermanent: requestTap,
+                onPreview: ({ id }) => openCardZoom(findCardByUid(id)),
+                onExit: () => navigateTo('magic', container)
+            });
+            bindActions();
+            return;
+        }
+        if (table.update({ own: views.own, hand: views.hand, opponents: views.opponents, commands: commandsMarkup() })) bindActions();
+    }
+
     const render = () => {
         if (disposed) return;
         const current = gameState();
+        document.body.classList.toggle('magic-table-active', Boolean(current && !current.winner));
+        // Mulligan, lobby e schermata del vincitore restano le vecchie: il tavolo
+        // è uno strato del solo campo, e il mulligan lavora su indici di mano.
+        if (current && !current.winner && !current.mulliganActive) { renderPlaying(current); return; }
+        teardownTable();
         container.innerHTML = `<main class="magic-page magic-play">
             <div class="mp-topbar"><button type="button" class="app-back-button" data-back>← Magic</button><span class="mp-overline">TAVOLO · MAGIC</span></div>
             <header class="mp-heading"><h1>Gioca la tua partita</h1><p>Mazzo dalla sezione Mazzi, collegamento Multiplayer, poi «Avvia match».</p></header>
@@ -1004,9 +1105,6 @@ export function showMagicPlay(container, options = {}) {
             ${current ? tableMarkup() : lobbyMarkup()}
             <p class="legal-inline-note">Magic: The Gathering è un marchio di Wizards of the Coast. Dati e immagini da Scryfall; nessuna affiliazione.</p>
         </main>`;
-        // In partita il menu flottante della Taverna coprirebbe le carte: sul telefono
-        // lo togliamo di mezzo, come si fa durante una sessione di D&D.
-        document.body.classList.toggle('magic-table-active', Boolean(current && !current.winner));
         bind();
     };
 
@@ -1092,6 +1190,57 @@ export function showMagicPlay(container, options = {}) {
         });
     }
 
+    // I comandi del tavolo si rilegano a ogni ridisegno: i nodi sono nuovi, quindi
+    // non si accumulano listener. In lobby e nel mulligan resta bind().
+    function bindActions() {
+        container.querySelectorAll('[data-play]').forEach(button => button.addEventListener('click', () => {
+            const uid = button.dataset.play;
+            const card = myData()?.hand.find(item => item.uid === uid);
+            if (!card) return;
+            act(current => isLand(card)
+                ? playLand(current, clientId, uid)
+                : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
+        }));
+        container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
+            act(current => castSpell(current, clientId, button.dataset.castCommander, container.querySelector('#play-target')?.value || ''));
+        }));
+        container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
+            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
+        }));
+        container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
+            const uid = button.dataset.attacker;
+            if (selectedAttackers.has(uid)) selectedAttackers.delete(uid); else selectedAttackers.add(uid);
+            render();
+        }));
+        container.querySelector('[data-declare-attack]')?.addEventListener('click', () => {
+            const defender = container.querySelector('#play-defender')?.value || '';
+            act(current => declareAttackers(current, clientId, [...selectedAttackers], defender));
+        });
+        container.querySelector('[data-declare-block]')?.addEventListener('click', () => {
+            const assignments = {};
+            container.querySelectorAll('[data-block]').forEach(select => { assignments[select.dataset.block] = select.value; });
+            act(current => declareBlockers(current, clientId, assignments));
+        });
+        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombat(current, clientId)));
+        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => advancePhase(current, clientId)));
+        container.querySelectorAll('[data-life]').forEach(button => button.addEventListener('click', () => {
+            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)));
+        }));
+        container.querySelectorAll('[data-discard]').forEach(button => button.addEventListener('click', () => {
+            const uid = button.dataset.discard;
+            if (selectedDiscards.has(uid)) selectedDiscards.delete(uid); else selectedDiscards.add(uid);
+            render();
+        }));
+        container.querySelector('[data-confirm-discard]')?.addEventListener('click', () => {
+            act(current => discardCards(current, clientId, [...selectedDiscards]));
+        });
+        container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
+            current.playersData[clientId].manaPool = emptyManaPool();
+            return current;
+        }));
+        container.querySelector('[data-leave]')?.addEventListener('click', () => void leaveRoom());
+    }
+
     render();
     if (room?.code) watch(room);
 
@@ -1101,6 +1250,7 @@ export function showMagicPlay(container, options = {}) {
 
     const cleanup = () => {
         disposed = true;
+        teardownTable();
         closeCardZoom();
         document.body.classList.remove('magic-table-active');
         window.__magicPlayCleanup = null;

@@ -1,0 +1,231 @@
+/* Tutto in --u e cqh; le uniche misure in pixel sono i target da 44. */
+
+.mt-table {
+  --u: calc(100dvh / 100);
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  color: #f4efe4;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: radial-gradient(120% 80% at 50% 0%, #1d2a33 0%, #101820 55%, #0a0e13 100%);
+}
+
+.mt-stage { position: absolute; inset: 0; }
+
+.mt-table [data-card-id],
+.mt-table .mt-opponents__chip,
+.mt-table .mt-menu__toggle,
+.mt-table .mt-menu__item {
+  min-block-size: 44px;
+  min-inline-size: 44px;
+}
+
+.mt-board {
+  container-type: size;
+  display: grid;
+  grid-template-rows: 6fr 34fr minmax(4fr, auto) 40fr 16fr;
+  block-size: 100%;
+  padding: calc(1.2 * var(--u));
+  gap: calc(0.8 * var(--u));
+}
+
+.mt-opponent-head {
+  display: flex;
+  align-items: center;
+  gap: calc(1 * var(--u));
+  font-size: calc(1.6 * var(--u));
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgb(244 239 228 / 78%);
+}
+
+.mt-opponent-head.is-out { color: rgb(244 239 228 / 40%); text-decoration: line-through; }
+.mt-opponent-head__life { color: #ffd682; }
+.mt-opponent-head__count { margin-inline-start: auto; color: rgb(244 239 228 / 55%); }
+
+.mt-row,
+.mt-hand {
+  display: flex;
+  align-items: stretch;
+  gap: calc(0.7 * var(--u));
+  min-block-size: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+
+.mt-hand { justify-content: center; }
+
+.mt-row__empty {
+  margin: 0;
+  align-self: center;
+  font-size: calc(1.5 * var(--u));
+  color: rgb(244 239 228 / 45%);
+}
+
+.mt-card {
+  position: relative;
+  flex: 1 1 0;
+  max-inline-size: calc(12 * var(--u));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: thin solid rgb(255 255 255 / 14%);
+  border-radius: calc(0.6 * var(--u));
+  background: rgb(10 14 19 / 88%);
+  transition: transform 150ms ease;
+}
+
+.mt-card.is-tapped { transform: rotate(9deg) scale(0.95); box-shadow: inset 0 0 0 calc(0.25 * var(--u)) rgb(0 0 0 / 55%); }
+
+.mt-card__art {
+  display: block;
+  inline-size: 100%;
+  flex: 1 1 auto;
+  min-block-size: 0;
+  object-fit: cover;
+  object-position: center 18%;
+}
+
+.mt-card__art--empty { background: linear-gradient(160deg, #24313c, #131a21); }
+
+.mt-card__name {
+  padding: calc(0.4 * var(--u)) calc(0.6 * var(--u));
+  font-size: calc(1.4 * var(--u));
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-card__stat {
+  position: absolute;
+  inset-block-end: calc(0.4 * var(--u));
+  inset-inline-end: calc(0.4 * var(--u));
+  padding: 0 calc(0.4 * var(--u));
+  border-radius: calc(0.3 * var(--u));
+  background: rgb(8 12 16 / 82%);
+  font-size: calc(1.5 * var(--u));
+  font-variant-numeric: tabular-nums;
+}
+
+.mt-card__badge {
+  position: absolute;
+  inset-block-start: calc(0.4 * var(--u));
+  inset-inline-start: calc(0.4 * var(--u));
+  padding: 0 calc(0.4 * var(--u));
+  border-radius: calc(0.3 * var(--u));
+  font-size: calc(1.3 * var(--u));
+  background: rgb(8 12 16 / 82%);
+}
+
+.mt-card__badge--counter { background: rgb(46 125 87 / 85%); }
+.mt-card__badge--damage { background: rgb(150 40 40 / 85%); }
+.mt-card__badge--commander { inset-inline-start: auto; inset-inline-end: calc(0.4 * var(--u)); }
+
+.mt-card button {
+  margin: calc(0.3 * var(--u));
+  padding: calc(0.3 * var(--u)) calc(0.6 * var(--u));
+  border: thin solid rgb(255 255 255 / 22%);
+  border-radius: calc(0.4 * var(--u));
+  background: rgb(255 255 255 / 10%);
+  color: inherit;
+  font: inherit;
+  font-size: calc(1.3 * var(--u));
+}
+
+.mt-commands {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: calc(0.6 * var(--u));
+  padding-inline: calc(0.8 * var(--u));
+  overflow-y: auto;
+  font-size: calc(1.5 * var(--u));
+  scrollbar-width: thin;
+}
+
+.mt-opponents { display: flex; flex-wrap: wrap; gap: calc(0.5 * var(--u)); }
+
+.mt-opponents__chip {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  max-inline-size: calc(22 * var(--u));
+  padding-inline: calc(1 * var(--u));
+  border: thin solid rgb(255 255 255 / 18%);
+  border-radius: calc(0.6 * var(--u));
+  background: rgb(0 0 0 / 35%);
+  color: inherit;
+  font: inherit;
+  font-size: calc(1.5 * var(--u));
+  text-align: start;
+}
+
+.mt-opponents__chip[aria-pressed="true"] { border-color: rgb(255 214 130 / 70%); background: rgb(255 214 130 / 16%); }
+
+.mt-opponents__name,
+.mt-opponents__stat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mt-opponents__stat { font-size: calc(1.2 * var(--u)); color: rgb(244 239 228 / 62%); }
+
+.mt-menu__toggle {
+  position: fixed;
+  inset-block-start: calc(1.2 * var(--u));
+  inset-inline-end: calc(1.2 * var(--u));
+  z-index: 1100;
+  border: thin solid rgb(255 255 255 / 20%);
+  border-radius: calc(0.6 * var(--u));
+  background: rgb(10 14 19 / 78%);
+  color: inherit;
+  font-size: calc(2.2 * var(--u));
+}
+
+.mt-menu__scrim { position: fixed; inset: 0; z-index: 1050; display: none; background: rgb(4 6 9 / 62%); }
+.mt-menu.is-open .mt-menu__scrim { display: block; }
+
+.mt-menu__drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 1200;
+  inline-size: min(calc(34 * var(--u)), 82vw);
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.8 * var(--u));
+  padding: calc(2 * var(--u));
+  visibility: hidden;
+  background: #111820;
+  border-inline-start: thin solid rgb(255 255 255 / 14%);
+}
+
+.mt-menu.is-open .mt-menu__drawer { visibility: visible; }
+
+.mt-menu__title {
+  margin: 0 0 calc(0.8 * var(--u));
+  font-size: calc(2 * var(--u));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mt-menu__item {
+  display: flex;
+  align-items: center;
+  padding-inline: calc(1.2 * var(--u));
+  border: thin solid rgb(255 255 255 / 16%);
+  border-radius: calc(0.6 * var(--u));
+  background: rgb(255 255 255 / 6%);
+  color: inherit;
+  font: inherit;
+  font-size: calc(1.7 * var(--u));
+  text-align: start;
+}
+
+.mt-menu__item--danger { border-color: rgb(190 70 70 / 55%); color: #ffc9c9; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-card { transition: none; }
+  .mt-card.is-tapped { transform: none; }
+}
