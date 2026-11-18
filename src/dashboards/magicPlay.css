@@ -146,14 +146,6 @@
 .magic-play .mp-log ol { margin: 8px 0 0; padding-left: 20px; color: var(--mp-muted); font-size: .85rem; }
 .magic-play .legal-inline-note { font-size: .74rem; color: var(--mp-muted); }
 
-/* In partita il menu flottante resta nel suo angolo ma diventa più piccolo e più
-   vicino al bordo, e il tavolo gli lascia libera la fascia in basso: continua a
-   funzionare senza stare sopra le carte o sopra i comandi delle vite. */
-body.magic-table-active .floating-trigger {
-    width: 44px !important; height: 44px !important;
-    right: 10px !important; bottom: calc(10px + env(safe-area-inset-bottom)) !important;
-    border-radius: 14px !important;
-}
 .magic-play .mp-life { margin-left: 0; }
 
 @media (max-width: 640px) {

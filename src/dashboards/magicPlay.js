@@ -9,9 +9,10 @@ import { canPayMana, emptyManaPool, isManaSource, manaAbilityOptions, manaPoolLa
 import {
     MATCH_RULES, PHASE_LABEL, advancePhase, adjustLife, castSpell, concedeMatch, createMatch,
     declareAttackers, declareBlockers, discardCards, mulliganAction, playLand, powerOf,
-    resolveCombat, tapMana, toughnessOf, validateMatchDeck
+    resolveCombat, tapMana, toughnessOf
 } from './magicMatchEngine.js';
 import { showMatchTable } from '../match/table.js';
+import { enterImmersive } from '../match/immersive.js';
 import './magicPlay.css';
 
 const COLLECTION_KEY = 'taverna_magic_collection_v1';
@@ -367,6 +368,7 @@ export function showMagicPlay(container, options = {}) {
         const missing = order.filter(id => !ready[id]?.cards?.length);
         if (missing.length) { setNotice(`Manca il mazzo di ${missing.map(label).join(', ')}.`); return; }
         busy = true;
+        await enterImmersive(document.documentElement);
         setNotice('Distribuisco le carte…');
         try {
             const match = createMatch({
@@ -681,6 +683,7 @@ export function showMagicPlay(container, options = {}) {
         const check = deckCheck(deck);
         if (!check.valid) { setNotice(check.errors[0]); return; }
         busy = true;
+        await enterImmersive(document.documentElement);
         setNotice('Preparo il mazzo…');
         try {
             const cards = await hydrateCards(deckCards(deck));

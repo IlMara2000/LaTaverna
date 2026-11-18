@@ -10,6 +10,8 @@
  */
 
 import './table.css';
+import './rotate-gate.css';
+import { exitImmersive } from './immersive.js';
 
 /* ───────────────────────────── markup ───────────────────────────── */
 
@@ -131,12 +133,30 @@ export function showMatchTable(host, options = {}) {
     disposed: false,
   };
 
-  host.innerHTML = '<div class="mt-table"><div class="mt-stage"><div data-slot="board"></div><div data-slot="menu"></div></div></div>';
+  host.innerHTML = '<div class="mt-table"><div class="mt-stage"><div data-slot="board"></div><div data-slot="menu"></div></div></div><div class="rotate-gate" data-rotate-gate role="status" aria-live="polite"><div class="rotate-gate__icon" aria-hidden="true"></div><p class="rotate-gate__text">La partita si gioca in orizzontale.</p></div>';
   const root = host.firstElementChild;
+  const stage = root.querySelector('.mt-stage');
   const slots = {
     board: root.querySelector('[data-slot="board"]'),
     menu: root.querySelector('[data-slot="menu"]'),
+    rotateGate: host.querySelector('[data-rotate-gate]'),
   };
+
+  // Gate di rotazione: osserva il viewport e mostra il gate in verticale.
+  const PORTRAIT_QUERY = '(orientation: portrait)';
+  let portraitMql = null;
+  let onOrientationChange = null;
+  const applyRotation = (portrait) => {
+    const needs = Boolean(portrait);
+    if (slots.rotateGate) slots.rotateGate.classList.toggle('is-visible', needs);
+    if (stage) stage.inert = needs;
+  };
+  if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    portraitMql = window.matchMedia(PORTRAIT_QUERY);
+    onOrientationChange = event => applyRotation(event.matches);
+    portraitMql.addEventListener('change', onOrientationChange);
+    applyRotation(portraitMql.matches);
+  }
 
   const activeOpponent = () =>
     state.opponents.find(foe => foe.id === state.activeOpponentId) || state.opponents[0] || null;
@@ -262,11 +282,13 @@ export function showMatchTable(host, options = {}) {
     destroy() {
       if (state.disposed) return;
       state.disposed = true;
+      if (portraitMql && onOrientationChange) portraitMql.removeEventListener('change', onOrientationChange);
       root.removeEventListener('click', onClick);
       root.removeEventListener('keydown', markKeyboard);
       document.removeEventListener('keydown', onEscape);
       state.views.clear();
       host.innerHTML = '';
+      exitImmersive();
     },
   };
 }

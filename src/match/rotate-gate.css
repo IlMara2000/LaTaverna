@@ -1,0 +1,41 @@
+/* Gate di rotazione: mostrato quando il viewport è in verticale. */
+.rotate-gate {
+  --u: calc(100dvh / 100);
+  position: fixed;
+  inset: 0;
+  z-index: 1700;
+  display: none;
+  place-content: center;
+  justify-items: center;
+  gap: calc(1.4 * var(--u));
+  background: #070a0e;
+  text-align: center;
+  color: #f2ede3;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.rotate-gate.is-visible {
+  display: grid;
+}
+
+.rotate-gate__icon {
+  width: calc(10 * var(--u));
+  height: calc(16 * var(--u));
+  border: calc(0.4 * var(--u)) solid #ffd479;
+  border-radius: calc(1.2 * var(--u));
+  animation: rotate-gate-tilt 2.4s ease-in-out infinite;
+}
+
+.rotate-gate__text {
+  margin: 0;
+  font-size: calc(2 * var(--u));
+}
+
+@keyframes rotate-gate-tilt {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(90deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotate-gate__icon { animation: none; }
+}
