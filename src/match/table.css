@@ -4,14 +4,22 @@
   --u: calc(100dvh / 100);
   position: fixed;
   inset: 0;
-  z-index: 1;
+  z-index: 1600;
   overflow: hidden;
   color: #f4efe4;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   background: radial-gradient(120% 80% at 50% 0%, #1d2a33 0%, #101820 55%, #0a0e13 100%);
 }
 
+/* Sopra il logo fisso dell'app (1500): altrimenti copre il ☰ del tavolo. */
+body.magic-table-active .nav-logo-right,
+body.magic-table-active .floating-trigger { display: none !important; }
+
 .mt-stage { position: absolute; inset: 0; }
+
+/* Lo slot deve occupare tutto lo stage, altrimenti la griglia di .mt-board
+   collassa sull'altezza del contenuto e la mano finisce alta zero. */
+.mt-stage [data-slot="board"] { position: absolute; inset: 0; }
 
 .mt-table [data-card-id],
 .mt-table .mt-opponents__chip,
@@ -24,7 +32,9 @@
 .mt-board {
   container-type: size;
   display: grid;
-  grid-template-rows: 6fr 34fr minmax(4fr, auto) 40fr 16fr;
+  /* minmax(0, …): senza il minimo a zero il testo delle carte allarga la fila
+     e le proporzioni del tavolo se ne vanno. */
+  grid-template-rows: minmax(0, 6fr) minmax(0, 29fr) minmax(0, 15fr) minmax(0, 30fr) minmax(0, 20fr);
   block-size: 100%;
   padding: calc(1.2 * var(--u));
   gap: calc(0.8 * var(--u));
@@ -67,8 +77,11 @@
 
 .mt-card {
   position: relative;
-  flex: 1 1 0;
-  max-inline-size: calc(12 * var(--u));
+  /* La carta è alta quanto la fila e larga di conseguenza: 63/88 come una
+     carta vera, senza che la fila si allarghi per il contenuto. */
+  flex: 0 0 auto;
+  aspect-ratio: 63 / 88;
+  max-inline-size: calc(20 * var(--u));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -141,6 +154,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: calc(0.6 * var(--u));
+  max-block-size: calc(16 * var(--u));
   padding-inline: calc(0.8 * var(--u));
   overflow-y: auto;
   font-size: calc(1.5 * var(--u));

@@ -219,16 +219,23 @@ export function showMatchTable(host, options = {}) {
     }
   };
 
-  const onKeyDown = event => {
-    if (event.key === 'Tab') { state.keyboardFocus = true; return; }
+  const markKeyboard = event => {
+    if (event.key === 'Tab') state.keyboardFocus = true;
+  };
+
+  // Il focus può stare fuori dal tavolo (i comandi vengono ridisegnati spesso),
+  // quindi Escape si ascolta sul documento e vale solo a menu aperto.
+  const onEscape = event => {
     if (event.key !== 'Escape' || !state.menuOpen) return;
+    event.stopPropagation();
     state.menuOpen = false;
     render('menu');
     focusToggle();
   };
 
   root.addEventListener('click', onClick);
-  root.addEventListener('keydown', onKeyDown);
+  root.addEventListener('keydown', markKeyboard);
+  document.addEventListener('keydown', onEscape);
   render('all');
 
   return {
@@ -256,7 +263,8 @@ export function showMatchTable(host, options = {}) {
       if (state.disposed) return;
       state.disposed = true;
       root.removeEventListener('click', onClick);
-      root.removeEventListener('keydown', onKeyDown);
+      root.removeEventListener('keydown', markKeyboard);
+      document.removeEventListener('keydown', onEscape);
       state.views.clear();
       host.innerHTML = '';
     },

@@ -1030,6 +1030,7 @@ export function showMagicPlay(container, options = {}) {
             ? `<div class="mp-discard"><span>Fine turno: scarta ${overflow} ${overflow === 1 ? 'carta' : 'carte'} (${selectedDiscards.size} ${selectedDiscards.size === 1 ? 'scelta' : 'scelte'})</span><button type="button" class="mp-button" data-confirm-discard ${selectedDiscards.size === overflow ? '' : 'disabled'}>Scarta</button></div>`
             : '';
         return `<p id="play-notice" class="mp-notice" role="status" aria-live="polite">${esc(notice)}</p>
+            <div class="mp-mana"><span>Riserva: ${esc(manaPoolLabel(mine.manaPool))}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>
             <div class="mp-toolbar">${phaseButton(mine)}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave>Lascia il tavolo</button></div>
             ${current.phase !== 'combat' ? `<label class="mp-target">Bersaglio della magia<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
             ${combatPanel()}
@@ -1082,7 +1083,8 @@ export function showMagicPlay(container, options = {}) {
                 tileExtra: cardActions,
                 onTogglePermanent: requestTap,
                 onPreview: ({ id }) => openCardZoom(findCardByUid(id)),
-                onExit: () => navigateTo('magic', container)
+                onExit: () => navigateTo('magic', container),
+                onAbandon: () => void leaveRoom()
             });
             bindActions();
             return;
