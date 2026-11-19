@@ -172,3 +172,11 @@ Per un nuovo database applicare in ordine `20261017094519_community_foundation.s
 `npm run dev` serve anche gli endpoint AI locali; `npm run preview` serve soltanto il frontend compilato. Quota condivisa tra chat, board e scansioni: 5 richieste/giorno ospite, 30 registrato, massimo 300 globali (UTC). Impostare anche limiti di spesa presso il provider prima di un lancio pubblico esteso.
 
 Verifica: `npm run test:cards`, `npm run build`; `scripts/tests/sql/community.sql` verifica isolamento, quote e autorizzazione metriche in una transazione annullata. Il piano di business rimane da validare con dati reali: shop partner, pagamenti automatici, eventi, gestione autonoma e valutazione aziendale non sono già operativi.
+
+## Hook pre-commit
+
+Dopo il clone abilita il controllo che blocca il commit di file `.env*`:
+
+```sh
+./scripts/install-hooks.sh
+```
