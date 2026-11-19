@@ -1,4 +1,6 @@
-/* Gate di rotazione: mostrato quando il viewport è in verticale. */
+/* Gate di rotazione: due stati, mai insieme.
+   - avviso: 2 secondi, una volta per partita, dove il lock esiste;
+   - blocco: solo dove il lock non esiste (iOS Safari), con via d'uscita. */
 .rotate-gate {
   --u: calc(100dvh / 100);
   position: fixed;
@@ -7,33 +9,77 @@
   display: none;
   place-content: center;
   justify-items: center;
-  gap: calc(1.4 * var(--u));
-  background: #070a0e;
-  text-align: center;
   color: #f2ede3;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-align: center;
+  pointer-events: none;
 }
 
-.rotate-gate.is-visible {
+.rotate-gate.is-visible { display: grid; }
+
+.rotate-gate:not(.is-blocking) {
+  align-content: start;
+  padding-block-start: calc(8 * var(--u));
+}
+
+.rotate-gate__panel {
   display: grid;
+  justify-items: center;
+  gap: calc(1.2 * var(--u));
+  padding: calc(1.6 * var(--u)) calc(2.4 * var(--u));
+  border: thin solid rgb(255 212 121 / 32%);
+  border-radius: calc(1.2 * var(--u));
+  background: rgb(7 10 14 / 92%);
+  box-shadow: 0 calc(1 * var(--u)) calc(3 * var(--u)) rgb(0 0 0 / 45%);
+}
+
+.rotate-gate:not(.is-blocking) .rotate-gate__panel {
+  animation: rotate-gate-notice 2s ease forwards;
 }
 
 .rotate-gate__icon {
-  width: calc(10 * var(--u));
-  height: calc(16 * var(--u));
-  border: calc(0.4 * var(--u)) solid #ffd479;
-  border-radius: calc(1.2 * var(--u));
-  animation: rotate-gate-tilt 2.4s ease-in-out infinite;
+  inline-size: calc(6 * var(--u));
+  block-size: calc(9.6 * var(--u));
+  border: calc(0.35 * var(--u)) solid #ffd479;
+  border-radius: calc(0.9 * var(--u));
+  animation: rotate-gate-tilt 2s ease-in-out 2;
 }
 
-.rotate-gate__text {
-  margin: 0;
-  font-size: calc(2 * var(--u));
+.rotate-gate__text { margin: 0; font-size: calc(1.9 * var(--u)); }
+.rotate-gate__hint { display: none; margin: 0; font-size: calc(1.5 * var(--u)); color: rgb(242 237 227 / 68%); }
+
+.rotate-gate__exit {
+  display: none;
+  min-block-size: 44px;
+  padding-inline: calc(2 * var(--u));
+  border: thin solid rgb(255 255 255 / 28%);
+  border-radius: calc(0.8 * var(--u));
+  background: rgb(255 255 255 / 10%);
+  color: inherit;
+  font: inherit;
+  font-size: calc(1.6 * var(--u));
+  cursor: pointer;
 }
+
+/* Blocco: schermo pieno, si esce solo dal tavolo. */
+.rotate-gate.is-blocking { background: #070a0e; pointer-events: auto; }
+.rotate-gate.is-blocking .rotate-gate__panel { background: none; border: 0; box-shadow: none; animation: none; }
+.rotate-gate.is-blocking .rotate-gate__hint,
+.rotate-gate.is-blocking .rotate-gate__exit { display: block; }
 
 @keyframes rotate-gate-tilt {
   0%, 100% { transform: rotate(0deg); }
   50% { transform: rotate(90deg); }
+}
+
+@keyframes rotate-gate-notice {
+  0%, 76% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* Mouse: nessun gate, il tavolo è un riquadro orizzontale. */
+@media (pointer: fine) {
+  .rotate-gate { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {

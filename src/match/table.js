@@ -11,6 +11,7 @@
 
 import './table.css';
 import './rotate-gate.css';
+import './arena.css';
 import { exitImmersive } from './immersive.js';
 
 /* ───────────────────────────── markup ───────────────────────────── */
@@ -18,7 +19,6 @@ import { exitImmersive } from './immersive.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[ch]));
-
 const statLine = card => (card.power && card.toughness ? `${card.power}/${card.toughness}` : '');
 const counterLabel = card => (card.counters > 0 ? `+${card.counters}` : '');
 
@@ -81,7 +81,7 @@ function menuHtml(open) {
 
 /* ───────────────────────────── viste ────────────────────────────── */
 
-const ACTIONS = '[data-menu-toggle],[data-menu-close],[data-menu-exit],[data-menu-abandon],[data-opponent]';
+const ACTIONS = '[data-menu-toggle],[data-menu-close],[data-menu-exit],[data-menu-abandon],[data-opponent],[data-arena-exit]';
 
 /** Lo stesso ordine di `idOf` in magicPlay.js: `instanceId` prima di `uid`. */
 const cardId = card => String(card?.instanceId ?? card?.uid ?? card?.id ?? '');
@@ -133,7 +133,31 @@ export function showMatchTable(host, options = {}) {
     disposed: false,
   };
 
-  host.innerHTML = '<div class="mt-table"><div class="mt-stage"><div data-slot="board"></div><div data-slot="menu"></div></div></div><div class="rotate-gate" data-rotate-gate role="status" aria-live="polite"><div class="rotate-gate__icon" aria-hidden="true"></div><p class="rotate-gate__text">La partita si gioca in orizzontale.</p></div>';
+  // Ambiente separato, come la sessione D&D: la pagina sotto il tavolo non
+  // scorre e la shell dell'app si spegne via CSS (body.magic-arena-active).
+  const pageOverflow = {
+    html: document.documentElement.style.overflow,
+    body: document.body.style.overflow,
+  };
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+  document.body.classList.add('magic-arena-active');
+
+  host.innerHTML = `<div class="mt-table">
+    <header class="mt-arena-bar">
+      <span class="mt-arena-bar__tag">TAVOLO · MAGIC</span>
+      <button type="button" class="mt-arena-bar__exit" data-arena-exit>ESCI</button>
+    </header>
+    <div class="mt-stage"><div data-slot="board"></div><div data-slot="menu"></div></div>
+  </div>
+  <div class="rotate-gate" data-rotate-gate role="status" aria-live="polite">
+    <div class="rotate-gate__panel">
+      <div class="rotate-gate__icon" aria-hidden="true"></div>
+      <p class="rotate-gate__text">La partita si gioca in orizzontale.</p>
+      <p class="rotate-gate__hint">Ruota il dispositivo per continuare.</p>
+      <button type="button" class="rotate-gate__exit" data-gate-exit>Esci dal tavolo</button>
+    </div>
+  </div>`;
   const root = host.firstElementChild;
   const stage = root.querySelector('.mt-stage');
   const slots = {
@@ -147,14 +171,35 @@ export function showMatchTable(host, options = {}) {
   // (es. ridimensionamento programmatico o schermo che non emette orientationchange),
   // quindi si rivaluta anche su resize e orientationchange.
   const PORTRAIT_QUERY = '(orientation: portrait)';
+  // Tre casi, tre comportamenti:
+  // - mouse: nessun gate, il tavolo resta un riquadro 16:9 (vedi arena.css);
+  // - touch con screen.orientation.lock: avviso di 2 secondi, una volta per partita;
+  // - touch senza lock (iOS Safari): gate pieno, perché la rotazione non si può
+  //   imporre e in verticale il campo resterebbe illeggibile.
+  const coarsePointer = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(pointer: coarse)').matches;
+  const canLockOrientation = typeof screen !== 'undefined'
+    && Boolean(screen.orientation)
+    && typeof screen.orientation.lock === 'function';
+  let noticeConsumed = false;
   let portraitMql = null;
   let onOrientationChange = null;
   let onResize = null;
   const applyRotation = (portrait) => {
-    const needs = Boolean(portrait);
-    if (slots.rotateGate) slots.rotateGate.classList.toggle('is-visible', needs);
-    if (stage) stage.inert = needs;
+    const vertical = Boolean(portrait);
+    const notice = vertical && coarsePointer && canLockOrientation && !noticeConsumed;
+    const blocking = vertical && coarsePointer && !canLockOrientation;
+    if (notice) noticeConsumed = true;
+    if (slots.rotateGate) {
+      slots.rotateGate.classList.toggle('is-visible', notice || blocking);
+      slots.rotateGate.classList.toggle('is-blocking', blocking);
+    }
+    if (stage) stage.inert = blocking;
   };
+  const gateExit = slots.rotateGate?.querySelector('[data-gate-exit]');
+  const onGateExit = () => options.onExit?.();
+  gateExit?.addEventListener('click', onGateExit);
   const recomputeRotation = () => {
     if (portraitMql) applyRotation(portraitMql.matches);
     else if (typeof window !== 'undefined') applyRotation(window.innerHeight > window.innerWidth);
@@ -171,13 +216,14 @@ export function showMatchTable(host, options = {}) {
     recomputeRotation();
   }
 
-  const activeOpponent = () =>
-    state.opponents.find(foe => foe.id === state.activeOpponentId) || state.opponents[0] || null;
-
+  const activeOpponent = () => state.opponents.find(foe => foe.id === state.activeOpponentId) || state.opponents[0] || null;
   const cardsHtml = (cards, side, zone) => (cards || []).map(card => {
     const view = toView(card, side, zone);
     state.views.set(view.id, view);
-    return tileHtml(view, side, zone, state.tileExtra ? state.tileExtra(card) : '');
+    // I comandi valgono solo per le carte proprie: sulle carte avversarie un
+    // pulsante Mana/Attacca sarebbe una richiesta che il motore rifiuta.
+    const extra = side === 'own' && state.tileExtra ? state.tileExtra(card) : '';
+    return tileHtml(view, side, zone, extra);
   }).join('');
 
   function renderBoard() {
@@ -211,6 +257,10 @@ export function showMatchTable(host, options = {}) {
   const onClick = event => {
     const action = event.target.closest(ACTIONS);
     if (action) {
+      if (action.matches('[data-arena-exit]')) {
+        options.onExit?.();
+        return;
+      }
       if (action.matches('[data-opponent]')) {
         state.activeOpponentId = action.dataset.opponent;
         render('board');
@@ -255,7 +305,6 @@ export function showMatchTable(host, options = {}) {
   const markKeyboard = event => {
     if (event.key === 'Tab') state.keyboardFocus = true;
   };
-
   // Il focus può stare fuori dal tavolo (i comandi vengono ridisegnati spesso),
   // quindi Escape si ascolta sul documento e vale solo a menu aperto.
   const onEscape = event => {
@@ -265,7 +314,6 @@ export function showMatchTable(host, options = {}) {
     render('menu');
     focusToggle();
   };
-
   root.addEventListener('click', onClick);
   root.addEventListener('keydown', markKeyboard);
   document.addEventListener('keydown', onEscape);
@@ -303,8 +351,12 @@ export function showMatchTable(host, options = {}) {
       root.removeEventListener('click', onClick);
       root.removeEventListener('keydown', markKeyboard);
       document.removeEventListener('keydown', onEscape);
+      gateExit?.removeEventListener('click', onGateExit);
       state.views.clear();
       host.innerHTML = '';
+      document.documentElement.style.overflow = pageOverflow.html;
+      document.body.style.overflow = pageOverflow.body;
+      document.body.classList.remove('magic-arena-active');
       exitImmersive();
     },
   };

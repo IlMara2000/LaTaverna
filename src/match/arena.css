@@ -1,0 +1,71 @@
+/* Ambiente separato del tavolo Magic: barra propria, shell dell'app spenta,
+   riquadro 16:9 quando il puntatore è un mouse. Le misure del campo restano in
+   table.css; qui c'è solo la cornice. */
+
+.mt-table { --mt-bar-h: calc(7 * var(--u)); }
+
+/* La barra prende la prima fascia del tavolo: il campo inizia sotto. */
+.mt-stage { inset-block-start: var(--mt-bar-h); }
+.mt-menu__toggle { inset-block-start: calc(var(--mt-bar-h) + 1.2 * var(--u)); }
+
+.mt-arena-bar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  box-sizing: border-box;
+  block-size: var(--mt-bar-h);
+  z-index: 1150;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(1 * var(--u));
+  padding-inline: calc(1.6 * var(--u));
+  border-block-end: thin solid rgb(255 255 255 / 12%);
+  background: rgb(8 12 16 / 88%);
+}
+
+.mt-arena-bar__tag {
+  font-size: calc(1.4 * var(--u));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(255 214 130 / 85%);
+}
+
+.mt-arena-bar__exit {
+  min-block-size: 44px;
+  padding-inline: calc(1.4 * var(--u));
+  border: thin solid rgb(255 255 255 / 22%);
+  border-radius: calc(0.6 * var(--u));
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  font: inherit;
+  font-size: calc(1.4 * var(--u));
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+/* Fuori dal tavolo la shell non esiste: niente navbar, niente home, niente
+   scroll della pagina sotto (lo blocca table.js). */
+body.magic-arena-active { --menu-bottom-gap: 0px; overscroll-behavior: none; }
+body.magic-arena-active #ui #navbar-trigger,
+body.magic-arena-active #ui #nav-home-btn,
+body.magic-arena-active #ui #sidebar-menu { display: none !important; }
+body.magic-arena-active #ui #app { padding: 0 !important; overflow: hidden !important; }
+
+/* Mouse: il tavolo è un riquadro 16:9 centrato, il resto è platea. */
+@media (pointer: fine) {
+  .mt-table {
+    --u: calc(min(100dvh, 56.25vw) / 100);
+    inset: 0;
+    inline-size: calc(177.78 * var(--u));
+    block-size: calc(100 * var(--u));
+    margin: auto;
+    border: thin solid rgb(255 255 255 / 10%);
+    border-radius: calc(1 * var(--u));
+    box-shadow: 0 0 0 100vmax #05080b;
+  }
+  .mt-menu__toggle,
+  .mt-menu__scrim,
+  .mt-menu__drawer { position: absolute; }
+  .mt-menu__toggle { inset-block-start: calc(1.2 * var(--u)); }
+}
