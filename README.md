@@ -175,7 +175,7 @@ Verifica: `npm run test:cards`, `npm run build`; `scripts/tests/sql/community.sq
 
 ## Hook pre-commit
 
-Dopo il clone abilita il controllo che blocca il commit di file `.env*`:
+Dopo il clone abilita il controllo che blocca il commit di file di credenziali (`.env*`, `*.pem`, `*.key`, `*.p12`, `id_rsa`, `secrets`/`credentials`):
 
 ```sh
 ./scripts/install-hooks.sh
