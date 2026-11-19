@@ -1,0 +1,73 @@
+Lobby d'avvio di /magic/partita come diff git applicabile.
+
+Applicare con:  git apply --check patches/magic-lobby.patch && git apply patches/magic-lobby.patch
+
+Il corpo di lobbyMarkup() non viene toccato: il diff aggiunge quickLobbyMarkup()
+(che riusa gli stessi hook: data-start-bot, #play-deck, data-confirm-deck,
+data-create, #play-join, #play-code, data-copy, data-leave, data-start) e la
+chiama dal render(). La vecchia lobbyMarkup() resta inutilizzata per una
+potatura separata.
+
+diff --git a/src/dashboards/magicPlay.js b/src/dashboards/magicPlay.js
+--- a/src/dashboards/magicPlay.js
++++ b/src/dashboards/magicPlay.js
+@@ -703,5 +703,5 @@
+     async function startBotMatch() {
+         if (busy) return;
+-        const deck = decks.find(item => item.id === chosenDeck);
++        const deck = decks.find(item => item.id === chosenDeck) || decks[0];
+         if (!deck) { setNotice('Scegli un mazzo dalla sezione Mazzi.'); return; }
+         const check = deckCheck(deck);
+@@ -1014,5 +1014,48 @@
+     }
+ 
++    // Lobby d'avvio: una card sola, il mazzo in riga e gli amici dietro un
++    // <details>. La vecchia lobbyMarkup() resta più sotto, inutilizzata, fino
++    // alla prossima potatura: questo patch non la tocca.
++    function quickLobbyMarkup() {
++        const order = participants();
++        const ready = loadouts();
++        const deck = decks.find(item => item.id === chosenDeck) || decks[0] || null;
++        const check = deck ? deckCheck(deck) : { valid: false, total: 0, errors: ['Nessun mazzo selezionato.'] };
++        const allReady = order.length >= 2 && order.every(id => ready[id]?.cards?.length);
++        const deckOptions = decks.map(item => {
++            const itemCheck = deckCheck(item);
++            return `<option value="${esc(item.id)}" ${item.id === deck?.id ? 'selected' : ''}>${esc(item.name)} · ${itemCheck.total}${itemCheck.valid ? '' : ' · non legale'}</option>`;
++        }).join('') || '<option value="">Crea un mazzo dalla sezione Mazzi</option>';
++        return `
++        <section class="mp-panel mp-start-hero">
++            <span class="mp-overline">PARTITA IN SOLITARIA</span>
++            <h2>${deck ? esc(deck.name) : 'Nessun mazzo'}</h2>
++            <p>${check.valid ? 'Mazzo pronto: si parte con un tocco.' : esc(check.errors[0])}</p>
++            <button type="button" class="mp-button mp-start" data-start-bot ${!check.valid || busy ? 'disabled' : ''}>GIOCA ORA</button>
++        </section>
++        <section class="mp-panel">
++            <label class="mp-deck-pick">Mazzo<select id="play-deck">${deckOptions}</select></label>
++            <button type="button" class="mp-button mp-soft" data-confirm-deck ${!check.valid || !room?.code || busy ? 'disabled' : ''}>Usa questo mazzo al tavolo</button>
++            <p class="${check.valid ? 'mp-ok' : 'mp-error'}">${check.valid ? `✓ ${check.total} carte, massimo ${MATCH_RULES.maxCopies} copie per carta.` : check.errors.map(esc).join(' · ')}</p>
++        </section>
++        <details class="mp-panel mp-friends" ${room?.code ? 'open' : ''}>
++            <summary>Giocare con gli amici</summary>
++            ${room?.code ? `
++                <p>Passa il codice: ogni giocatore conferma il proprio mazzo, l’oste avvia.</p>
++                <div class="mp-row"><code class="mp-code">${esc(room.code)}</code><button type="button" class="mp-small" data-copy>Copia codice</button><button type="button" class="mp-small" data-leave>Lascia</button></div>
++                <ul class="mp-roster">${order.map(id => `<li><strong>${esc(label(id))}</strong> <span>${ready[id]?.cards?.length ? '· pronto' : '· mazzo non confermato'}</span></li>`).join('')}</ul>
++                ${room.hostClientId === clientId
++                    ? `<button type="button" class="mp-button mp-start" data-start ${!allReady || busy ? 'disabled' : ''}>AVVIA MATCH</button>`
++                    : '<p class="mp-note">Appena tutti confermano, l’oste avvia la partita.</p>'}
++            ` : `
++                <div class="mp-connect">
++                    <button type="button" class="mp-button" data-create>Crea un tavolo</button>
++                    <form id="play-join"><label>Codice<input id="play-code" maxlength="6" minlength="6" required autocomplete="off" placeholder="ABC234" autocapitalize="characters"></label><button class="mp-button mp-soft" type="submit">Entra</button></form>
++                </div>
++            `}
++        </details>`;
++    }
++
+     // Carta in grande: si apre toccando la grafica e si chiude con un tocco fuori,
+     // con la × o con Esc. Non ridisegna il tavolo, così la partita resta ferma.
+     let zoomOverlay = null;
+@@ -1128,2 +1171,2 @@
+             <p id="play-notice" class="mp-notice" role="status" aria-live="polite">${esc(notice)}</p>
+-            ${current ? tableMarkup() : lobbyMarkup()}
++            ${current ? tableMarkup() : quickLobbyMarkup()}
