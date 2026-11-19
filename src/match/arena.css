@@ -1,6 +1,5 @@
-/* Ambiente separato del tavolo Magic: barra propria, shell dell'app spenta,
-   riquadro 16:9 quando il puntatore è un mouse. Le misure del campo restano in
-   table.css; qui c'è solo la cornice. */
+/* Cornice del tavolo Magic + schermata d'avvio di /magic/partita.
+   Le misure del campo restano in table.css; qui c'è la shell e la lobby. */
 
 /* 7u è il 7% dell'altezza: su un telefono in orizzontale sarebbero 28px, troppi
    pochi per il target da 44px del pulsante, quindi c'è un minimo in pixel. */
@@ -76,3 +75,82 @@ body.magic-arena-active #ui #app { padding: 0 !important; overflow: hidden !impo
   .mt-menu__drawer { position: absolute; }
   .mt-menu__toggle { inset-block-start: calc(1.2 * var(--u)); }
 }
+
+/* ═══════════ avvio partita: gerarchia della lobby ═══════════
+   Il markup è quello di lobbyMarkup(): qui si cambia solo l'ordine e il peso.
+   Un invito grande, il mazzo come riga di impostazione, gli amici in secondo
+   piano. I selettori :has() coprono sia il markup vecchio sia quello nuovo. */
+
+.magic-play { max-inline-size: 1040px; margin-inline: auto; }
+.magic-play > .mp-topbar { order: -6; }
+.magic-play > .mp-heading { order: -5; }
+.magic-play > #play-notice { order: -4; }
+.magic-play > .legal-inline-note { order: 2; }
+
+.magic-play > .mp-panel:is(:has([data-start-bot]), .mp-start-hero) { order: -3; }
+.magic-play > .mp-panel:has(#play-deck) { order: -2; }
+.magic-play > .mp-panel:is(:has(#play-join), .mp-friends) { order: -1; }
+.magic-play > .mp-panel:has(.mp-roster) { order: 1; }
+
+/* Card d'avvio: un solo gesto per giocare. */
+.magic-play > .mp-panel:is(:has([data-start-bot]), .mp-start-hero) {
+    gap: 14px;
+    padding: 22px 20px 24px;
+    border-color: rgba(196, 164, 255, 0.42);
+    background:
+        radial-gradient(130% 150% at 50% 0%, rgba(139, 92, 246, 0.38), transparent 70%),
+        var(--mp-panel);
+}
+.magic-play > .mp-panel:is(:has([data-start-bot]), .mp-start-hero) h2 { font-size: 1.45rem; }
+.magic-play > .mp-panel:is(:has([data-start-bot]), .mp-start-hero) p { font-size: 0.88rem; }
+.magic-play > .mp-panel:is(:has([data-start-bot]), .mp-start-hero) [data-start-bot] {
+    min-height: 58px;
+    font-size: 1.02rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #8b5cf6, #4c1d95);
+    box-shadow: 0 12px 34px rgba(76, 29, 149, 0.45);
+}
+
+/* Il mazzo è un'impostazione, non un pannello da leggere. */
+.magic-play > .mp-panel:has(#play-deck) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    padding: 14px 16px;
+}
+.magic-play > .mp-panel:has(#play-deck) > .mp-overline,
+.magic-play > .mp-panel:has(#play-deck) > h2 { display: none; }
+.magic-play > .mp-panel:has(#play-deck) .mp-deck-pick { flex: 1 1 240px; }
+.magic-play > .mp-panel:has(#play-deck) > p { flex: 1 1 100%; margin: 0; }
+
+/* Gli amici restano raggiungibili, ma non occupano la scena. */
+.magic-play > .mp-friends {
+    gap: 12px;
+    padding: 14px 16px;
+}
+.magic-play > .mp-friends > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-block-size: 44px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--mp-text);
+    cursor: pointer;
+    list-style: none;
+}
+.magic-play > .mp-friends > summary::-webkit-details-marker { display: none; }
+.magic-play > .mp-friends > summary::after {
+    content: '+';
+    font-size: 1.2rem;
+    color: var(--mp-accent);
+}
+.magic-play > .mp-friends[open] > summary::after { content: '−'; }
+.magic-play > .mp-friends .mp-connect { align-items: center; }
+
+/* Meno istruzioni, più gioco: il paragrafo sotto il titolo sparisce. */
+.magic-play .mp-heading p { display: none; }
+.magic-play .mp-heading h1 { font-size: clamp(1.4rem, 3vw, 2rem); }
