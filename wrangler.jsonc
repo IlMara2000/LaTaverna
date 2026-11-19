@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "lataverna",
+  "main": "worker/index.js",
+  // Il 2026-08-04 attiva nodejs_compat (Buffer, node:crypto) e popola
+  // process.env con vars e secret: gli handler di api/ leggono process.env come
+  // su Vercel.
+  "compatibility_date": "2026-11-19",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Senza questo, Cloudflare reindirizza /index.html su / (307) e il
+    // fallback SPA di worker/index.js risponderebbe con un redirect invece
+    // dell'HTML: le rotte come /scippo o /privacy si romperebbero.
+    "html_handling": "none"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // Guardia "in produzione" di api/_lib/ipBudget.js: se manca la service role
+    // key il budget AI deve fallire chiuso, non essere saltato.
+    "NODE_ENV": "production"
+  }
+  // Le variabili del server (FREELLMAPI_*, SUPABASE_*, BW_*, PRICE_REFRESH_*)
+  // sono secret: si impostano con `npx wrangler secret put NOME` e non stanno
+  // in questo file. Vedi AVVIO.md.
+}

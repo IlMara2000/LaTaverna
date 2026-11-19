@@ -11,6 +11,9 @@ public/manual-index/
 .vercel
 .env*
 
+# Cache locale di `wrangler dev` (Cloudflare)
+.wrangler/
+
 # Local browser-test and OCR caches (regenerated when needed)
 .playwright-cli/
 /*.traineddata

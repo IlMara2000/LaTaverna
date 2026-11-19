@@ -101,4 +101,41 @@ Per Vercel o hosting statico:
 
 Se usi Discord OAuth in produzione, aggiungi anche il dominio finale tra gli URL autorizzati in Supabase Auth e nella Discord Developer Console.
 
-Le function AI vivono in `/api/rpg/*` e `/api/oracle/*`: in produzione le esegue Vercel, in locale le serve il bridge condiviso (`scripts/local-api-plugin.js` con `npm run dev`, `scripts/serve-dist.mjs` con `npm run serve`), quindi si possono provare end-to-end anche senza `vercel dev`.
+Le function AI vivono in `/api/rpg/*` e `/api/oracle/*`: in produzione le esegue la piattaforma (Cloudflare Worker o Vercel), in locale le serve il bridge condiviso (`scripts/local-api-plugin.js` con `npm run dev`, `scripts/serve-dist.mjs` con `npm run serve`), quindi si possono provare end-to-end anche senza `vercel dev`.
+
+## 8. Deploy su Cloudflare
+
+La configurazione è in `wrangler.jsonc`: il Worker `worker/index.js` rimonta gli
+stessi handler di `api/` e riproduce redirect, rewrite SPA e header di
+`vercel.json`; gli asset di `dist/` vengono serviti da Cloudflare senza invocare
+il Worker, usando `public/_headers` per gli header di sicurezza.
+
+Serve un account Cloudflare con il dominio `lataverna.xyz` come zona attiva.
+
+```bash
+npx wrangler login
+npm run build
+npx wrangler deploy
+npx wrangler dev --port 8787   # anteprima locale su workerd
+```
+
+I secret del server si impostano una volta (non stanno in `wrangler.jsonc`):
+
+```bash
+npx wrangler secret put FREELLMAPI_API_KEY
+npx wrangler secret put FREELLMAPI_BASE_URL
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_ANON_KEY
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+npx wrangler secret put BW_SECRET
+npx wrangler secret put BW_PASSWORD
+```
+
+`VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` restano variabili di build: finiscono
+nel bundle del browser e vanno presenti in `.env` (o nell'ambiente di build) prima
+di `npm run build`, esattamente come su Vercel.
+
+Il dominio si collega da **Workers → lataverna → Settings → Domains & Routes**
+aggiungendo `lataverna.xyz` e `www.lataverna.xyz`; Cloudflare crea i record DNS
+da solo. Prima di quel passaggio il sito resta raggiungibile su
+`lataverna.<sottodominio>.workers.dev`.
