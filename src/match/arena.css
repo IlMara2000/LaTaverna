@@ -2,7 +2,9 @@
    riquadro 16:9 quando il puntatore è un mouse. Le misure del campo restano in
    table.css; qui c'è solo la cornice. */
 
-.mt-table { --mt-bar-h: calc(7 * var(--u)); }
+/* 7u è il 7% dell'altezza: su un telefono in orizzontale sarebbero 28px, troppi
+   pochi per il target da 44px del pulsante, quindi c'è un minimo in pixel. */
+.mt-table { --mt-bar-h: max(calc(7 * var(--u)), 56px); }
 
 /* La barra prende la prima fascia del tavolo: il campo inizia sotto. */
 .mt-stage { inset-block-start: var(--mt-bar-h); }
@@ -25,13 +27,18 @@
 }
 
 .mt-arena-bar__tag {
+  min-inline-size: 0;
+  overflow: hidden;
   font-size: calc(1.4 * var(--u));
   letter-spacing: 0.18em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
   color: rgb(255 214 130 / 85%);
 }
 
 .mt-arena-bar__exit {
+  flex: 0 0 auto;
   min-block-size: 44px;
   padding-inline: calc(1.4 * var(--u));
   border: thin solid rgb(255 255 255 / 22%);
