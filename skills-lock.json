@@ -1,240 +1,394 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "accessibility": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/accessibility/SKILL.md",
-      "computedHash": "e671c9f1bda721f4818ed62984d8471aab33263ed3fc8331c42d51f4b070e407"
+      "computedHash": "27e00a84ec716335fe622e40e8d53b6c3216b819af1fc1ef22030ed4cb570ecb"
     },
     "agent-reach": {
       "source": "panniantong/agent-reach",
       "sourceType": "github",
       "skillPath": "agent_reach/skill/SKILL.md",
-      "computedHash": "ee371b5d2404b213d9038b8078a22a395a6b8480e022a2a6c1dfa3d7e07e9a09",
+      "computedHash": "4c1b288855841a2cef957d1bd4a152407e906d0cfac92d9ebef99ff0c97b9633",
       "installMode": "copy"
+    },
+    "agents-sdk": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/agents-sdk/SKILL.md",
+      "computedHash": "7522d2aa3b6b850e3778af08ba3f0d70d1dc9b8c2c5da47e7f2e3f5944e4d691"
     },
     "api-security-testing": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/api-security-testing/SKILL.md",
-      "computedHash": "4baa317508f5e01e72a0c292d3c9ea6a71249cfa3414971e97aa6e0fabae25f5",
+      "computedHash": "32f365479f3446fff784b2ccc48b5115cd06e27be980de90824638779d78c48b",
       "installMode": "copy"
     },
     "application-security-testing": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/application-security-testing/SKILL.md",
-      "computedHash": "5963d33bb6f5cfb0ce2657daa20090c922f68c309aa5906b9c80d1761fb33e05",
+      "computedHash": "28c343b8c5cf3dd8daf7dda199d387761132b80f47648eb8aeb08502e158c446",
       "installMode": "copy"
+    },
+    "basin": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/basin/SKILL.md",
+      "computedHash": "e15ef1a6c17821973c9303d11e7b73f286d19ca3a19b89118c40b7d870a2d155"
     },
     "browser-qa": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/browser-qa/SKILL.md",
-      "computedHash": "fd4afd04fe4ddc84f9d0254c495e1e42a5ef6d5791e1e7f2930408b31da839ba"
+      "computedHash": "0ffdd602211e9158a425de6e8a2cb79f8e66112fd43a86a2b282ebebcc03eafa"
+    },
+    "cf-cli": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/cf-cli/SKILL.md",
+      "computedHash": "2e05ef054a100c652513e6028ed478b16f7db01a4b397544bd20ced39a4591e9"
     },
     "ci-security-scanning-with-strix": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/ci-security-scanning-with-strix/SKILL.md",
-      "computedHash": "cc83f0220a742c563b0728bbbfcdf547463a1ae8e60b8ed4e68d487072fe70cf",
+      "computedHash": "13949ab1e24f8cac87a11b221e55e52e6bfcf712ccd9eaeefeae4e3608c70d44",
       "installMode": "copy"
     },
     "click-path-audit": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/click-path-audit/SKILL.md",
-      "computedHash": "5a3e02c991de328feb1f5e614697deb30a3965169d19a68b90036cedeffabaaa"
+      "computedHash": "5ca32a22b2bf9432f23fce66693d48f99a1bcb264c69aecb5a86b85c3c3e0083"
+    },
+    "cloudflare": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/cloudflare/SKILL.md",
+      "computedHash": "a40c5c77e4b96b0f6603a54e67bf2ff401a872366af48ff8f6ae0e872d4ad324"
+    },
+    "cloudflare-app-bootstrap": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/cloudflare-app-bootstrap/SKILL.md",
+      "computedHash": "3979e94a82db1c3754f822995e3c2e6624ae4593c296f10eab31ce1e654133e5"
+    },
+    "cloudflare-email-service": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/cloudflare-email-service/SKILL.md",
+      "computedHash": "7c3d2a100a0cf9ff344c915ed32a8e335d3157db6943b130db104b6411f496bd"
+    },
+    "cloudflare-one": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/cloudflare-one/SKILL.md",
+      "computedHash": "198e43c174b287819638e8d011494055d7d77c69fbf8b275b3a99c641c7bf949"
+    },
+    "cloudflare-one-migrations": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/cloudflare-one-migrations/SKILL.md",
+      "computedHash": "c2aeb7b8e10211f5a9c9ed0f30af31efbde19200053a0b2f9e65e3695f19078a"
     },
     "design-system": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/design-system/SKILL.md",
-      "computedHash": "2aeb537315bb54bbdc155aa369be3febe65b2d1bcccec0caa905971d33e78126"
+      "computedHash": "2913be4d68c05d341ee7e07cc4ea7539004c6885a8e19dd2e2f23c40636868bd"
+    },
+    "durable-objects": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/durable-objects/SKILL.md",
+      "computedHash": "659669f02a6e1b37020b799be0f71e3fecc7b5111f3f406d9f844a0a21994113"
     },
     "figma": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/figma/SKILL.md",
-      "computedHash": "c7593153c627ecb96d93c65d6908475cc3f7faefc398c0b9176b15063e917e2e"
+      "computedHash": "fb444340d6c24d10ed36d3b117cce8175adaff52c17aa198b9fc9b9274c0413d"
     },
     "find-security-vulnerabilities-in-code": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/find-security-vulnerabilities-in-code/SKILL.md",
-      "computedHash": "551afea3693d77172cc83278bd6185cfb232be75e5c683506fd00b9630691272",
+      "computedHash": "d9ea567e93b8add3991b0c43c1b9f3ea604c6c53e0f88ef4bcec3be9e616efac",
       "installMode": "copy"
     },
     "fix-security-vulnerabilities-with-strix": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/fix-security-vulnerabilities-with-strix/SKILL.md",
-      "computedHash": "f5fcf1365bbaa650b246c9a0e6338db2e40ecc46fba60ff64fd2f6311eed901c",
+      "computedHash": "7febe815c271b39c688d583efef9a4f9674eaed063264f7218c7c67aacbd7abe",
       "installMode": "copy"
+    },
+    "frameworks-on-cloudflare": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/frameworks-on-cloudflare/SKILL.md",
+      "computedHash": "2e327d257090fa5e9202c9cb3ac20eae51fa6f069d3a4b1c56a7e3a5d4dfc5bb"
     },
     "frontend-a11y": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/frontend-a11y/SKILL.md",
-      "computedHash": "da9365797c4e5668a8384e271f0398e8241f66c9c18389af11f87890a49c630f"
+      "computedHash": "a75b4ef44b6b14f0eef8e48238f6e8e15c44cf3d329bf517e6bbc471de74efd2"
     },
     "frontend-patterns": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/frontend-patterns/SKILL.md",
-      "computedHash": "cda7d74619e78bc6c58e7f7f4fa7a9d831ec71ae4629550e4d7b53876692e4d3"
+      "computedHash": "3c9ff06bd5ac5684fcaa83376dd544a116685c67e8bf6694d4fb1772488c161c"
+    },
+    "gateway-workers": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/gateway-workers/SKILL.md",
+      "computedHash": "bcbf091d931668274961a349c64c38f63aaf0f1fedc93fb61a9c0b8e15ee2160"
     },
     "graphify": {
       "source": "Graphify-Labs/graphify",
       "sourceType": "github",
       "skillPath": "graphify/SKILL.md",
-      "computedHash": "7144409cb5301874c1b3ab0df88c870e0172d4511dea840f667a3d74526edcc1",
+      "computedHash": "606f5a3979287cba97592febfe7a1f21a1815793759fe1f11f7dcfc6e3f231c8",
       "installMode": "copy"
     },
     "hyperframes": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/hyperframes/SKILL.md",
-      "computedHash": "f7e660666874ecb3ed553e871529cc2c5c1ce5386c254d5598bbc51286cc6018"
+      "computedHash": "10ae44007137667234be3087898749f11837aca6c4d101b7d8f1058004738b61"
     },
     "hyperframes-cli": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/hyperframes-cli/SKILL.md",
-      "computedHash": "db0619bebc1ed7f4d9f4d00219add41a04464fde2ad4a7d3eaf8528e98568c49"
+      "computedHash": "aaa5d2827250450a55265634a5e41d30a0ee90b2628648b01f2ae2a0fc43cc7c"
     },
     "hyperframes-registry": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/hyperframes-registry/SKILL.md",
-      "computedHash": "bbbb2bcb11fb43c9dd7e7f927a5617affee0458864fe4b3582e644d70aa1e10f"
+      "computedHash": "6ac664d7d7f2ffdf299136cffb1a9bbebe21fd2b9afa8e6f44cf0c7a2d3df3b6"
     },
     "interactivity-best-practices": {
       "source": "remotion-dev/remotion",
       "sourceType": "github",
       "skillPath": ".agents/skills/interactivity-best-practices/SKILL.md",
-      "computedHash": "5d2a777af0938b2109d3b4e92af4c7321595408993c840862ef53b26f34d5ce5"
+      "computedHash": "b7b219d793d2ec8736728c0c5039f4f9f3e190b3f2ae9e27bbe73a4503ea1b28"
+    },
+    "k2": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/k2/SKILL.md",
+      "computedHash": "5f9ec8da56b52c3b61afca9910ee2f933945a7246a8d26175451d056b92be999"
     },
     "landing-page-design": {
       "source": "101-skills/superpowers",
       "sourceType": "github",
       "skillPath": "guides/design/landing-page-design/SKILL.md",
-      "computedHash": "435af3919183e91ded83197f9238740593cac886f45067dc729d8a7095fbfb5a",
+      "computedHash": "6ba6cfcbdba9840d9519b03b11197bd93cc62912853d7552e7ca5f41f72ba158",
       "installMode": "copy"
     },
     "make-interfaces-feel-better": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/make-interfaces-feel-better/SKILL.md",
-      "computedHash": "bd14931fa4a2739cc81633027dfc829d10034c81a6d63ebd4baa39512df28cfb"
+      "computedHash": "b826e2d3d748554ea314940a39f07eb4cf252ea9eaf03cbd241379d7a9719a2c"
     },
     "managed-pentesting-with-strix": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/managed-pentesting-with-strix/SKILL.md",
-      "computedHash": "2e429eaafeb1471a01718b094b215bfff34605ffb5fc090ea665d9fcfc96d8ff",
+      "computedHash": "20ff130aa03e3a497d822dff9694252c2c8986648d8747e6e0b67669f3c529a1",
       "installMode": "copy"
     },
     "media-use": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/media-use/SKILL.md",
-      "computedHash": "794cdc0b54bfd58734249faa09385afd76024391273b0eb5e6f591d89e261591"
+      "computedHash": "a5e42b3a5cf6f0a94487987e4159976beb43a63c3742831a02a0ec60580fd2c8"
     },
     "motion-advanced": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/motion-advanced/SKILL.md",
-      "computedHash": "38502b809de1d53e5c47ae65eafb7a70a6624ed25d578c403ca858c6fa25eb90"
+      "computedHash": "20ea5771211756ca1fb705ac102dd59b90734feae8a9f0a3b103f48b752524d7"
     },
     "motion-foundations": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/motion-foundations/SKILL.md",
-      "computedHash": "f76298f3fcc5f20001c8e78cfa36384469c5a583cb25e8ce60a76d3912608d99"
+      "computedHash": "2584c98dd4baae120b50201b1716203a55aed181dce82773b6568a13c6290b23"
     },
     "motion-patterns": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/motion-patterns/SKILL.md",
-      "computedHash": "71d7279a0651e6cb95a0fe804c77cb7bfa88befba1cbd1c60c05d23feada4dcc"
+      "computedHash": "7503959000ad77bd65a4865e5523ae38c29261285c67c16c6c5cb18534ded794"
+    },
+    "nextjs-on-cloudflare": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/nextjs-on-cloudflare/SKILL.md",
+      "computedHash": "5da56bb44703eb542ee923ddf428a4c12c3d97cbeb50bd34b9d8aa3b68d33836"
     },
     "owasp-top-10-testing": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/owasp-top-10-testing/SKILL.md",
-      "computedHash": "da33339f2d052ea5445b9fb7fc75e3fe4dd9eafc51ea8141e2b3ceab722fbe0e",
+      "computedHash": "dc3518dd62ce6b048dad7a969adfe88ea8e4d8bb8fd9c8a1627b443c8a508996",
       "installMode": "copy"
     },
     "penetration-testing-with-strix": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/penetration-testing-with-strix/SKILL.md",
-      "computedHash": "558f4693ddd1f1c3e0fc709465fa65ded2888811f638e74f839e3e72b6a6955c",
+      "computedHash": "54ba2e5fabb69e319421fdf6c8bdbd43650b66d0ed592b920f57e60e25d9e809",
       "installMode": "copy"
     },
     "production-audit": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/production-audit/SKILL.md",
-      "computedHash": "3c38cf12fdb504f6ce53fa9d33f4f0fff1aee3df8e96fbb4fdb76831b5fd51ce"
+      "computedHash": "3c6c32f825a6ac78bafda43d6341b6a34016561ffcce7f00ca690fb4d1312125"
     },
     "remotion-to-hyperframes": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/remotion-to-hyperframes/SKILL.md",
-      "computedHash": "5651c249d1567f51c24ad5ed98729be4050ec0609e57e7a6a79606614082935e"
+      "computedHash": "60d049626b6aef79f650f72d941e6eab7487d8f34bf734a1b92f2b2a6c34b310"
     },
     "remotion-video-creation": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/remotion-video-creation/SKILL.md",
-      "computedHash": "4e1f3b97ef17ac526f790dace13f2a6c9f66958e808039d62e7adb3261bff7bf"
+      "computedHash": "a8b55456e0cf95c0edf3c97a5e9d4ea2e5899603dd1bbcb7623db6344b107c66"
     },
     "reverse-any-video": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/reverse-any-video/SKILL.md",
-      "computedHash": "20640f0428d267430069e5e46f8f25e31387a41947756dc85405b4e8c73eb1c1"
+      "computedHash": "32b3f35c19f37fc03fd7bad223251e24cfbc5f863ba4b372d11dd7fa37b02d47"
+    },
+    "sandbox-migrate-to-next": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/sandbox-migrate-to-next/SKILL.md",
+      "computedHash": "71226ddb3d44dfdfbdf3f28dade7f2985c56ac8949a0b09b927dcabfa6b522e1"
+    },
+    "sandbox-next": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/sandbox-next/SKILL.md",
+      "computedHash": "5deb37772ea34abe2a59e7dfffcbc48822a9ab7bd8d34723e8e29c8e83921ea5"
+    },
+    "sandbox-stable": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/sandbox-stable/SKILL.md",
+      "computedHash": "71fcd72f9a9834eb2f6db7920a2e527624c6cc5afa87d6d773c5adb9cf3f86bd"
     },
     "security-review": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/security-review/SKILL.md",
-      "computedHash": "90f2b514aa106496fd0911d2a0e0ef5aac28515ce218a82574984ad7d9d6b4d2"
+      "computedHash": "2f509e757d51e10acb45a7a707767f1d1a26f7b8f63477b83080aa7217b04283"
     },
     "slideshow": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/slideshow/SKILL.md",
-      "computedHash": "14d0bf700a7bcb264b60e7c8b786f8883d75d038c2ce93e7fc29ccddd7002744"
+      "computedHash": "9e0fe437b47e9edf4f1c6c9aa48b5c1d7c3a1b896d9a83a11934c7aa8e76d345"
     },
     "style-sampling": {
       "source": "heygen-com/hyperframes",
       "sourceType": "github",
       "skillPath": "skills/style-sampling/SKILL.md",
-      "computedHash": "d90f8dfcaad7ef8c4cdeb31374e676f36fe49ff4b36eb8408d03539cbb0de5fa"
+      "computedHash": "255139cd6438d59bc0e4bc5672d00fd22e5eca75737931f11f69834f181182f2"
+    },
+    "turnstile-spin": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/turnstile-spin/SKILL.md",
+      "computedHash": "2ec8b83caaba227444d0247df7b119a1beebff034472e1aebb511b28659d5adb"
     },
     "video-editing": {
       "source": "affaan-m/ECC",
       "sourceType": "github",
       "skillPath": "skills/video-editing/SKILL.md",
-      "computedHash": "021c5b9207697949a1a40c936617793e3db0cb03904f3c3388e153337c290da1"
+      "computedHash": "b1a66c7e9337e7030cfef7c5a8b2a519123e63c8fef710105118eab89641e505"
     },
     "watch": {
       "source": "bradautomates/claude-video",
       "sourceType": "github",
       "skillPath": "skills/watch/SKILL.md",
-      "computedHash": "cbdb39fea0f90a361e72307a189dab8b1c0bbd7cc2225bb33784ac882b32953c",
+      "computedHash": "26c7f5055f38651b6da2649506ad34f3d98ade4b540e417acb74efbf3258bf72",
       "installMode": "copy"
     },
     "web-app-penetration-testing": {
       "source": "usestrix/strix",
       "sourceType": "github",
       "skillPath": "skills/web-app-penetration-testing/SKILL.md",
-      "computedHash": "734aaa972fd526b3962ff3ff29ef701c2eae6191f27c8dc479f9c37f9445de69",
+      "computedHash": "12d42989bda70f680c0c7b60aa8882f635d59aa7bc24e76eb78cbdf63085cba7",
       "installMode": "copy"
+    },
+    "web-perf": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/web-perf/SKILL.md",
+      "computedHash": "2716bf9bfafe4d8407b55c5213a143aea248686c4af92f8b43fc35327eaae41d"
+    },
+    "workers-best-practices": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/workers-best-practices/SKILL.md",
+      "computedHash": "7f941bbc549454872a4c7c261bf75a1ef7aaa69666bc85cec91e97cf40c11cc6"
+    },
+    "workers-development": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/workers-development/SKILL.md",
+      "computedHash": "a5b7dd748116d8b83db7d198867badcdde53c9eb13bf884c7557d40d0c965e38"
+    },
+    "workers-profiling": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/workers-profiling/SKILL.md",
+      "computedHash": "3a7b8b1c2cfa19b293a8f55967dab217481cc04eb0dffe4b99e90df879529850"
+    },
+    "wrangler": {
+      "source": "cloudflare/skills",
+      "commit": "5108325ecceabc899c761e07aa617b09c02445ee",
+      "sourceType": "github",
+      "skillPath": "skills/wrangler/SKILL.md",
+      "computedHash": "182e370d8c26e6bcb896a57a63e6cab006b253b9278cc3515f7b9db2c4d07661"
     }
   }
 }
