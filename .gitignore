@@ -14,6 +14,9 @@ public/manual-index/
 # Cache locale di `wrangler dev` (Cloudflare)
 .wrangler/
 
+# Backup locali di database e storage: contengono dati personali, mai nel repo
+backups/
+
 # Local browser-test and OCR caches (regenerated when needed)
 .playwright-cli/
 /*.traineddata

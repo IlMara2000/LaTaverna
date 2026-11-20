@@ -2,6 +2,9 @@
 // header) e rimonta gli stessi handler di api/, che restano l'unica copia della
 // logica. In locale gli handler sono serviti da scripts/local-api-bridge.js.
 import { API_ROUTES } from '../scripts/local-api-bridge.js';
+// Fonte unica delle rotte client: vercel.json ne elencava solo una parte, e
+// /carte, /giochi-di-ruolo, /shop, /library e /magic erano 404 anche prima.
+import { PUBLIC_ROUTES } from '../src/services/publicRoutes.js';
 
 // Le server function di Vercel erano una per file sotto api/: qui la tabella
 // delle rotte è esplicita, così un endpoint non pubblicato non diventa pubblico.
@@ -14,14 +17,13 @@ const ROUTES = {
     '/api/bw/stencil': () => import('../api/bw/stencil.js')
 };
 
-// Le rewrite verso /index.html della SPA, come in vercel.json. La radice è
-// esplicita perché il binding degli asset non risolve più / su index.html
-// (html_handling: "none" in wrangler.jsonc serve a non reindirizzare l'HTML).
-const SPA_EXACT = new Set([
-    '/', '/privacy', '/termini', '/cookie', '/community', '/segnala',
-    '/bottega', '/bottega/condizioni', '/minigames', '/scippo', '/multiplayer', '/mtcg'
-]);
-const SPA_PREFIXES = ['/bottega/', '/minigames/', '/scippo/', '/dnd/', '/oracolo/', '/gestione/', '/mtcg/'];
+// Rotte che devono servire l'HTML della SPA invece di un 404: quelle pubbliche
+// dell'app, la radice (il binding degli asset non risolve più / su index.html:
+// vedi html_handling in wrangler.jsonc) e l'alias storico /bottega.
+const SPA_ROUTES = new Set([...Object.values(PUBLIC_ROUTES), '/']);
+// I sottopercorsi di una sezione nota (/dnd/<sessione>, /scippo/<condivisione>)
+// servono anch'essi la SPA, come faceva `/x/:path*` su Vercel.
+const SPA_SECTIONS = new Set([...SPA_ROUTES, '/bottega'].map(route => `/${route.split('/')[1] || ''}`));
 
 // Alias storici dei brani: gli URL in pagina non cambiano.
 const AUDIO_ALIASES = {
@@ -53,8 +55,8 @@ const SECURITY_HEADERS = [
     ['Cross-Origin-Opener-Policy', 'same-origin']
 ];
 
-const isSpaRoute = pathname => SPA_EXACT.has(pathname)
-    || SPA_PREFIXES.some(prefix => pathname.startsWith(prefix));
+const isSpaRoute = pathname => SPA_ROUTES.has(pathname)
+    || SPA_SECTIONS.has(`/${pathname.split('/')[1] || ''}`);
 
 const withSecurityHeaders = response => {
     const headers = new Headers(response.headers);

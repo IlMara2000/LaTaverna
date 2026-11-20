@@ -13,12 +13,14 @@
     "test:oracle": "node --test scripts/tests/oracle-markdown.test.mjs",
     "test:scippo": "node --test scripts/tests/scippo.test.mjs",
     "test:view": "node --test scripts/tests/scippo-view.test.mjs scripts/tests/minigames-view.test.mjs",
+    "test:worker": "node --test scripts/tests/worker-routing.test.mjs",
+    "backup": "node --env-file-if-exists=.env.local scripts/backup-supabase.mjs",
     "test:layout": "node scripts/test-magic-layout.mjs",
     "test:safe-area": "node scripts/test-card-counter-safe-area.mjs",
     "tunnel": "ngrok http 127.0.0.1:31415 --traffic-policy-file scripts/ngrok-policy.json --inspect=false --log stdout",
     "watch:gateway": "node --env-file-if-exists=.env.local scripts/gateway-watch.mjs",
     "prices:import": "node scripts/import-scryfall-prices.mjs",
-    "lint": "echo \"Sguardo dell'Oste: Tutto in ordine!\""
+    "lint": "node scripts/lint-syntax.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",

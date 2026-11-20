@@ -1,0 +1,45 @@
+name: Test
+
+# I test unitari che non richiedono un browser. Prima restavano fuori dalla CI
+# proprio i più importanti: il motore di SCIPPO e le regole di instradamento del
+# Worker che serve il sito.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    name: Test unitari e sintassi
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Dipendenze del progetto
+        run: npm ci
+
+      - name: Sintassi del codice server
+        run: npm run lint
+
+      - name: Motore di SCIPPO
+        run: npm run test:scippo
+
+      - name: Viste dei minigiochi
+        run: npm run test:view
+
+      - name: Routing del Worker Cloudflare
+        run: npm run test:worker

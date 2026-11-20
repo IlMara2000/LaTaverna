@@ -78,7 +78,7 @@ const privacy = `
             <p>Trattiamo i dati con fornitori che agiscono come responsabili del trattamento o titolari autonomi, secondo i rispettivi ruoli:</p>
             <ul>
                 <li><strong>Supabase</strong> — autenticazione, database e archiviazione file.</li>
-                <li><strong>Vercel</strong> — hosting del sito e funzioni server.</li>
+                <li><strong>Cloudflare</strong> — hosting del sito e funzioni server, con la propria rete di distribuzione.</li>
                 <li><strong>FreeLLMAPI e i provider gratuiti collegati</strong> — modello AI dell’Oracolo; ricevono la domanda, l’immagine allegata e il contesto inviato.</li>
                 <li><strong>Servizio vocale del browser</strong> (ad esempio Google o Apple) — trascrizione delle frasi quando attivi l’Oracolo vocale; l’audio non passa dai nostri server.</li>
                 <li><strong>Discord</strong> — solo se scegli l’accesso con Discord.</li>
@@ -202,7 +202,7 @@ const cookies = `
             <h2>3. Servizi esterni</h2>
             <ul>
                 <li><strong>Supabase</strong> — autenticazione, database, storage e realtime.</li>
-                <li><strong>Vercel</strong> — hosting e funzioni server.</li>
+                <li><strong>Cloudflare</strong> — hosting e funzioni server.</li>
                 <li><strong>FreeLLMAPI e i provider gratuiti collegati</strong> — elaborazione delle richieste all’Oracolo.</li>
                 <li><strong>Discord</strong> — accesso OAuth, solo se lo scegli.</li>
                 <li><strong>Scryfall</strong> — dati e immagini delle carte, contattato dal browser quando apri la sezione carte.</li>
