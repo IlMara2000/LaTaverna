@@ -17,6 +17,9 @@
   "observability": {
     "enabled": true
   },
+  // Il sito resta raggiungibile anche su <worker>.<subdomain>.workers.dev
+  // mentre il dominio personalizzato non è ancora collegato.
+  "workers_dev": true,
   "vars": {
     // Guardia "in produzione" di api/_lib/ipBudget.js: se manca la service role
     // key il budget AI deve fallire chiuso, non essere saltato.

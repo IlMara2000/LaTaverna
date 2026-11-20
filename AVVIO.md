@@ -110,7 +110,8 @@ stessi handler di `api/` e riproduce redirect, rewrite SPA e header di
 `vercel.json`; gli asset di `dist/` vengono serviti da Cloudflare senza invocare
 il Worker, usando `public/_headers` per gli header di sicurezza.
 
-Serve un account Cloudflare con il dominio `lataverna.xyz` come zona attiva.
+Serve un account Cloudflare; perché il dominio risponda dal Worker la zona
+`lataverna.xyz` deve esistere nell'account (vedi ultimo paragrafo).
 
 ```bash
 npx wrangler login
@@ -135,7 +136,22 @@ npx wrangler secret put BW_PASSWORD
 nel bundle del browser e vanno presenti in `.env` (o nell'ambiente di build) prima
 di `npm run build`, esattamente come su Vercel.
 
-Il dominio si collega da **Workers → lataverna → Settings → Domains & Routes**
-aggiungendo `lataverna.xyz` e `www.lataverna.xyz`; Cloudflare crea i record DNS
-da solo. Prima di quel passaggio il sito resta raggiungibile su
-`lataverna.<sottodominio>.workers.dev`.
+Due valori non si possono ricavare dal repository e vanno impostati a mano:
+
+- `FREELLMAPI_BASE_URL`: deve essere l'URL pubblico del tunnel, **non** `127.0.0.1`
+  (su Workers il loopback non raggiunge il Mac). Finché manca, `/api/oracle/*` e
+  `/api/rpg/*` rispondono 503.
+- `SUPABASE_SERVICE_ROLE_KEY`: serve al limite AI per rete e a
+  `POST /api/magic/prices`. Senza, entrambi rispondono 503.
+
+Il deploy attuale risponde su `https://lataverna.lataverna.workers.dev`
+(sottodominio `workers.dev` dell'account, registrato una volta sola).
+
+### Collegare lataverna.xyz
+
+Il token OAuth creato da `wrangler login` non ha il permesso di creare zone
+(serve Zone:Edit): l'aggiunta del sito va fatta dal pannello, **Add a site** →
+`lataverna.xyz` → piano Free. Poi si cambiano i nameserver su Name.com con quelli
+mostrati da Cloudflare. Quando la zona è attiva, il dominio si collega da
+**Workers → lataverna → Settings → Domains & Routes** aggiungendo `lataverna.xyz`
+e `www.lataverna.xyz`: Cloudflare crea i record DNS da solo.
