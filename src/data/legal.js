@@ -1,25 +1,30 @@
 // Dati del titolare: COMPLETARE prima della pubblicazione.
 // Le stringhe tra parentesi quadre sono segnaposto voluti: non inventare
 // ragione sociale, indirizzo, P.IVA o PEC.
+// La Taverna è per ora un progetto personale senza scopo di lucro: non ci sono
+// P.IVA né PEC, quindi i campi restano vuoti e non vengono mostrati. Quando
+// nascerà un'attività commerciale vanno compilati prima di vendere.
 export const LEGAL = Object.freeze({
     serviceName: 'La Taverna',
-    owner: '[RAGIONE SOCIALE O NOME E COGNOME DEL TITOLARE]',
+    owner: '[NOME E COGNOME DEL TITOLARE]',
     address: '[INDIRIZZO COMPLETO]',
-    vat: '[PARTITA IVA / CODICE FISCALE]',
+    vat: '',
     email: 'privacy@lataverna.xyz',
-    pec: '[INDIRIZZO PEC, SE DISPONIBILE]',
+    pec: '',
     abuse: 'segnalazioni@lataverna.xyz',
     shop: 'ordini@lataverna.xyz',
-    updated: '1 novembre 2026'
+    updated: '20 novembre 2026'
 });
 
+// P.IVA e PEC compaiono solo se compilate: un campo vuoto non deve lasciare una
+// riga "P.IVA / C.F.:" senza valore.
 const ownerBlock = `
     <p><strong>${LEGAL.serviceName}</strong><br>
     Titolare del trattamento: ${LEGAL.owner}<br>
-    Sede: ${LEGAL.address}<br>
-    P.IVA / C.F.: ${LEGAL.vat}<br>
-    Email: <a href="mailto:${LEGAL.email}">${LEGAL.email}</a><br>
-    PEC: ${LEGAL.pec}</p>
+    Sede: ${LEGAL.address}<br>${LEGAL.vat ? `
+    P.IVA / C.F.: ${LEGAL.vat}<br>` : ''}
+    Email: <a href="mailto:${LEGAL.email}">${LEGAL.email}</a>${LEGAL.pec ? `<br>
+    PEC: ${LEGAL.pec}` : ''}</p>
 `;
 
 const nav = `
@@ -44,6 +49,7 @@ const privacy = `
         <section>
             <h2>1. Titolare del trattamento</h2>
             ${ownerBlock}
+            <p>${LEGAL.serviceName} è per ora un progetto personale senza scopo di lucro: non c’è un’attività commerciale collegata al servizio e non sono presenti P.IVA o PEC.</p>
             <p>Per qualsiasi richiesta puoi scrivere a <a href="mailto:${LEGAL.email}">${LEGAL.email}</a>.</p>
         </section>
 
@@ -265,6 +271,7 @@ const seller = `
     <div class="legal-content">
         <section>
             <h2>1. Venditore</h2>
+            <p>Al momento ${LEGAL.serviceName} non svolge attività di vendita: la Bottega presenta prodotti e raccoglie richieste, che vengono gestite con i partner indicati. Le condizioni di questa pagina si applicano quando un ordine viene confermato da un venditore identificato.</p>
             ${ownerBlock}
             <p>Email per ordini e assistenza: <a href="mailto:${LEGAL.shop}">${LEGAL.shop}</a>.</p>
         </section>

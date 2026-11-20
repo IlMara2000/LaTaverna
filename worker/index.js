@@ -5,6 +5,7 @@ import { API_ROUTES } from '../scripts/local-api-bridge.js';
 // Fonte unica delle rotte client: vercel.json ne elencava solo una parte, e
 // /carte, /giochi-di-ruolo, /shop, /library e /magic erano 404 anche prima.
 import { PUBLIC_ROUTES } from '../src/services/publicRoutes.js';
+import { reportError } from '../api/_lib/errorReport.js';
 
 // Le server function di Vercel erano una per file sotto api/: qui la tabella
 // delle rotte è esplicita, così un endpoint non pubblicato non diventa pubblico.
@@ -178,8 +179,7 @@ const legacyRedirects = (url) => {
     return null;
 };
 
-export default {
-    async fetch(request, env) {
+const route = async (request, env) => {
         const url = new URL(request.url);
 
         if (url.hostname === `www.${CANONICAL_HOST}`) {
@@ -219,5 +219,21 @@ export default {
         }
 
         return withSecurityHeaders(response);
+};
+
+export default {
+    async fetch(request, env, ctx) {
+        try {
+            const response = await route(request, env);
+            // Un 5xx è una risposta riuscita per il runtime: senza questo
+            // controllo gli errori delle function non arriverebbero a Sentry.
+            if (response.status >= 500) {
+                reportError(new Error(`HTTP ${response.status}`), { request, response, ctx });
+            }
+            return response;
+        } catch (error) {
+            reportError(error, { request, ctx });
+            return jsonError(500, 'unhandled_error', 'Servizio non disponibile.');
+        }
     }
 };
