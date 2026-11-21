@@ -10,6 +10,11 @@ import '../dashboards/minigames/table-landscape.css';
  */
 
 const CARD_TABLE_SELECTOR = '.scala40-game, .scopa-game, .briscola-game, .solitario-game, .game-master-wrapper:not(#start-screen)';
+// Solo i tavoli da carte con mano a ventaglio, corsie o meld hanno senso in
+// orizzontale. Tris, scacchi, dama, Tetris e i giochi party stanno in verticale:
+// ruotarli era la vera fonte di disorientamento.
+const LANDSCAPE_TABLE_SELECTOR = '.scala40-game, .scopa-game, .briscola-game, .solitario-game, .solo-game-wrapper, .burraco-game';
+const HINT_KEY = 'taverna_table_hint_seen';
 const COMPACT_SHORT_SIDE = 560;
 
 // Schermate di avvio (scelta modalità/livello): sono menu verticali, non
@@ -44,12 +49,13 @@ function measure() {
     const menuAperto = Boolean(table)
         && (Boolean(table.querySelector(':scope > .game-master-wrapper')) || startAperta);
     html.classList.toggle('table-menu', menuAperto);
-    const rotated = portrait && Boolean(table) && !menuAperto;
+    const landscapeTable = Boolean(table?.matches?.(LANDSCAPE_TABLE_SELECTOR));
+    const rotated = portrait && landscapeTable && !menuAperto;
     const stageWidth = rotated ? height : width;
     const stageHeight = rotated ? width : height;
-    const compact = Boolean(table) && !menuAperto && (rotated || stageHeight <= COMPACT_SHORT_SIDE);
+    const compact = landscapeTable && !menuAperto && (rotated || stageHeight <= COMPACT_SHORT_SIDE);
 
-    html.classList.toggle('table-mode', Boolean(table));
+    html.classList.toggle('table-mode', Boolean(table) && landscapeTable);
     html.classList.toggle('table-rotated', rotated);
     html.classList.toggle('table-compact', compact);
     html.style.setProperty('--stage-w', `${Math.round(stageWidth)}px`);
@@ -101,9 +107,41 @@ function queueFit() {
     fitTimers = [0, 120, 420, 900].map(delay => window.setTimeout(fitToStage, delay));
 }
 
+let hintTimer = 0;
+
+/**
+ * Se il tavolo è ruotato via CSS il telefono è ancora in verticale: senza una
+ * riga di testo l'utente vede la partita di lato e non sa perché. L'avviso
+ * resta nella orientamento reale del telefono, quindi è leggibile subito.
+ */
+function showOrientationHint() {
+    try { if (sessionStorage.getItem(HINT_KEY) === '1') return; } catch { /* storage negato */ }
+    let node = document.getElementById('table-orientation-hint');
+    if (!node) {
+        node = document.createElement('div');
+        node.id = 'table-orientation-hint';
+        node.setAttribute('role', 'status');
+        node.innerHTML = '<span aria-hidden="true">⟳</span><p>Ruota il telefono: questo tavolo si gioca in orizzontale.</p><button type="button">Ho capito</button>';
+        node.querySelector('button').addEventListener('click', () => {
+            try { sessionStorage.setItem(HINT_KEY, '1'); } catch { /* storage negato */ }
+            hideOrientationHint();
+        });
+        document.body.appendChild(node);
+    }
+    window.clearTimeout(hintTimer);
+    hintTimer = window.setTimeout(hideOrientationHint, 7000);
+}
+
+function hideOrientationHint() {
+    window.clearTimeout(hintTimer);
+    document.getElementById('table-orientation-hint')?.remove();
+}
+
 function update() {
     table = document.querySelector(CARD_TABLE_SELECTOR);
     measure();
+    if (html.classList.contains('table-rotated')) showOrientationHint();
+    else hideOrientationHint();
     queueFit();
 }
 
@@ -140,6 +178,7 @@ if (document.readyState === 'loading') {
 }
 
 window.addEventListener('pagehide', () => {
+    hideOrientationHint();
     html.classList.remove('table-mode', 'table-rotated', 'table-compact');
 });
 
@@ -151,6 +190,7 @@ if (import.meta.hot) {
         observer?.disconnect();
         observer = null;
         table = null;
+        hideOrientationHint();
         html.classList.remove('table-mode', 'table-rotated', 'table-compact');
         html.style.removeProperty('--stage-w');
         html.style.removeProperty('--stage-h');

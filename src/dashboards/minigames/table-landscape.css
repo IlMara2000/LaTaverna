@@ -141,6 +141,10 @@ html.table-compact .scala40-game {
 }
 html.table-compact :is(.s40-hand-label, .s40-hint) { display: none; }
 html.table-compact .scala40-shell { gap: 5px; height: 100%; }
+/* Il pannello online nella shell ruba 78px al tavolo e costringeva a
+   rimpicciolire tutto al 73% (carte da 35px). In modalità tavolo l'invito
+   resta nella lobby, qui serve spazio per giocare. */
+html.table-compact .scala40-shell :is(.minigame-online-mode-panel, .minigame-online-status) { display: none; }
 html.table-compact :is(.s40-brand small, .s40-hint, .s40-turn small) { display: none; }
 html.table-compact .s40-brand h1 { font-size: 1rem; letter-spacing: 2px; }
 html.table-compact .s40-brand > span { font-size: 1.4rem; }
@@ -199,13 +203,21 @@ html.table-compact .solitario-game {
     padding: 6px 14px !important;
 }
 html.table-compact .solitario-shell { height: 100%; display: flex; flex-direction: column; }
+/* Pannello online e barra degli strumenti rubavano altezza al tableau: il
+   tavolo veniva ridotto al 66% e le carte a 33px. L'invito online resta
+   nella lobby; qui contano le sette colonne. */
+html.table-compact .solitario-shell :is(.minigame-online-mode-panel, .minigame-online-status) { display: none; }
+html.table-compact .solitario-topbar { min-height: 38px; }
+html.table-compact .solitario-control { min-height: 32px; padding-block: 4px; }
 html.table-compact .solitario-topbar { margin-bottom: 6px; }
 html.table-compact :is(.solitario-brand small, .solitario-footer) { display: none; }
 html.table-compact .solitario-toolbar { gap: 8px; }
 html.table-compact .solitario-scoreline { margin-top: 4px; }
 html.table-compact .solitario-message { min-height: 0; margin: 4px 0 0; padding: 2px 0; font-size: .68rem; }
 html.table-compact .solitario-table { margin-top: 6px; padding: 10px 10px 12px; border-radius: 16px; flex: 1; min-height: 0; }
-html.table-compact .solitario-upper { margin-bottom: 12px; }
+html.table-compact .solitario-upper { margin-bottom: 8px; }
+/* Pile più compatte: con 16px per carta l'ultima colonna sfondava il tavolo. */
+html.table-compact .solitario-game { --sol-stack-gap: clamp(6px, calc(var(--stage-h) * .02), 10px); }
 html.table-compact .solitario-pile-label { font-size: .48rem; letter-spacing: 0; }
 html.table-compact .solitario-column > .solitario-pile-label { margin-bottom: 4px; }
 
@@ -408,6 +420,50 @@ html.table-compact :is(.briscola-shell, .briscola-topbar, .briscola-scoreboard, 
     box-sizing: border-box;
 }
 html.table-compact .briscola-hand { overflow-x: auto; }
+
+/* --- Avviso di rotazione -------------------------------------------
+   Il tavolo viene ruotato via CSS quando il telefono è in verticale: senza
+   questa riga la partita appare di lato senza spiegazione. L'avviso resta
+   nell'orientamento reale del telefono, quindi si legge subito. */
+/* In alto a sinistra: dopo la rotazione i comandi di testa finiscono sul
+   bordo destro e le carte al centro, quindi qui non copre né gli uni né le
+   altre (misurato su scopa, solo, scala 40 e solitario). */
+#table-orientation-hint {
+    position: fixed;
+    inset-block-start: max(12px, env(safe-area-inset-top));
+    inset-inline-start: 12px;
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    inline-size: 300px;
+    max-inline-size: calc(100vw - 24px);
+    padding: 8px 10px 8px 12px;
+    border: 1px solid rgba(213, 151, 255, .42);
+    border-radius: 14px;
+    background: rgba(17, 8, 26, .95);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
+    color: #f4e9ff;
+    font-size: 12px;
+    line-height: 1.3;
+}
+
+#table-orientation-hint > span { font-size: 18px; line-height: 1; }
+#table-orientation-hint p { margin: 0; }
+
+#table-orientation-hint button {
+    min-block-size: 36px;
+    padding: 0 10px;
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 10px;
+    background: rgba(157, 78, 221, .28);
+    color: inherit;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+#table-orientation-hint button:active { transform: scale(.96); }
 
 /* --- Impostore / Numeri: pulsanti dei giocatori --------------------- */
 html[class*="table-"] .party-game :is(button[data-delta], .party-add) { min-width: 34px; min-height: 34px; }

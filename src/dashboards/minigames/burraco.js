@@ -49,7 +49,7 @@ const quitGame = async (container) => {
 // --- 1. LAYOUT GIOCO ---
 function renderLayout(container, state) {
     container.innerHTML = `
-    <div class="game-master-wrapper fade-in">
+    <div class="game-master-wrapper burraco-game fade-in">
         
         <div id="start-screen" class="game-master-wrapper" style="position: absolute; inset: 0; z-index: 10000; justify-content: center; background: #05010a;">
             <img src="/assets/logo.png" style="width: 100px; margin-bottom: 25px;" class="pulse-logo">
