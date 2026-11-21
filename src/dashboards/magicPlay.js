@@ -8,7 +8,7 @@ import {
 import { canPayMana, emptyManaPool, isManaSource, manaAbilityOptions, manaPoolLabel, manaProductionOptions, payMana } from './magicRules.js';
 import {
     MATCH_RULES, PHASE_LABEL, adjustLife, advancePhase, castSpell, concedeMatch, createMatch,
-    activateAbility, autoAdvance, castResponse, declareAttackers, declareBlockers, discardCards, mulliganAction, passTurn,
+    activateAbility, castResponse, declareAttackers, declareBlockers, discardCards, mulliganAction, passTurn,
     playLand, powerOf, resolveCombat, tapMana, toughnessOf
 } from './magicMatchEngine.js';
 import { abilityLabel, parseCardAbilities, textSupport } from './magicEffects.js';
@@ -698,7 +698,10 @@ export function showMagicPlay(container, options = {}) {
                     if (current.combat.step === 'damage') {
                         current = resolveCombat(current, BOT_ID);
                         if (current.winner) break;
-                        continue;
+                        // Il danno segnato va reso visibile: proseguendo nello stesso
+                        // ciclo, la pulizia di inizio turno lo azzerava prima del
+                        // render e l'animazione sulla carta non partiva mai.
+                        break;
                     }
                     current = advancePhase(current, BOT_ID);
                     continue;
@@ -768,11 +771,11 @@ export function showMagicPlay(container, options = {}) {
     // Le mosse si accodano: un tocco rapido (le vite, per esempio) non deve andare
     // perso solo perché la precedente stava ancora salvando.
     let commitQueue = Promise.resolve();
-    // Ogni mossa passa dal motore di fasi: se dopo il lancio non resta nulla da
-    // fare, il turno scorre da solo fino alla prossima decisione vera.
-    const act = (updater, { auto = true, resetTarget = false } = {}) => {
+    // Il turno non scorre da solo: dopo ogni mossa resta fermo e si chiude solo
+    // con «Passa il turno», così si vede ogni fase e non si perdono decisioni.
+    const act = (updater, { resetTarget = false } = {}) => {
         commitQueue = commitQueue
-            .then(() => commit(auto ? state => autoAdvance(updater(state), clientId) : updater))
+            .then(() => commit(updater))
             .then(ok => {
                 if (!ok) return;
                 selectedAttackers = new Set();
@@ -1360,7 +1363,7 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-start]')?.addEventListener('click', () => void startMatch());
         container.querySelector('[data-start-bot]')?.addEventListener('click', () => void startBotMatch());
         container.querySelector('[data-new-match]')?.addEventListener('click', () => void returnToLobby());
-        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId), { auto: false }));
+        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId)));
         // Tutta la scheda apre la carta, tranne i suoi comandi: i pulsanti interni
         // (Lancia, Mana, Attacca, In fondo, Scarta) non devono aprire altro.
         container.querySelectorAll('[data-zoom-card]').forEach(card => card.addEventListener('click', event => {
@@ -1394,10 +1397,10 @@ export function showMagicPlay(container, options = {}) {
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
             // Tappare per mana è una preparazione, non una mossa conclusa: le
             // fasi non scattano in avanti mentre il giocatore sta pagando.
-            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'), { auto: false });
+            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
         }));
         container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
-            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false, resetTarget: true });
+            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { resetTarget: true });
         }));
         container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.attacker;
@@ -1417,9 +1420,9 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
             current.playersData[clientId].manaPool = emptyManaPool();
             return current;
-        }, { auto: false }));
+        }));
         container.querySelectorAll('[data-life]').forEach(button => button.addEventListener('click', () => {
-            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)), { auto: false });
+            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)));
         }));
         container.querySelectorAll('[data-discard]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.discard;
@@ -1453,10 +1456,10 @@ export function showMagicPlay(container, options = {}) {
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
             // Tappare per mana è una preparazione, non una mossa conclusa: le
             // fasi non scattano in avanti mentre il giocatore sta pagando.
-            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'), { auto: false });
+            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
         }));
         container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
-            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false, resetTarget: true });
+            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { resetTarget: true });
         }));
         container.querySelectorAll('[data-ability]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.ability;
@@ -1478,9 +1481,9 @@ export function showMagicPlay(container, options = {}) {
             act(current => declareBlockers(current, clientId, assignments));
         });
         container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombat(current, clientId)));
-        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId), { auto: false }));
+        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId)));
         container.querySelectorAll('[data-life]').forEach(button => button.addEventListener('click', () => {
-            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)), { auto: false });
+            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)));
         }));
         container.querySelectorAll('[data-discard]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.discard;
@@ -1493,7 +1496,7 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
             current.playersData[clientId].manaPool = emptyManaPool();
             return current;
-        }, { auto: false }));
+        }));
         container.querySelectorAll('#play-target').forEach(select => select.addEventListener('change', () => {
             chosenTarget = select.value;
         }));

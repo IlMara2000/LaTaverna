@@ -27,6 +27,7 @@ function tileHtml(card, side, zone = 'board', extra = '') {
     ? `<img class="mt-card__art" src="${esc(card.image)}" alt="" loading="lazy" decoding="async">`
     : '<span class="mt-card__art mt-card__art--empty" aria-hidden="true"></span>';
   const pressed = zone === 'board' ? ` aria-pressed="${card.tapped ? 'true' : 'false'}"` : '';
+  const label = [card.name, statLine(card)].filter(Boolean).join(' · ');
   const badges = [
     card.commander ? '<span class="mt-card__badge mt-card__badge--commander">CMD</span>' : '',
     card.attacking ? '<span class="mt-card__badge mt-card__badge--attack">ATTACCA</span>' : '',
@@ -34,23 +35,38 @@ function tileHtml(card, side, zone = 'board', extra = '') {
     counterLabel(card) ? `<span class="mt-card__badge mt-card__badge--counter">${esc(counterLabel(card))}</span>` : '',
     card.damage > 0 ? `<span class="mt-card__badge mt-card__badge--damage">−${esc(card.damage)}</span>` : '',
   ].join('');
-  const stat = statLine(card);
   const classes = ['mt-card'];
   if (card.tapped) classes.push('is-tapped');
   if (card.attacking) classes.push('is-attacking');
   if (card.blocking) classes.push('is-blocking');
-  return `<div class="${classes.join(' ')}" data-card-id="${esc(card.id)}" data-side="${esc(side)}" data-zone="${esc(zone)}"${pressed}>
+  return `<div class="${classes.join(' ')}" data-card-id="${esc(card.id)}" data-side="${esc(side)}" data-zone="${esc(zone)}"${pressed} aria-label="${esc(label)}">
     ${art}
-    <span class="mt-card__name">${esc(card.name)}</span>
-    ${stat ? `<span class="mt-card__stat">${esc(stat)}</span>` : ''}
     ${badges}
     ${extra ? `<div class="mt-card__actions">${extra}</div>` : ''}
   </div>`;
 }
 
-function rowHtml(inner, side) {
-  const empty = side === 'opponent' ? 'Nessun permanente avversario' : 'Il tuo campo è vuoto';
-  return `<div class="mt-row mt-row--${esc(side)}">${inner || `<p class="mt-row__empty">${empty}</p>`}</div>`;
+/* Il campo si legge su tre corsie: creature, altri permanenti e magie, terre. */
+const LANES = [
+  { kind: 'creatures', label: 'Creature', match: card => isCreature(card) },
+  { kind: 'permanents', label: 'Permanenti e magie', match: card => !isCreature(card) && !isLand(card) },
+  { kind: 'lands', label: 'Terre', match: card => isLand(card) },
+];
+
+function laneHtml(kind, label, cards, inner) {
+  const empty = !cards.length;
+  return `<div class="mt-lane mt-lane--${esc(kind)}${empty ? ' is-empty' : ''}">
+    <span class="mt-lane__label">${label}</span>
+    <div class="mt-lane__cards">${inner}</div>
+  </div>`;
+}
+
+function fieldHtml(cards, side, paint) {
+  const list = cards || [];
+  return `<div class="mt-field mt-field--${esc(side)}">${LANES.map(lane => {
+    const group = list.filter(lane.match);
+    return laneHtml(lane.kind, lane.label, group, group.map(card => paint(card, side, 'board')).join(''));
+  }).join('')}</div>`;
 }
 
 const handHtml = inner => `<div class="mt-hand">${inner || '<p class="mt-row__empty">Nessuna carta in mano</p>'}</div>`;
@@ -121,6 +137,7 @@ const ACTIONS = '[data-menu-toggle],[data-menu-close],[data-menu-exit],[data-men
 /** Lo stesso ordine di `idOf` in magicPlay.js: `instanceId` prima di `uid`. */
 const cardId = card => String(card?.instanceId ?? card?.uid ?? card?.id ?? '');
 const isCreature = card => /\bcreature\b/i.test(String(card?.typeLine || ''));
+const isLand = card => /\bland\b/i.test(String(card?.typeLine || ''));
 const isNumeric = value => /^-?\d+$/.test(String(value ?? ''));
 
 function stat(card, which) {
@@ -167,8 +184,12 @@ export function showMatchTable(host, options = {}) {
     zones: options.zones || null,
     status: options.status || '',
     mana: options.mana || '',
-    life: options.life ?? '',
     tileExtra: options.tileExtra || null,
+    life: options.life ?? '',
+    lastLife: options.life ?? '',
+    boardIds: new Set(),
+    damageById: new Map(),
+    lastFoeLives: new Map(),
     menuOpen: false,
     zonesOpen: false,
     keyboardFocus: false,
@@ -272,35 +293,77 @@ export function showMatchTable(host, options = {}) {
   }
 
   const activeOpponent = () => state.opponents.find(foe => foe.id === state.activeOpponentId) || state.opponents[0] || null;
-  const cardsHtml = (cards, side, zone) => (cards || []).map(card => {
+  const paintCard = (card, side, zone) => {
     const view = toView(card, side, zone);
     state.views.set(view.id, view);
     // I comandi valgono solo per le carte proprie: sulle carte avversarie un
     // pulsante Mana/Attacca sarebbe una richiesta che il motore rifiuta.
     const extra = side === 'own' && state.tileExtra ? state.tileExtra(card) : '';
     return tileHtml(view, side, zone, extra);
-  }).join('');
+  };
+  const cardsHtml = (cards, side, zone) => (cards || []).map(card => paintCard(card, side, zone)).join('');
 
   function renderBar() {
     if (slots.status) slots.status.textContent = state.status || '';
     if (slots.vitals) {
+      const lost = state.life !== '' && state.lastLife !== '' && Number(state.life) < Number(state.lastLife);
       slots.vitals.textContent = [
         state.life === '' ? '' : `Vite ${state.life}`,
         state.mana ? `Riserva ${state.mana}` : '',
       ].filter(Boolean).join(' · ');
+      if (lost) {
+        slots.vitals.classList.remove('is-hit');
+        // Riavvia l'animazione anche su due perdite consecutive.
+        void slots.vitals.offsetWidth;
+        slots.vitals.classList.add('is-hit');
+      }
+      state.lastLife = state.life;
     }
   }
 
+  /* Corsie appena riempite: l'ingresso è un'animazione breve, una sola volta. */
+  const markFreshCards = () => {
+    const previously = state.boardIds || new Set();
+    const nodes = [...slots.board.querySelectorAll('[data-zone="board"]')];
+    nodes.forEach(node => {
+      if (!previously.has(node.dataset.cardId)) node.classList.add('is-entering');
+      const view = state.views.get(node.dataset.cardId);
+      const before = state.damageById.get(node.dataset.cardId) || 0;
+      if (view && view.damage > before && previously.has(node.dataset.cardId)) {
+        node.classList.remove('is-damaged');
+        void node.offsetWidth;
+        node.classList.add('is-damaged');
+      }
+    });
+    state.boardIds = new Set(nodes.map(node => node.dataset.cardId));
+    state.damageById = new Map([...state.views].map(([id, view]) => [id, view.damage]));
+  };
+
   function renderBoard() {
     const foe = activeOpponent();
+    const lives = new Map(state.opponents.map(foe2 => [foe2.id, foe2.life]));
     state.views.clear();
     slots.board.innerHTML = `<div class="mt-board">
       ${opponentHeadHtml(foe)}
-      ${rowHtml(cardsHtml(foe?.cards, 'opponent', 'board'), 'opponent')}
+      ${fieldHtml(foe?.cards, 'opponent', paintCard)}
       <div class="mt-commands">${opponentSwitcherHtml(state.opponents, foe?.id || '')}${state.commands}</div>
-      ${rowHtml(cardsHtml(state.own, 'own', 'board'), 'own')}
+      ${fieldHtml(state.own, 'own', paintCard)}
       ${handHtml(cardsHtml(state.hand, 'own', 'hand'))}
     </div>`;
+    markFreshCards();
+    // Il colpo sull'avversario attivo si vede sulla sua testata.
+    state.opponents.forEach(foe2 => {
+      const before = state.lastFoeLives.get(foe2.id);
+      if (before === undefined || Number(foe2.life) >= Number(before)) return;
+      const head = slots.board.querySelector(`[data-opponent="${foe2.id}"]`)?.closest('.mt-opponent-head')
+        || (foe2.id === foe?.id ? slots.board.querySelector('.mt-opponent-head') : null);
+      if (head) {
+        head.classList.remove('is-hit');
+        void head.offsetWidth;
+        head.classList.add('is-hit');
+      }
+    });
+    state.lastFoeLives = lives;
   }
 
   function renderMenu() {
@@ -377,6 +440,9 @@ export function showMatchTable(host, options = {}) {
     if (!card) return;
     // I comandi dentro la tile non sono un tocco sulla carta.
     if (event.target.closest('button:not([data-card-id]), select, input, textarea')) return;
+    // La pressione prolungata ha già aperto l'anteprima: il rilascio non deve
+    // anche tappare la carta o riaprire l'anteprima.
+    if (suppressClick) { suppressClick = false; return; }
     const id = card.dataset.cardId;
     if (!id) return;
     if (card.dataset.side === 'own' && card.dataset.zone === 'board') {
@@ -406,6 +472,56 @@ export function showMatchTable(host, options = {}) {
     render('menu');
     focusToggle();
   };
+  // Pressione prolungata (≈0,35 s): anteprima della carta con testo, mana e
+  // forza/costituzione. Un tocco breve resta il comando di sempre.
+  let pressTimer = 0;
+  let pressId = null;
+  let suppressClick = false;
+  let suppressTimer = 0;
+  const cancelPress = () => {
+    if (pressTimer) clearTimeout(pressTimer);
+    pressTimer = 0;
+    pressId = null;
+  };
+  // Fine della pressione, ovunque cada il dito: il click che segue il rilascio
+  // sulla carta va ignorato, ma lo stato non deve restare appeso se si rilascia
+  // fuori (altrimenti il tocco successivo sparirebbe).
+  const endPress = () => {
+    cancelPress();
+    if (!suppressClick) return;
+    if (suppressTimer) clearTimeout(suppressTimer);
+    suppressTimer = setTimeout(() => {
+      suppressClick = false;
+      suppressTimer = 0;
+    }, 50);
+  };
+  const onPointerDown = event => {
+    if (event.button && event.button !== 0) return;
+    const card = event.target.closest('[data-card-id]');
+    if (!card) return;
+    if (event.target.closest('button:not([data-card-id]), select, input, textarea')) return;
+    cancelPress();
+    pressId = card.dataset.cardId || null;
+    if (!pressId) return;
+    pressTimer = setTimeout(() => {
+      pressTimer = 0;
+      suppressClick = true;
+      options.onPreview?.({ id: pressId });
+    }, 350);
+  };
+  const onPointerMove = event => {
+    if (!pressTimer) return;
+    if (Math.abs(event.movementX || 0) + Math.abs(event.movementY || 0) > 6) cancelPress();
+  };
+  root.addEventListener('pointerdown', onPointerDown);
+  root.addEventListener('pointermove', onPointerMove);
+  root.addEventListener('pointerup', endPress);
+  root.addEventListener('pointercancel', endPress);
+  root.addEventListener('pointerleave', endPress);
+  // Un rilascio fuori dal tavolo non arriva a root: senza questi listener lo
+  // stato di soppressione resterebbe attivo.
+  window.addEventListener('pointerup', endPress);
+  window.addEventListener('pointercancel', endPress);
   root.addEventListener('click', onClick);
   root.addEventListener('keydown', markKeyboard);
   document.addEventListener('keydown', onEscape);
@@ -457,6 +573,16 @@ export function showMatchTable(host, options = {}) {
         window.removeEventListener('resize', onResize);
         window.removeEventListener('orientationchange', onResize);
       }
+      cancelPress();
+      if (suppressTimer) clearTimeout(suppressTimer);
+      suppressClick = false;
+      root.removeEventListener('pointerdown', onPointerDown);
+      root.removeEventListener('pointermove', onPointerMove);
+      root.removeEventListener('pointerup', endPress);
+      root.removeEventListener('pointercancel', endPress);
+      root.removeEventListener('pointerleave', endPress);
+      window.removeEventListener('pointerup', endPress);
+      window.removeEventListener('pointercancel', endPress);
       root.removeEventListener('click', onClick);
       root.removeEventListener('keydown', markKeyboard);
       document.removeEventListener('keydown', onEscape);

@@ -52,6 +52,63 @@ body.magic-table-active .floating-trigger { display: none !important; }
   gap: calc(0.9 * var(--u));
 }
 
+/* Ogni campo ha tre corsie sovrapposte: creature in alto, permanenti e magie
+   al centro, terre in basso. Le corsie vuote restano visibili con la sola
+   etichetta, così si capisce dove finirà una carta appena entra. */
+.mt-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.25 * var(--u));
+  min-block-size: 0;
+  padding: calc(0.3 * var(--u));
+  border-radius: calc(1.2 * var(--u));
+}
+
+.mt-field--own {
+  background: linear-gradient(180deg, rgb(196 164 255 / 8%), rgb(196 164 255 / 2%));
+  border: thin solid rgb(196 164 255 / 16%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+}
+
+.mt-field--opponent { background: rgb(0 0 0 / 18%); border: thin solid var(--mt-line); }
+
+.mt-lane {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+/* Una corsia vuota si riduce alla sua etichetta: lo spazio va alle carte vere. */
+.mt-lane.is-empty { flex: 0 0 auto; }
+.mt-lane.is-empty .mt-lane__cards { display: none; }
+
+.mt-lane__label {
+  flex: 0 0 auto;
+  text-align: start;
+  padding-inline: calc(0.6 * var(--u));
+  font-size: calc(1 * var(--u));
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(244 239 228 / 34%);
+}
+
+.mt-lane__cards {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: stretch;
+  gap: calc(0.6 * var(--u));
+  min-block-size: 0;
+  padding-block: calc(0.15 * var(--u));
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+
+.mt-lane.is-empty .mt-lane__label { color: rgb(244 239 228 / 20%); }
+
 .mt-opponent-head {
   display: flex;
   align-items: center;
@@ -75,7 +132,6 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-opponent-head__cmd { padding-inline: calc(0.8 * var(--u)); border-radius: 999px; background: rgb(190 70 70 / 35%); color: #ffc9c9; font-size: calc(1.3 * var(--u)); }
 .mt-opponent-head__count { margin-inline-start: auto; font-size: calc(1.3 * var(--u)); letter-spacing: 0; text-transform: none; }
 
-.mt-row,
 .mt-hand {
   display: flex;
   align-items: stretch;
@@ -88,16 +144,6 @@ body.magic-table-active .floating-trigger { display: none !important; }
   scroll-snap-type: x proximity;
   border-radius: calc(1.2 * var(--u));
 }
-
-/* Il campo del giocatore è il "tappeto": un filo più chiaro, per capire a colpo
-   d'occhio dove finisce il proprio terreno e dove sta la mano. */
-.mt-row--own {
-  background: linear-gradient(180deg, rgb(196 164 255 / 8%), rgb(196 164 255 / 2%));
-  border: thin solid rgb(196 164 255 / 16%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
-}
-
-.mt-row--opponent { background: rgb(0 0 0 / 18%); border: thin solid var(--mt-line); }
 
 .mt-hand {
   /* «safe center»: se le carte superano la larghezza restano raggiungibili a
@@ -146,9 +192,35 @@ body.magic-table-active .floating-trigger { display: none !important; }
   transform: rotate(8deg) scale(0.94);
   border-color: rgb(255 255 255 / 8%);
   box-shadow: inset 0 0 0 calc(0.3 * var(--u)) rgb(0 0 0 / 55%);
+  animation: mt-tap 180ms ease-out;
 }
 .mt-card.is-tapped .mt-card__art { filter: grayscale(0.5) brightness(0.62); }
-.mt-card.is-tapped .mt-card__name { color: rgb(244 239 228 / 50%); }
+
+/* Ingresso, tappata e danno: animazioni brevi che non spostano il gioco. */
+@keyframes mt-enter {
+  from { opacity: 0; transform: translateY(14%) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes mt-tap {
+  from { transform: rotate(0deg) scale(1); }
+}
+
+@keyframes mt-card-hit {
+  0%, 100% { box-shadow: 0 calc(0.5 * var(--u)) calc(1.4 * var(--u)) rgb(0 0 0 / 45%); }
+  35% { box-shadow: 0 0 calc(1.8 * var(--u)) rgb(255 92 92 / 75%); border-color: rgb(255 120 120 / 80%); }
+}
+
+.mt-card.is-entering { animation: mt-enter 200ms ease-out; }
+.mt-card.is-damaged { animation: mt-card-hit 320ms ease-out; }
+
+@keyframes mt-hit {
+  0%, 100% { color: inherit; }
+  30% { color: #ff9b9b; text-shadow: 0 0 calc(1.2 * var(--u)) rgb(255 92 92 / 60%); }
+}
+
+.mt-arena-bar__vitals.is-hit,
+.mt-opponent-head.is-hit { animation: mt-hit 320ms ease-out; }
 
 .mt-card.is-attacking { border-color: var(--mt-gold); box-shadow: 0 0 calc(1.6 * var(--u)) rgb(255 214 130 / 45%); }
 .mt-card.is-blocking { border-color: rgb(120 200 255 / 75%); box-shadow: 0 0 calc(1.4 * var(--u)) rgb(120 200 255 / 40%); }
@@ -164,35 +236,6 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 .mt-card__art--empty { background: linear-gradient(160deg, #24313c, #131a21); }
 
-.mt-card__name {
-  /* Senza flex-shrink l'arte si prende il resto e il nome non perde la seconda
-     riga: prima l'immagine (flex-basis auto, altezza intrinseca ~680px) si
-     tirava dietro il nome e restava visibile solo «Righteous…». */
-  flex: 0 0 auto;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  padding: calc(0.4 * var(--u)) calc(0.7 * var(--u));
-  font-size: calc(1.55 * var(--u));
-  line-height: 1.12;
-  overflow: hidden;
-  white-space: normal;
-  background: linear-gradient(180deg, rgb(6 9 12 / 55%), rgb(6 9 12 / 92%));
-}
-
-.mt-card__stat {
-  position: absolute;
-  inset-block-start: calc(0.5 * var(--u));
-  inset-inline-end: calc(0.5 * var(--u));
-  padding: calc(0.1 * var(--u)) calc(0.6 * var(--u));
-  border-radius: calc(0.4 * var(--u));
-  background: rgb(8 12 16 / 90%);
-  border: thin solid rgb(255 255 255 / 18%);
-  font-size: calc(1.7 * var(--u));
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
 
 .mt-card__badge {
   position: absolute;
@@ -212,16 +255,17 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-card__badge--attack { inset-block-start: 0; inset-inline: 0; border-radius: 0; border: 0; text-align: center; background: rgb(255 214 130 / 90%); color: #23180a; font-weight: 700; }
 .mt-card__badge--block { inset-block-start: 0; inset-inline: 0; border-radius: 0; border: 0; text-align: center; background: rgb(120 200 255 / 90%); color: #06131d; font-weight: 700; }
 
-/* I comandi stanno in una barra in fondo alla carta, nel flusso: prima erano
-   sovrapposti all'arte e coprivano proprio ciò che si voleva leggere. */
+/* I comandi restano, ma sovrapposti al piede dell'arte: la carta è tutta
+   immagine e i pulsanti non le rubano altezza. */
 .mt-card__actions {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline: 0;
   display: flex;
-  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: calc(0.3 * var(--u));
-  padding: calc(0.4 * var(--u));
-  background: rgb(4 6 9 / 92%);
-  border-block-start: thin solid rgb(255 255 255 / 10%);
+  padding: calc(1.2 * var(--u)) calc(0.4 * var(--u)) calc(0.4 * var(--u));
+  background: linear-gradient(180deg, transparent, rgb(4 6 9 / 88%) 45%);
 }
 
 .mt-card__actions button,
@@ -540,6 +584,11 @@ body.magic-table-active .floating-trigger { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .mt-card { transition: none; }
   .mt-card.is-tapped { transform: none; }
+  .mt-card.is-entering,
+  .mt-card.is-damaged,
+  .mt-card.is-tapped,
+  .mt-arena-bar__vitals.is-hit,
+  .mt-opponent-head.is-hit { animation: none; }
 }
 
 /* Su un telefono la barra comandi si avvolge su più righe (riserva, comandante,
@@ -551,7 +600,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
   /* Sullo schermo stretto la mano conta più del campo avversario: le carte
      devono restare leggibili, non diventare francobolli da 78px. */
-  .mt-board { grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 0.85fr) minmax(0, 1.25fr); }
+  .mt-board { grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 0.9fr) minmax(0, 1.2fr); }
   .mt-commands .mp-log summary { min-block-size: 30px; font-size: calc(1.25 * var(--u)); }
   .mt-arena-bar__exit { letter-spacing: 0.04em; }
 }
