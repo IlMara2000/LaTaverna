@@ -185,10 +185,21 @@ export function showMagicDashboard(container, options = {}) {
     };
     const setNotice = value => { notice = value || ''; const node = container.querySelector('#magic-viewer-notice'); if (node) node.textContent = notice; };
     const byId = () => new Map(cards.map(card => [String(card.id), card]));
-    const deckCardIds = () => new Set(decks.flatMap(deck => [
-        ...(deck.cards || []).map(entry => String(entry.cardId)),
-        ...(deck.commanders || []).map(String)
-    ]));
+    // Copie impegnate per carta su tutti i mazzi: il comandante conta una volta.
+    const deckUsage = () => {
+        const used = new Map();
+        for (const deck of decks) {
+            for (const entry of deck.cards || []) {
+                const id = String(entry.cardId);
+                used.set(id, (used.get(id) || 0) + (Number(entry.quantity) || 1));
+            }
+            for (const id of deck.commanders || []) {
+                used.set(String(id), (used.get(String(id)) || 0) + 1);
+            }
+        }
+        return used;
+    };
+    const residualCopies = (card, used) => (Number(card.quantity) || 1) - (used.get(String(card.id)) || 0);
 
     // Mazzi di esempio (Giada e gli altri): le carte entrano anche nella collezione,
     // così il filtro «nascondi carte nei mazzi» le può togliere dalla vista.
@@ -433,10 +444,14 @@ export function showMagicDashboard(container, options = {}) {
 
     const render = () => {
         if (disposed) return;
-        const deckIds = deckCardIds();
+        const used = deckUsage();
         const nameMatch = card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter));
-        const visible = cards.filter(card => nameMatch(card) && (!hideDeckCards || !deckIds.has(String(card.id))));
-        const hiddenByDecks = cards.filter(card => deckIds.has(String(card.id))).length;
+        // Con il filtro attivo restano solo le copie che nessun mazzo usa;
+        // la tessera mostra quelle libere, non il totale posseduto.
+        const visible = cards
+            .filter(card => nameMatch(card) && (!hideDeckCards || residualCopies(card, used) > 0))
+            .map(card => (hideDeckCards ? { ...card, quantity: residualCopies(card, used) } : card));
+        const hiddenByDecks = cards.filter(card => residualCopies(card, used) <= 0).length;
         const wanted = wantlist.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)));
         const activeDeck = decks.find(deck => deck.id === activeDeckId) || decks[0];
         const cardMap = byId();
@@ -467,7 +482,7 @@ export function showMagicDashboard(container, options = {}) {
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">LA TUA RACCOLTA</span><h2>Collezione</h2><p>Apri una carta per leggere l’effetto. Il simbolo ◇ la aggiunge alla wantlist.</p></div><strong>${cards.reduce((sum,card)=>sum+(Number(card.quantity)||1),0)} carte</strong></div>
             <div class="mv-import"><div><h3>Importa una lista</h3><p>Carica un file PDF, TXT o DOCX. I nomi vengono cercati nel catalogo ufficiale.</p></div><label class="mv-file">Scegli file<input id="mv-file" type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label></div>
             <label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra le carte per nome…" value="${esc(filter)}"></label>
-            <label class="mv-hide-deck"><input id="mv-hide-deck-cards" type="checkbox" ${hideDeckCards ? 'checked' : ''}> <span>Nascondi le carte già in un mazzo</span><small>${hiddenByDecks} ${hiddenByDecks === 1 ? 'carta' : 'carte'} nei mazzi</small></label>
+            <label class="mv-hide-deck"><input id="mv-hide-deck-cards" type="checkbox" ${hideDeckCards ? 'checked' : ''}> <span>Nascondi le carte già in un mazzo</span><small>${hiddenByDecks ? `${hiddenByDecks} ${hiddenByDecks === 1 ? 'carta' : 'carte'} senza copie libere` : 'tutte le copie sono libere'}</small></label>
             ${pending.length ? `<div class="mv-review"><h3>Controlla le carte trovate</h3><p>Verifica i nomi prima di salvarli; gli elementi in rosso non sono stati associati a una carta.</p>${pending.map((item,index)=>`<div class="mv-review-row"><label>${esc(item.name)} <small>×${item.quantity}</small><select data-resolve="${index}"><option value="">${item.card ? `Trovata: ${esc(item.card.name)}` : 'Scegli il risultato esatto'}</option>${(item.matches||[]).map(card=>`<option value="${esc(card.id)}">${esc(card.name)} · ${esc(card.set_name||card.set||'')}</option>`).join('')}</select></label></div>`).join('')}<div class="mv-actions"><button type="button" class="mv-button" id="mv-confirm-import" ${pending.some(item=>!item.card)?'disabled':''}>Aggiungi carte selezionate</button><button type="button" class="mv-button mv-soft" id="mv-cancel-import">Annulla</button></div></div>` : ''}
             <div class="mv-selection-tools" aria-label="Gestisci collezione">
               <button type="button" class="mv-button" id="mv-delete-cards" ${selected.size ? '' : 'disabled'}>Cancella${selected.size ? ` (${selected.size})` : ''}</button>
@@ -476,7 +491,7 @@ export function showMagicDashboard(container, options = {}) {
               ${undoRemoval ? '<button type="button" class="mv-button" id="mv-undo-delete">Annulla eliminazione</button>' : ''}
               <small aria-live="polite">${selecting ? `${selected.size} selezionate · Elimina tutte le copie anche dai mazzi` : 'Tieni premuta una carta per selezionarla.'}</small>
             </div>
-            <div class="mv-grid">${visible.map(card=>cardTile(card,'collection')).join('') || `<p class="mv-empty">${cards.length ? (hideDeckCards ? 'Nessuna carta fuori dai mazzi corrisponde alla ricerca.' : 'Nessuna carta corrisponde alla ricerca.') : 'La collezione è vuota. Importa un PDF, TXT o DOCX per iniziare.'}</p>`}</div>
+            <div class="mv-grid">${visible.map(card=>cardTile(card,'collection')).join('') || `<p class="mv-empty">${cards.length ? (hideDeckCards ? (filter ? 'Nessuna copia libera corrisponde alla ricerca: le copie di queste carte sono tutte nei mazzi.' : 'Tutte le copie sono impegnate nei mazzi. Libera una carta da un mazzo o disattiva il filtro per rivedere la collezione.') : 'Nessuna carta corrisponde alla ricerca.') : 'La collezione è vuota. Importa un PDF, TXT o DOCX per iniziare.'}</p>`}</div>
           </section>` : tab === 'mazzi' ? `<section class="mv-panel">
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><div class="mv-panel-actions"><button type="button" class="mv-button mv-soft" id="mv-demo-decks">Mazzi d’esempio</button><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button></div></div>
             ${decks.length ? `<div class="mv-deck-layout"><aside class="mv-deck-list">${decks.map(deck=>`<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id===activeDeck?.id}"><strong>${esc(deck.name)}</strong><small>${deck.cards.reduce((sum,item)=>sum+(Number(item.quantity)||1),0)} carte</small></button>`).join('')}</aside><div class="mv-deck-content"><div class="mv-deck-tools"><h3>${esc(activeDeck?.name||'')}</h3>${playControl}<button class="mv-text-button" id="mv-print-deck" type="button">Stampa proxy</button><button class="mv-text-button" id="mv-rename-deck" type="button">Rinomina</button><button class="mv-text-button" id="mv-delete-deck" type="button">Elimina</button></div>${commanderAlert}${commanderSection}<label class="mv-search"><span>⌕</span><input id="mv-deck-search" type="search" placeholder="Aggiungi una carta…"></label><div id="mv-search-results" class="mv-search-results">${searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div><div class="mv-deck-groups">${[['Creature','Creature'],['Instant','Istantanei'],['Sorcery','Stregonerie'],['Artifact','Artefatti'],['Enchantment','Incantesimi'],['Planeswalker','Planeswalker'],['Battle','Battaglie'],['Land','Terre'],['Other','Altre carte']].map(([type,title])=>{const group=deckCards.filter(c=>{const primary=['Land','Creature','Planeswalker','Battle','Artifact','Enchantment','Instant','Sorcery'].find(t=>c.typeLine?.includes(t))||'Other';return primary===type;});return group.length?`<section class="mv-deck-group"><h4>${title} <span>${group.reduce((sum,c)=>sum+c.quantity,0)}</span></h4><div class="mv-grid">${group.map(card=>`<div class="mv-deck-card">${cardTile(card,'deck')}<div class="mv-quantity-tools"><button data-deck-quantity="${esc(card.id)}" data-delta="-1" aria-label="Riduci copie di ${esc(card.name)}">−</button><span>${card.quantity}</span><button data-deck-quantity="${esc(card.id)}" data-delta="1" aria-label="Aumenta copie di ${esc(card.name)}">+</button></div></div>`).join('')}</div></section>`:'';}).join('')||'<p class="mv-empty">Questo mazzo è vuoto. Cerca una carta qui sopra.</p>'}</div></div></div>` : '<p class="mv-empty">Non hai ancora creato mazzi.</p>'}
@@ -656,8 +671,8 @@ export function showMagicDashboard(container, options = {}) {
         });
         container.querySelector('#mv-select-mode')?.addEventListener('click', () => { selecting = !selecting; selected.clear(); render(); });
         container.querySelector('#mv-select-all')?.addEventListener('click', () => {
-            const deckIds = deckCardIds();
-            cards.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)) && (!hideDeckCards || !deckIds.has(String(card.id)))).forEach(card => selected.add(String(card.id)));
+            const used = deckUsage();
+            cards.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)) && (!hideDeckCards || residualCopies(card, used) > 0)).forEach(card => selected.add(String(card.id)));
             render();
         });
         container.querySelector('#mv-delete-cards')?.addEventListener('click', () => {
