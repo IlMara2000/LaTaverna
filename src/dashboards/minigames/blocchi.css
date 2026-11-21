@@ -636,6 +636,18 @@ body:has(.blocks-game) #nav-home-btn {
 }
 
 @media (max-width: 430px) {
+    /* Telefono verticale: le etichette HUD erano a 7px e i comandi touch a
+       34px, sotto la soglia toccabile e illeggibili. */
+    .blocks-topbar > .game-btn-action { min-height: 40px; font-size: 0.66rem; }
+    .blocks-top-actions button { width: 40px; height: 40px; }
+    .blocks-hud span { font-size: 0.66rem; }
+    .blocks-hud strong { font-size: 1rem; }
+    .blocks-board-topline,
+    .blocks-objective > div:first-child { font-size: 0.64rem; }
+    .blocks-touch-controls button { min-height: 44px; }
+    .blocks-touch-controls button[data-block-action="hold"],
+    .blocks-touch-controls button[data-block-action="drop"] { min-height: 44px; font-size: 0.66rem; }
+
     .blocks-start-mark {
         width: 62px;
         height: 50px;

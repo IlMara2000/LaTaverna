@@ -9320,3 +9320,16 @@ body.manual-page-modal-open .floating-trigger {
     border-color: rgba(224, 170, 255, 0.42);
     background: #0d0417;
 }
+
+/* Giochi verticali su telefono: i tavoli ruotati hanno già il loro spazio
+   (table-landscape.css), questi restano dritti e i testi sotto i 10px
+   diventavano illeggibili. */
+@media (max-width: 480px) and (orientation: portrait) {
+    html:not(.table-rotated) .game-level-copy small { font-size: 0.68rem; }
+    html:not(.table-rotated) .game-level-state { font-size: 0.64rem; }
+    html:not(.table-rotated) :is(.game-chess-bot, .game-chess-status, .tictactoe-players, .tictactoe-status) {
+        font-size: 0.72rem;
+        line-height: 1.3;
+    }
+    html:not(.table-rotated) .game-btn-action { font-size: 0.72rem; min-height: 40px; }
+}
