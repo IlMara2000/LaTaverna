@@ -140,22 +140,33 @@ export function showMagicPlay(container, options = {}) {
         const current = gameState();
         return Boolean(current && !current.mulliganActive && !current.winner && current.activePlayer === clientId);
     };
+    // Due tipi di avviso: 'move' è l'esito di un tentativo (mana insufficiente,
+    // carta non giocabile, partita cambiata) e sparisce da solo dopo qualche
+    // secondo; 'status' è una situazione (connessione interrotta, attesa degli
+    // altri, mazzo confermato) e resta finché qualcosa non la sostituisce,
+    // altrimenti si perde proprio l'informazione che serve.
+    const NOTICE_MOVE = 'move';
+    const NOTICE_TTL = 6000;
     let noticeTimer = 0;
-    const setNotice = message => {
+    let noticeKind = 'status';
+    const clearMoveNotice = () => {
+        if (noticeKind !== NOTICE_MOVE) return;
+        clearTimeout(noticeTimer);
+        notice = '';
+        noticeKind = 'status';
+    };
+    const setNotice = (message, kind = 'status') => {
         notice = message || '';
+        noticeKind = notice ? kind : 'status';
         const node = container.querySelector('#play-notice');
         if (node) node.textContent = notice;
         clearTimeout(noticeTimer);
-        // Un avviso di mossa non valida («Mana insufficiente…») non deve restare
-        // appeso sul tavolo quando la situazione è già cambiata: spariva solo
-        // ricaricando la pagina.
-        if (notice) {
-            noticeTimer = setTimeout(() => {
-                notice = '';
-                const current = container.querySelector('#play-notice');
-                if (current) current.textContent = '';
-            }, 6000);
-        }
+        if (noticeKind !== NOTICE_MOVE) return;
+        noticeTimer = setTimeout(() => {
+            clearMoveNotice();
+            const current = container.querySelector('#play-notice');
+            if (current) current.textContent = '';
+        }, NOTICE_TTL);
     };
     const deckCards = deck => (deck?.cards || [])
         .map(entry => ({ ...collection.get(String(entry.cardId)), quantity: Math.max(0, Number(entry.quantity) || 0) }))
@@ -225,11 +236,13 @@ export function showMagicPlay(container, options = {}) {
                 const next = updater(structuredClone(localGame));
                 next.revision = (localGame.revision || 0) + 1;
                 localGame = next;
+                // La mossa è passata: l'avviso del tentativo precedente non serve più.
+                clearMoveNotice();
                 render();
                 scheduleBotIfNeeded();
                 return true;
             } catch (error) {
-                setNotice(error.message || 'Mossa non valida.');
+                setNotice(error.message || 'Mossa non valida.', NOTICE_MOVE);
                 return false;
             } finally {
                 busy = false;
@@ -239,23 +252,37 @@ export function showMagicPlay(container, options = {}) {
         busy = true;
         warnIfSomeoneAway();
         const snapshot = gameState();
+        // Solo un rifiuto del motore (regola non rispettata) riguarda questo
+        // tentativo: un guasto di scrittura o di rete deve restare sul tavolo.
+        // Il flag serve perché entrambi possono arrivare come result.error
+        // oppure come eccezione, e il messaggio da solo non li distingue.
+        let engineRejected = false;
         try {
             const result = await updateMinigameRoomData(room.code, data => {
                 const current = data.magic?.game;
                 if (!current) throw new Error('La partita non è più attiva.');
                 if (snapshot && current.revision !== snapshot.revision) throw new Error('La partita è cambiata nel frattempo: guarda il tavolo e riprova.');
-                const next = updater(structuredClone(current));
+                let next;
+                try {
+                    next = updater(structuredClone(current));
+                } catch (error) {
+                    engineRejected = true;
+                    throw error;
+                }
                 next.revision = (current.revision || 0) + 1;
                 return { ...data, magic: { ...data.magic, game: next, presence: { ...data.magic.presence, [clientId]: Date.now() } } };
             });
-            if (result.error) { setNotice(result.error.message); return false; }
+            if (result.error) {
+                setNotice(result.error.message, engineRejected ? NOTICE_MOVE : 'status');
+                return false;
+            }
             persistRoom(result.room);
             // La mossa è andata a buon fine: l'avviso della mossa precedente non serve più.
-            notice = '';
+            setNotice('');
             render();
             return true;
         } catch (error) {
-            setNotice(error.message || 'Connessione interrotta: la mossa non è stata salvata.');
+            setNotice(error.message || 'Connessione interrotta: la mossa non è stata salvata.', engineRejected ? NOTICE_MOVE : 'status');
             return false;
         } finally {
             busy = false;
