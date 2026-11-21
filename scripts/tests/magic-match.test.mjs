@@ -266,6 +266,31 @@ test('un istantaneo può rispondere nel turno avversario', () => {
     assert.equal(after.activePlayer, 'b');
 });
 
+test('la risposta con bersaglio trova la carta e applica tutte le frasi', () => {
+    let state = passTurn(started(), 'a');
+    // L'identificativo vero contiene dei «:» (clientId:scryfallId:indice): il
+    // bersaglio deve restare intero, altrimenti la carta non viene trovata.
+    const ringUid = 'b:scryfall-id:1';
+    state.playersData.b.battlefield.push(permanent(ringUid, {
+        name: 'Sol Ring', typeLine: 'Artifact', manaCost: '', power: '', toughness: ''
+    }));
+    state.playersData.a.battlefield.push(permanent('piana', {
+        name: 'Piana', typeLine: 'Basic Land — Plains', oracleText: '{T}: Add {W}.',
+        manaCost: '', power: '', toughness: '', colorIdentity: ['W']
+    }));
+    state.playersData.a.hand = [{
+        ...card('Invoke the Divine', {
+            typeLine: 'Instant', manaCost: '{W}', cmc: 1, colors: ['W'],
+            oracleText: 'Destroy target artifact or enchantment. You gain 4 life.'
+        }), uid: 'i1'
+    }];
+    const after = castResponse(state, 'a', 'i1', `card:b:${ringUid}`);
+    assert.equal(after.playersData.b.battlefield.length, 0);
+    assert.equal(after.playersData.b.graveyard[0].name, 'Sol Ring');
+    assert.equal(after.playersData.a.life, 44);
+    assert.doesNotMatch(after.log.join(' '), /da gestire a mano/);
+});
+
 test('solo un istantaneo risponde, e nel proprio turno si lancia normalmente', () => {
     const state = passTurn(started(), 'a');
     state.playersData.a.hand = [{ ...card('Lenta', { typeLine: 'Sorcery' }), uid: 'x1' }];

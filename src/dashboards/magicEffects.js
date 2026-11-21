@@ -465,9 +465,12 @@ export function parseCardAbilities(card) {
 
         // Frasi di magia: per un permanente non vengono mai risolte dal motore
         // (si risolvono solo gli inneschi ETB), quindi qui si registrano e basta.
-        const effect = parseSentence(line);
-        if (effect) spells.push({ effects: [effect], unsupported: [], text: line });
-        else { spells.push({ effects: [], unsupported: [line], text: line }); manual.push(line); }
+        // Una riga può contenere più frasi («Distruggi… Guadagni 4 vite»): si
+        // spezzano, altrimenti la seconda rende manuale anche la prima.
+        const body = parseBody(line);
+        const skipped = body.unsupported.length ? body.unsupported : (body.effects.length ? [] : [line]);
+        spells.push({ effects: body.effects, unsupported: skipped, text: line });
+        manual.push(...skipped);
     }
 
     return { triggers, activated, spells, statics, manual: [...new Set(manual)] };
@@ -612,7 +615,11 @@ const stripPunct = value => String(value || '').trim().toLowerCase().replace(/\.
 
 function parseTarget(state, target) {
     if (!target) return null;
-    const [kind, ownerId, cardId] = String(target).split(':');
+    // L'identificativo di una carta contiene a sua volta dei «:»
+    // (clientId:scryfallId:indice): si separano solo i primi due campi, il
+    // resto è l'uid completo, altrimenti il bersaglio non viene mai trovato.
+    const [kind, ownerId, ...rest] = String(target).split(':');
+    const cardId = rest.join(':');
     if (kind === 'player') {
         const player = state.playersData?.[ownerId];
         return player ? { kind, player, ownerId } : null;

@@ -123,6 +123,10 @@ export function showMagicPlay(container, options = {}) {
     let botTimer = null;
     let selectedAttackers = new Set();
     let selectedDiscards = new Set();
+    // Il tavolo si ridisegna a ogni aggiornamento della stanza (anche solo per il
+    // battito di presenza): il bersaglio scelto resta, e sparisce solo quando
+    // quella carta non è più un'opzione valida.
+    let chosenTarget = '';
     // Aggiornamento immediato quando la finestra torna in primo piano: i browser
     // rallentano i timer delle schede nascoste e il tavolo sembrerebbe fermo.
     let syncNow = () => {};
@@ -251,7 +255,11 @@ export function showMagicPlay(container, options = {}) {
         if (!room?.code || busy || disposed) return false;
         busy = true;
         warnIfSomeoneAway();
-        const snapshot = gameState();
+        // Nessun confronto con la revisione vista a schermo: la mossa può arrivare
+        // mentre l'altro giocatore ha appena risposto. updateMinigameRoomData
+        // rilegge la stanza e riapplica la funzione sullo stato più recente, e il
+        // motore rifiuta da solo una mossa che non è più valida (carta sparita,
+        // turno cambiato). Bloccarla qui perderebbe una mossa legittima.
         // Solo un rifiuto del motore (regola non rispettata) riguarda questo
         // tentativo: un guasto di scrittura o di rete deve restare sul tavolo.
         // Il flag serve perché entrambi possono arrivare come result.error
@@ -261,7 +269,6 @@ export function showMagicPlay(container, options = {}) {
             const result = await updateMinigameRoomData(room.code, data => {
                 const current = data.magic?.game;
                 if (!current) throw new Error('La partita non è più attiva.');
-                if (snapshot && current.revision !== snapshot.revision) throw new Error('La partita è cambiata nel frattempo: guarda il tavolo e riprova.');
                 let next;
                 try {
                     next = updater(structuredClone(current));
@@ -314,14 +321,21 @@ export function showMagicPlay(container, options = {}) {
             if (polling || disposed || busy || room?.code !== code) return;
             polling = true;
             try {
-                const heartbeat = Date.now() - lastBeat > 10000
+                const writing = Date.now() - lastBeat > 10000;
+                const heartbeat = writing
                     ? await updateMinigameRoomData(code, data => {
                         if (!data.magic) return data;
                         return { ...data, magic: { ...data.magic, presence: { ...data.magic.presence, [clientId]: Date.now() } } };
                     })
                     : await getMinigameRoomByCode(code);
-                if (heartbeat.error) { setNotice(heartbeat.error.message); return; }
-                if (Date.now() - lastBeat > 10000) lastBeat = Date.now();
+                // Il battito di presenza non deve coprire il tavolo con «La stanza
+                // è cambiata»: se il suo invio perde la corsa con una mossa, la
+                // mossa è comunque salva e il prossimo giro rimanda il battito.
+                if (heartbeat.error) {
+                    if (!writing) setNotice(heartbeat.error.message);
+                    return;
+                }
+                if (writing) lastBeat = Date.now();
                 refreshRoom(heartbeat.room);
             } catch {
                 setNotice('Connessione interrotta. Riconnessione in corso…');
@@ -827,6 +841,14 @@ export function showMagicPlay(container, options = {}) {
         }).join('') || '<p class="mp-empty">Nessuna carta in mano.</p>'}</div>`;
     }
 
+    const restoreTarget = () => {
+        const select = container.querySelector('#play-target');
+        if (!select) return;
+        if (!chosenTarget) return;
+        if ([...select.options].some(option => option.value === chosenTarget)) select.value = chosenTarget;
+        else chosenTarget = '';
+    };
+
     function targetOptions() {
         const current = gameState();
         return current.players
@@ -1273,6 +1295,7 @@ export function showMagicPlay(container, options = {}) {
                 onAbandon: () => void leaveRoom()
             });
             bindActions();
+            restoreTarget();
             return;
         }
         if (table.update({
@@ -1280,6 +1303,7 @@ export function showMagicPlay(container, options = {}) {
             commands: commandsMarkup(), zones: views.zones,
             status: views.status, mana: views.mana, life: views.life
         })) bindActions();
+        restoreTarget();
     }
 
     const render = () => {
@@ -1456,6 +1480,9 @@ export function showMagicPlay(container, options = {}) {
             current.playersData[clientId].manaPool = emptyManaPool();
             return current;
         }, { auto: false }));
+        container.querySelectorAll('#play-target').forEach(select => select.addEventListener('change', () => {
+            chosenTarget = select.value;
+        }));
         container.querySelector('[data-leave]')?.addEventListener('click', () => void leaveRoom());
     }
 
