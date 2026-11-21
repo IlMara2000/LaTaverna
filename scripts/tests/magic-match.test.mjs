@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     MATCH_RULES, adjustLife, advancePhase, castSpell, createMatch, declareAttackers, declareBlockers,
-    discardCards, mulliganAction, playLand, powerOf, resolveCombat, tapMana, validateMatchDeck
+    castResponse, discardCards, mulliganAction, playLand, powerOf, resolveCombat, tapMana, validateMatchDeck
 } from '../../src/dashboards/magicMatchEngine.js';
 
 const cards = new Map();
@@ -253,4 +253,24 @@ test('trapassare trasferisce al giocatore il danno che avanza', () => {
     assert.equal(state.playersData.b.battlefield.length, 0);
     assert.equal(state.playersData.b.life, 38);
     assert.equal(powerOf(state.playersData.a.battlefield[0]), 4);
+});
+
+test('un istantaneo può rispondere nel turno avversario', () => {
+    const state = passTurn(started(), 'a');
+    assert.equal(state.activePlayer, 'b');
+    state.playersData.a.battlefield.push(permanent('Bosco', { typeLine: 'Basic Land — Forest', oracleText: '{T}: Add {G}.', power: '', toughness: '' }));
+    state.playersData.a.hand = [{ ...card('Risposta', { typeLine: 'Instant', manaCost: '{G}', cmc: 1, power: '', toughness: '' }), uid: 'r1' }];
+    const after = castResponse(state, 'a', 'r1');
+    assert.equal(after.playersData.a.hand.length, 0);
+    assert.match(after.log.join(' '), /risponde con Risposta/);
+    assert.equal(after.activePlayer, 'b');
+});
+
+test('solo un istantaneo risponde, e nel proprio turno si lancia normalmente', () => {
+    const state = passTurn(started(), 'a');
+    state.playersData.a.hand = [{ ...card('Lenta', { typeLine: 'Sorcery' }), uid: 'x1' }];
+    assert.throws(() => castResponse(state, 'a', 'x1'), /istantaneo/i);
+    const own = started();
+    own.playersData.a.hand = [{ ...card('Risposta', { typeLine: 'Instant', manaCost: '{G}', cmc: 1 }), uid: 'x2' }];
+    assert.throws(() => castResponse(own, 'a', 'x2'), /lancia normalmente/i);
 });

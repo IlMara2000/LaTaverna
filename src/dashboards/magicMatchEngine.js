@@ -438,6 +438,30 @@ export function castSpell(currentState, playerId, uid, target = '', mode = null)
 }
 
 /**
+ * Risposta: un istantaneo lanciato mentre ha il turno l'avversario. Il motore
+ * non ha lo stack completo, quindi l'effetto si risolve subito — prima della
+ * prossima mossa di chi ha il turno — e il diario lo registra come risposta.
+ */
+export function castResponse(currentState, playerId, uid, target = '') {
+    const state = clone(currentState);
+    const player = requirePlayer(state, playerId);
+    if (state.winner || state.mulliganActive) throw new Error('La partita non è in corso.');
+    if (state.activePlayer === playerId) throw new Error('È il tuo turno: lancia normalmente.');
+    if (!['main1', 'main2', 'combat'].includes(state.phase)) throw new Error('Non c’è niente a cui rispondere in questa fase.');
+    const index = player.hand.findIndex(card => card.uid === uid);
+    if (index < 0) throw new Error('La carta non è nella tua mano.');
+    const card = player.hand[index];
+    // Solo velocità istantanea risponde: una stregoneria aspetta il proprio turno.
+    if (!isInstant(card) && !hasKeyword(card, 'flash')) throw new Error('Solo un istantaneo può rispondere.');
+    autoPay(state, player, card.manaCost || '');
+    player.hand.splice(index, 1);
+    player.graveyard.push(card);
+    log(state, `${playerName(state, playerId)} risponde con ${card.name}.`);
+    state.log = [...resolveOracleText(card, state, playerId, target, 0, false).log, ...state.log];
+    return settle(state);
+}
+
+/**
  * Attiva un'abilità di un permanente in campo: «{2}, {T}: pesca una carta».
  * Il costo (tap e mana) si paga prima dell'effetto; le abilità che chiedono
  * una scelta che il tavolo non sa fare restano manuali e vengono rifiutate qui.
@@ -749,6 +773,101 @@ export function concedeMatch(currentState, playerId) {
         return beginTurn(state, nextId);
     }
     return state;
+}
+
+/** Il giocatore ha ancora qualcosa di legale da fare in questa fase? */
+export function hasPlayableAction(state, playerId) {
+    const player = state?.playersData?.[playerId];
+    if (!player || state.winner || state.activePlayer !== playerId) return false;
+    // Con la mano oltre sette carte l'unica cosa che resta è scegliere lo scarto.
+    if (state.pendingDiscard && player.hand.length > MATCH_RULES.openingHand) return true;
+    if (state.phase === 'combat') {
+        if (!state.combat) {
+            return player.battlefield.some(card => isCreature(card) && !card.tapped && !card.summoningSick);
+        }
+        if (state.combat.step === 'blockers') {
+            const defender = state.playersData[state.combat.defender];
+            return Boolean(defender && defender.battlefield.some(card => isCreature(card) && !card.tapped && !card.cannotBlock));
+        }
+        // Danno già risolto: resta solo da lasciare il combattimento.
+        if (state.combat.step === 'done') return false;
+        return true;
+    }
+    if (!['main1', 'main2'].includes(state.phase)) return false;
+    if (player.hand.some(isLand) && (player.landsPlayed || 0) < 1) return true;
+    // Abilità attivate dei permanenti («{1}, {T}: pesca»): se una è pagabile,
+    // saltare il turno toglierebbe una mossa vera.
+    const activatable = card => parseCardAbilities(card).activated.some((ability, index) => {
+        if (!ability.supported) return false;
+        try { activateAbility(clone(state), playerId, card.instanceId || card.uid, index); return true; } catch { return false; }
+    });
+    if (player.battlefield.some(activatable)) return true;
+    // Il lancio si prova davvero su una copia dello stato: così valgono costo,
+    // fase, bersagli e fonti di mana (autoPay tappa anche terre e artefatti).
+    // Un costo vuoto non basta a dire «giocabile»: decide il motore.
+    const castable = card => {
+        try { castSpell(clone(state), playerId, card.uid, ''); return true; } catch { return false; }
+    };
+    if (player.hand.some(card => !isLand(card) && castable(card))) return true;
+    return (player.commandZone || []).some(card => castable(card));
+}
+
+/**
+ * Avanza da solo le fasi in cui non c'è nulla da fare: nessun «passa» da
+ * premere quattro volte per arrivare al turno dopo. Si ferma appena trova una
+ * decisione che spetta al giocatore — un lancio, un attacco, i blocchi
+ * dell'avversario, uno scarto da scegliere — o quando il turno è passato.
+ */
+export function autoAdvance(currentState, playerId) {
+    let state = clone(currentState);
+    if (!state || state.winner || state.mulliganActive) return state;
+    for (let guard = 0; guard < 8; guard += 1) {
+        if (state.activePlayer !== playerId) break;
+        const player = state.playersData?.[playerId];
+        if (!player || player.eliminated) break;
+        if (state.pendingDiscard && player.hand.length > MATCH_RULES.openingHand) break;
+        if (state.phase === 'combat' && state.combat?.step === 'blockers') {
+            const defender = state.playersData[state.combat.defender];
+            const canBlock = defender?.battlefield.some(card => isCreature(card) && !card.tapped && !card.cannotBlock);
+            // I blocchi li sceglie chi difende: se ha qualcuno che può bloccare,
+            // la decisione è sua e l'automatismo si ferma qui.
+            if (canBlock) break;
+            state = resolveCombat(declareBlockers(state, state.combat.defender, {}), playerId);
+            continue;
+        }
+        if (hasPlayableAction(state, playerId)) break;
+        if (state.phase === 'combat') {
+            if (!state.combat) { state = declareAttackers(state, playerId, []); continue; }
+            if (state.combat.step !== 'done') { state = resolveCombat(state, playerId); continue; }
+            state = advancePhase(state, playerId);
+            continue;
+        }
+        state = advancePhase(state, playerId);
+    }
+    return state;
+}
+
+/** Chiude il turno per intero, senza fasi da premere una a una. */
+export function passTurn(currentState, playerId) {
+    let state = clone(currentState);
+    if (!state || state.winner || state.mulliganActive) return state;
+    if (state.activePlayer !== playerId) throw new Error('Non è il tuo turno.');
+    if (state.phase === 'combat' && state.combat?.step === 'blockers') {
+        throw new Error('Prima si risolvono i blocchi.');
+    }
+    for (let guard = 0; guard < 6; guard += 1) {
+        if (state.activePlayer !== playerId || state.winner) break;
+        const player = state.playersData[playerId];
+        if (state.pendingDiscard && player.hand.length > MATCH_RULES.openingHand) break;
+        if (state.phase === 'combat') {
+            if (!state.combat) { state = declareAttackers(state, playerId, []); continue; }
+            if (state.combat.step !== 'done') { state = resolveCombat(state, playerId); continue; }
+            state = advancePhase(state, playerId);
+            continue;
+        }
+        state = advancePhase(state, playerId);
+    }
+    return settle(state);
 }
 
 export const matchSummary = state => ({

@@ -7,9 +7,9 @@ import {
 } from '../services/minigameMultiplayer.js';
 import { canPayMana, emptyManaPool, isManaSource, manaAbilityOptions, manaPoolLabel, manaProductionOptions, payMana } from './magicRules.js';
 import {
-    MATCH_RULES, PHASE_LABEL, advancePhase, adjustLife, castSpell, concedeMatch, createMatch,
-    activateAbility, declareAttackers, declareBlockers, discardCards, mulliganAction, playLand, powerOf,
-    resolveCombat, tapMana, toughnessOf
+    MATCH_RULES, PHASE_LABEL, adjustLife, advancePhase, castSpell, concedeMatch, createMatch,
+    activateAbility, autoAdvance, castResponse, declareAttackers, declareBlockers, discardCards, mulliganAction, passTurn,
+    playLand, powerOf, resolveCombat, tapMana, toughnessOf
 } from './magicMatchEngine.js';
 import { abilityLabel, parseCardAbilities, textSupport } from './magicEffects.js';
 import { showMatchTable } from '../match/table.js';
@@ -754,9 +754,11 @@ export function showMagicPlay(container, options = {}) {
     // Le mosse si accodano: un tocco rapido (le vite, per esempio) non deve andare
     // perso solo perché la precedente stava ancora salvando.
     let commitQueue = Promise.resolve();
-    const act = updater => {
+    // Ogni mossa passa dal motore di fasi: se dopo il lancio non resta nulla da
+    // fare, il turno scorre da solo fino alla prossima decisione vera.
+    const act = (updater, { auto = true } = {}) => {
         commitQueue = commitQueue
-            .then(() => commit(updater))
+            .then(() => commit(auto ? state => autoAdvance(updater(state), clientId) : updater))
             .then(ok => { if (ok) { selectedAttackers = new Set(); selectedDiscards = new Set(); } })
             .catch(() => {});
     };
@@ -765,8 +767,9 @@ export function showMagicPlay(container, options = {}) {
         if (!isMyTurn()) return '';
         // Con la mano oltre sette carte il turno non si chiude: prima si scarta.
         if (gameState().pendingDiscard && player.hand.length > MATCH_RULES.openingHand) return '';
-        const next = { main1: 'Passa al combattimento', combat: 'Concludi il combattimento', main2: 'Vai alla fase finale', end: 'Passa il turno' }[gameState().phase];
-        return `<button type="button" class="mp-button" data-phase="next">${esc(next)}</button>`;
+        // Un solo pulsante: chiude il turno intero. Le fasi intermedie le
+        // attraversa il motore, non l'utente.
+        return '<button type="button" class="mp-button" data-phase="next">Passa il turno</button>';
     }
 
     function boardCard(card, mine) {
@@ -1085,6 +1088,78 @@ export function showMagicPlay(container, options = {}) {
 
     // I pannelli comandi che stavano in tableMarkup() restano gli stessi: cambia
     // solo dove finiscono, cioè nella banda centrale del tavolo.
+    // Simboli veri al posto di {2}{W}: la riserva si legge a colpo d'occhio.
+    const manaSymbols = pool => {
+        const text = ['W', 'U', 'B', 'R', 'G', 'C']
+            .flatMap(color => Array.from({ length: Math.max(0, Number(pool?.[color]) || 0) }, () => `{${color}}`))
+            .join('');
+        return text ? renderCardSymbols(text) : '';
+    };
+
+    // Un simbolo per tipo di effetto: si vede subito se il modo distrugge,
+    // pesca, fa danno o pompa, senza leggere la frase intera sul pulsante.
+    const EFFECT_ICONS = {
+        destroy: '☠', exile: '⛓', damage: '⚔', draw: '✦', gainLife: '❤', loseLife: '♡', pump: '↑',
+        grantKeyword: '✧', counters: '◈', tokens: '❖', mana: '◊', bounce: '↩', mill: '▤',
+        cantBlock: '⊗', support: '✚', searchBasic: '⌕', discard: '✕', sacrifice: '✖', tap: '↻', untap: '↺'
+    };
+    const effectIcon = effects => (effects || []).map(effect => EFFECT_ICONS[effect?.type]).find(Boolean) || '✦';
+
+    // Rivelatore: elenca gli inneschi delle carte in campo (tue e avversarie) e i
+    // modi o le abilità disponibili in mano. Non simula frasi non capite: mostra
+    // solo gli effetti che il motore sa applicare, così la catena si costruisce
+    // su qualcosa che accade davvero.
+    const effectDetectorMarkup = () => {
+        const current = gameState();
+        const mine = myData();
+        if (!current || !mine) return '';
+        const rows = [];
+        const sides = [[clientId, mine], ...(current.players || []).filter(id => id !== clientId).map(id => [id, current.playersData?.[id]])];
+        for (const [id, data] of sides) {
+            for (const card of data?.battlefield || []) {
+                for (const trigger of parseCardAbilities(card).triggers) {
+                    const supported = Boolean(trigger.effects?.length && !trigger.unsupported?.length);
+                    rows.push({ side: id === clientId ? 'mine' : 'foe', icon: supported ? '⚡' : '⚠', card: card.name, text: trigger.text, cost: '', manual: !supported });
+                }
+            }
+        }
+        for (const card of mine.hand || []) {
+            const parsed = parseCardAbilities(card);
+            for (const spell of parsed.spells.filter(entry => entry.modes?.length)) {
+                for (const mode of spell.modes) {
+                    const supported = Boolean(mode.effects.length && !mode.unsupported.length);
+                    rows.push({ side: 'hand', icon: supported ? effectIcon(mode.effects) : '⚠', card: card.name, text: mode.text, cost: card.manaCost || '', manual: !supported });
+                }
+            }
+            for (const ability of parsed.activated.filter(entry => entry.supported)) {
+                rows.push({ side: 'hand', icon: '⟳', card: card.name, text: ability.text, cost: '', manual: false });
+            }
+        }
+        if (!rows.length) return '';
+        const foes = rows.filter(row => row.side === 'foe').length;
+        const items = rows.slice(0, 10).map(row => `<li class="mp-effect mp-effect--${row.side}"><span class="mp-effect__icon" aria-hidden="true" title="${row.manual ? 'Da gestire a mano' : 'Automatico'}">${row.icon}</span><span class="mp-effect__body"><strong>${esc(row.card)}</strong> ${esc(row.text)}${row.manual ? ' <em>(a mano)</em>' : ''}${row.cost ? ` <span class="mp-effect__cost">${renderCardSymbols(row.cost)}</span>` : ''}</span></li>`).join('');
+        return `<details class="mp-effects"><summary>Rivelatore effetti · ${rows.length}${foes ? ` · ${foes} avversari` : ''}</summary><ol>${items}</ol></details>`;
+    };
+
+    // Quando l'avversario mette in campo una carta che innesca, l'avviso arriva
+    // subito: è il momento in cui si può ancora rispondere, non a effetto risolto.
+    let foeTriggersSeen = new Set();
+    const noteFoeTriggers = () => {
+        const current = gameState();
+        if (!current || current.mulliganActive || current.winner) return;
+        const next = new Set();
+        for (const id of current.players || []) {
+            if (id === clientId) continue;
+            for (const card of current.playersData?.[id]?.battlefield || []) {
+                for (const trigger of parseCardAbilities(card).triggers) next.add(`${card.name} · ${trigger.text}`);
+            }
+        }
+        const fresh = [...next].filter(key => !foeTriggersSeen.has(key));
+        foeTriggersSeen = next;
+        if (!fresh.length) return;
+        setNotice(`Effetto avversario in gioco — ${fresh[0]}. Se hai una risposta istantanea, giocala dal tavolo.`);
+    };
+
     const commandsMarkup = () => {
         const current = gameState();
         const mine = myData();
@@ -1099,13 +1174,14 @@ export function showMagicPlay(container, options = {}) {
             const tax = (mine.commanderCasts?.[card.uid] || 0) * 2;
             const cost = tax > 0 ? `${card.manaCost || ''} +${tax}` : (card.manaCost || '');
             const canCast = isMyTurn() && ['main1', 'main2'].includes(current.phase);
-            return `<button type="button" class="mp-small mp-commander-cast" data-cast-commander="${esc(card.uid)}" ${canCast ? '' : 'disabled'}>Comandante · ${esc(card.name)} <small>${esc(cost)}</small></button>`;
+            return `<button type="button" class="mp-small mp-commander-cast" data-cast-commander="${esc(card.uid)}" ${canCast ? '' : 'disabled'}>Comandante · ${esc(card.name)} <small>${renderCardSymbols(cost)}</small></button>`;
         }).join('');
         return `<p id="play-notice" class="mp-notice" role="status" aria-live="polite">${esc(notice)}</p>
-            <div class="mp-mana"><span>Riserva: ${esc(manaPoolLabel(mine.manaPool))}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>
+            <div class="mp-mana"><span class="mp-mana__pool" title="${esc(`Riserva: ${manaPoolLabel(mine.manaPool)}`)}">Riserva: ${manaSymbols(mine.manaPool) || 'vuota'}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>
             <div class="mp-toolbar">${phaseButton(mine)}${commanderButtons}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave>Lascia il tavolo</button></div>
             ${current.phase !== 'combat' ? `<label class="mp-target">Bersaglio della magia<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
             ${combatPanel()}
+            ${effectDetectorMarkup()}
             <details class="mp-log"><summary>Diario della partita</summary><ol>${(current.log || []).slice(0, 12).map(line => `<li>${esc(line)}</li>`).join('')}</ol></details>`;
     };
 
@@ -1123,7 +1199,14 @@ export function showMagicPlay(container, options = {}) {
         const uid = card.uid || '';
         const nodeId = idOf(card);
         if ((mine.hand || []).some(item => item.uid === uid)) {
-            if (!isMyTurn()) return '';
+            // Fuori dal proprio turno resta una mossa: la risposta con un
+            // istantaneo (o una carta con lampo) prima che l'avversario prosegua.
+            if (!isMyTurn()) {
+                const canRespond = Boolean(current && !current.winner && !current.mulliganActive
+                    && ['main1', 'main2', 'combat'].includes(current.phase)
+                    && (/\binstant\b/i.test(String(card.typeLine || '')) || /\bflash\b/i.test(String(card.oracleText || ''))));
+                return canRespond ? `<button type="button" class="mp-small" data-respond="${esc(uid)}">Rispondi</button>` : '';
+            }
             if (current.pendingDiscard && mine.hand.length > MATCH_RULES.openingHand) {
                 return `<button type="button" class="mp-small" data-discard="${esc(uid)}">${selectedDiscards.has(uid) ? 'Non scartare' : 'Scarta'}</button>`;
             }
@@ -1136,7 +1219,7 @@ export function showMagicPlay(container, options = {}) {
             if (modal) {
                 return modal.modes.map((option, modeIndex) => {
                     const supported = option.effects.length > 0 && option.unsupported.length === 0;
-                    return `<button type="button" class="mp-small" data-cast-mode="${esc(`${uid}:${modeIndex}`)}" ${supported ? '' : 'disabled'} title="${esc(option.text)}">${esc(modeLabel(option.text))}</button>`;
+                    return `<button type="button" class="mp-small" data-cast-mode="${esc(`${uid}:${modeIndex}`)}" ${supported ? '' : 'disabled'} title="${esc(`${option.text} · costo ${card.manaCost || '0'}`)}"><span class="mp-mode-icon" aria-hidden="true">${effectIcon(option.effects)}</span> ${esc(modeLabel(option.text))}</button>`;
                 }).join('');
             }
             const land = isLand(card);
@@ -1202,6 +1285,7 @@ export function showMagicPlay(container, options = {}) {
     const render = () => {
         if (disposed) return;
         const current = gameState();
+        noteFoeTriggers();
         document.body.classList.toggle('magic-table-active', Boolean(current && !current.winner));
         // Mulligan, lobby e schermata del vincitore restano le vecchie: il tavolo
         // è uno strato del solo campo, e il mulligan lavora su indici di mano.
@@ -1238,7 +1322,7 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-start]')?.addEventListener('click', () => void startMatch());
         container.querySelector('[data-start-bot]')?.addEventListener('click', () => void startBotMatch());
         container.querySelector('[data-new-match]')?.addEventListener('click', () => void returnToLobby());
-        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => advancePhase(current, clientId)));
+        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId), { auto: false }));
         // Tutta la scheda apre la carta, tranne i suoi comandi: i pulsanti interni
         // (Lancia, Mana, Attacca, In fondo, Scarta) non devono aprire altro.
         container.querySelectorAll('[data-zoom-card]').forEach(card => card.addEventListener('click', event => {
@@ -1270,7 +1354,12 @@ export function showMagicPlay(container, options = {}) {
             act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
         }));
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
-            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
+            // Tappare per mana è una preparazione, non una mossa conclusa: le
+            // fasi non scattano in avanti mentre il giocatore sta pagando.
+            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'), { auto: false });
+        }));
+        container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
+            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false });
         }));
         container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.attacker;
@@ -1290,9 +1379,9 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
             current.playersData[clientId].manaPool = emptyManaPool();
             return current;
-        }));
+        }, { auto: false }));
         container.querySelectorAll('[data-life]').forEach(button => button.addEventListener('click', () => {
-            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)));
+            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)), { auto: false });
         }));
         container.querySelectorAll('[data-discard]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.discard;
@@ -1324,7 +1413,12 @@ export function showMagicPlay(container, options = {}) {
             act(current => castSpell(current, clientId, button.dataset.castCommander, container.querySelector('#play-target')?.value || ''));
         }));
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
-            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
+            // Tappare per mana è una preparazione, non una mossa conclusa: le
+            // fasi non scattano in avanti mentre il giocatore sta pagando.
+            act(current => tapMana(current, clientId, button.dataset.tap, 'auto'), { auto: false });
+        }));
+        container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
+            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false });
         }));
         container.querySelectorAll('[data-ability]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.ability;
@@ -1346,9 +1440,9 @@ export function showMagicPlay(container, options = {}) {
             act(current => declareBlockers(current, clientId, assignments));
         });
         container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombat(current, clientId)));
-        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => advancePhase(current, clientId)));
+        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId), { auto: false }));
         container.querySelectorAll('[data-life]').forEach(button => button.addEventListener('click', () => {
-            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)));
+            act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)), { auto: false });
         }));
         container.querySelectorAll('[data-discard]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.discard;
@@ -1361,7 +1455,7 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
             current.playersData[clientId].manaPool = emptyManaPool();
             return current;
-        }));
+        }, { auto: false }));
         container.querySelector('[data-leave]')?.addEventListener('click', () => void leaveRoom());
     }
 
