@@ -770,10 +770,18 @@ export function showMagicPlay(container, options = {}) {
     let commitQueue = Promise.resolve();
     // Ogni mossa passa dal motore di fasi: se dopo il lancio non resta nulla da
     // fare, il turno scorre da solo fino alla prossima decisione vera.
-    const act = (updater, { auto = true } = {}) => {
+    const act = (updater, { auto = true, resetTarget = false } = {}) => {
         commitQueue = commitQueue
             .then(() => commit(auto ? state => autoAdvance(updater(state), clientId) : updater))
-            .then(ok => { if (ok) { selectedAttackers = new Set(); selectedDiscards = new Set(); } })
+            .then(ok => {
+                if (!ok) return;
+                selectedAttackers = new Set();
+                selectedDiscards = new Set();
+                // La magia è passata: il bersaglio è stato consumato. Senza questo
+                // azzeramento la magia successiva colpirebbe la stessa carta senza
+                // che il giocatore l'abbia scelta di nuovo.
+                if (resetTarget) clearTarget();
+            })
             .catch(() => {});
     };
 
@@ -847,6 +855,12 @@ export function showMagicPlay(container, options = {}) {
         if (!chosenTarget) return;
         if ([...select.options].some(option => option.value === chosenTarget)) select.value = chosenTarget;
         else chosenTarget = '';
+    };
+
+    const clearTarget = () => {
+        chosenTarget = '';
+        const select = container.querySelector('#play-target');
+        if (select) select.value = '';
     };
 
     function targetOptions() {
@@ -1366,12 +1380,12 @@ export function showMagicPlay(container, options = {}) {
             if (!card) return;
             act(current => isLand(card)
                 ? playLand(current, clientId, uid)
-                : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
+                : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''), { resetTarget: !isLand(card) });
         }));
         container.querySelectorAll('[data-cast-mode]').forEach(button => button.addEventListener('click', () => {
             const [uid, mode] = String(button.dataset.castMode || '').split(':');
             if (!uid) return;
-            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)));
+            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)), { resetTarget: true });
         }));
         container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.castCommander;
@@ -1383,7 +1397,7 @@ export function showMagicPlay(container, options = {}) {
             act(current => tapMana(current, clientId, button.dataset.tap, 'auto'), { auto: false });
         }));
         container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
-            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false });
+            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false, resetTarget: true });
         }));
         container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.attacker;
@@ -1426,15 +1440,15 @@ export function showMagicPlay(container, options = {}) {
             if (!card) return;
             act(current => isLand(card)
                 ? playLand(current, clientId, uid)
-                : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
+                : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''), { resetTarget: !isLand(card) });
         }));
         container.querySelectorAll('[data-cast-mode]').forEach(button => button.addEventListener('click', () => {
             const [uid, mode] = String(button.dataset.castMode || '').split(':');
             if (!uid) return;
-            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)));
+            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)), { resetTarget: true });
         }));
         container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
-            act(current => castSpell(current, clientId, button.dataset.castCommander, container.querySelector('#play-target')?.value || ''));
+            act(current => castSpell(current, clientId, button.dataset.castCommander, container.querySelector('#play-target')?.value || ''), { resetTarget: true });
         }));
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
             // Tappare per mana è una preparazione, non una mossa conclusa: le
@@ -1442,7 +1456,7 @@ export function showMagicPlay(container, options = {}) {
             act(current => tapMana(current, clientId, button.dataset.tap, 'auto'), { auto: false });
         }));
         container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
-            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false });
+            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { auto: false, resetTarget: true });
         }));
         container.querySelectorAll('[data-ability]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.ability;
