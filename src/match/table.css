@@ -1,14 +1,21 @@
-/* Tutto in --u e cqh; le uniche misure in pixel sono i target da 44. */
+/* Tavolo Magic. Tutto in --u (1% dell'altezza del tavolo) così il campo scala
+   con lo schermo; le uniche misure in pixel sono i target da 44 imposti a mano. */
 
 .mt-table {
   --u: calc(100dvh / 100);
+  --mt-line: rgb(255 255 255 / 12%);
+  --mt-line-strong: rgb(255 214 130 / 55%);
+  --mt-ink: #f4efe4;
+  --mt-muted: rgb(244 239 228 / 62%);
+  --mt-gold: #ffd682;
   position: fixed;
   inset: 0;
   z-index: 1600;
   overflow: hidden;
-  color: #f4efe4;
+  color: var(--mt-ink);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: radial-gradient(120% 80% at 50% 0%, #1d2a33 0%, #101820 55%, #0a0e13 100%);
+  background:
+    radial-gradient(120% 80% at 50% 0%, #22303a 0%, #121a22 55%, #090d11 100%);
 }
 
 /* Sopra il logo fisso dell'app (1500): altrimenti copre il ☰ del tavolo. */
@@ -24,74 +31,127 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-table [data-card-id],
 .mt-table .mt-opponents__chip,
 .mt-table .mt-menu__toggle,
-.mt-table .mt-menu__item {
+.mt-table .mt-menu__item,
+.mt-table .mt-arena-bar__button,
+.mt-table .mt-zones__close {
   min-block-size: 44px;
   min-inline-size: 44px;
 }
 
+/* ─────────────────────── fasce del campo ───────────────────────
+   Testata avversario e barra comandi si dimensionano sul contenuto; i campi
+   e la mano si spartiscono il resto, con la mano più alta di prima perché è
+   l'area che si guarda di più. */
+
 .mt-board {
   container-type: size;
   display: grid;
-  /* minmax(0, …): senza il minimo a zero il testo delle carte allarga la fila
-     e le proporzioni del tavolo se ne vanno. */
-  grid-template-rows: minmax(0, 6fr) minmax(0, 29fr) minmax(0, 15fr) minmax(0, 30fr) minmax(0, 20fr);
+  grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 1.05fr) minmax(0, 0.95fr);
   block-size: 100%;
-  padding: calc(1.2 * var(--u));
-  gap: calc(0.8 * var(--u));
+  padding: calc(1.4 * var(--u)) calc(1.6 * var(--u));
+  gap: calc(0.9 * var(--u));
 }
 
 .mt-opponent-head {
   display: flex;
   align-items: center;
-  gap: calc(1 * var(--u));
-  font-size: calc(1.6 * var(--u));
+  gap: calc(1.2 * var(--u));
+  /* Spazio a destra per il pulsante ☰ del tavolo: senza, il conteggio delle
+     carte finiva sotto l'icona. */
+  padding: calc(0.5 * var(--u)) calc(6.4 * var(--u)) calc(0.5 * var(--u)) calc(1.2 * var(--u));
+  border: thin solid var(--mt-line);
+  border-radius: calc(1 * var(--u));
+  background: rgb(8 12 16 / 55%);
+  font-size: calc(1.5 * var(--u));
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgb(244 239 228 / 78%);
+  color: var(--mt-muted);
 }
 
-.mt-opponent-head.is-out { color: rgb(244 239 228 / 40%); text-decoration: line-through; }
-.mt-opponent-head__life { color: #ffd682; }
-.mt-opponent-head__count { margin-inline-start: auto; color: rgb(244 239 228 / 55%); }
+.mt-opponent-head.is-out { color: rgb(244 239 228 / 35%); text-decoration: line-through; }
+.mt-opponent-head__name { font-weight: 600; letter-spacing: 0.08em; color: var(--mt-ink); }
+.mt-opponent-head__life { color: var(--mt-gold); font-size: calc(1.9 * var(--u)); }
+.mt-opponent-head__life b { font-variant-numeric: tabular-nums; }
+.mt-opponent-head__cmd { padding-inline: calc(0.8 * var(--u)); border-radius: 999px; background: rgb(190 70 70 / 35%); color: #ffc9c9; font-size: calc(1.3 * var(--u)); }
+.mt-opponent-head__count { margin-inline-start: auto; font-size: calc(1.3 * var(--u)); letter-spacing: 0; text-transform: none; }
 
 .mt-row,
 .mt-hand {
   display: flex;
   align-items: stretch;
-  gap: calc(0.7 * var(--u));
+  gap: calc(0.8 * var(--u));
   min-block-size: 0;
+  padding: calc(0.5 * var(--u));
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
   scroll-snap-type: x proximity;
+  border-radius: calc(1.2 * var(--u));
 }
 
-.mt-hand { justify-content: center; }
+/* Il campo del giocatore è il "tappeto": un filo più chiaro, per capire a colpo
+   d'occhio dove finisce il proprio terreno e dove sta la mano. */
+.mt-row--own {
+  background: linear-gradient(180deg, rgb(196 164 255 / 8%), rgb(196 164 255 / 2%));
+  border: thin solid rgb(196 164 255 / 16%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+}
+
+.mt-row--opponent { background: rgb(0 0 0 / 18%); border: thin solid var(--mt-line); }
+
+.mt-hand {
+  /* «safe center»: se le carte superano la larghezza restano raggiungibili a
+     sinistra, invece di essere tagliate fuori dallo scorrimento. */
+  justify-content: flex-start;
+  justify-content: safe center;
+  overflow-y: visible;
+  padding-block: calc(0.8 * var(--u)) calc(0.4 * var(--u));
+}
 
 .mt-row__empty {
   margin: 0;
   align-self: center;
+  padding-inline: calc(1.2 * var(--u));
   font-size: calc(1.5 * var(--u));
-  color: rgb(244 239 228 / 45%);
+  color: rgb(244 239 228 / 40%);
 }
+
+/* ─────────────────────── la carta ───────────────────────
+   Alta quanto la fascia, larga di conseguenza (63/88 come una carta vera). */
 
 .mt-card {
   position: relative;
-  /* La carta è alta quanto la fila e larga di conseguenza: 63/88 come una
-     carta vera, senza che la fila si allarghi per il contenuto. */
   flex: 0 0 auto;
+  block-size: 100%;
   aspect-ratio: 63 / 88;
-  max-inline-size: calc(20 * var(--u));
+  max-inline-size: calc(22 * var(--u));
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: thin solid rgb(255 255 255 / 14%);
-  border-radius: calc(0.6 * var(--u));
+  scroll-snap-align: center;
+  border: thin solid rgb(255 255 255 / 16%);
+  border-radius: calc(0.9 * var(--u));
   background: rgb(10 14 19 / 88%);
-  transition: transform 150ms ease;
+  box-shadow: 0 calc(0.5 * var(--u)) calc(1.4 * var(--u)) rgb(0 0 0 / 45%);
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
 }
 
-.mt-card.is-tapped { transform: rotate(9deg) scale(0.95); box-shadow: inset 0 0 0 calc(0.25 * var(--u)) rgb(0 0 0 / 55%); }
+@media (hover: hover) {
+  .mt-card:hover { transform: translateY(calc(-0.6 * var(--u))); box-shadow: 0 calc(1.2 * var(--u)) calc(2.4 * var(--u)) rgb(0 0 0 / 55%); border-color: rgb(255 255 255 / 32%); }
+}
+
+.mt-card:focus-visible { outline: calc(0.3 * var(--u)) solid var(--mt-gold); outline-offset: calc(0.2 * var(--u)); }
+
+.mt-card.is-tapped {
+  transform: rotate(8deg) scale(0.94);
+  border-color: rgb(255 255 255 / 8%);
+  box-shadow: inset 0 0 0 calc(0.3 * var(--u)) rgb(0 0 0 / 55%);
+}
+.mt-card.is-tapped .mt-card__art { filter: grayscale(0.5) brightness(0.62); }
+.mt-card.is-tapped .mt-card__name { color: rgb(244 239 228 / 50%); }
+
+.mt-card.is-attacking { border-color: var(--mt-gold); box-shadow: 0 0 calc(1.6 * var(--u)) rgb(255 214 130 / 45%); }
+.mt-card.is-blocking { border-color: rgb(120 200 255 / 75%); box-shadow: 0 0 calc(1.4 * var(--u)) rgb(120 200 255 / 40%); }
 
 .mt-card__art {
   display: block;
@@ -105,22 +165,32 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-card__art--empty { background: linear-gradient(160deg, #24313c, #131a21); }
 
 .mt-card__name {
-  padding: calc(0.4 * var(--u)) calc(0.6 * var(--u));
-  font-size: calc(1.4 * var(--u));
-  line-height: 1.2;
+  /* Senza flex-shrink l'arte si prende il resto e il nome non perde la seconda
+     riga: prima l'immagine (flex-basis auto, altezza intrinseca ~680px) si
+     tirava dietro il nome e restava visibile solo «Righteous…». */
+  flex: 0 0 auto;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  padding: calc(0.4 * var(--u)) calc(0.7 * var(--u));
+  font-size: calc(1.55 * var(--u));
+  line-height: 1.12;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  background: linear-gradient(180deg, rgb(6 9 12 / 55%), rgb(6 9 12 / 92%));
 }
 
 .mt-card__stat {
   position: absolute;
-  inset-block-end: calc(0.4 * var(--u));
-  inset-inline-end: calc(0.4 * var(--u));
-  padding: 0 calc(0.4 * var(--u));
-  border-radius: calc(0.3 * var(--u));
-  background: rgb(8 12 16 / 82%);
-  font-size: calc(1.5 * var(--u));
+  inset-block-start: calc(0.5 * var(--u));
+  inset-inline-end: calc(0.5 * var(--u));
+  padding: calc(0.1 * var(--u)) calc(0.6 * var(--u));
+  border-radius: calc(0.4 * var(--u));
+  background: rgb(8 12 16 / 90%);
+  border: thin solid rgb(255 255 255 / 18%);
+  font-size: calc(1.7 * var(--u));
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -128,38 +198,182 @@ body.magic-table-active .floating-trigger { display: none !important; }
   position: absolute;
   inset-block-start: calc(0.4 * var(--u));
   inset-inline-start: calc(0.4 * var(--u));
-  padding: 0 calc(0.4 * var(--u));
-  border-radius: calc(0.3 * var(--u));
-  font-size: calc(1.3 * var(--u));
-  background: rgb(8 12 16 / 82%);
+  padding: 0 calc(0.5 * var(--u));
+  border-radius: calc(0.4 * var(--u));
+  font-size: calc(1.2 * var(--u));
+  letter-spacing: 0.06em;
+  background: rgb(8 12 16 / 88%);
+  border: thin solid rgb(255 255 255 / 16%);
 }
 
-.mt-card__badge--counter { background: rgb(46 125 87 / 85%); }
-.mt-card__badge--damage { background: rgb(150 40 40 / 85%); }
-.mt-card__badge--commander { inset-inline-start: auto; inset-inline-end: calc(0.4 * var(--u)); }
+.mt-card__badge--counter { inset-block-start: calc(3 * var(--u)); background: rgb(46 125 87 / 92%); }
+.mt-card__badge--damage { inset-block-start: calc(5.4 * var(--u)); background: rgb(160 44 44 / 92%); }
+.mt-card__badge--commander { background: rgb(120 80 190 / 92%); }
+.mt-card__badge--attack { inset-block-start: 0; inset-inline: 0; border-radius: 0; border: 0; text-align: center; background: rgb(255 214 130 / 90%); color: #23180a; font-weight: 700; }
+.mt-card__badge--block { inset-block-start: 0; inset-inline: 0; border-radius: 0; border: 0; text-align: center; background: rgb(120 200 255 / 90%); color: #06131d; font-weight: 700; }
 
+/* I comandi stanno in una barra in fondo alla carta, nel flusso: prima erano
+   sovrapposti all'arte e coprivano proprio ciò che si voleva leggere. */
+.mt-card__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: calc(0.3 * var(--u));
+  padding: calc(0.4 * var(--u));
+  background: rgb(4 6 9 / 92%);
+  border-block-start: thin solid rgb(255 255 255 / 10%);
+}
+
+.mt-card__actions button,
 .mt-card button {
-  margin: calc(0.3 * var(--u));
-  padding: calc(0.3 * var(--u)) calc(0.6 * var(--u));
-  border: thin solid rgb(255 255 255 / 22%);
-  border-radius: calc(0.4 * var(--u));
-  background: rgb(255 255 255 / 10%);
+  padding: calc(0.35 * var(--u)) calc(0.7 * var(--u));
+  border: thin solid rgb(255 255 255 / 24%);
+  border-radius: calc(0.5 * var(--u));
+  background: rgb(255 255 255 / 12%);
   color: inherit;
   font: inherit;
   font-size: calc(1.3 * var(--u));
+  cursor: pointer;
 }
+
+.mt-card__actions button:active { background: rgb(255 255 255 / 22%); }
+
+/* Le magie modali hanno un pulsante per modo con il testo intero: dentro una
+   carta da 96px andavano a capo su tre righe e coprivano arte e nome. Restano
+   una riga con ellissi, il testo completo è nel title e nell'anteprima carta. */
+.mt-card__actions button {
+  max-inline-size: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mt-card__actions {
+  max-block-size: 55%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ─────────────────────── barra comandi ─────────────────────── */
 
 .mt-commands {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: calc(0.6 * var(--u));
-  max-block-size: calc(16 * var(--u));
-  padding-inline: calc(0.8 * var(--u));
+  align-items: center;
+  gap: calc(0.6 * var(--u)) calc(0.8 * var(--u));
+  /* 23u: con riserva, fase, comandante, vite e bersaglio su una riga sola più
+     il diario, a 19u il diario e il selettore restavano sotto lo scorrimento. */
+  max-block-size: calc(23 * var(--u));
+  padding: calc(0.8 * var(--u)) calc(1.1 * var(--u));
   overflow-y: auto;
+  border: thin solid var(--mt-line);
+  border-radius: calc(1.2 * var(--u));
+  background: linear-gradient(180deg, rgb(20 27 34 / 92%), rgb(12 17 22 / 92%));
   font-size: calc(1.5 * var(--u));
   scrollbar-width: thin;
 }
+
+/* Quando c'è da scegliere (blocchi, mulligan) la barra deve crescere: con il
+   tetto normale i menu dei blocchi finivano sotto il bordo, invisibili. */
+/* Quando c'è una scelta da fare la barra può crescere, ma non oltre un tetto:
+   senza, si mangiava il campo e la mano (carte larghe 75px). Il pulsante di
+   conferma resta agganciato in fondo se il pannello va in scorrimento. */
+.mt-commands:has(.mp-combat, .mp-mulligan) {
+  max-block-size: calc(36 * var(--u));
+  overflow-y: auto;
+}
+
+.mt-table .mt-commands .mp-combat .mp-button,
+.mt-table .mt-commands .mp-mulligan .mp-button {
+  position: sticky;
+  inset-block-end: 0;
+  z-index: 1;
+}
+
+/* Mentre si scelgono i blocchi il diario resta chiuso: occupava l'ultima riga
+   utile e faceva comparire una scrollbar dentro la barra comandi. */
+.mt-commands:has(.mp-combat) .mp-log { display: none; }
+
+/* I pulsanti della Taverna sono pensati per una pagina, non per un riquadro
+   16:9: qui si riportano alla scala del tavolo, senza perdere il target. */
+.mt-table .mp-button,
+.mt-table .mp-small,
+.mt-table .mp-button.mp-soft {
+  min-block-size: max(calc(4.2 * var(--u)), 36px);
+  padding: calc(0.5 * var(--u)) calc(1.2 * var(--u));
+  border-radius: calc(0.8 * var(--u));
+  font-size: calc(1.5 * var(--u));
+  letter-spacing: 0.02em;
+}
+
+.mt-table .mp-button.mp-start { inline-size: auto; letter-spacing: 0.04em; }
+
+.mt-commands .mp-notice {
+  flex: 1 1 100%;
+  margin: 0;
+  min-block-size: 0;
+  color: var(--mt-gold);
+  font-size: calc(1.5 * var(--u));
+}
+
+.mt-commands .mp-mana,
+.mt-commands .mp-toolbar,
+.mt-commands .mp-actions,
+.mt-commands .mp-life,
+.mt-commands .mp-discard { display: flex; flex-wrap: wrap; align-items: center; gap: calc(0.6 * var(--u)); margin: 0; padding: 0; border: 0; background: none; }
+
+.mt-commands .mp-mana span,
+.mt-commands .mp-life span,
+.mt-commands .mp-discard span { color: var(--mt-muted); font-size: calc(1.35 * var(--u)); }
+.mt-commands .mp-mana small { display: none; }
+.mt-commands .mp-life { margin-inline-start: 0; }
+.mt-commands .mp-life strong { font-size: calc(2 * var(--u)); color: var(--mt-gold); font-variant-numeric: tabular-nums; }
+
+.mt-commands .mp-target { display: flex; align-items: center; gap: calc(0.6 * var(--u)); font-size: calc(1.35 * var(--u)); color: var(--mt-muted); }
+.mt-commands select,
+.mt-commands input {
+  min-block-size: max(calc(4 * var(--u)), 34px);
+  padding-inline: calc(0.8 * var(--u));
+  border: thin solid var(--mt-line);
+  border-radius: calc(0.6 * var(--u));
+  background: rgb(6 9 12 / 90%);
+  color: var(--mt-ink);
+  font: inherit;
+  font-size: calc(1.4 * var(--u));
+}
+
+/* Combattimento e mulligan: pannelli dentro la barra, non pagine intere. */
+.mt-commands .mp-combat,
+.mt-commands .mp-mulligan {
+  flex: 1 1 100%;
+  /* La griglia della lobby ha gap da 10px: dentro il tavolo è troppo e faceva
+     uscire il pulsante di conferma dalla barra. */
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.5 * var(--u));
+  padding: calc(0.5 * var(--u)) calc(0.8 * var(--u));
+  border: thin dashed var(--mt-line-strong);
+  border-radius: calc(0.9 * var(--u));
+  background: rgb(255 214 130 / 8%);
+}
+
+.mt-commands .mp-overline { display: block; font-size: calc(1.2 * var(--u)); letter-spacing: 0.16em; color: var(--mt-gold); }
+.mt-commands .mp-combat p,
+.mt-commands .mp-mulligan p { margin: 0; color: var(--mt-muted); font-size: calc(1.35 * var(--u)); }
+.mt-commands .mp-combat label,
+.mt-commands .mp-mulligan label { display: flex; flex-wrap: wrap; align-items: center; gap: calc(0.6 * var(--u)); font-size: calc(1.35 * var(--u)); color: var(--mt-muted); }
+/* I menu dei blocchi si allargano: con nomi lunghi il select non deve uscire. */
+.mt-commands .mp-combat label select { flex: 1 1 12ch; max-inline-size: 100%; }
+
+.mt-commands .mp-log {
+  flex: 1 1 100%;
+  font-size: calc(1.3 * var(--u));
+  color: var(--mt-muted);
+}
+.mt-commands .mp-log summary { min-block-size: 32px; display: flex; align-items: center; cursor: pointer; color: var(--mt-gold); letter-spacing: 0.06em; }
+.mt-commands .mp-log ol { margin: 0; padding-inline-start: calc(2 * var(--u)); display: grid; gap: calc(0.25 * var(--u)); max-block-size: calc(16 * var(--u)); overflow-y: auto; }
+
+/* ─────────────────────── avversari ─────────────────────── */
 
 .mt-opponents { display: flex; flex-wrap: wrap; gap: calc(0.5 * var(--u)); }
 
@@ -167,23 +381,24 @@ body.magic-table-active .floating-trigger { display: none !important; }
   display: inline-flex;
   flex-direction: column;
   justify-content: center;
-  max-inline-size: calc(22 * var(--u));
+  max-inline-size: calc(24 * var(--u));
   padding-inline: calc(1 * var(--u));
   border: thin solid rgb(255 255 255 / 18%);
-  border-radius: calc(0.6 * var(--u));
+  border-radius: calc(0.7 * var(--u));
   background: rgb(0 0 0 / 35%);
   color: inherit;
   font: inherit;
-  font-size: calc(1.5 * var(--u));
+  font-size: calc(1.45 * var(--u));
   text-align: start;
+  cursor: pointer;
 }
 
 .mt-opponents__chip[aria-pressed="true"] { border-color: rgb(255 214 130 / 70%); background: rgb(255 214 130 / 16%); }
-
 .mt-opponents__name,
 .mt-opponents__stat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-opponents__stat { font-size: calc(1.2 * var(--u)); color: var(--mt-muted); }
 
-.mt-opponents__stat { font-size: calc(1.2 * var(--u)); color: rgb(244 239 228 / 62%); }
+/* ─────────────────────── menu ─────────────────────── */
 
 .mt-menu__toggle {
   position: fixed;
@@ -191,10 +406,11 @@ body.magic-table-active .floating-trigger { display: none !important; }
   inset-inline-end: calc(1.2 * var(--u));
   z-index: 1100;
   border: thin solid rgb(255 255 255 / 20%);
-  border-radius: calc(0.6 * var(--u));
-  background: rgb(10 14 19 / 78%);
+  border-radius: calc(0.7 * var(--u));
+  background: rgb(10 14 19 / 85%);
   color: inherit;
   font-size: calc(2.2 * var(--u));
+  cursor: pointer;
 }
 
 .mt-menu__scrim { position: fixed; inset: 0; z-index: 1050; display: none; background: rgb(4 6 9 / 62%); }
@@ -229,17 +445,137 @@ body.magic-table-active .floating-trigger { display: none !important; }
   align-items: center;
   padding-inline: calc(1.2 * var(--u));
   border: thin solid rgb(255 255 255 / 16%);
-  border-radius: calc(0.6 * var(--u));
+  border-radius: calc(0.7 * var(--u));
   background: rgb(255 255 255 / 6%);
   color: inherit;
   font: inherit;
   font-size: calc(1.7 * var(--u));
   text-align: start;
+  cursor: pointer;
 }
 
 .mt-menu__item--danger { border-color: rgb(190 70 70 / 55%); color: #ffc9c9; }
+
+/* ─────────────────────── cimiteri e zone ─────────────────────── */
+
+.mt-zones { position: absolute; inset: 0; display: none; z-index: 1300; }
+.mt-zones.is-open { display: block; }
+
+.mt-zones__scrim { position: absolute; inset: 0; background: rgb(4 6 9 / 66%); }
+
+.mt-zones__panel {
+  position: absolute;
+  inset-block: calc(2 * var(--u));
+  inset-inline-end: calc(2 * var(--u));
+  inline-size: min(calc(64 * var(--u)), 86vw);
+  display: flex;
+  flex-direction: column;
+  gap: calc(1 * var(--u));
+  padding: calc(1.6 * var(--u));
+  overflow-y: auto;
+  border: thin solid var(--mt-line);
+  border-radius: calc(1.4 * var(--u));
+  background: #101820;
+  box-shadow: 0 calc(2 * var(--u)) calc(5 * var(--u)) rgb(0 0 0 / 60%);
+}
+
+.mt-zones__head { display: flex; align-items: center; justify-content: space-between; gap: calc(1 * var(--u)); }
+.mt-zones__title { margin: 0; font-size: calc(1.9 * var(--u)); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mt-gold); }
+
+.mt-zones__close {
+  padding-inline: calc(1.2 * var(--u));
+  border: thin solid rgb(255 255 255 / 22%);
+  border-radius: calc(0.7 * var(--u));
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  font: inherit;
+  font-size: calc(1.5 * var(--u));
+  cursor: pointer;
+}
+
+.mt-zones__group { display: grid; gap: calc(0.5 * var(--u)); padding-block-end: calc(0.8 * var(--u)); border-block-end: thin solid var(--mt-line); }
+.mt-zones__group:last-child { border-block-end: 0; }
+.mt-zones__name { margin: 0; font-size: calc(1.6 * var(--u)); font-weight: 600; }
+.mt-zones__name span { color: var(--mt-muted); font-weight: 400; font-size: calc(1.3 * var(--u)); }
+
+.mt-zones__zone { font-size: calc(1.4 * var(--u)); color: var(--mt-muted); }
+.mt-zones__zone summary { min-block-size: 32px; display: flex; align-items: center; gap: calc(0.6 * var(--u)); cursor: pointer; }
+.mt-zones__zone summary b { color: var(--mt-ink); }
+.mt-zones__zone ul { margin: 0; padding-inline-start: calc(1.6 * var(--u)); display: grid; gap: calc(0.2 * var(--u)); }
+
+.mt-zones__card {
+  min-block-size: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mt-ink);
+  font: inherit;
+  font-size: calc(1.4 * var(--u));
+  text-align: start;
+  text-decoration: underline dotted rgb(255 255 255 / 35%);
+  cursor: zoom-in;
+}
+
+.mt-zones__empty { list-style: none; font-style: italic; }
 
 @media (prefers-reduced-motion: reduce) {
   .mt-card { transition: none; }
   .mt-card.is-tapped { transform: none; }
 }
+
+/* Su un telefono la barra comandi si avvolge su più righe (riserva, comandante,
+   vita, bersaglio): con il tetto da 19u la fase successiva finiva sotto lo
+   scorrimento e il turno non si chiudeva più. Qui può crescere. */
+@media (max-width: 560px) {
+  .mt-commands { max-block-size: calc(60 * var(--u)); }
+  .mt-commands:has(.mp-combat, .mp-mulligan) { max-block-size: calc(60 * var(--u)); }
+
+  /* Sullo schermo stretto la mano conta più del campo avversario: le carte
+     devono restare leggibili, non diventare francobolli da 78px. */
+  .mt-board { grid-template-rows: auto minmax(0, 1fr) auto minmax(0, 0.85fr) minmax(0, 1.25fr); }
+  .mt-commands .mp-log summary { min-block-size: 30px; font-size: calc(1.25 * var(--u)); }
+  .mt-arena-bar__exit { letter-spacing: 0.04em; }
+}
+
+/* La lobby porta i suoi pannelli con padding e tipografia da pagina: dentro il
+   tavolo vanno riportati alla scala del campo. Il prefisso .mt-table serve a
+   vincere l'ordine di import (magicPlay.css arriva dopo table.css), altrimenti
+   i menu dei blocchi sono enormi e il pulsante di conferma esce dalla barra. */
+.mt-table .mt-commands .mp-combat,
+.mt-table .mt-commands .mp-mulligan {
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.5 * var(--u));
+  padding: calc(0.5 * var(--u)) calc(0.8 * var(--u));
+  border-radius: calc(0.9 * var(--u));
+}
+
+/* Anche riserva, vite e bersaglio arrivano dalla lobby con padding e bordo da
+   pannello: dentro la barra comandi sono due scatole in più che rubano altezza
+   (e su desktop nascondevano il selettore del bersaglio sotto lo scorrimento). */
+.mt-table .mt-commands .mp-mana,
+.mt-table .mt-commands .mp-actions,
+.mt-table .mt-commands .mp-result,
+.mt-table .mt-commands .mp-toolbar,
+.mt-table .mt-commands .mp-life,
+.mt-table .mt-commands .mp-discard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(0.6 * var(--u));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.mt-table .mt-commands .mp-target { padding: 0; border: 0; background: none; }
+
+.mt-table .mt-commands .mp-combat p,
+.mt-table .mt-commands .mp-mulligan p,
+.mt-table .mt-commands .mp-combat label,
+.mt-table .mt-commands .mp-mulligan label { font-size: calc(1.35 * var(--u)); }
+
+.mt-table .mt-commands .mp-combat .mp-overline,
+.mt-table .mt-commands .mp-mulligan .mp-overline { font-size: calc(1.2 * var(--u)); }

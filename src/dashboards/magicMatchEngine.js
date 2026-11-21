@@ -3,6 +3,9 @@ import {
     isManaSource, isPermanentCard, manaPoolLabel, manaProductionOptions,
     payMana, resolveOracleText, tapManaSource
 } from './magicRules.js';
+import {
+    applyEffects, applyEntryStatics, manualNotice, parseCardAbilities, recomputeStatics, triggerMatches
+} from './magicEffects.js';
 
 // Formato del tavolo: partite fra 2 e 4 persone, mazzo costruito con la sezione
 // Mazzi (minimo 60 carte, massimo quattro copie), 20 punti vita, mano iniziale
@@ -30,11 +33,16 @@ const isBasicLand = card => /\bbasic\b/i.test(typeLine(card)) && isLand(card);
 const isCreature = card => /\bcreature\b/i.test(typeLine(card));
 const isInstant = card => /\binstant\b/i.test(typeLine(card));
 const hasKeyword = (card, word) => (card?.keywords || []).some(keyword => String(keyword).toLowerCase() === word)
+    || (card?.anthemKeywords || []).some(keyword => String(keyword).toLowerCase() === word)
     || new RegExp(`\\b${word}\\b`, 'i').test(oracleText(card));
 const basePower = card => Number.parseInt(card?.power, 10) || 0;
 const baseToughness = card => Number.parseInt(card?.toughness, 10) || 0;
-export const powerOf = card => basePower(card) + (card?.counters?.plusOne || 0) + (card?.turnBoost?.power || 0);
-export const toughnessOf = card => baseToughness(card) + (card?.counters?.plusOne || 0) + (card?.turnBoost?.toughness || 0);
+// anthemBoost è il bonus statico (anthem), separato da turnBoost perché i
+// pompaggi «fino a fine turno» scadono al cambio di turno e gli anthem no.
+export const powerOf = card => basePower(card) + (card?.counters?.plusOne || 0)
+    + (card?.turnBoost?.power || 0) + (card?.anthemBoost?.power || 0);
+export const toughnessOf = card => baseToughness(card) + (card?.counters?.plusOne || 0)
+    + (card?.turnBoost?.toughness || 0) + (card?.anthemBoost?.toughness || 0);
 const clone = value => structuredClone(value);
 const shuffle = items => {
     for (let index = items.length - 1; index > 0; index -= 1) {
@@ -57,6 +65,41 @@ const requireTurn = (state, playerId) => {
     return requirePlayer(state, playerId);
 };
 const log = (state, line) => { state.log = [line, ...(state.log || [])].slice(0, 40); };
+const logLines = (state, lines = []) => {
+    // Il diario è il più recente in cima: le righe di un effetto si inseriscono
+    // in ordine di lettura, non rovesciate.
+    if (lines.length) state.log = [...lines.slice().reverse(), ...(state.log || [])].slice(0, 40);
+};
+
+const ownerOfCard = (state, card) => state.players.find(id => (state.playersData[id]?.battlefield || []).includes(card)) || null;
+
+/**
+ * Fa scattare gli inneschi di tutti i permanenti in campo, non solo di quello
+ * che ha generato l'evento: «quando un'altra creatura che controlli entra» deve
+ * rispondere all'ingresso di una creatura diversa, e un innesco dell'avversario
+ * non deve scattare per i tuoi eventi (lo verifica triggerMatches). Un innesco
+ * che il risolutore non capisce resta nel diario come «da gestire a mano».
+ */
+const runTriggers = (state, activePlayerId, source, event, target = '', { skipSelf = false } = {}) => {
+    const sourceOwnerId = source ? ownerOfCard(state, source) : null;
+    for (const ownerId of state.players) {
+        const battlefield = state.playersData[ownerId]?.battlefield || [];
+        for (const watcher of [...battlefield]) {
+            const abilities = parseCardAbilities(watcher).triggers.filter(trigger => trigger.event === event);
+            for (const ability of abilities) {
+                // L'ingresso della carta stessa è già risolto da resolveOracleText.
+                if (skipSelf && ability.subject?.self) continue;
+                if (!triggerMatches(ability, { watcher, watcherOwnerId: ownerId, source, sourceOwnerId, activePlayerId })) continue;
+                const result = applyEffects(ability.effects, {
+                    state, controllerId: ownerId, card: watcher, target, sourceName: watcher.name
+                });
+                logLines(state, result.log);
+                const unsupported = [...new Set([...result.unsupported, ...(ability.unsupported || [])])];
+                if (unsupported.length) logLines(state, [manualNotice(watcher.name, unsupported)]);
+            }
+        }
+    }
+};
 
 /** Regole di costruzione Commander: minimo 100 carte, singleton (una copia per carta non terra base). */
 export function validateMatchDeck(entries = [], cards = new Map()) {
@@ -152,6 +195,8 @@ export function createMatch({ players = [], startingPlayer = null } = {}) {
 }
 
 function settle(state) {
+    // Gli anthem e i tipi scelti si ricalcolano dopo ogni azione che cambia il campo.
+    recomputeStatics(state);
     // Il vincitore si annuncia una volta sola, anche se più azioni lo verificano.
     if (state.winner) return state;
     const survivors = state.players.filter(id => !state.playersData[id]?.eliminated);
@@ -185,7 +230,17 @@ function drawCard(state, id, count = 1) {
 
 function clearUntilPlayer(state) {
     for (const player of Object.values(state.playersData)) {
-        for (const card of player.battlefield) { card.damageMarked = 0; card.turnBoost = { power: 0, toughness: 0 }; }
+        for (const card of player.battlefield) {
+            card.damageMarked = 0;
+            card.turnBoost = { power: 0, toughness: 0 };
+            // Le parole chiave concesse «fino a fine turno» scadono qui.
+            if (card.grantedKeywords?.length) {
+                const granted = new Set(card.grantedKeywords.map(word => String(word).toLowerCase()));
+                card.keywords = (card.keywords || []).filter(word => !granted.has(String(word).toLowerCase()));
+                delete card.grantedKeywords;
+            }
+            delete card.cannotBlock;
+        }
     }
 }
 
@@ -199,9 +254,13 @@ function beginTurn(state, id) {
     const player = state.playersData[id];
     // Lo stappare del turno toglie anche la debolezza da evocazione: una creatura
     // lanciata dopo questo momento resta "malata" fino al prossimo stappare.
-    for (const card of player.battlefield) { card.tapped = false; card.summoningSick = false; }
+    for (const card of player.battlefield) { card.tapped = false; card.summoningSick = false; card.enteredThisTurn = false; }
     player.landsPlayed = 0;
     player.manaPool = emptyManaPool();
+    // Mantenimento: gli inneschi «all'inizio del tuo mantenimento» scattano prima
+    // della pescata, come nel gioco vero. Il giro è unico su tutto il campo,
+    // così scattano anche quelli che osservano altri permanenti.
+    runTriggers(state, id, null, 'upkeep');
     const firstTurnSkipDraw = id === state.startingPlayer && state.turn === 1;
     if (!firstTurnSkipDraw) {
         drawCard(state, id);
@@ -326,7 +385,7 @@ function autoPay(state, player, cost, extraGeneric = 0) {
 }
 
 /** Lancia una magia dalla mano pagando il costo con la riserva e le terre disponibili. */
-export function castSpell(currentState, playerId, uid, target = '') {
+export function castSpell(currentState, playerId, uid, target = '', mode = null) {
     const state = clone(currentState);
     const player = requireTurn(state, playerId);
     const instantSpeed = isInstant(player.hand.find(card => card.uid === uid) || {});
@@ -365,12 +424,52 @@ export function castSpell(currentState, playerId, uid, target = '') {
         };
         player.battlefield.push(permanent);
         log(state, `${playerName(state, playerId)} lancia ${card.name}.`);
+        logLines(state, applyEntryStatics(state, playerId, permanent));
         state.log = [...resolveOracleText(permanent, state, playerId, target, 0, true).log, ...state.log];
+        // Gli altri permanenti vedono l'ingresso: «quando un'altra creatura che
+        // controlli entra». La carta stessa è già stata risolta sopra.
+        runTriggers(state, playerId, permanent, 'etb', target, { skipSelf: true });
     } else {
         player.graveyard.push(card);
         log(state, `${playerName(state, playerId)} lancia ${card.name}.`);
-        state.log = [...resolveOracleText(card, state, playerId, target, 0, false).log, ...state.log];
+        state.log = [...resolveOracleText(card, state, playerId, target, 0, false, mode).log, ...state.log];
     }
+    return settle(state);
+}
+
+/**
+ * Attiva un'abilità di un permanente in campo: «{2}, {T}: pesca una carta».
+ * Il costo (tap e mana) si paga prima dell'effetto; le abilità che chiedono
+ * una scelta che il tavolo non sa fare restano manuali e vengono rifiutate qui.
+ */
+export function activateAbility(currentState, playerId, uid, index = 0, target = '') {
+    const state = clone(currentState);
+    const player = requireTurn(state, playerId);
+    if (!['main1', 'main2'].includes(state.phase)) throw new Error('Le abilità si attivano nelle fasi principali.');
+    const card = player.battlefield.find(item => (item.instanceId || item.uid) === uid);
+    if (!card) throw new Error('La carta non è sul tuo campo.');
+    const ability = parseCardAbilities(card).activated[Number(index)];
+    if (!ability) throw new Error('Questa carta non ha abilità automatiche.');
+    if (!ability.supported) throw new Error(`${card.name}: abilità da risolvere a mano.`);
+    if (ability.cost.tap) {
+        if (card.tapped) throw new Error(`${card.name} è già tappata.`);
+        if (card.summoningSick && isCreature(card) && !hasKeyword(card, 'haste')) {
+            throw new Error(`${card.name} ha ancora la debolezza da evocazione.`);
+        }
+    }
+    if (ability.cost.manaCost) autoPay(state, player, ability.cost.manaCost);
+    if (ability.cost.tap) card.tapped = true;
+    if (ability.cost.sacrificeSelf) {
+        player.battlefield = player.battlefield.filter(item => item !== card);
+        player.graveyard.push(card);
+        log(state, `${card.name} viene sacrificata.`);
+    }
+    log(state, `${playerName(state, playerId)} attiva ${card.name}.`);
+    const result = applyEffects(ability.effects, {
+        state, controllerId: playerId, card, target, sourceName: card.name
+    });
+    logLines(state, result.log);
+    if (result.unsupported.length) logLines(state, [manualNotice(card.name, result.unsupported)]);
     return settle(state);
 }
 
@@ -402,6 +501,8 @@ export function declareAttackers(currentState, playerId, uids = [], defenderId =
     for (const card of attackers) {
         if (!hasKeyword(card, 'vigilance')) card.tapped = true;
         card.attacking = true;
+        // Inneschi di attacco: scattano per ogni creatura che attacca davvero.
+        runTriggers(state, playerId, card, 'attack', `player:${defender}`);
     }
     state.combat = {
         step: 'blockers',
@@ -430,7 +531,16 @@ export function declareBlockers(currentState, playerId, assignments = {}) {
         const blocker = player.battlefield.find(item => (item.instanceId || item.uid) === blockerId);
         if (!blocker || !isCreature(blocker)) throw new Error('Bloccante non valido.');
         if (blocker.tapped) throw new Error(`${blocker.name} è tappata e non può bloccare.`);
+        if (blocker.cannotBlock) throw new Error(`${blocker.name} non può bloccare in questo turno.`);
         if (used.has(blockerId)) throw new Error(`${blocker.name} non può bloccare due attaccanti.`);
+        // Volare si blocca solo con volare o portata: senza questo controllo una
+        // 1/1 volante veniva fermata da qualunque creatura di terra.
+        const attacker = state.playersData[state.activePlayer]?.battlefield
+            .find(item => (item.instanceId || item.uid) === attackerId);
+        if (attacker && hasKeyword(attacker, 'flying')
+            && !hasKeyword(blocker, 'flying') && !hasKeyword(blocker, 'reach')) {
+            throw new Error(`${blocker.name} non ha volare né portata: non può bloccare ${attacker.name}.`);
+        }
         used.add(blockerId);
         blocker.blocking = attackerId;
         blockers[attackerId] = blockerId;
@@ -449,7 +559,8 @@ const damageAssignments = state => {
     return { active, defender };
 };
 
-const lethal = (card, damage) => (hasKeyword(card, 'deathtouch') && damage > 0) || damage >= toughnessOf(card);
+const lethal = (card, damage) => !hasKeyword(card, 'indestructible')
+    && ((hasKeyword(card, 'deathtouch') && damage > 0) || damage >= toughnessOf(card));
 
 function damagePass(state, firstStrikeOnly) {
     const { active, defender } = damageAssignments(state);

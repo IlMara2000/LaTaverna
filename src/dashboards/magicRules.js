@@ -1,3 +1,5 @@
+import { applyEffects, manualNotice, parseCardAbilities } from './magicEffects.js';
+
 const COLORS = ['W', 'U', 'B', 'R', 'G', 'C'];
 const COLOR_NAMES = { W: 'bianco', U: 'blu', B: 'nero', R: 'rosso', G: 'verde', C: 'incolore' };
 
@@ -162,116 +164,44 @@ export const chooseManaProductionOption = (player, card, desiredCosts = []) => {
     return bestIndex;
 };
 
-const numberFromText = value => {
-    const words = { a: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
-    if (/^x$/i.test(value)) return null;
-    return Number(value) || words[value.toLowerCase()] || 0;
-};
-
-const targetObject = (state, target) => {
-    if (!target) return null;
-    const [kind, ownerId, cardId] = target.split(':');
-    if (kind === 'player') return { kind, player: state.playersData[ownerId], ownerId };
-    if (kind === 'card') {
-        const player = state.playersData[ownerId];
-        const card = player?.battlefield?.find(item => (item.instanceId || item.id) === cardId);
-        return card ? { kind, player, card, ownerId } : null;
-    }
-    return null;
-};
-
-/** Resolve a safe subset of common Oracle instructions; unsupported lines are reported, never guessed. */
-export const resolveOracleText = (card, state, controllerId, target = '', xValue = 0, entry = false) => {
-    const text = String(card?.oracleText || '').replace(/\r/g, '');
-    const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
+/**
+ * Risolve il testo di una carta sullo stato. Il lavoro vero sta in
+ * magicEffects.js: qui restano l'interfaccia storica e la distinzione fra
+ * un permanente che entra in campo (solo inneschi ETB) e una magia che si
+ * risolve. Le frasi non riconosciute finiscono nel diario, non nel silenzio.
+ */
+export const resolveOracleText = (card, state, controllerId, target = '', xValue = 0, entry = false, mode = null) => {
+    const parsed = parseCardAbilities(card);
     const log = [], unsupported = [];
-    const player = state.playersData[controllerId];
-    const targetData = targetObject(state, target);
-    const targetWords = lines.join(' ').toLowerCase();
-    const instructions = lines.flatMap(line => {
-        if (entry) {
-            const match = line.match(/^When (?:this creature|this permanent|this enchantment|this artifact|this land|this planeswalker) enters(?: the battlefield)?,?\s*(.+)$/i);
-            if (!match && /^(?:When|Whenever|At the beginning|At the end)/i.test(line)) unsupported.push(line);
-            return match ? [match[1]] : [];
-        }
-        if (/^(?:When|Whenever|At the beginning|At the end|As long as|As this|If |Kicker|Flashback|Equip|Ward|Reach|Flying|Trample|Deathtouch|Lifelink|Haste|Vigilance|Defender|Menace|First strike|Double strike|Protection|Whenever)/i.test(line)) return [];
-        return [line];
-    });
     let resolvedCount = 0;
-    for (const instruction of instructions) {
-        const line = instruction.replace(/^[•\s]+/, '');
-        let match;
-        if ((match = line.match(/^(?:You )?draw (a|one|two|three|four|five|six|seven|eight|nine|ten|\d+|X) cards?\.?$/i))) {
-            const count = numberFromText(match[1]) ?? Math.max(0, Number(xValue) || 0);
-            const drawn = Math.min(count, player.library.length);
-            for (let index = 0; index < drawn; index++) player.hand.push(player.library.shift());
-            if (drawn < count) player.eliminated = true;
-            log.push(`${card.name}: peschi ${drawn} carte${drawn < count ? ' · mazzo esaurito, giocatore eliminato' : ''}.`); resolvedCount++; continue;
+    // In ingresso si risolvono solo gli inneschi della carta stessa: quelli che
+    // osservano altre creature li fa scattare il motore (runTriggers).
+    const groups = entry
+        ? parsed.triggers.filter(trigger => trigger.event === 'etb' && trigger.subject?.self)
+        : parsed.spells;
+    for (const group of groups) {
+        let chosen = group;
+        if (group.modes) {
+            chosen = mode != null && group.modes[mode]
+                ? group.modes[mode]
+                : group.modes.find(option => option.effects.length && !option.unsupported.length) || group.modes[0];
+            if (!chosen) continue;
+            log.push(`Modo scelto: ${chosen.text}.`);
         }
-        if ((match = line.match(/^(?:You )?gain (a|one|two|three|four|five|six|seven|eight|nine|ten|\d+|X) life\.?$/i))) {
-            const amount = numberFromText(match[1]) ?? Math.max(0, Number(xValue) || 0);
-            player.life = (Number(player.life) || 0) + amount;
-            log.push(`${card.name}: guadagni ${amount} vite.`); resolvedCount++; continue;
-        }
-        if ((match = line.match(/^(?:Target player|Any target|Target creature|Target permanent|Target artifact|Target enchantment|Target planeswalker) gets? (\+\d+\/\+\d+) until end of turn\.?$/i))) {
-            if (targetData?.card && String(targetData.card.typeLine || '').toLowerCase().includes('creature')) {
-                const [, boost] = match, [power, toughness] = boost.split('/').map(value => Number(value));
-                targetData.card.turnBoost ||= { power: 0, toughness: 0 };
-                targetData.card.turnBoost.power += power; targetData.card.turnBoost.toughness += toughness;
-                log.push(`${card.name}: ${targetData.card.name} prende ${boost}.`); resolvedCount++;
-            } else unsupported.push(instruction);
-            continue;
-        }
-        if ((match = line.match(/^(?:This spell|.+?) deals (\d+|X) damage to (?:any target|target player|target creature|target permanent)\.?$/i))) {
-            const amount = numberFromText(match[1]) ?? Math.max(0, Number(xValue) || 0);
-            if (targetData?.kind === 'player' && (/player/.test(match[0]) || /any target/i.test(match[0]))) {
-                targetData.player.life = Math.max(0, targetData.player.life - amount);
-                if (targetData.player.life === 0) targetData.player.eliminated = true;
-                log.push(`${card.name}: ${amount} danni a ${state.playerNames?.[targetData.ownerId] || 'un giocatore'}.`); resolvedCount++;
-            } else if (targetData?.card && (/creature|permanent/.test(match[0]) || /any target/i.test(match[0]))) {
-                targetData.card.damageMarked = (targetData.card.damageMarked || 0) + amount;
-                const toughness = (Number.parseInt(targetData.card.toughness, 10) || 0) + (targetData.card.turnBoost?.toughness || 0);
-                if (toughness > 0 && targetData.card.damageMarked >= toughness) {
-                    targetData.player.battlefield = targetData.player.battlefield.filter(item => item !== targetData.card);
-                    targetData.player.graveyard ||= [];
-                    if (targetData.card.isCommander) { targetData.player.commandZone ||= []; targetData.player.commandZone.push(targetData.card); }
-                    else targetData.player.graveyard.push(targetData.card);
-                }
-                log.push(`${card.name}: ${amount} danni a ${targetData.card.name}.`); resolvedCount++;
-            } else unsupported.push(instruction);
-            continue;
-        }
-        if ((match = line.match(/^(?:Destroy|Exile) target (creature|artifact|enchantment|planeswalker|permanent|nonland permanent)\.?$/i))) {
-            const kind = line.startsWith('Exile') ? 'exile' : 'destroy';
-            if (!targetData?.card || (match[1].toLowerCase().includes('creature') && !String(targetData.card.typeLine || '').toLowerCase().includes('creature'))) { unsupported.push(instruction); continue; }
-            const zone = kind === 'exile' ? 'exile' : 'graveyard';
-            targetData.player[zone] ||= [];
-            targetData.player.battlefield = targetData.player.battlefield.filter(item => item !== targetData.card);
-            if (targetData.card.isCommander) { targetData.player.commandZone ||= []; targetData.player.commandZone.push(targetData.card); } else targetData.player[zone].push(targetData.card);
-            log.push(`${card.name}: ${targetData.card.name} ${kind === 'exile' ? 'esiliata' : 'distrutta'}.`); resolvedCount++; continue;
-        }
-        if ((match = line.match(/^Put (a|one|two|three|four|five|\d+) \+1\/\+1 counters? on target creature\.?$/i))) {
-            const count = numberFromText(match[1]);
-            if (targetData?.card && String(targetData.card.typeLine || '').toLowerCase().includes('creature')) {
-                targetData.card.counters ||= { plusOne: 0 };
-                targetData.card.counters.plusOne += count;
-                log.push(`${card.name}: ${count} segnalini +1/+1 su ${targetData.card.name}.`); resolvedCount++;
-            } else unsupported.push(instruction);
-            continue;
-        }
-        if ((match = line.match(/^Create (a|one|two|three|four|five|\d+) (?:tapped )?(\d+)\/(\d+) ([\w-]+ )?creature tokens?\.?$/i))) {
-            const [, amountText, power, toughness, colorText = ''] = match, count = numberFromText(amountText);
-            player.battlefield ||= [];
-            for (let index = 0; index < count; index++) player.battlefield.push({ id: `token-${crypto.randomUUID()}`, name: `${colorText.trim() || 'Creature'} Token`, typeLine: 'Token Creature', power, toughness, cmc: 0, manaCost: '', image: '', tapped: /tapped/i.test(line), summoningSick: true, counters: { plusOne: 0 }, turnBoost: { power: 0, toughness: 0 } });
-            log.push(`${card.name}: crei ${count} pedine ${power}/${toughness}.`); resolvedCount++; continue;
-        }
-        if (/\btarget\b/i.test(line) && !targetData && /^(?:deals|destroy|exile|put|return|tap|sacrifice)/i.test(line)) unsupported.push(instruction);
-        else if (/^(?:You |Each player|Each opponent|Target |Destroy |Exile |Return |Put |Create |Scry |Mill |Search |Shuffle |Counter |Tap |Untap |Sacrifice |Add )/i.test(line)) unsupported.push(instruction);
+        const result = applyEffects(chosen.effects, { state, controllerId, target, xValue, card });
+        log.push(...result.log);
+        resolvedCount += result.applied;
+        unsupported.push(...result.unsupported, ...(chosen.unsupported || []));
     }
-    if (!instructions.length && text.trim() && !entry) unsupported.push('Abilità statiche/innescate non gestite da questa risoluzione.');
-    if (!resolvedCount && text.trim() && !unsupported.length && /\b(?:draw|gain|deals|destroy|exile|create|counter|return|search|mill|scry)\b/i.test(text)) unsupported.push('Testo Oracle non riconosciuto dal risolutore automatico.');
-    if (unsupported.length) log.push(`${card.name}: effetto da risolvere manualmente (${[...new Set(unsupported)].slice(0, 2).join('; ')}).`);
-    return { log, resolvedCount, unsupported: [...new Set(unsupported)], targetHint: /target creature|target permanent|any target|target player/i.test(targetWords) };
+    const unique = [...new Set(unsupported)];
+    if (unique.length) log.push(manualNotice(card?.name || 'Carta', unique));
+    const targetWords = String(card?.oracleText || '').toLowerCase();
+    return {
+        log,
+        resolvedCount,
+        unsupported: unique,
+        targetHint: /target creature|target permanent|any target|target player/i.test(targetWords)
+    };
 };
 
 export const isPermanentCard = card => /\b(?:creature|artifact|enchantment|planeswalker|battle)\b/i.test(String(card?.typeLine || ''));

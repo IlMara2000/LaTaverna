@@ -20,7 +20,8 @@
     "tunnel": "ngrok http 127.0.0.1:31415 --traffic-policy-file scripts/ngrok-policy.json --inspect=false --log stdout",
     "watch:gateway": "node --env-file-if-exists=.env.local scripts/gateway-watch.mjs",
     "prices:import": "node scripts/import-scryfall-prices.mjs",
-    "lint": "node scripts/lint-syntax.mjs"
+    "lint": "node scripts/lint-syntax.mjs",
+    "magic:coverage": "node scripts/magic-coverage.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",

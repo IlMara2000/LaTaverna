@@ -7,6 +7,61 @@
 
 /* La barra prende la prima fascia del tavolo: il campo inizia sotto. */
 .mt-stage { inset-block-start: var(--mt-bar-h); }
+
+/* Barra di stato: turno e fase a sinistra, vitals e comandi a destra. Prima
+   l'unica traccia del turno era il testo di un pulsante dentro la barra comandi. */
+.mt-arena-bar__status {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: calc(1.6 * var(--u));
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgb(244 239 228 / 88%);
+}
+
+.mt-arena-bar__vitals {
+  flex: 0 1 auto;
+  margin: 0;
+  font-size: calc(1.5 * var(--u));
+  font-variant-numeric: tabular-nums;
+  color: rgb(255 214 130 / 90%);
+  white-space: nowrap;
+}
+
+.mt-arena-bar__actions { display: flex; align-items: center; gap: calc(0.8 * var(--u)); }
+
+.mt-arena-bar__button {
+  min-block-size: 44px;
+  padding-inline: calc(1.2 * var(--u));
+  border: thin solid rgb(255 255 255 / 22%);
+  border-radius: calc(0.7 * var(--u));
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  font: inherit;
+  font-size: calc(1.4 * var(--u));
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+/* Su un telefono la barra non ha spazio per tag, vita, riserva e due pulsanti:
+   la vita e la riserva restano nella barra comandi, qui tengono il turno. */
+@media (max-width: 560px) {
+  .mt-arena-bar__tag,
+  .mt-arena-bar__vitals { display: none; }
+  .mt-arena-bar { gap: calc(0.6 * var(--u)); padding-inline: calc(1 * var(--u)); }
+  .mt-arena-bar__status { font-size: calc(1.45 * var(--u)); }
+  /* In combattimento lo spazio serve ai blocchi: riserva e comandante restano
+     nella barra comandi fuori dal combattimento. */
+  .mt-commands:has(.mp-combat) .mp-mana,
+  .mt-commands:has(.mp-combat) .mp-commander-cast { display: none; }
+  .mt-arena-bar__button,
+  .mt-arena-bar__exit { padding-inline: calc(0.8 * var(--u)); font-size: calc(1.35 * var(--u)); }
+}
+
+.mt-arena-bar__button:focus-visible { outline: 2px solid #ffd682; outline-offset: 2px; }
 .mt-menu__toggle { inset-block-start: calc(var(--mt-bar-h) + 1.2 * var(--u)); }
 
 .mt-arena-bar {
@@ -58,8 +113,11 @@ body.magic-arena-active #ui #nav-home-btn,
 body.magic-arena-active #ui #sidebar-menu { display: none !important; }
 body.magic-arena-active #ui #app { padding: 0 !important; overflow: hidden !important; }
 
-/* Mouse: il tavolo è un riquadro 16:9 centrato, il resto è platea. */
-@media (pointer: fine) {
+/* Mouse: il tavolo è un riquadro 16:9 centrato, il resto è platea. Solo su
+   schermi abbastanza larghi: su una finestra stretta il riquadro 16:9 diventa
+   alto meno di 250px e il tavolo si riduce a testo illeggibile. Sotto i 760px
+   vale il layout a tutto schermo, lo stesso dei telefoni. */
+@media (pointer: fine) and (min-width: 760px) {
   .mt-table {
     --u: calc(min(100dvh, 56.25vw) / 100);
     inset: 0;

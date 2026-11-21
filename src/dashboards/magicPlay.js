@@ -8,9 +8,10 @@ import {
 import { canPayMana, emptyManaPool, isManaSource, manaAbilityOptions, manaPoolLabel, manaProductionOptions, payMana } from './magicRules.js';
 import {
     MATCH_RULES, PHASE_LABEL, advancePhase, adjustLife, castSpell, concedeMatch, createMatch,
-    declareAttackers, declareBlockers, discardCards, mulliganAction, playLand, powerOf,
+    activateAbility, declareAttackers, declareBlockers, discardCards, mulliganAction, playLand, powerOf,
     resolveCombat, tapMana, toughnessOf
 } from './magicMatchEngine.js';
+import { abilityLabel, parseCardAbilities, textSupport } from './magicEffects.js';
 import { showMatchTable } from '../match/table.js';
 import { enterImmersive } from '../match/immersive.js';
 import './magicPlay.css';
@@ -139,10 +140,22 @@ export function showMagicPlay(container, options = {}) {
         const current = gameState();
         return Boolean(current && !current.mulliganActive && !current.winner && current.activePlayer === clientId);
     };
+    let noticeTimer = 0;
     const setNotice = message => {
         notice = message || '';
         const node = container.querySelector('#play-notice');
         if (node) node.textContent = notice;
+        clearTimeout(noticeTimer);
+        // Un avviso di mossa non valida («Mana insufficiente…») non deve restare
+        // appeso sul tavolo quando la situazione è già cambiata: spariva solo
+        // ricaricando la pagina.
+        if (notice) {
+            noticeTimer = setTimeout(() => {
+                notice = '';
+                const current = container.querySelector('#play-notice');
+                if (current) current.textContent = '';
+            }, 6000);
+        }
     };
     const deckCards = deck => (deck?.cards || [])
         .map(entry => ({ ...collection.get(String(entry.cardId)), quantity: Math.max(0, Number(entry.quantity) || 0) }))
@@ -982,6 +995,9 @@ export function showMagicPlay(container, options = {}) {
                 <strong>${esc(card.name || 'Carta')}</strong>
                 ${isCreature(card) ? `<b>${powerOf(card)}/${toughnessOf(card)}</b>` : ''}
                 <p>${renderCardSymbols(card.oracleText || 'Nessun testo disponibile.')}</p>
+                ${(() => { const support = textSupport(card); return (support.automated || support.manual)
+                    ? `<p class="mp-zoom-support">${support.automated} effetti automatici${support.manual ? ` · ${support.manual} da gestire a mano` : ''}</p>`
+                    : ''; })()}
             </div>
         </section>`;
         overlay.addEventListener('click', event => {
@@ -1005,6 +1021,12 @@ export function showMagicPlay(container, options = {}) {
     // mostra quello attivo, così le carte di due giocatori non si mescolano.
     const tableView = current => {
         const mine = current.playersData[clientId] || {};
+        const zonesOf = data => ({
+            graveyard: data.graveyard || [],
+            exile: data.exile || [],
+            command: data.commandZone || [],
+            library: (data.library || []).length
+        });
         return {
             own: mine.battlefield || [],
             hand: mine.hand || [],
@@ -1012,8 +1034,25 @@ export function showMagicPlay(container, options = {}) {
                 .filter(id => id !== clientId)
                 .map(id => {
                     const data = current.playersData[id] || {};
-                    return { id, name: nameOf(id), life: data.life ?? 0, eliminated: Boolean(data.eliminated), cards: data.battlefield || [] };
-                })
+                    return {
+                        id, name: nameOf(id), life: data.life ?? 0,
+                        eliminated: Boolean(data.eliminated), cards: data.battlefield || [],
+                        handCount: (data.hand || []).length,
+                        graveyardCount: (data.graveyard || []).length,
+                        commanderDamage: data.commanderDamage || {}
+                    };
+                }),
+            // Cimiteri, esilio e zona di comando: in Commander sono parte del
+            // gioco, prima non erano visibili da nessuna parte.
+            zones: {
+                own: { name: 'Tu', ...zonesOf(mine) },
+                opponents: current.players
+                    .filter(id => id !== clientId)
+                    .map(id => ({ name: nameOf(id), ...zonesOf(current.playersData[id] || {}) }))
+            },
+            status: `${PHASE_LABEL[current.phase] || current.phase} · turno ${current.turn}${current.activePlayer === clientId ? ' · tocchi tu' : ` · tocca a ${nameOf(current.activePlayer)}`}`,
+            mana: manaPoolLabel(mine.manaPool),
+            life: mine.life
         };
     };
 
@@ -1043,6 +1082,12 @@ export function showMagicPlay(container, options = {}) {
             <details class="mp-log"><summary>Diario della partita</summary><ol>${(current.log || []).slice(0, 12).map(line => `<li>${esc(line)}</li>`).join('')}</ol></details>`;
     };
 
+    // Le magie modali («Choose one —») chiedono il modo prima di essere lanciate.
+    const modeLabel = text => {
+        const clean = String(text || 'Modo').replace(/\s+/g, ' ').trim();
+        return clean.length > 22 ? `${clean.slice(0, 21)}…` : clean;
+    };
+
     // Un pulsante per carta, con le stesse condizioni di boardCard() e handPanel().
     const cardActions = card => {
         const current = gameState();
@@ -1055,18 +1100,39 @@ export function showMagicPlay(container, options = {}) {
             if (current.pendingDiscard && mine.hand.length > MATCH_RULES.openingHand) {
                 return `<button type="button" class="mp-small" data-discard="${esc(uid)}">${selectedDiscards.has(uid) ? 'Non scartare' : 'Scarta'}</button>`;
             }
+            // Una magia con modi mostra un pulsante per modo: il motore applica
+            // quello scelto, non il primo trovato.
+            // Solo le magie hanno modi da scegliere al lancio: un permanente con
+            // «scegli uno» in ingresso si risolve con i suoi inneschi.
+            const permanentCard = /\b(?:creature|artifact|enchantment|planeswalker)\b/i.test(String(card.typeLine || ''));
+            const modal = isLand(card) || permanentCard ? null : parseCardAbilities(card).spells.find(spell => spell.modes?.length);
+            if (modal) {
+                return modal.modes.map((option, modeIndex) => {
+                    const supported = option.effects.length > 0 && option.unsupported.length === 0;
+                    return `<button type="button" class="mp-small" data-cast-mode="${esc(`${uid}:${modeIndex}`)}" ${supported ? '' : 'disabled'} title="${esc(option.text)}">${esc(modeLabel(option.text))}</button>`;
+                }).join('');
+            }
             const land = isLand(card);
             const disabled = land && (mine.landsPlayed >= 1 || !['main1', 'main2'].includes(current.phase)) ? 'disabled' : '';
             return `<button type="button" class="mp-small" data-play="${esc(uid)}" ${disabled}>${land ? 'Gioca terra' : 'Lancia'}</button>`;
         }
+        const buttons = [];
         if (current.phase === 'combat' && isCreature(card) && !card.tapped && !card.summoningSick && isMyTurn()) {
             const attacking = selectedAttackers.has(nodeId);
-            return `<button type="button" class="mp-small" data-attacker="${esc(nodeId)}">${attacking ? 'Non attacca' : 'Attacca'}</button>`;
+            buttons.push(`<button type="button" class="mp-small" data-attacker="${esc(nodeId)}">${attacking ? 'Non attacca' : 'Attacca'}</button>`);
         }
         if (isMyTurn() && isManaSource(card, mine.colorIdentity || []) && !card.tapped) {
-            return `<button type="button" class="mp-small" data-tap="${esc(nodeId)}">Mana</button>`;
+            buttons.push(`<button type="button" class="mp-small" data-tap="${esc(nodeId)}">Mana</button>`);
         }
-        return '';
+        // Abilità attivate: solo quelle che il motore sa applicare davvero. Il
+        // resto resta nel diario come «da gestire a mano», non simula nulla.
+        if (isMyTurn() && ['main1', 'main2'].includes(current.phase)) {
+            parseCardAbilities(card).activated.forEach((ability, index) => {
+                if (!ability.supported || (!ability.cost.tap && !ability.cost.manaCost)) return;
+                buttons.push(`<button type="button" class="mp-small mp-ability" data-ability="${esc(uid)}" data-ability-index="${index}" title="${esc(ability.text)}">${esc(abilityLabel(ability))}</button>`);
+            });
+        }
+        return buttons.join('');
     };
 
     // Il tap non scrive la carta: chiede al motore, che è l'unico a poterla tappare.
@@ -1086,6 +1152,10 @@ export function showMagicPlay(container, options = {}) {
                 hand: views.hand,
                 opponents: views.opponents,
                 commands: commandsMarkup(),
+                zones: views.zones,
+                status: views.status,
+                mana: views.mana,
+                life: views.life,
                 tileExtra: cardActions,
                 onTogglePermanent: requestTap,
                 onPreview: ({ id }) => openCardZoom(findCardByUid(id)),
@@ -1095,7 +1165,11 @@ export function showMagicPlay(container, options = {}) {
             bindActions();
             return;
         }
-        if (table.update({ own: views.own, hand: views.hand, opponents: views.opponents, commands: commandsMarkup() })) bindActions();
+        if (table.update({
+            own: views.own, hand: views.hand, opponents: views.opponents,
+            commands: commandsMarkup(), zones: views.zones,
+            status: views.status, mana: views.mana, life: views.life
+        })) bindActions();
     }
 
     const render = () => {
@@ -1159,6 +1233,11 @@ export function showMagicPlay(container, options = {}) {
                 ? playLand(current, clientId, uid)
                 : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
         }));
+        container.querySelectorAll('[data-cast-mode]').forEach(button => button.addEventListener('click', () => {
+            const [uid, mode] = String(button.dataset.castMode || '').split(':');
+            if (!uid) return;
+            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)));
+        }));
         container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.castCommander;
             act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
@@ -1209,11 +1288,21 @@ export function showMagicPlay(container, options = {}) {
                 ? playLand(current, clientId, uid)
                 : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
         }));
+        container.querySelectorAll('[data-cast-mode]').forEach(button => button.addEventListener('click', () => {
+            const [uid, mode] = String(button.dataset.castMode || '').split(':');
+            if (!uid) return;
+            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)));
+        }));
         container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
             act(current => castSpell(current, clientId, button.dataset.castCommander, container.querySelector('#play-target')?.value || ''));
         }));
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
             act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
+        }));
+        container.querySelectorAll('[data-ability]').forEach(button => button.addEventListener('click', () => {
+            const uid = button.dataset.ability;
+            const index = Number(button.dataset.abilityIndex) || 0;
+            act(current => activateAbility(current, clientId, uid, index, container.querySelector('#play-target')?.value || ''));
         }));
         container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.attacker;
