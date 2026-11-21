@@ -522,6 +522,50 @@ html.scippo-shell .scippo-app {
     .sc-hand-card .sc-card { border-radius: 10px; }
 }
 
+/* Telefono orizzontale basso: la mano a 4 colonne occupava 282px, tutto il
+   tavolo cresceva a 700px e le carte-finestra finivano sotto il bordo.
+   Carte più strette (74px, sopra il minimo toccabile) e arena compressa. */
+@media (max-height: 560px) and (orientation: landscape) {
+    .sc-match { gap: 4px; }
+    .sc-match-top { min-height: 30px; }
+    .sc-opponent { padding: 4px 8px; }
+    .sc-avatar { inline-size: 28px; block-size: 28px; flex-basis: 28px; font-size: 14px; }
+    .sc-hand { grid-template-columns: repeat(4, minmax(0, 64px)); justify-content: center; gap: 8px; }
+    .sc-arena { min-height: 104px; padding: 4px; }
+    .sc-me { padding: 4px 8px; }
+    .sc-me-head { margin-bottom: 2px; }
+    .sc-score span { font-size: 26px; }
+    .sc-slot { width: 60px; }
+    .sc-card-rule { display: none; }
+    .sc-card-icon { font-size: 18px; }
+    .sc-card-name { font-size: 11px; }
+}
+
+/* Sotto i 480px di altezza si comprime ancora e, se serve, la partita scorre
+   dentro di sé: meglio 30px di scorrimento che le carte sotto il bordo. */
+@media (max-height: 480px) and (orientation: landscape) {
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-match { overflow-y: auto; overscroll-behavior: contain; }
+    /* La regola mobile (max-width:1023px) imposta arena e padding: qui serve
+       la stessa specificità per comprimerli davvero. */
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-arena { min-height: 86px; padding: 2px 4px; gap: 2px; }
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-opponent,
+    html.scippo-shell .scippo-app[data-screen="match"] .sc-me { padding: 2px 8px; }
+    .sc-avatar { inline-size: 24px; block-size: 24px; flex-basis: 24px; font-size: 12px; }
+    .sc-mini-hand { display: none; }
+    .sc-slot { width: 40px; }
+    .sc-verdict { min-height: 26px; }
+    .sc-verdict strong { font-size: 18px; }
+    .sc-verdict small,
+    .sc-bottino small,
+    .sc-me-copy small { display: none; }
+    .sc-bottino strong { font-size: 24px; }
+    .sc-me { padding: 2px 8px; }
+    .sc-me-head { min-height: 30px; margin-bottom: 0; }
+    .sc-hand { grid-template-columns: repeat(4, minmax(0, 56px)); gap: 6px; }
+    .sc-scippo-bar { min-height: 38px; }
+    .sc-scippo-button { min-height: 38px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .sc-mascot-hand,
     .sc-mascot-stolen,

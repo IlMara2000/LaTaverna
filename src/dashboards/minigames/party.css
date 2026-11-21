@@ -118,6 +118,20 @@ body:has(.party-game) #navbar-trigger, body:has(.party-game) #nav-home-btn { dis
     .party-input { font-size: .86rem; }
     .party-panel { border-radius: 18px; }
 }
+/* Telefono in orizzontale basso (844×390): la schermata «passa il telefono»
+   superava i 390px e il pulsante per scoprire i numeri finiva sotto il bordo.
+   Qui si comprime la spaziatura, non i target. */
+@media (max-height: 480px) {
+    .party-game { padding-block: 8px; }
+    .party-shell { gap: 8px; min-height: 0; }
+    .party-intro { padding-top: 0; gap: 4px; }
+    .party-title { font-size: 1.6rem; }
+    .party-subtitle { font-size: .72rem; line-height: 1.4; }
+    .party-turn-name { font-size: 1.5rem; }
+    .party-reveal { padding: 16px 14px; }
+    .party-reveal-note { font-size: max(10px, .62rem); letter-spacing: 1px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .party-game * { transition: none !important; animation: none !important; }
 }
