@@ -5,7 +5,7 @@ import { API_ROUTES } from '../scripts/local-api-bridge.js';
 // Fonte unica delle rotte client: vercel.json ne elencava solo una parte, e
 // /carte, /giochi-di-ruolo, /shop, /library e /magic erano 404 anche prima.
 import { PUBLIC_ROUTES } from '../src/services/publicRoutes.js';
-import { reportError } from '../api/_lib/errorReport.js';
+import { isReportableStatus, reportError } from '../api/_lib/errorReport.js';
 
 // Le server function di Vercel erano una per file sotto api/: qui la tabella
 // delle rotte è esplicita, così un endpoint non pubblicato non diventa pubblico.
@@ -227,7 +227,9 @@ export default {
             const response = await route(request, env);
             // Un 5xx è una risposta riuscita per il runtime: senza questo
             // controllo gli errori delle function non arriverebbero a Sentry.
-            if (response.status >= 500) {
+            // I 503 attesi (gateway spento, prezzi non configurati) sono esclusi
+            // dentro isReportableStatus, così il canale resta segnale e non rumore.
+            if (isReportableStatus(response.status)) {
                 reportError(new Error(`HTTP ${response.status}`), { request, response, ctx });
             }
             return response;

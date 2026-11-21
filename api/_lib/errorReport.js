@@ -4,8 +4,18 @@
 // il progetto Sentry esista.
 //
 // Nei dati inviati non finiscono query string, header, cookie o IP: possono
-// contenere token di sessione e non servono per capire l'errore.
+// contenere token di sessione e non servono per capire l'errore. Lo stack viaggia
+// in `extra` come testo: fabbricare i frame che Sentry si aspetta darebbe una
+// traccia falsa, e una traccia sbagliata è peggio di nessuna traccia.
 const TIMEOUT_MS = 3000;
+
+// Un 503 in questa app significa sempre una dipendenza o una configurazione
+// mancante (Oracolo senza gateway, prezzi non configurati, quota non
+// disponibile): è uno stato atteso, non un guasto. I bug veri arrivano come 500
+// o come eccezione non gestita, quindi restano segnalati.
+const EXPECTED_STATUS = new Set([503]);
+
+export const isReportableStatus = status => status >= 500 && !EXPECTED_STATUS.has(status);
 
 const parseDsn = value => {
     const raw = String(value || '').trim();
@@ -52,15 +62,14 @@ export const reportError = (error, { request, response, ctx } = {}) => {
         logger: 'taverna-worker',
         message: { formatted: message },
         exception: {
-            values: [{
-                type: error?.name || 'Error',
-                value: message,
-                ...(error?.stack ? { stacktrace: { frames: [{ filename: 'worker', function: 'fetch', context_line: error.stack.split('\n')[1]?.trim() }] } } : {})
-            }]
+            values: [{ type: error?.name || 'Error', value: message }]
         },
         tags: { runtime: 'cloudflare-workers' },
-        ...(target ? { request: target } : {}),
-        ...(response ? { extra: { status: response.status } } : {})
+        extra: {
+            ...(response ? { status: response.status } : {}),
+            ...(error?.stack ? { stack: error.stack } : {})
+        },
+        ...(target ? { request: target } : {})
     };
 
     const pending = fetch(dsn.endpoint, {
