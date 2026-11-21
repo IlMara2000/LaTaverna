@@ -92,7 +92,24 @@ export function showMinigamesList(container, options = {}) {
             ? MINIGAME_CATEGORIES.filter(category => category.id !== 'cards')
             : MINIGAME_CATEGORIES.filter(category => category.id === activeFilter);
 
-        catalog.innerHTML = visibleCategories.map(category => {
+        // Nella sezione Carte c'è anche il tavolo di Magic: la card porta al
+        // tavolo (contro il Bot o con gli amici collegati), non a un minigioco.
+        const magicCard = cardsOnly ? `
+            <section class="lobby-section" data-game-category="magic" style="margin-top: 26px;">
+                <h2 class="subtitle" style="opacity: 0.72; font-size: 0.82rem; letter-spacing: 2px; margin-bottom: 6px;">MAGIC: THE GATHERING</h2>
+                <div class="grid-layout">
+                    <button type="button" class="game-card catalog-game-card" id="open-magic-table">
+                        <span class="catalog-game-art" aria-hidden="true"><span class="catalog-game-icon">✦</span></span>
+                        <div class="catalog-game-copy">
+                            <h3>Tavolo di Magic</h3>
+                            <small>2–4 giocatori · 30–90 minuti</small><p class="world-game-description">Commander con il mazzo della tua collezione: contro il Bot o con gli amici collegati.</p>
+                        </div>
+                        <span class="catalog-game-arrow" aria-hidden="true">Avvia <b>↗</b></span>
+                    </button>
+                </div>
+            </section>` : '';
+
+        catalog.innerHTML = magicCard + visibleCategories.map(category => {
             const games = getGamesByCategory(category.id);
             return `
                 <section class="lobby-section" data-game-category="${category.id}" style="margin-top: 26px;">
@@ -118,6 +135,7 @@ export function showMinigamesList(container, options = {}) {
             const game = MINIGAMES.find(item => item.id === button.dataset.launchGame);
             if (game) button.onclick = () => launchGame(game);
         });
+        container.querySelector('#open-magic-table')?.addEventListener('click', () => navigateTo('magicPlay', container));
 
         catalogMotionCleanup?.();
         catalogMotionCleanup = enhanceSurfaceMotion(catalog, {
