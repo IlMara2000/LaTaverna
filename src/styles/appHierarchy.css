@@ -4,7 +4,11 @@
     height: auto; overflow: visible;
 }
 #ui .taverna-home .taverna-scene { min-height: 320px; }
-#ui .taverna-home .scene-reading img { width: 100%; object-position: center; }
+/* reading-nook.webp è un'unica illustrazione, non un trittico: con width 100% la
+   finestra della card cadeva al centro, tagliava il tavolo col libro aperto e
+   mostrava la stanza intera a scala più piccola delle altre scene. Qui si
+   inquadra poltrona, finestra e libro alla stessa scala delle card vicine. */
+#ui .taverna-home .scene-reading img { width: 300%; left: -164%; object-position: 50% 68%; }
 #ui .taverna-home .taverna-home-dock,
 #ui .taverna-home .taverna-home-dock:has(.is-resume) {
     display: flex; flex-wrap: wrap; justify-content: center;
