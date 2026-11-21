@@ -90,7 +90,7 @@ body:has(.briscola-game) #nav-home-btn {
     letter-spacing: 1.5px;
 }
 
-.briscola-brand small { color: rgba(237, 225, 246, 0.48); font-size: 0.5rem; }
+.briscola-brand small { color: rgba(237, 225, 246, 0.62); font-size: max(10px, 0.5rem); }
 .briscola-brand strong { color: #fff; font-size: 0.92rem; }
 
 .briscola-top-actions {
@@ -120,16 +120,29 @@ body:has(.briscola-game) #nav-home-btn {
     transform: translateY(-1px);
 }
 
+/* 44 px: sono azioni primarie della partita (esci, aiuto, ricomincia) e
+   devono restare toccabili anche quando il tavolo è in modalità compatta. */
 .briscola-icon-button {
-    min-width: 40px;
-    height: 40px;
+    min-width: 44px;
+    height: 44px;
     padding: 0 12px;
     border-radius: 13px;
     font-size: 0.9rem;
 }
 
+/* Stato premuto: senza, i comandi sembrano immagine statica. Il feedback
+   arriva entro 120 ms e non sposta il layout (solo transform/filter). */
+.briscola-icon-button:active,
+.briscola-text-button:active,
+.briscola-modal-actions button:active,
+.briscola-modal-close:active {
+    filter: brightness(.9);
+    transform: translateY(1px) scale(.96);
+    transition-duration: 100ms;
+}
+
 .briscola-exit-button { justify-self: start; }
-.briscola-exit-button span { margin-left: 4px; font-size: 0.66rem; letter-spacing: 0.8px; }
+.briscola-exit-button span { margin-left: 4px; font-size: max(10px, 0.66rem); letter-spacing: 0.8px; }
 
 .briscola-scoreboard {
     min-height: 60px;
@@ -147,7 +160,7 @@ body:has(.briscola-game) #nav-home-btn {
 
 .briscola-score { min-width: 0; display: grid; gap: 6px; }
 .briscola-score > span { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.briscola-score small { overflow: hidden; color: rgba(239, 229, 247, 0.58); font-size: 0.59rem; font-weight: 900; letter-spacing: 1px; text-overflow: ellipsis; white-space: nowrap; }
+.briscola-score small { overflow: hidden; color: rgba(239, 229, 247, 0.72); font-size: max(10px, 0.62rem); font-weight: 900; letter-spacing: 1px; text-overflow: ellipsis; white-space: nowrap; }
 .briscola-score strong { color: #fff; font-family: Georgia, serif; font-size: 1.35rem; line-height: 1; }
 .briscola-score-track { height: 4px; overflow: hidden; border-radius: 999px; background: rgba(255, 255, 255, 0.09); }
 .briscola-score-track i { display: block; width: 0; height: 100%; border-radius: inherit; transition: width 400ms ease; }
@@ -162,8 +175,22 @@ body:has(.briscola-game) #nav-home-btn {
     text-align: center;
 }
 
-.briscola-round-status small { color: rgba(239, 229, 247, 0.42); font-size: 0.53rem; font-weight: 900; letter-spacing: 1.3px; }
-.briscola-round-status strong { max-width: 100%; overflow: hidden; color: #dfacff; font-size: 0.67rem; letter-spacing: 0.9px; text-overflow: ellipsis; white-space: nowrap; }
+.briscola-round-status small { color: rgba(239, 229, 247, 0.62); font-size: max(10px, 0.56rem); font-weight: 900; letter-spacing: 1.3px; }
+/* Il turno è l'informazione numero uno: pillola persistente, non un'etichetta
+   da 8 px che si perde nella barra. */
+.briscola-round-status strong {
+    max-width: 100%;
+    overflow: hidden;
+    padding: 2px 8px;
+    border: 1px solid rgba(213, 151, 255, 0.28);
+    border-radius: 999px;
+    color: #f0d6ff;
+    background: rgba(157, 78, 221, 0.16);
+    font-size: max(12px, 0.72rem);
+    letter-spacing: 0.9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 .briscola-table {
     position: relative;
@@ -230,8 +257,8 @@ body:has(.briscola-game) #nav-home-btn {
     display: flex;
     align-items: center;
     gap: 7px;
-    color: rgba(239, 229, 247, 0.58);
-    font-size: 0.54rem;
+    color: rgba(239, 229, 247, 0.72);
+    font-size: max(10px, 0.56rem);
     letter-spacing: 1.3px;
 }
 
@@ -307,7 +334,7 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
 }
 
 .briscola-card-corner b { font-family: Georgia, serif; font-size: clamp(.78rem, 1.35vw, 1.05rem); }
-.briscola-card-corner i { margin-top: 3px; font-size: clamp(.57rem, .9vw, .75rem); font-style: normal; }
+.briscola-card-corner i { margin-top: 3px; font-size: max(10px, clamp(.57rem, .9vw, .75rem)); font-style: normal; }
 .briscola-card-corner-bottom { inset: auto 9px 9px auto; transform: rotate(180deg); }
 
 .briscola-figure {
@@ -351,7 +378,7 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
     gap: 2px;
 }
 
-.briscola-figure small { font-family: Georgia, serif; font-size: calc(var(--briscola-card-width) * .074); font-weight: 800; letter-spacing: .7px; }
+.briscola-figure small { font-family: Georgia, serif; font-size: max(10px, calc(var(--briscola-card-width) * .074)); font-weight: 800; letter-spacing: .3px; }
 .briscola-figure b { font-family: Georgia, serif; font-size: calc(var(--briscola-card-width) * .4); line-height: .95; }
 .briscola-figure i { font-family: Georgia, serif; font-size: calc(var(--briscola-card-width) * .17); font-style: normal; line-height: 1; }
 
@@ -370,6 +397,21 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
 
 .briscola-hand-player button.briscola-card:disabled { cursor: default; filter: saturate(.74) brightness(.86); }
 
+/* Le carte in mano rispondono al tocco: la carta si abbassa appena e prende
+   un bordo dorato, così il tap è confermato prima che parta l'animazione. */
+.briscola-hand-player button.briscola-card:active:not(:disabled) {
+    z-index: 5;
+    filter: brightness(1.04);
+    transform: translateY(-3px) scale(.97);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, .5), 0 0 0 3px rgba(255, 214, 130, .6);
+    transition-duration: 90ms;
+}
+
+.briscola-hand-player button.briscola-card:focus-visible:not(:disabled) {
+    outline: 3px solid rgba(255, 214, 130, .72);
+    outline-offset: 2px;
+}
+
 .briscola-stock-zone {
     position: absolute;
     top: 50%;
@@ -382,7 +424,7 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
 }
 
 .briscola-stock-copy { width: 42px; display: grid; justify-items: center; gap: 3px; color: rgba(242, 232, 248, .52); }
-.briscola-stock-copy small { font-size: .48rem; font-weight: 900; letter-spacing: 1px; }
+.briscola-stock-copy small { font-size: max(10px, .48rem); font-weight: 900; letter-spacing: 1px; }
 .briscola-stock-copy strong { color: #fff; font-family: Georgia, serif; font-size: 1.25rem; }
 .briscola-stock-cards { position: relative; width: calc(var(--briscola-card-height) + 24px); height: calc(var(--briscola-card-height) + 10px); }
 .briscola-stock-cards > .briscola-card-back { position: absolute; top: 2px; right: 0; z-index: 2; }
@@ -413,11 +455,11 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
     gap: 14px;
 }
 
-.briscola-empty-trick { color: rgba(234, 218, 242, .26); font-family: Georgia, serif; font-size: clamp(.54rem, .8vw, .68rem); font-style: italic; letter-spacing: .7px; text-align: center; }
+.briscola-empty-trick { color: rgba(234, 218, 242, .52); font-family: Georgia, serif; font-size: max(10px, clamp(.54rem, .8vw, .68rem)); font-style: italic; letter-spacing: .7px; text-align: center; }
 .briscola-played-card { display: grid; justify-items: center; gap: 4px; animation: briscola-card-arrive 300ms ease both; }
 .briscola-played-card:nth-child(2) { transform: rotate(4deg) translateY(5px); }
-.briscola-played-card > small { color: rgba(240, 229, 247, .5); font-size: .48rem; font-weight: 900; letter-spacing: 1px; }
-.briscola-trump-label { padding: 6px 10px; border: 1px solid rgba(223, 184, 249, .12); border-radius: 999px; color: rgba(239, 227, 246, .46); background: rgba(10, 4, 14, .42); font-size: .5rem; font-weight: 900; letter-spacing: .9px; }
+.briscola-played-card > small { color: rgba(240, 229, 247, .68); font-size: max(10px, .48rem); font-weight: 900; letter-spacing: 1px; }
+.briscola-trump-label { padding: 6px 10px; border: 1px solid rgba(223, 184, 249, .12); border-radius: 999px; color: rgba(239, 227, 246, .64); background: rgba(10, 4, 14, .42); font-size: max(10px, .5rem); font-weight: 900; letter-spacing: .9px; }
 .briscola-trump-label span { margin-left: 5px; padding: 2px 5px; border-radius: 4px; color: var(--suit-color); background: #faf8f2; }
 
 .briscola-flying-card { position: fixed; z-index: 20000; pointer-events: none; transition: left 400ms cubic-bezier(.2,.75,.2,1), top 400ms cubic-bezier(.2,.75,.2,1), transform 400ms ease, opacity 400ms ease; }
@@ -442,15 +484,15 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
 .briscola-start-emblem { position: relative; width: 74px; height: 74px; margin-bottom: 16px; display: grid; place-items: center; border: 1px solid rgba(213, 159, 250, .26); border-radius: 24px; color: #ddb1fa; background: rgba(157, 78, 221, .12); box-shadow: 0 16px 50px rgba(77, 21, 117, .32); transform: rotate(45deg); }
 .briscola-start-emblem span { position: absolute; font-family: Georgia, serif; font-size: 1.45rem; transform: rotate(-45deg) translate(-10px, -10px); }
 .briscola-start-emblem span:last-child { color: #a668cf; transform: rotate(-45deg) translate(11px, 11px); }
-.briscola-eyebrow { color: #c982f4; font-size: .58rem; font-weight: 950; letter-spacing: 2.2px; text-transform: uppercase; }
+.briscola-eyebrow { color: #c982f4; font-size: max(10px, .58rem); font-weight: 950; letter-spacing: 2.2px; text-transform: uppercase; }
 .briscola-start h1 { margin: 8px 0 7px; color: #fff; font-family: Georgia, serif; font-size: clamp(3rem, 8vw, 5rem); font-weight: 700; letter-spacing: clamp(3px, .7vw, 8px); line-height: .95; text-shadow: 0 8px 40px rgba(172, 87, 224, .28); }
 .briscola-start > p { max-width: 520px; margin: 0 0 16px; color: rgba(239, 228, 246, .62); font-size: clamp(.72rem, 1.1vw, .88rem); line-height: 1.5; }
 .briscola-start .minigame-online-mode-panel { width: min(100%, 400px); margin: 0 0 5px !important; }
 .briscola-start .minigame-online-status { margin-bottom: 5px !important; }
 .briscola-level-select { width: min(100%, 370px); display: grid; gap: 8px; }
-.briscola-level-select > span { color: rgba(235, 218, 244, .5); font-size: .55rem; font-weight: 950; letter-spacing: 1.7px; }
+.briscola-level-select > span { color: rgba(235, 218, 244, .66); font-size: max(10px, .55rem); font-weight: 950; letter-spacing: 1.7px; }
 .briscola-level-select .game-level-ladder { width: 100%; padding: 7px; }
-.briscola-text-button { margin-top: 13px; padding: 10px 16px; border-color: transparent; border-radius: 12px; color: rgba(242, 231, 249, .56); font-size: .58rem; letter-spacing: 1px; }
+.briscola-text-button { margin-top: 13px; padding: 10px 16px; border-color: transparent; border-radius: 12px; color: rgba(242, 231, 249, .7); font-size: max(10px, .58rem); letter-spacing: 1px; }
 
 .briscola-modal {
     position: absolute;
@@ -479,7 +521,7 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
 .briscola-final-score strong { color: #fff; font-family: Georgia, serif; font-size: 2.5rem; }
 .briscola-final-score i { color: rgba(255,255,255,.25); font-style: normal; }
 .briscola-modal-actions { display: grid; grid-template-columns: 1.25fr 1fr .65fr; gap: 8px; margin-top: 20px; }
-.briscola-modal-actions button { min-height: 44px; padding: 8px 10px; border: 1px solid rgba(213,157,248,.2); border-radius: 13px; color: #fff; background: rgba(255,255,255,.055); cursor: pointer; font-family: inherit; font-size: .58rem; font-weight: 950; letter-spacing: .7px; }
+.briscola-modal-actions button { min-height: 44px; padding: 8px 10px; border: 1px solid rgba(213,157,248,.2); border-radius: 13px; color: #fff; background: rgba(255,255,255,.055); cursor: pointer; font-family: inherit; font-size: max(10px, .58rem); font-weight: 950; letter-spacing: .7px; }
 .briscola-modal-actions button:first-child { border-color: rgba(210,150,250,.48); background: linear-gradient(135deg, #8f42c6, #5f278e); box-shadow: 0 12px 28px rgba(73,19,108,.36); }
 
 @keyframes briscola-card-arrive {
@@ -500,23 +542,26 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
     .briscola-brand-mark { width: 33px; height: 33px; border-radius: 10px; font-size: 1rem; }
     .briscola-brand small { display: none; }
     .briscola-brand strong { font-size: .69rem; letter-spacing: 1px; }
-    .briscola-icon-button { min-width: 35px; height: 35px; padding: 0 9px; border-radius: 11px; }
+    .briscola-icon-button { min-width: 44px; height: 44px; padding: 0 9px; border-radius: 11px; }
     .briscola-exit-button span { display: none; }
     .briscola-top-actions { gap: 4px; }
 
     .briscola-scoreboard { min-height: 52px; grid-template-columns: 1fr minmax(86px, .78fr) 1fr; gap: 8px; padding: 7px 9px; border-radius: 15px; }
     .briscola-score { gap: 4px; }
-    .briscola-score small { max-width: 76px; font-size: .47rem; letter-spacing: .6px; }
+    .briscola-score small { max-width: 76px; font-size: max(10px, .47rem); letter-spacing: .6px; }
     .briscola-score strong { font-size: 1.1rem; }
-    .briscola-round-status small { font-size: .43rem; letter-spacing: .7px; }
-    .briscola-round-status strong { font-size: .51rem; letter-spacing: .4px; }
+    .briscola-round-status small { font-size: max(10px, .43rem); letter-spacing: .7px; }
+    .briscola-round-status strong { padding: 2px 6px; font-size: max(12px, .51rem); letter-spacing: .4px; }
 
     .briscola-table { border-radius: 22px; box-shadow: inset 0 0 0 4px rgba(13,6,18,.45), inset 0 0 45px rgba(0,0,0,.42); }
     .briscola-table::before { inset: 9px; }
     .briscola-bot-seat { top: 9px; }
     .briscola-player-seat { bottom: 8px; }
     .briscola-seat { gap: 3px; }
-    .briscola-seat-label { font-size: .45rem; }
+    .briscola-seat-label { font-size: max(10px, .45rem); }
+    /* «RE» e «DONNA» dentro la figura scendevano a 4,8 px: a questa scala
+       sono rumore, quindi si nascondono e restano lettera + seme. */
+    .briscola-figure small { display: none; }
     .briscola-hand-bot { transform: scale(.7); }
     .briscola-hand .briscola-card + .briscola-card { margin-left: -5px; }
 
@@ -525,8 +570,8 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
     .briscola-stock-cards { width: calc(var(--briscola-card-height) + 8px); }
     .briscola-trick-zone { top: 52%; left: 58%; width: calc(100% - 128px); gap: 6px; }
     .briscola-trick-cards { min-width: 0; min-height: var(--briscola-card-height); gap: 6px; }
-    .briscola-trump-label { max-width: 100%; overflow: hidden; padding: 5px 7px; font-size: .42rem; text-overflow: ellipsis; white-space: nowrap; }
-    .briscola-empty-trick { max-width: 140px; font-size: .5rem; }
+    .briscola-trump-label { max-width: 100%; overflow: hidden; padding: 5px 7px; font-size: max(10px, .42rem); text-overflow: ellipsis; white-space: nowrap; }
+    .briscola-empty-trick { max-width: 140px; font-size: max(10px, .5rem); }
     .briscola-card-face::before { inset: 5px; }
     .briscola-card-corner { top: 6px; left: 5px; }
     .briscola-card-corner-bottom { inset: auto 5px 6px auto; }
@@ -561,8 +606,9 @@ button.briscola-card { appearance: none; font-family: inherit; cursor: pointer; 
 
 @media (max-height: 620px) {
     .briscola-game { --briscola-card-width: clamp(50px, 8.1vh, 62px); }
-    .briscola-topbar { min-height: 36px; }
-    .briscola-icon-button { height: 34px; }
+    .briscola-topbar { min-height: 44px; }
+    .briscola-icon-button { height: 44px; }
+    .briscola-figure small { display: none; }
     .briscola-scoreboard { min-height: 46px; padding-top: 5px; padding-bottom: 5px; }
     .briscola-seat-label { display: none; }
     .briscola-bot-seat { top: 7px; }

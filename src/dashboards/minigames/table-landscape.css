@@ -183,7 +183,7 @@ html.table-compact .briscola-game {
     padding: 6px 14px !important;
 }
 html.table-compact .briscola-shell { height: 100%; gap: 6px; }
-html.table-compact .briscola-topbar { min-height: 34px; }
+html.table-compact .briscola-topbar { min-height: 44px; }
 html.table-compact :is(.briscola-brand small, .briscola-seat-label) { display: none; }
 html.table-compact .briscola-scoreboard { min-height: 44px; padding: 4px 10px; }
 html.table-compact .briscola-stock-zone { top: 50%; }
