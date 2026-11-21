@@ -37,6 +37,12 @@
 #ui .mv-want.is-wanted { color:#f2dcff; background:#8045a6; }
 #ui .mv-remove { width:calc(100% - 16px); margin:0 8px 8px; padding:7px; border:1px solid #e5dbea; border-radius:9px; color:#714d82; background:#faf7fc; cursor:pointer; }
 #ui .mv-empty { grid-column:1/-1; padding:32px 15px; border:1px dashed #cdbddd; border-radius:14px; color:#766a7f; text-align:center; }
+
+/* Filtro collezione: nasconde le carte già impegnate in un mazzo. */
+#ui .mv-hide-deck { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-height:44px; margin:-8px 0 18px; padding:10px 14px; border:1px solid #e2d8e9; border-radius:14px; color:#4a3657; background:#fff; font-size:.92rem; cursor:pointer; }
+#ui .mv-hide-deck input { inline-size:18px; block-size:18px; margin:0; accent-color:#7b4bb3; }
+#ui .mv-hide-deck small { margin-inline-start:auto; color:#7a6a85; font-size:.78rem; }
+#ui .mv-panel-actions { display:flex; flex-wrap:wrap; gap:8px; }
 #ui .mv-button, #ui .mv-text-button { min-height:40px; padding:0 15px; border:1px solid #c7a8df; border-radius:12px; color:#502d6d; background:linear-gradient(145deg,#fff,#f2eafb); box-shadow:0 3px 0 #dfd1e9; cursor:pointer; font-weight:700; }
 #ui .mv-button:disabled { opacity:.45; cursor:not-allowed; }
 #ui .mv-soft { border-color:#e4dae9; color:#756781; background:#fff; box-shadow:none; }

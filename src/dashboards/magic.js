@@ -9,11 +9,29 @@ import { getMagicAccount, loadMagicLibrary, loadMagicShoppingSummary, loadPublic
 import { getPreference, setPreference } from '../services/userPreferences.js';
 import { unpricedCards } from '../services/magicShoppingList.js';
 import { PRICE_AGE_MAX, PRICE_AGE_MIN, normalizePriceAge, resolvePriceAge } from '../services/priceAge.js';
+import { MAGIC_DEMO_DECKS } from '../data/magicDemoDecks.js';
 import './magic-viewer.css';
 
 const COLLECTION_KEY = 'taverna_magic_collection_v1';
 const DECKS_KEY = 'taverna_magic_decks_v1';
 const WANTLIST_KEY = 'taverna_magic_wantlist_v1';
+// Filtro della collezione: nasconde le carte già usate in un mazzo della sezione Mazzi.
+const HIDE_DECK_KEY = 'taverna_magic_hide_deck_cards_v1';
+// I mazzi di esempio vengono aggiunti una volta sola, anche se l'utente cambia account.
+const DEMO_SEED_KEY = 'taverna_magic_demo_decks_seeded_v1';
+// Mazzi di esempio eliminati dall'utente: non tornano a ogni caricamento.
+const DEMO_DISMISSED_KEY = 'taverna_magic_demo_decks_dismissed_v1';
+
+/** Righe tipo «1 Giada, Font of Hope», senza le intestazioni di sezione. */
+const parseDemoDecklist = source => String(source || '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !/^(deck|commander|sideboard|maybeboard)$/i.test(line))
+    .map(line => {
+        const match = line.match(/^(\d+)\s+(.+)$/);
+        return match ? { quantity: Math.min(99, Math.max(1, Number(match[1]) || 1)), name: match[2].trim() } : null;
+    })
+    .filter(Boolean);
 // Soglia dell'avviso "prezzi vecchi": la scelta dell'utente (campo in lista acquisti,
 // preferenza magic_price_max_age_days) vince sempre; senza scelta vale
 // VITE_PRICE_MAX_AGE_DAYS impostata al build. Il modulo è src/services/priceAge.js.
@@ -105,6 +123,7 @@ export function showMagicDashboard(container, options = {}) {
     let activeDeckId = decks[0]?.id || '';
     let exportLanguage = 'it', exportFormat = 'txt';
     let filter = '', notice = '', pending = [], busy = false, cloudUserId = null, disposed = false, modalCard = null;
+    let hideDeckCards = localStorage.getItem(HIDE_DECK_KEY) === '1';
     let priceSummary = null;
     let priceMaxAgeDays = readPriceAge();
     let priceCurrency = readPriceCurrency();
@@ -166,6 +185,94 @@ export function showMagicDashboard(container, options = {}) {
     };
     const setNotice = value => { notice = value || ''; const node = container.querySelector('#magic-viewer-notice'); if (node) node.textContent = notice; };
     const byId = () => new Map(cards.map(card => [String(card.id), card]));
+    const deckCardIds = () => new Set(decks.flatMap(deck => [
+        ...(deck.cards || []).map(entry => String(entry.cardId)),
+        ...(deck.commanders || []).map(String)
+    ]));
+
+    // Mazzi di esempio (Giada e gli altri): le carte entrano anche nella collezione,
+    // così il filtro «nascondi carte nei mazzi» le può togliere dalla vista.
+    // Le copie in collezione devono bastare al mazzo più esigente: una Plains
+    // usata 32 volte in un mazzo non basta averla ×4. Si confronta per carta.
+    const topUpDemoDecks = () => {
+        let changed = false;
+        for (const deck of decks.filter(item => MAGIC_DEMO_DECKS.some(demo => demo.name === item.name))) {
+            // Il comandante sta nella sua zona: se è anche fra le carte del mazzo
+            // il totale supera le 100 e il match non parte.
+            const commanders = new Set((deck.commanders || []).map(String));
+            const withoutCommander = (deck.cards || []).filter(entry => !commanders.has(String(entry.cardId)));
+            if (withoutCommander.length !== (deck.cards || []).length) { deck.cards = withoutCommander; changed = true; }
+            for (const entry of deck.cards || []) {
+                const card = cards.find(item => String(item.id) === String(entry.cardId));
+                if (!card) continue;
+                const need = Math.max(1, Number(entry.quantity) || 1);
+                if ((Number(card.quantity) || 1) < need) { card.quantity = need; changed = true; }
+            }
+        }
+        if (changed) persist();
+        return changed;
+    };
+
+    const dismissedDemoDecks = () => {
+        try { return JSON.parse(localStorage.getItem(DEMO_DISMISSED_KEY) || '[]'); } catch { return []; }
+    };
+
+    const seedDemoDecks = async ({ announce = false, restore = false } = {}) => {
+        if (busy || disposed) return;
+        const dismissed = restore ? [] : dismissedDemoDecks();
+        const missing = MAGIC_DEMO_DECKS.filter(demo => !decks.some(deck => deck.name === demo.name) && !dismissed.includes(demo.name));
+        if (!missing.length) { localStorage.setItem(DEMO_SEED_KEY, '1'); if (topUpDemoDecks()) render(); return; }
+        busy = true;
+        if (announce) setNotice('Preparo i mazzi di esempio…');
+        try {
+            const parsed = missing.map(demo => ({ demo, entries: parseDemoDecklist(demo.source) }));
+            // Per nome si tiene la quantità più alta fra i mazzi: il catalogo
+            // restituisce una sola stampa e la collezione deve coprirla.
+            const needed = new Map();
+            for (const { entries } of parsed) {
+                for (const entry of entries) {
+                    const key = normalize(entry.name);
+                    const current = needed.get(key);
+                    needed.set(key, { name: entry.name, quantity: Math.max(current?.quantity || 1, entry.quantity) });
+                }
+            }
+            const resolved = await lookupExactCards([...needed.values()]);
+            const byName = new Map(resolved.filter(item => item.card).map(item => [normalize(item.name), item.card]));
+            let addedCards = 0;
+            for (const entry of needed.values()) {
+                const found = byName.get(normalize(entry.name));
+                if (!found) continue;
+                const mapped = summary(found);
+                const existing = cards.find(card => String(card.id) === String(mapped.id));
+                if (existing) existing.quantity = Math.max(Number(existing.quantity) || 1, entry.quantity);
+                else { cards.push({ ...mapped, quantity: entry.quantity }); addedCards += 1; }
+            }
+            let giadaDeck = null;
+            for (const { demo, entries } of parsed) {
+                // Il comandante non si conta due volte: 99 carte + comandante = 100.
+                const deckCards = entries
+                    .filter(entry => normalize(entry.name) !== normalize(demo.commander))
+                    .map(entry => ({ cardId: byName.get(normalize(entry.name))?.id, quantity: entry.quantity }))
+                    .filter(entry => entry.cardId);
+                const commander = byName.get(normalize(demo.commander));
+                const deck = { id: id(), name: demo.name, cards: deckCards, commanders: commander ? [String(commander.id)] : [] };
+                decks.push(deck);
+                if (/Giada/i.test(demo.commander)) giadaDeck = deck;
+            }
+            if (giadaDeck) activeDeckId = giadaDeck.id;
+            localStorage.setItem(DEMO_SEED_KEY, '1');
+            topUpDemoDecks();
+            persist();
+            if (!disposed) {
+                render();
+                setNotice(`${parsed.length} mazzi di esempio aggiunti con ${addedCards} carte nuove in collezione.`);
+            }
+        } catch (error) {
+            if (!disposed) setNotice(`Mazzi di esempio non aggiunti: ${error.message}`);
+        } finally {
+            busy = false;
+        }
+    };
     const CARD_CACHE_KEY = 'taverna_magic_card_details_v1';
     const hydrateCollection = async () => {
         let cache = {};
@@ -326,7 +433,10 @@ export function showMagicDashboard(container, options = {}) {
 
     const render = () => {
         if (disposed) return;
-        const visible = cards.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)));
+        const deckIds = deckCardIds();
+        const nameMatch = card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter));
+        const visible = cards.filter(card => nameMatch(card) && (!hideDeckCards || !deckIds.has(String(card.id))));
+        const hiddenByDecks = cards.filter(card => deckIds.has(String(card.id))).length;
         const wanted = wantlist.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)));
         const activeDeck = decks.find(deck => deck.id === activeDeckId) || decks[0];
         const cardMap = byId();
@@ -357,6 +467,7 @@ export function showMagicDashboard(container, options = {}) {
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">LA TUA RACCOLTA</span><h2>Collezione</h2><p>Apri una carta per leggere l’effetto. Il simbolo ◇ la aggiunge alla wantlist.</p></div><strong>${cards.reduce((sum,card)=>sum+(Number(card.quantity)||1),0)} carte</strong></div>
             <div class="mv-import"><div><h3>Importa una lista</h3><p>Carica un file PDF, TXT o DOCX. I nomi vengono cercati nel catalogo ufficiale.</p></div><label class="mv-file">Scegli file<input id="mv-file" type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label></div>
             <label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra le carte per nome…" value="${esc(filter)}"></label>
+            <label class="mv-hide-deck"><input id="mv-hide-deck-cards" type="checkbox" ${hideDeckCards ? 'checked' : ''}> <span>Nascondi le carte già in un mazzo</span><small>${hiddenByDecks} ${hiddenByDecks === 1 ? 'carta' : 'carte'} nei mazzi</small></label>
             ${pending.length ? `<div class="mv-review"><h3>Controlla le carte trovate</h3><p>Verifica i nomi prima di salvarli; gli elementi in rosso non sono stati associati a una carta.</p>${pending.map((item,index)=>`<div class="mv-review-row"><label>${esc(item.name)} <small>×${item.quantity}</small><select data-resolve="${index}"><option value="">${item.card ? `Trovata: ${esc(item.card.name)}` : 'Scegli il risultato esatto'}</option>${(item.matches||[]).map(card=>`<option value="${esc(card.id)}">${esc(card.name)} · ${esc(card.set_name||card.set||'')}</option>`).join('')}</select></label></div>`).join('')}<div class="mv-actions"><button type="button" class="mv-button" id="mv-confirm-import" ${pending.some(item=>!item.card)?'disabled':''}>Aggiungi carte selezionate</button><button type="button" class="mv-button mv-soft" id="mv-cancel-import">Annulla</button></div></div>` : ''}
             <div class="mv-selection-tools" aria-label="Gestisci collezione">
               <button type="button" class="mv-button" id="mv-delete-cards" ${selected.size ? '' : 'disabled'}>Cancella${selected.size ? ` (${selected.size})` : ''}</button>
@@ -365,9 +476,9 @@ export function showMagicDashboard(container, options = {}) {
               ${undoRemoval ? '<button type="button" class="mv-button" id="mv-undo-delete">Annulla eliminazione</button>' : ''}
               <small aria-live="polite">${selecting ? `${selected.size} selezionate · Elimina tutte le copie anche dai mazzi` : 'Tieni premuta una carta per selezionarla.'}</small>
             </div>
-            <div class="mv-grid">${visible.map(card=>cardTile(card,'collection')).join('') || `<p class="mv-empty">${cards.length?'Nessuna carta corrisponde alla ricerca.':'La collezione è vuota. Importa un PDF, TXT o DOCX per iniziare.'}</p>`}</div>
+            <div class="mv-grid">${visible.map(card=>cardTile(card,'collection')).join('') || `<p class="mv-empty">${cards.length ? (hideDeckCards ? 'Nessuna carta fuori dai mazzi corrisponde alla ricerca.' : 'Nessuna carta corrisponde alla ricerca.') : 'La collezione è vuota. Importa un PDF, TXT o DOCX per iniziare.'}</p>`}</div>
           </section>` : tab === 'mazzi' ? `<section class="mv-panel">
-            <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button></div>
+            <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><div class="mv-panel-actions"><button type="button" class="mv-button mv-soft" id="mv-demo-decks">Mazzi d’esempio</button><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button></div></div>
             ${decks.length ? `<div class="mv-deck-layout"><aside class="mv-deck-list">${decks.map(deck=>`<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id===activeDeck?.id}"><strong>${esc(deck.name)}</strong><small>${deck.cards.reduce((sum,item)=>sum+(Number(item.quantity)||1),0)} carte</small></button>`).join('')}</aside><div class="mv-deck-content"><div class="mv-deck-tools"><h3>${esc(activeDeck?.name||'')}</h3>${playControl}<button class="mv-text-button" id="mv-print-deck" type="button">Stampa proxy</button><button class="mv-text-button" id="mv-rename-deck" type="button">Rinomina</button><button class="mv-text-button" id="mv-delete-deck" type="button">Elimina</button></div>${commanderAlert}${commanderSection}<label class="mv-search"><span>⌕</span><input id="mv-deck-search" type="search" placeholder="Aggiungi una carta…"></label><div id="mv-search-results" class="mv-search-results">${searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div><div class="mv-deck-groups">${[['Creature','Creature'],['Instant','Istantanei'],['Sorcery','Stregonerie'],['Artifact','Artefatti'],['Enchantment','Incantesimi'],['Planeswalker','Planeswalker'],['Battle','Battaglie'],['Land','Terre'],['Other','Altre carte']].map(([type,title])=>{const group=deckCards.filter(c=>{const primary=['Land','Creature','Planeswalker','Battle','Artifact','Enchantment','Instant','Sorcery'].find(t=>c.typeLine?.includes(t))||'Other';return primary===type;});return group.length?`<section class="mv-deck-group"><h4>${title} <span>${group.reduce((sum,c)=>sum+c.quantity,0)}</span></h4><div class="mv-grid">${group.map(card=>`<div class="mv-deck-card">${cardTile(card,'deck')}<div class="mv-quantity-tools"><button data-deck-quantity="${esc(card.id)}" data-delta="-1" aria-label="Riduci copie di ${esc(card.name)}">−</button><span>${card.quantity}</span><button data-deck-quantity="${esc(card.id)}" data-delta="1" aria-label="Aumenta copie di ${esc(card.name)}">+</button></div></div>`).join('')}</div></section>`:'';}).join('')||'<p class="mv-empty">Questo mazzo è vuoto. Cerca una carta qui sopra.</p>'}</div></div></div>` : '<p class="mv-empty">Non hai ancora creato mazzi.</p>'}
           </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div>${priceNotice()}<div class="mv-price-tools"><label class="mv-price-age">Avviso prezzi vecchi<input id="mv-price-age" type="number" inputmode="numeric" min="${PRICE_AGE_MIN}" max="${PRICE_AGE_MAX}" step="1" value="${priceMaxAgeDays}" aria-describedby="mv-price-age-hint">giorni <small id="mv-price-age-hint">0 = mai</small></label><label class="mv-price-age">Valuta dei totali<select id="mv-price-currency">${PRICE_CURRENCY_OPTIONS.map(code=>`<option value="${code}" ${code===priceCurrency?'selected':''}>${PRICE_CURRENCY_LABEL[code]}</option>`).join('')}</select></label><button type="button" class="mv-button mv-soft" id="mv-price-refresh" ${priceBusy || priceCooldownLeft() > 0 ? 'disabled' : ''}>${priceButtonLabel()}</button></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
           ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><div class="mv-sheet-grab" role="separator" aria-orientation="horizontal" aria-label="Trascina per mostrare tutti i dettagli della carta" tabindex="0"><span></span></div><div class="mv-sheet-body"><div class="mv-browse"><button type="button" data-browse="-1" aria-label="Carta precedente">←</button><span>Scorri per sfogliare</span><button type="button" data-browse="1" aria-label="Carta successiva">→</button></div><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></div></section></div>` : ''}
@@ -516,6 +627,11 @@ export function showMagicDashboard(container, options = {}) {
         container.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { tab = button.dataset.tab; filter = ''; searchResults = []; commanderSearchResults = []; selecting = false; selected.clear(); clearPress(); render(); if (tab === 'wantlist') void refreshPriceSummary(); }));
         container.querySelector('#mv-file')?.addEventListener('change', event => { const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''; });
         container.querySelector('#mv-filter')?.addEventListener('input', event => { filter = event.target.value; const start=event.target.selectionStart; render(); const input=container.querySelector('#mv-filter'); input?.focus(); try { input?.setSelectionRange(start,start); } catch { /* search inputs may not support selection */ } });
+        container.querySelector('#mv-hide-deck-cards')?.addEventListener('change', event => {
+            hideDeckCards = event.target.checked;
+            localStorage.setItem(HIDE_DECK_KEY, hideDeckCards ? '1' : '0');
+            render();
+        });
         container.querySelectorAll('[data-open-card]').forEach(button => {
             const cardId = button.dataset.openCard;
             button.addEventListener('click', () => {
@@ -540,7 +656,8 @@ export function showMagicDashboard(container, options = {}) {
         });
         container.querySelector('#mv-select-mode')?.addEventListener('click', () => { selecting = !selecting; selected.clear(); render(); });
         container.querySelector('#mv-select-all')?.addEventListener('click', () => {
-            cards.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter))).forEach(card => selected.add(String(card.id)));
+            const deckIds = deckCardIds();
+            cards.filter(card => normalize(`${card.name} ${card.printedName}`).includes(normalize(filter)) && (!hideDeckCards || !deckIds.has(String(card.id)))).forEach(card => selected.add(String(card.id)));
             render();
         });
         container.querySelector('#mv-delete-cards')?.addEventListener('click', () => {
@@ -598,10 +715,16 @@ export function showMagicDashboard(container, options = {}) {
                 const name=window.prompt('Come vuoi chiamare il mazzo?','Nuovo mazzo'); if(name===null) return; void finishImport(true,name);
             } else void finishImport(false);
         });
+        container.querySelector('#mv-demo-decks')?.addEventListener('click', () => {
+            tab = 'mazzi';
+            const dismissed = dismissedDemoDecks().filter(name => !MAGIC_DEMO_DECKS.some(demo => demo.name === name));
+            localStorage.setItem(DEMO_DISMISSED_KEY, JSON.stringify(dismissed));
+            void seedDemoDecks({ announce: true, restore: true });
+        });
         container.querySelector('#mv-new-deck')?.addEventListener('click', () => { const name=window.prompt('Nome del nuovo mazzo:'); if(!name?.trim()) return; const deck={id:id(),name:name.trim().slice(0,80),cards:[],commanders:[]}; decks.push(deck); activeDeckId=deck.id; persist(); render(); });
         container.querySelectorAll('[data-select-deck]').forEach(button=>button.addEventListener('click',()=>{activeDeckId=button.dataset.selectDeck;searchResults=[];render();}));
         container.querySelector('#mv-rename-deck')?.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId);const name=window.prompt('Nuovo nome del mazzo:',deck?.name||'');if(name?.trim()){deck.name=name.trim().slice(0,80);persist();render();}});
-        container.querySelector('#mv-delete-deck')?.addEventListener('click',()=>{if(!window.confirm('Eliminare questo mazzo? Le carte resteranno nella collezione.'))return;decks=decks.filter(item=>item.id!==activeDeckId);activeDeckId=decks[0]?.id||'';persist();render();});
+        container.querySelector('#mv-delete-deck')?.addEventListener('click',()=>{if(!window.confirm('Eliminare questo mazzo? Le carte resteranno nella collezione.'))return;const removed=decks.find(item=>item.id===activeDeckId);if(removed&&MAGIC_DEMO_DECKS.some(demo=>demo.name===removed.name)){const dismissed=dismissedDemoDecks();if(!dismissed.includes(removed.name))dismissed.push(removed.name);localStorage.setItem(DEMO_DISMISSED_KEY,JSON.stringify(dismissed));}decks=decks.filter(item=>item.id!==activeDeckId);activeDeckId=decks[0]?.id||'';persist();render();});
         container.querySelector('#mv-deck-search')?.addEventListener('input', async event=>{const value=event.target.value.trim();const results=await searchScryfall(value);if(results===null){setNotice('Ricerca non disponibile.');return;}searchResults=results.slice(0, 8);const root=container.querySelector('#mv-search-results');if(root)root.innerHTML=searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('');root?.querySelectorAll('[data-add-deck-card]').forEach(button=>button.addEventListener('click',()=>{const found=searchResults.find(card=>card.id===button.dataset.addDeckCard);if(!found)return;let own=cards.find(card=>card.id===found.id);if(!own){own=summary(found);cards.push(own);}const deck=decks.find(item=>item.id===activeDeckId);const entry=deck.cards.find(item=>item.cardId===own.id);if(entry)entry.quantity++;else deck.cards.push({cardId:own.id,quantity:1});persist();render();setNotice(`${own.name} aggiunta al mazzo e alla collezione.`);}));});
         container.querySelectorAll('[data-deck-quantity]').forEach(button=>button.addEventListener('click',()=>{const deck=decks.find(item=>item.id===activeDeckId),cardId=button.dataset.deckQuantity,entry=deck?.cards.find(item=>String(item.cardId)===cardId);if(!entry)return;entry.quantity+=Number(button.dataset.delta);if(entry.quantity<=0)deck.cards=deck.cards.filter(item=>String(item.cardId)!==cardId);persist();render();}));
         // Il pulsante dell'avviso non crea nulla da solo: porta il cursore nella
@@ -691,18 +814,27 @@ export function showMagicDashboard(container, options = {}) {
 
     window.__magicCleanup = () => { disposed = true; clearPress(); stopPriceTicker(); clearTimeout(priceAgeSaveTimer); window.removeEventListener('resize', onSheetResize); };
     render();
+    // Anche offline: le copie in collezione devono coprire i mazzi di esempio.
+    if (topUpDemoDecks()) render();
     if (!navigator.onLine) void hydrateCollection();
     if (navigator.onLine) void (async()=>{
         try {
             const user=await getMagicAccount(); cloudUserId=user?.id||null;
-            if(!cloudUserId)return;
+            // Senza account resta la libreria locale: i mazzi di esempio servono lo stesso.
+            if(!cloudUserId){await seedDemoDecks();return;}
             priceMaxAgeDays = await loadPriceAgePreference();
             priceCurrency = await loadPriceCurrencyPreference();
             const remote=await loadMagicLibrary(cloudUserId);
             if(disposed)return;
             if(remote.hasCloudData){cards=remote.cards||[];decks=(remote.decks||[]).map(deck=>({...deck,commanders:deck.commanders||[]}));wantlist=remote.wantlist||[];activeDeckId=decks[0]?.id||'';save(COLLECTION_KEY,cards);save(DECKS_KEY,decks);save(WANTLIST_KEY,wantlist);render();}
             else persist();
+            // Ripara le quantità delle carte già presenti nei mazzi di esempio.
+            if (topUpDemoDecks()) render();
             await hydrateCollection();
+            // Dopo la sincronizzazione: il cloud può non avere ancora i mazzi di
+            // esempio, e sovrascriverebbe quelli creati prima del login.
+            await seedDemoDecks();
+            if (topUpDemoDecks()) render();
             await refreshPriceSummary();
         }catch(error){ if(!disposed)setNotice(`Archivio sul dispositivo pronto. Sincronizzazione cloud non disponibile: ${error.message}`); }
     })();
