@@ -1215,10 +1215,12 @@ export function showMagicPlay(container, options = {}) {
             const canCast = isMyTurn() && ['main1', 'main2'].includes(current.phase);
             return `<button type="button" class="mp-small mp-commander-cast" data-cast-commander="${esc(card.uid)}" ${canCast ? '' : 'disabled'}>Comandante · ${esc(card.name)} <small>${renderCardSymbols(cost)}</small></button>`;
         }).join('');
-        return `<p id="play-notice" class="mp-notice" role="status" aria-live="polite">${esc(notice)}</p>
+        // «Passa il turno» apre la barra: resta visibile anche quando il resto
+        // dei controlli va in scorrimento.
+        return `<div class="mp-toolbar">${phaseButton(mine)}${commanderButtons}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave title="Lascia il tavolo">Lascia</button></div>
             <div class="mp-mana"><span class="mp-mana__pool" title="${esc(`Riserva: ${manaPoolLabel(mine.manaPool)}`)}">Riserva: ${manaSymbols(mine.manaPool) || 'vuota'}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>
-            <div class="mp-toolbar">${phaseButton(mine)}${commanderButtons}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave>Lascia il tavolo</button></div>
-            ${current.phase !== 'combat' ? `<label class="mp-target">Bersaglio della magia<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
+            <p id="play-notice" class="mp-notice" role="status" aria-live="polite" title="${esc(notice)}">${esc(notice)}</p>
+            ${current.phase !== 'combat' ? `<label class="mp-target" title="Bersaglio della magia">Bersaglio<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
             ${combatPanel()}
             ${effectDetectorMarkup()}
             <details class="mp-log"><summary>Diario della partita</summary><ol>${(current.log || []).slice(0, 12).map(line => `<li>${esc(line)}</li>`).join('')}</ol></details>`;

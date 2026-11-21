@@ -28,7 +28,6 @@ body.magic-table-active .floating-trigger { display: none !important; }
    collassa sull'altezza del contenuto e la mano finisce alta zero. */
 .mt-stage [data-slot="board"] { position: absolute; inset: 0; }
 
-.mt-table [data-card-id],
 .mt-table .mt-opponents__chip,
 .mt-table .mt-menu__toggle,
 .mt-table .mt-menu__item,
@@ -145,6 +144,8 @@ body.magic-table-active .floating-trigger { display: none !important; }
   border-radius: calc(1.2 * var(--u));
 }
 
+.mt-hand [data-card-id] { min-block-size: 44px; min-inline-size: 44px; }
+
 .mt-hand {
   /* «safe center»: se le carte superano la larghezza restano raggiungibili a
      sinistra, invece di essere tagliate fuori dallo scorrimento. */
@@ -165,10 +166,15 @@ body.magic-table-active .floating-trigger { display: none !important; }
 /* ─────────────────────── la carta ───────────────────────
    Alta quanto la fascia, larga di conseguenza (63/88 come una carta vera). */
 
+/* Niente minimo 44×44 sulle carte del campo: su schermi bassi deformava
+   l'arte in un quadrato e la faceva uscire dalla corsia. Il target toccabile
+   resta garantito dall'altezza della corsia e dal long-press. */
 .mt-card {
   position: relative;
   flex: 0 0 auto;
   block-size: 100%;
+  min-block-size: 0;
+  min-inline-size: 0;
   aspect-ratio: 63 / 88;
   max-inline-size: calc(22 * var(--u));
   display: flex;
@@ -300,21 +306,31 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 /* ─────────────────────── barra comandi ─────────────────────── */
 
+/* Barra compatta: le corsie del campo prendono l'altezza che avanza. Il tetto
+   è basso di proposito; i controlli rari (bersaglio, diario, effetti) stanno
+   in scorrimento, mentre «Passa il turno» resta agganciato in cima. */
 .mt-commands {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: calc(0.6 * var(--u)) calc(0.8 * var(--u));
-  /* 23u: con riserva, fase, comandante, vite e bersaglio su una riga sola più
-     il diario, a 19u il diario e il selettore restavano sotto lo scorrimento. */
-  max-block-size: calc(23 * var(--u));
-  padding: calc(0.8 * var(--u)) calc(1.1 * var(--u));
+  align-content: flex-start;
+  gap: calc(0.35 * var(--u)) calc(0.5 * var(--u));
+  max-block-size: calc(16 * var(--u));
+  padding: calc(0.45 * var(--u)) calc(0.8 * var(--u));
   overflow-y: auto;
   border: thin solid var(--mt-line);
   border-radius: calc(1.2 * var(--u));
   background: linear-gradient(180deg, rgb(20 27 34 / 92%), rgb(12 17 22 / 92%));
-  font-size: calc(1.5 * var(--u));
+  font-size: calc(1.3 * var(--u));
   scrollbar-width: thin;
+}
+
+.mt-commands .mp-toolbar {
+  position: sticky;
+  inset-block-start: calc(-0.45 * var(--u));
+  z-index: 2;
+  padding-block: calc(0.2 * var(--u));
+  background: linear-gradient(180deg, #141b22 70%, rgb(20 27 34 / 0%));
 }
 
 /* Quando c'è da scegliere (blocchi, mulligan) la barra deve crescere: con il
@@ -323,7 +339,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
    senza, si mangiava il campo e la mano (carte larghe 75px). Il pulsante di
    conferma resta agganciato in fondo se il pannello va in scorrimento. */
 .mt-commands:has(.mp-combat, .mp-mulligan) {
-  max-block-size: calc(36 * var(--u));
+  max-block-size: calc(32 * var(--u));
   overflow-y: auto;
 }
 
@@ -343,10 +359,10 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-table .mp-button,
 .mt-table .mp-small,
 .mt-table .mp-button.mp-soft {
-  min-block-size: max(calc(4.2 * var(--u)), 36px);
-  padding: calc(0.5 * var(--u)) calc(1.2 * var(--u));
-  border-radius: calc(0.8 * var(--u));
-  font-size: calc(1.5 * var(--u));
+  min-block-size: max(calc(3.2 * var(--u)), 30px);
+  padding: calc(0.25 * var(--u)) calc(0.8 * var(--u));
+  border-radius: calc(0.7 * var(--u));
+  font-size: calc(1.3 * var(--u));
   letter-spacing: 0.02em;
 }
 
@@ -356,8 +372,11 @@ body.magic-table-active .floating-trigger { display: none !important; }
   flex: 1 1 100%;
   margin: 0;
   min-block-size: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--mt-gold);
-  font-size: calc(1.5 * var(--u));
+  font-size: calc(1.2 * var(--u));
 }
 
 .mt-commands .mp-mana,
@@ -368,16 +387,22 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 .mt-commands .mp-mana span,
 .mt-commands .mp-life span,
-.mt-commands .mp-discard span { color: var(--mt-muted); font-size: calc(1.35 * var(--u)); }
+.mt-commands .mp-discard span { color: var(--mt-muted); font-size: calc(1.15 * var(--u)); }
 .mt-commands .mp-mana small { display: none; }
 .mt-commands .mp-life { margin-inline-start: 0; }
-.mt-commands .mp-life strong { font-size: calc(2 * var(--u)); color: var(--mt-gold); font-variant-numeric: tabular-nums; }
+.mt-commands .mp-life strong { font-size: calc(1.7 * var(--u)); color: var(--mt-gold); font-variant-numeric: tabular-nums; }
 
-.mt-commands .mp-target { display: flex; align-items: center; gap: calc(0.6 * var(--u)); font-size: calc(1.35 * var(--u)); color: var(--mt-muted); }
+/* I prefissi .mt-table vincono l'ordine di import: magicPlay.css arriva dopo
+   table.css e riporta questi blocchi a misure da pagina. */
+.mt-table .mt-commands .mp-toolbar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.mt-table .mt-commands .mp-target { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: calc(0.4 * var(--u)); padding: 0; border: 0; background: none; font-size: calc(1.15 * var(--u)); color: var(--mt-muted); white-space: nowrap; }
+.mt-table .mt-commands .mp-target select { min-block-size: max(calc(2.8 * var(--u)), 26px); font-size: calc(1.2 * var(--u)); }
+.mt-table .mt-commands .mp-log,
+.mt-table .mt-commands .mp-effects { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; }
 .mt-commands select,
 .mt-commands input {
-  min-block-size: max(calc(4 * var(--u)), 34px);
-  padding-inline: calc(0.8 * var(--u));
+  min-block-size: max(calc(3 * var(--u)), 28px);
+  padding-inline: calc(0.6 * var(--u));
   border: thin solid var(--mt-line);
   border-radius: calc(0.6 * var(--u));
   background: rgb(6 9 12 / 90%);
@@ -414,7 +439,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
   font-size: calc(1.3 * var(--u));
   color: var(--mt-muted);
 }
-.mt-commands .mp-log summary { min-block-size: 32px; display: flex; align-items: center; cursor: pointer; color: var(--mt-gold); letter-spacing: 0.06em; }
+.mt-commands .mp-log summary { min-block-size: 22px; display: flex; align-items: center; cursor: pointer; color: var(--mt-gold); font-size: calc(1.15 * var(--u)); letter-spacing: 0.06em; }
 .mt-commands .mp-log ol { margin: 0; padding-inline-start: calc(2 * var(--u)); display: grid; gap: calc(0.25 * var(--u)); max-block-size: calc(16 * var(--u)); overflow-y: auto; }
 
 /* Rivelatore effetti: sta chiuso su una riga e si apre solo se serve. */
@@ -423,7 +448,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
   font-size: calc(1.3 * var(--u));
   color: var(--mt-muted);
 }
-.mt-commands .mp-effects summary { min-block-size: 32px; display: flex; align-items: center; cursor: pointer; color: var(--mt-gold); letter-spacing: 0.06em; }
+.mt-commands .mp-effects summary { min-block-size: 22px; display: flex; align-items: center; cursor: pointer; color: var(--mt-gold); font-size: calc(1.15 * var(--u)); letter-spacing: 0.06em; }
 .mt-commands .mp-effects ol { margin: 0; padding-inline-start: calc(2 * var(--u)); display: grid; gap: calc(0.3 * var(--u)); max-block-size: calc(16 * var(--u)); overflow-y: auto; }
 .mt-commands .mp-effect { display: flex; gap: calc(0.5 * var(--u)); align-items: baseline; }
 .mt-commands .mp-effect__icon { flex: 0 0 auto; width: calc(1.8 * var(--u)); text-align: center; }
@@ -581,6 +606,64 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 .mt-zones__empty { list-style: none; font-style: italic; }
 
+/* ─────────────── schermi bassi (telefono orizzontale) ───────────────
+   Con `--u` a 3,6–3,9 px i testi scendevano a 4–5 px: qui sotto c'è un
+   pavimento in pixel. Le etichette delle corsie spariscono per dare altezza
+   alle carte, che restano nel rapporto 63/88 invece di essere quadrate. */
+@media (max-height: 440px) {
+  .mt-lane__label { display: none; }
+  .mt-field { overflow-y: auto; scrollbar-width: none; }
+  .mt-field::-webkit-scrollbar { display: none; }
+  /* Almeno 44 px di altezza carta: la larghezza segue il rapporto, non un
+     quadrato forzato. Se le corsie non entrano, il campo scorre. */
+  .mt-lane:not(.is-empty) { flex: 0 0 max(44px, calc(11.5 * var(--u))); }
+
+  .mt-lane__cards { gap: max(4px, calc(0.6 * var(--u))); padding-block: 0; }
+  .mt-card__badge { font-size: max(10px, calc(1.2 * var(--u))); padding: 0 2px; }
+  .mt-lane .mt-card__actions { max-block-size: 100%; overflow: hidden; padding: 2px; gap: 2px; }
+  .mt-table .mt-lane .mt-card__actions button {
+    min-block-size: 0;
+    block-size: auto;
+    max-inline-size: 100%;
+    padding: 1px 4px;
+    font-size: max(10px, calc(1.1 * var(--u)));
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mt-commands { font-size: max(11px, calc(1.3 * var(--u))); }
+  .mt-table .mp-button,
+  .mt-table .mp-small,
+  .mt-table .mp-button.mp-soft { font-size: max(11px, calc(1.3 * var(--u))); }
+  .mt-commands .mp-notice,
+  .mt-commands .mp-mana span,
+  .mt-commands .mp-life span,
+  .mt-commands .mp-target,
+  .mt-commands .mp-log summary,
+  .mt-commands .mp-effects summary { font-size: max(10px, calc(1.15 * var(--u))); }
+  .mt-commands select { font-size: max(11px, calc(1.2 * var(--u))); }
+  .mt-opponent-head { font-size: max(10px, calc(1.3 * var(--u))); }
+  .mt-opponent-head__count,
+  .mt-opponent-head__cmd { font-size: max(10px, calc(1.1 * var(--u))); }
+
+  /* Anche la testata e il menu scendevano sotto i 6 px: qui il pavimento.
+     Il tag «TAVOLO · MAGIC» sparisce, lo spazio serve a turno e comandi. */
+  .mt-table .mt-arena-bar__tag { display: none; }
+  .mt-table .mt-arena-bar__status,
+  .mt-table .mt-arena-bar__vitals { font-size: max(10px, calc(1.5 * var(--u))); }
+  .mt-table .mt-arena-bar__vitals :is(b, strong) { font-size: max(11px, calc(1.7 * var(--u))); }
+  .mt-table .mt-arena-bar__button,
+  .mt-table .mt-arena-bar__exit { padding-inline: 6px; font-size: max(10px, calc(1.4 * var(--u))); }
+  .mt-table .mt-menu__toggle { font-size: max(13px, calc(2.2 * var(--u))); }
+  .mt-table .mt-menu__title { font-size: max(11px, calc(2 * var(--u))); }
+  .mt-table .mt-menu__item { font-size: max(11px, calc(1.7 * var(--u))); }
+  .mt-table .mt-opponent-head__life :is(b, strong),
+  .mt-table .mt-commands .mp-life :is(b, strong) { font-size: max(11px, calc(1.7 * var(--u))); }
+  .mt-table .mt-opponents__stat { font-size: max(10px, calc(1.2 * var(--u))); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mt-card { transition: none; }
   .mt-card.is-tapped { transform: none; }
@@ -595,8 +678,8 @@ body.magic-table-active .floating-trigger { display: none !important; }
    vita, bersaglio): con il tetto da 19u la fase successiva finiva sotto lo
    scorrimento e il turno non si chiudeva più. Qui può crescere. */
 @media (max-width: 560px) {
-  .mt-commands { max-block-size: calc(60 * var(--u)); }
-  .mt-commands:has(.mp-combat, .mp-mulligan) { max-block-size: calc(60 * var(--u)); }
+  .mt-commands { max-block-size: calc(22 * var(--u)); }
+  .mt-commands:has(.mp-combat, .mp-mulligan) { max-block-size: calc(38 * var(--u)); }
 
   /* Sullo schermo stretto la mano conta più del campo avversario: le carte
      devono restare leggibili, non diventare francobolli da 78px. */
