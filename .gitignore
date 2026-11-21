@@ -85,3 +85,6 @@ scripts/audit-mobile.json
 
 # Immagini di controllo (link esterni, non versionate)
 .tmp-swisstransfer/
+
+# Catture di verifica del tavolo: restano in locale, non nel repository
+screenshots/
