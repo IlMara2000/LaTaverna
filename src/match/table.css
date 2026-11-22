@@ -893,6 +893,26 @@ body.magic-table-active .floating-trigger { display: none !important; }
   /* L'avviso (errori compresi) sta in cima alla barra: così si legge senza
      scorrere, mentre riserva e bersaglio restano sotto. */
   .mt-table.mt-table .mt-commands .mp-notice { order: -1; flex: 1 1 100%; }
+  /* Il bersaglio sta accanto ai comandi invece che sotto: la riga comandi
+     sembrava piena e per scegliere il bersaglio bisognava scorrere la barra. */
+  /* Basis 0: con la basis automatica il contenitore andava a capo prima di
+     restringere, e il bersaglio finiva comunque sulla riga dopo. */
+  .mt-table.mt-table .mt-commands .mp-toolbar { flex: 1 1 0; min-inline-size: 0; }
+  .mt-table.mt-table .mt-commands .mp-target { order: 1; flex: 0 0 auto; }
+  /* Riserva e «Svuota» sono già nella barra in alto («Vite 40 · Riserva vuota»)
+     e la riserva si svuota da sola a fine passo: qui rubavano la larghezza che
+     serve al bersaglio e alle vite. */
+  .mt-table.mt-table .mt-commands .mp-mana { display: none; }
+  /* Diario ed effetti occupano una riga intera: vanno in fondo, altrimenti il
+     bersaglio finisce sotto di loro comunque. */
+  .mt-table.mt-table .mt-commands .mp-effects,
+  .mt-table.mt-table .mt-commands .mp-log { order: 3; }
+  /* Con il bersaglio sulla stessa riga i comandi devono stringere: nome del
+     comandante con i puntini e pulsanti un filo più compatti, così restano
+     visibili tutti fino a «Lascia». */
+  .mt-table.mt-table .mt-commands .mp-commander-cast { max-inline-size: 30%; }
+  .mt-table.mt-table .mt-commands .mp-toolbar .mp-button,
+  .mt-table.mt-table .mt-commands .mp-toolbar .mp-small { padding-inline: 6px; font-size: 11px; }
   /* Diario ed effetti non spariscono: restano in fondo alla barra, raggiunti
      scorrendola, così le informazioni della partita non si perdono. */
 
@@ -911,6 +931,13 @@ body.magic-table-active .floating-trigger { display: none !important; }
   .mt-table .mt-arena-bar { padding-inline-end: 54px; }
   .mt-table .mt-opponent-head { padding-inline-end: 56px; }
   .mt-table .mt-menu__toggle { inset-block-start: 3px; inset-inline-end: 6px; }
+}
+
+@media (orientation: landscape) and (max-height: 380px) {
+  /* A 375 px di altezza il campo resta 113 px: la carta da 112 non ci stava e
+     il bordo inferiore finiva tagliato dal campo. A 390 il campo è 125 e la
+     carta da 112 ci sta, quindi la regola vale solo sotto i 380. */
+  .mt-table .mt-lane__cards { block-size: 108px; }
 }
 
 @media (orientation: landscape) and (max-height: 360px) {

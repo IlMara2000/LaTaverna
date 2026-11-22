@@ -226,6 +226,30 @@
     }
 }
 
+/* Mulligan in orizzontale stretto (667×375): in due colonne la mano restava
+   larga 390 px, tre carte da 217 px e le altre quattro sotto la piega. Qui il
+   pannello va su una riga e le sette carte su una riga sola: si vedono tutte
+   insieme, che è l'unico modo per scegliere cosa mettere in fondo. */
+@media (orientation: landscape) and (max-height: 420px) and (max-width: 700px) {
+    .magic-play:has(.mp-mulligan) > .mp-table {
+        display: flex; flex-direction: column; align-items: stretch; gap: 6px;
+    }
+    .magic-play:has(.mp-mulligan) .mp-mulligan { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; }
+    .magic-play:has(.mp-mulligan) .mp-mulligan > :is(.mp-overline, strong, p) { flex: 1 1 auto; margin: 0; }
+    /* Il testo lungo sparisce: qui conta vedere le carte, e il titolo basta. */
+    .magic-play:has(.mp-mulligan) .mp-mulligan p { display: none; }
+    .magic-play:has(.mp-mulligan) .mp-mulligan .mp-row { flex: 0 0 auto; }
+    .magic-play:has(.mp-mulligan) .mp-mulligan .mp-button { min-block-size: 40px; padding: 6px 10px; font-size: .74rem; }
+    .magic-play:has(.mp-mulligan) .mp-hand {
+        display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 4px; overflow: hidden; padding: 0;
+    }
+    .magic-play:has(.mp-mulligan) .mp-hand-card { padding: 3px; gap: 2px; border-radius: 8px; }
+    .magic-play:has(.mp-mulligan) .mp-hand-card img { block-size: 56px; object-fit: cover; object-position: center 28%; }
+    .magic-play:has(.mp-mulligan) .mp-hand-card strong { font-size: .58rem; -webkit-line-clamp: 1; }
+    .magic-play:has(.mp-mulligan) .mp-hand-card .mp-small { min-block-size: 30px; padding: 2px; font-size: .56rem; }
+}
+
 @media (max-width: 640px) {
     /* Fascia libera in fondo: il menu flottante non copre l'ultima riga del tavolo. */
     .magic-play .mp-table { padding-bottom: 64px; }
