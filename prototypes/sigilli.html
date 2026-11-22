@@ -1,0 +1,1157 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SIGILLI · prototipo del tratto</title>
+<style>
+    :root {
+        color-scheme: dark;
+        --ink: #07040d;
+        --panel: #120a1d;
+        --amethyst: #c77dff;
+        --amethyst-deep: #9d4edd;
+        --gold: #f5dd62;
+        --text: #efe5f7;
+        --muted: rgba(239, 229, 247, 0.56);
+        --faint: rgba(239, 229, 247, 0.32);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+        height: 100%;
+        margin: 0;
+        background: var(--ink);
+        color: var(--text);
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    body {
+        font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100dvh;
+        padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom));
+        background:
+            radial-gradient(ellipse at 50% -10%, rgba(157, 78, 222, 0.22), transparent 60%),
+            radial-gradient(ellipse at 50% 120%, rgba(245, 221, 98, 0.06), transparent 55%),
+            var(--ink);
+    }
+
+    /* ---------- barra alta ---------- */
+    .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 34px;
+    }
+
+    .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 7px;
+        font-family: Georgia, 'Times New Roman', serif;
+        letter-spacing: 0.16em;
+        font-size: 15px;
+    }
+
+    .brand-mark { color: var(--amethyst); font-size: 13px; }
+
+    .brand-tag {
+        padding: 2px 6px;
+        border: 1px solid rgba(199, 125, 255, 0.32);
+        border-radius: 999px;
+        color: var(--faint);
+        font-family: 'Manrope', system-ui, sans-serif;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .icon-btn {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border: 1px solid rgba(199, 125, 255, 0.28);
+        border-radius: 12px;
+        background: rgba(157, 78, 222, 0.1);
+        color: var(--text);
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .icon-btn[aria-pressed="true"] { opacity: 0.5; }
+
+    /* ---------- scelta runa ---------- */
+    .runes {
+        display: flex;
+        gap: 8px;
+    }
+
+    .rune-chip {
+        flex: 1 1 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 8px;
+        min-height: 48px;
+        padding: 6px 9px;
+        border: 1px solid rgba(199, 125, 255, 0.18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--muted);
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .rune-chip[aria-selected="true"] {
+        border-color: rgba(245, 221, 98, 0.5);
+        background: rgba(245, 221, 98, 0.08);
+        color: var(--text);
+    }
+
+    .rune-chip .chip-glyph {
+        font-family: 'Segoe UI Historic', 'Noto Sans Runic', Georgia, serif;
+        font-size: 20px;
+        line-height: 1;
+        color: var(--amethyst);
+    }
+
+    .rune-chip[aria-selected="true"] .chip-glyph { color: var(--gold); }
+
+    .rune-chip .chip-text {
+        display: grid;
+        gap: 1px;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .rune-chip .chip-best {
+        color: var(--faint);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: none;
+    }
+
+    /* ---------- palco ---------- */
+    .stage {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    #cast {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 1px solid rgba(199, 125, 255, 0.16);
+        border-radius: 22px;
+        background: radial-gradient(ellipse at 50% 42%, #1a1027, #0a0611 72%);
+        touch-action: none;
+        cursor: crosshair;
+    }
+
+    .stage-hint {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 14px;
+        margin: 0;
+        text-align: center;
+        color: var(--faint);
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        pointer-events: none;
+        transition: opacity 220ms ease;
+    }
+
+    .stage-hint.is-hidden { opacity: 0; }
+
+    /* ---------- lettura del punteggio ---------- */
+    .readout {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-areas:
+            "score meter action"
+            "meta meta meta";
+        align-items: center;
+        gap: 8px 10px;
+        padding: 10px 12px;
+        border: 1px solid rgba(199, 125, 255, 0.18);
+        border-radius: 18px;
+        background: linear-gradient(160deg, rgba(157, 78, 222, 0.12), rgba(255, 255, 255, 0.02));
+    }
+
+    .score {
+        grid-area: score;
+        display: grid;
+        gap: 1px;
+        min-width: 78px;
+    }
+
+    .score-value {
+        font-family: Georgia, serif;
+        font-size: 30px;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+        color: var(--muted);
+    }
+
+    .score-value.is-good { color: var(--gold); }
+    .score-value.is-ok { color: var(--amethyst); }
+    .score-value.is-bad { color: #b9a8c9; }
+    .score-value.is-pop { animation: pop 320ms ease; }
+
+    .score-label {
+        color: var(--faint);
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+    }
+
+    @keyframes pop {
+        0% { transform: scale(0.82); }
+        60% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .meter {
+        grid-area: meter;
+        position: relative;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07);
+        overflow: hidden;
+    }
+
+    .meter i {
+        position: absolute;
+        inset: 0;
+        transform-origin: left center;
+        transform: scaleX(0);
+        border-radius: inherit;
+        background: linear-gradient(90deg, #9d4edd, #c77dff 60%, #f5dd62);
+        transition: transform 90ms linear;
+    }
+
+    .retry {
+        grid-area: action;
+        min-width: 92px;
+        min-height: 44px;
+        padding: 0 14px;
+        border: 1px solid rgba(199, 125, 255, 0.4);
+        border-radius: 13px;
+        background: rgba(157, 78, 222, 0.16);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+    }
+
+    .retry:active { transform: translateY(1px); }
+
+    .meta {
+        grid-area: meta;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        color: var(--faint);
+        font-size: 10.5px;
+        letter-spacing: 0.04em;
+    }
+
+    .meta b { color: var(--muted); font-weight: 800; }
+
+    .legend {
+        margin: 0;
+        text-align: center;
+        color: var(--faint);
+        font-size: 10.5px;
+        letter-spacing: 0.03em;
+    }
+
+    /* telefono in orizzontale: il palco prende la colonna sinistra, i comandi la destra,
+       così la runa non si riduce a un francobollo. */
+    @media (max-height: 520px) and (min-width: 640px) {
+        .app {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 292px;
+            grid-template-rows: auto auto 1fr auto;
+            grid-template-areas:
+                "top top"
+                "stage runes"
+                "stage readout"
+                "stage legend";
+            align-items: start;
+            gap: 8px 14px;
+        }
+
+        .topbar { grid-area: top; }
+        /* align-self: stretch: senza, il palco (riempito solo da figli assoluti)
+           collassa a 0 di altezza. */
+        .stage { grid-area: stage; align-self: stretch; min-height: 0; }
+        .runes { grid-area: runes; flex-direction: column; gap: 6px; }
+        .rune-chip { flex: 0 0 auto; }
+        .readout { grid-area: readout; }
+        .legend { grid-area: legend; }
+    }
+
+    /* telefono in orizzontale: tutto più compatto */
+    @media (max-height: 500px) {
+        .app { gap: 7px; padding: 8px 10px; }
+        .runes { gap: 6px; }
+        .rune-chip { min-height: 40px; padding: 4px 8px; }
+        .rune-chip .chip-glyph { font-size: 17px; }
+        .score-value { font-size: 25px; }
+        .readout { padding: 8px 10px; gap: 6px 10px; }
+        .legend { font-size: 10px; }
+        .stage-hint { bottom: 8px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .score-value.is-pop { animation: none; }
+        .meter i { transition: none; }
+    }
+</style>
+</head>
+<body>
+<div class="app">
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">✶</span>
+            <span class="brand-name">SIGILLI</span>
+            <span class="brand-tag">prototipo</span>
+        </div>
+        <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Silenzia i suoni">♪</button>
+    </header>
+
+    <nav class="runes" id="runes" role="tablist" aria-label="Runa da tracciare"></nav>
+
+    <div class="stage" id="stage">
+        <canvas id="cast" aria-label="Area di tracciatura: disegna la runa scelta"></canvas>
+        <p class="stage-hint" id="stageHint">Traccia la runa nell'aria, seguendo il segno spento</p>
+    </div>
+
+    <section class="readout" aria-live="polite">
+        <div class="score">
+            <span class="score-value" id="scoreValue">—</span>
+            <small class="score-label" id="scoreLabel">nessun tratto</small>
+        </div>
+        <div class="meter"><i id="meterFill"></i></div>
+        <button class="retry" id="retry" type="button">Riprova</button>
+        <div class="meta">
+            <span>tempo <b id="metaTime">0 ms</b></span>
+            <span>migliore <b id="metaBest">—</b></span>
+            <span>rune <b id="metaScores">—</b></span>
+        </div>
+    </section>
+
+    <p class="legend">Dito o mouse · 1–3 cambia runa · R riprova · M suoni</p>
+</div>
+
+<script>
+(() => {
+    'use strict';
+
+    const TAU = Math.PI * 2;
+    const STORAGE_KEY = 'taverna_sigilli_proto_v1';
+    const TOLERANCE = 0.30;   // distanza media (in unità di riquadro) che vale 0%
+    const ROTATION_STEP = 5;  // passo della ricerca sull'inclinazione del tratto
+    const SAMPLE_COUNT = 64;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ======================= rune ======================= */
+
+    function arcPoints() {
+        const points = [];
+        const center = { x: 0.5, y: 0.72 };
+        const radius = 0.42;
+        for (let i = 0; i <= 32; i += 1) {
+            const angle = Math.PI + (i / 32) * Math.PI;
+            points.push({ x: center.x + radius * Math.cos(angle), y: center.y + radius * Math.sin(angle) });
+        }
+        return points;
+    }
+
+    const RUNES = [
+        {
+            id: 'fulmine',
+            name: 'Fulmine',
+            glyph: 'ᛉ',
+            hint: 'una scarica a zig-zag',
+            points: [{ x: 0.18, y: 0.12 }, { x: 0.60, y: 0.38 }, { x: 0.36, y: 0.50 }, { x: 0.80, y: 0.88 }]
+        },
+        {
+            id: 'anello',
+            name: 'Anello',
+            glyph: 'ᛟ',
+            hint: 'un cerchio chiuso',
+            points: [{ x: 0.50, y: 0.12 }, { x: 0.82, y: 0.50 }, { x: 0.50, y: 0.88 }, { x: 0.18, y: 0.50 }, { x: 0.50, y: 0.12 }]
+        },
+        {
+            id: 'arco',
+            name: 'Arco',
+            glyph: 'ᚨ',
+            hint: 'una curva tesa',
+            points: arcPoints()
+        }
+    ];
+
+    /* ======================= geometria ======================= */
+
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+    function pathLength(points) {
+        let total = 0;
+        for (let i = 1; i < points.length; i += 1) total += dist(points[i - 1], points[i]);
+        return total;
+    }
+
+    function centroid(points) {
+        let x = 0;
+        let y = 0;
+        for (const point of points) { x += point.x; y += point.y; }
+        return { x: x / points.length, y: y / points.length };
+    }
+
+    function rotated(points, radians, center) {
+        const pivot = center || centroid(points);
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        return points.map(point => {
+            const dx = point.x - pivot.x;
+            const dy = point.y - pivot.y;
+            return { x: pivot.x + dx * cos - dy * sin, y: pivot.y + dx * sin + dy * cos };
+        });
+    }
+
+    // Ricampiona a passo costante: confronta la forma, non la velocità del gesto.
+    function resample(points, count) {
+        if (points.length < 2) return Array.from({ length: count }, () => ({ ...points[0] }));
+        const source = points.map(point => ({ x: point.x, y: point.y }));
+        const total = pathLength(source);
+        if (!total) return Array.from({ length: count }, () => ({ ...source[0] }));
+        const step = total / (count - 1);
+        const out = [{ ...source[0] }];
+        let carried = 0;
+        let index = 1;
+        let previous = { ...source[0] };
+        while (index < source.length && out.length < count) {
+            const segment = dist(previous, source[index]);
+            if (segmentsAreEnough(carried, segment, step)) {
+                const ratio = (step - carried) / segment;
+                const next = {
+                    x: previous.x + ratio * (source[index].x - previous.x),
+                    y: previous.y + ratio * (source[index].y - previous.y)
+                };
+                out.push(next);
+                previous = next;
+                carried = 0;
+            } else {
+                carried += segment;
+                previous = source[index];
+                index += 1;
+            }
+        }
+        while (out.length < count) out.push({ ...out[out.length - 1] });
+        return out;
+    }
+
+    const segmentsAreEnough = (carried, segment, step) => segment > 0 && carried + segment >= step;
+
+    function normalized(points) {
+        let shape = resample(points, SAMPLE_COUNT);
+        const origin = centroid(shape);
+        const angle = Math.atan2(origin.y - shape[0].y, origin.x - shape[0].x);
+        shape = rotated(shape, -angle);
+        const box = shape.reduce((acc, point) => ({
+            minX: Math.min(acc.minX, point.x),
+            maxX: Math.max(acc.maxX, point.x),
+            minY: Math.min(acc.minY, point.y),
+            maxY: Math.max(acc.maxY, point.y)
+        }), { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
+        const size = Math.max(box.maxX - box.minX, box.maxY - box.minY) || 1;
+        const scaled = shape.map(point => ({
+            x: (point.x - box.minX) / size,
+            y: (point.y - box.minY) / size
+        }));
+        const middle = centroid(scaled);
+        return scaled.map(point => ({ x: point.x - middle.x, y: point.y - middle.y }));
+    }
+
+    // Confronto con ricerca dell'inclinazione e del verso migliori.
+    function compare(userShape, templateShape) {
+        let best = { distance: Infinity, angle: 0, reversed: false, aligned: null };
+        // Il verso di tracciamento cambia l'angolo indicativo (a volte di 180°, a volte
+        // no, per i sigilli chiusi): si cerca su tutto il giro in entrambi i versi, così
+        // chi disegna al contrario non viene penalizzato.
+        for (const reversed of [false, true]) {
+            const candidate = reversed ? [...userShape].reverse() : userShape;
+            for (let angle = -180; angle < 180; angle += ROTATION_STEP) {
+                const aligned = rotated(candidate, (angle * Math.PI) / 180, { x: 0, y: 0 });
+                let sum = 0;
+                for (let i = 0; i < SAMPLE_COUNT; i += 1) sum += dist(aligned[i], templateShape[i]);
+                const distance = sum / SAMPLE_COUNT;
+                if (distance < best.distance) best = { distance, angle, reversed, aligned };
+            }
+        }
+        return best;
+    }
+
+    function scoreFromDistance(distance) {
+        const raw = 1 - distance / TOLERANCE;
+        return Math.max(0, Math.min(1, raw)) ** 0.9;
+    }
+
+    for (const rune of RUNES) {
+        rune.shape = normalized(rune.points);
+        rune.length = pathLength(rune.points);
+    }
+
+    // Valuta un tratto grezzo (coordinate 0..1 dello stesso riquadro delle rune).
+    function evaluateStroke(rawPoints) {
+        if (rawPoints.length < 6) return null;
+        const rawLength = pathLength(rawPoints);
+        if (rawLength < 0.25) return null;
+        const shape = normalized(rawPoints);
+        return RUNES.map((rune, index) => {
+            const match = compare(shape, rune.shape);
+            let score = scoreFromDistance(match.distance);
+            const ratio = rawLength / rune.length;
+            if (ratio < 0.35) score = 0;
+            else if (ratio < 0.8) score *= (ratio / 0.8) ** 1.2;
+            return {
+                index,
+                score,
+                distance: match.distance,
+                angle: match.angle,
+                reversed: match.reversed,
+                aligned: match.aligned
+            };
+        });
+    }
+
+    /* ======================= stato ======================= */
+
+    const state = {
+        runeIndex: 0,
+        phase: 'idle',          // idle | drawing | resolved
+        stroke: [],             // {x, y} in pixel del canvas
+        startedAt: 0,
+        result: null,           // {score, scores, ms, runeIndex}
+        coverage: 0,
+        muted: false,
+        best: {},
+        particles: [],
+        embers: []
+    };
+
+    try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        if (saved && typeof saved.best === 'object') state.best = saved.best;
+    } catch { /* storage non disponibile: si prosegue senza record */ }
+
+    const persist = () => {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ best: state.best })); } catch { /* niente */ }
+    };
+
+    /* ======================= riferimenti ======================= */
+
+    const canvas = document.getElementById('cast');
+    const ctx = canvas.getContext('2d');
+    const stage = document.getElementById('stage');
+    const stageHint = document.getElementById('stageHint');
+    const runesNav = document.getElementById('runes');
+    const scoreValue = document.getElementById('scoreValue');
+    const scoreLabel = document.getElementById('scoreLabel');
+    const meterFill = document.getElementById('meterFill');
+    const metaTime = document.getElementById('metaTime');
+    const metaBest = document.getElementById('metaBest');
+    const metaScores = document.getElementById('metaScores');
+    const retryButton = document.getElementById('retry');
+    const muteButton = document.getElementById('mute');
+
+    let box = { x: 0, y: 0, size: 300 };
+    let ghost = [];             // runa di riferimento in pixel
+    let lit = new Array(SAMPLE_COUNT).fill(false);
+    let heat = new Array(SAMPLE_COUNT).fill(0);
+    let showHeat = false;
+
+    const screenOf = point => ({ x: box.x + point.x * box.size, y: box.y + point.y * box.size });
+    const boxOf = point => ({ x: (point.x - box.x) / box.size, y: (point.y - box.y) / box.size });
+
+    /* ======================= interfaccia rune ======================= */
+
+    function renderChips() {
+        runesNav.innerHTML = RUNES.map((rune, index) => `
+            <button class="rune-chip" type="button" role="tab" data-rune="${index}"
+                    aria-selected="${index === state.runeIndex}" aria-label="Runa ${rune.name}: ${rune.hint}">
+                <span class="chip-glyph" aria-hidden="true">${rune.glyph}</span>
+                <span class="chip-text">
+                    ${rune.name}
+                    <small class="chip-best" data-best="${index}">—</small>
+                </span>
+            </button>
+        `).join('');
+        runesNav.querySelectorAll('[data-rune]').forEach(button => {
+            button.addEventListener('click', () => selectRune(Number(button.dataset.rune)));
+        });
+        refreshChips();
+    }
+
+    function refreshChips() {
+        runesNav.querySelectorAll('[data-rune]').forEach(button => {
+            const index = Number(button.dataset.rune);
+            button.setAttribute('aria-selected', String(index === state.runeIndex));
+        });
+        runesNav.querySelectorAll('[data-best]').forEach(label => {
+            const value = state.best[RUNES[Number(label.dataset.best)].id];
+            label.textContent = typeof value === 'number' ? `${value}%` : '—';
+        });
+        metaBest.textContent = state.best[RUNES[state.runeIndex].id] !== undefined
+            ? `${state.best[RUNES[state.runeIndex].id]}%`
+            : '—';
+    }
+
+    function selectRune(index) {
+        if (index === state.runeIndex) return;
+        state.runeIndex = index;
+        resetStroke();
+        rebuildGhost();
+        refreshChips();
+        pulseScore();
+    }
+
+    /* ======================= layout ======================= */
+
+    function measure() {
+        const rect = stage.getBoundingClientRect();
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.max(1, Math.round(rect.width * ratio));
+        canvas.height = Math.max(1, Math.round(rect.height * ratio));
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        const size = Math.min(rect.width * 0.86, rect.height * 0.86, 420);
+        box = {
+            x: (rect.width - size) / 2,
+            y: (rect.height - size) / 2 - Math.min(12, rect.height * 0.02),
+            size
+        };
+        rebuildGhost();
+        seedEmbers(rect.width, rect.height);
+    }
+
+    function rebuildGhost() {
+        ghost = resample(RUNES[state.runeIndex].points.map(screenOf), SAMPLE_COUNT);
+        lit = new Array(SAMPLE_COUNT).fill(false);
+        heat = new Array(SAMPLE_COUNT).fill(0);
+        showHeat = false;
+    }
+
+    /* ======================= input ======================= */
+
+    function beginStroke(event) {
+        if (event.button !== undefined && event.button > 0) return;
+        const point = localPoint(event);
+        state.phase = 'drawing';
+        state.stroke = [point];
+        state.startedAt = performance.now();
+        state.result = null;
+        state.coverage = 0;
+        showHeat = false;
+        lit = new Array(SAMPLE_COUNT).fill(false);
+        try { canvas.setPointerCapture?.(event.pointerId); } catch { /* evento sintetico o puntatore già rilasciato */ }
+        stageHint.classList.add('is-hidden');
+        updateReadout();
+    }
+
+    function extendStroke(event) {
+        if (state.phase !== 'drawing') return;
+        const point = localPoint(event);
+        const last = state.stroke[state.stroke.length - 1];
+        if (dist(last, point) < 1.4) return;
+        state.stroke.push(point);
+        updateCoverage();
+        updateReadout();
+    }
+
+    function endStroke(event) {
+        if (state.phase !== 'drawing') return;
+        if (event && event.pointerId !== undefined) {
+            try { canvas.releasePointerCapture?.(event.pointerId); } catch { /* idem */ }
+        }
+        const duration = performance.now() - state.startedAt;
+        const raw = state.stroke.map(boxOf);
+        const scores = evaluateStroke(raw);
+        if (!scores) {
+            state.phase = 'idle';
+            state.stroke = [];
+            state.coverage = 0;
+            scoreValue.className = 'score-value is-bad';
+            scoreValue.textContent = '0%';
+            scoreLabel.textContent = 'segno spezzato';
+            meterFill.style.transform = 'scaleX(0)';
+            metaTime.textContent = `${Math.round(duration)} ms`;
+            metaScores.textContent = '—';
+            return;
+        }
+        const target = scores[state.runeIndex];
+        const percent = Math.round(target.score * 100);
+        state.result = { scores, score: target.score, percent, ms: duration, runeIndex: state.runeIndex };
+        state.phase = 'resolved';
+        state.coverage = 1;
+        buildHeat(target);
+        if (percent > (state.best[RUNES[state.runeIndex].id] ?? -1)) {
+            state.best[RUNES[state.runeIndex].id] = percent;
+            persist();
+            refreshChips();
+        }
+        if (target.score >= 0.7) burst(state.stroke[state.stroke.length - 1], target.score);
+        chime(target.score);
+        refreshChips();
+        updateReadout();
+        pulseScore();
+    }
+
+    function localPoint(event) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    /* ======================= feedback di tracciamento ======================= */
+
+    function updateCoverage() {
+        const threshold = box.size * 0.085;
+        let claimed = 0;
+        for (let i = 0; i < SAMPLE_COUNT; i += 1) {
+            const point = ghost[i];
+            let near = false;
+            for (const strokePoint of state.stroke) {
+                if (dist(strokePoint, point) < threshold) { near = true; break; }
+            }
+            lit[i] = near;
+            if (near) claimed += 1;
+        }
+        state.coverage = claimed / SAMPLE_COUNT;
+        meterFill.style.transform = `scaleX(${state.coverage.toFixed(3)})`;
+    }
+
+    function buildHeat(target) {
+        const aligned = target.aligned;
+        heat = new Array(SAMPLE_COUNT).fill(0);
+        if (!aligned) return;
+        // `aligned` è già allineato alla runa: indice i = punto i del sigillo.
+        for (let i = 0; i < SAMPLE_COUNT; i += 1) {
+            heat[i] = Math.min(1, dist(aligned[i], RUNES[state.runeIndex].shape[i]) / 0.3);
+        }
+        showHeat = true;
+    }
+
+    /* ======================= lettura ======================= */
+
+    function verdict(percent) {
+        if (percent >= 85) return { text: 'la runa regge', className: 'is-good' };
+        if (percent >= 65) return { text: 'segno instabile', className: 'is-ok' };
+        if (percent >= 40) return { text: 'tratto incerto', className: 'is-bad' };
+        return { text: 'segno spezzato', className: 'is-bad' };
+    }
+
+    function updateReadout() {
+        if (state.phase === 'drawing') {
+            const percent = Math.round(state.coverage * 100);
+            scoreValue.className = 'score-value is-ok';
+            scoreValue.textContent = `${percent}%`;
+            scoreLabel.textContent = 'del sigillo tracciato';
+            metaTime.textContent = `${Math.round(performance.now() - state.startedAt)} ms`;
+            metaScores.textContent = '—';
+            return;
+        }
+        if (state.phase !== 'resolved' || !state.result) {
+            scoreValue.className = 'score-value';
+            scoreValue.textContent = '—';
+            scoreLabel.textContent = 'nessun tratto';
+            meterFill.style.transform = 'scaleX(0)';
+            metaTime.textContent = '0 ms';
+            metaScores.textContent = '—';
+            return;
+        }
+        const { percent, ms, scores } = state.result;
+        const tone = verdict(percent);
+        scoreValue.className = `score-value ${tone.className}`;
+        scoreValue.textContent = `${percent}%`;
+        scoreLabel.textContent = tone.text;
+        meterFill.style.transform = `scaleX(${(percent / 100).toFixed(3)})`;
+        metaTime.textContent = `${Math.round(ms)} ms`;
+        metaScores.textContent = scores
+            .map(entry => `${RUNES[entry.index].name.slice(0, 3).toLowerCase()} ${Math.round(entry.score * 100)}`)
+            .join(' · ');
+    }
+
+    function pulseScore() {
+        scoreValue.classList.remove('is-pop');
+        void scoreValue.offsetWidth;
+        scoreValue.classList.add('is-pop');
+    }
+
+    /* ======================= disegno ======================= */
+
+    function seedEmbers(width, height) {
+        state.embers = Array.from({ length: reduceMotion ? 8 : 22 }, () => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: 0.7 + Math.random() * 1.6,
+            speed: 6 + Math.random() * 16,
+            drift: (Math.random() - 0.5) * 10,
+            phase: Math.random() * TAU,
+            alpha: 0.1 + Math.random() * 0.35
+        }));
+    }
+
+    function burst(origin, score) {
+        const count = reduceMotion ? 6 : Math.round(14 + score * 26);
+        for (let i = 0; i < count; i += 1) {
+            const angle = Math.random() * TAU;
+            const speed = 30 + Math.random() * 130 * score;
+            state.particles.push({
+                x: origin.x,
+                y: origin.y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 20,
+                life: 1,
+                radius: 1.2 + Math.random() * 2.4,
+                gold: Math.random() < 0.65
+            });
+        }
+    }
+
+    let lastFrame = performance.now();
+
+    function frame(now) {
+        const delta = Math.min(48, now - lastFrame) / 1000;
+        lastFrame = now;
+        draw(delta, now);
+        requestAnimationFrame(frame);
+    }
+
+    function draw(delta, now) {
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        ctx.clearRect(0, 0, width, height);
+
+        drawEmbers(delta, width, height, now);
+        drawGhost(now);
+        drawStroke();
+        drawParticles(delta);
+    }
+
+    function drawEmbers(delta, width, height, now) {
+        ctx.save();
+        for (const ember of state.embers) {
+            ember.y -= ember.speed * delta;
+            ember.x += Math.sin(now / 1400 + ember.phase) * ember.drift * delta;
+            if (ember.y < -6) { ember.y = height + 6; ember.x = Math.random() * width; }
+            ctx.globalAlpha = ember.alpha;
+            ctx.fillStyle = ember.gold ? '#f5dd62' : '#c77dff';
+            ctx.beginPath();
+            ctx.arc(ember.x, ember.y, ember.radius, 0, TAU);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawGhost(now) {
+        if (!ghost.length) return;
+        const resolved = state.phase === 'resolved';
+        const goldPath = new Path2D();
+        const faintPath = new Path2D();
+        for (let i = 1; i < ghost.length; i += 1) {
+            const isLit = resolved || (lit[i - 1] && lit[i]);
+            const target = isLit ? goldPath : faintPath;
+            target.moveTo(ghost[i - 1].x, ghost[i - 1].y);
+            target.lineTo(ghost[i].x, ghost[i].y);
+        }
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = 'rgba(199, 125, 255, 0.30)';
+        ctx.lineWidth = 4;
+        ctx.stroke(faintPath);
+        ctx.strokeStyle = resolved ? 'rgba(245, 221, 98, 0.92)' : 'rgba(245, 221, 98, 0.82)';
+        ctx.lineWidth = resolved ? 5.5 : 4.5;
+        if (!reduceMotion) {
+            ctx.shadowColor = 'rgba(245, 221, 98, 0.55)';
+            ctx.shadowBlur = 16 + Math.sin(now / 380) * 4;
+        }
+        ctx.stroke(goldPath);
+        ctx.restore();
+
+        // punto di partenza pulsante: dice da dove cominciare
+        const start = ghost[0];
+        const pulse = 1 + Math.sin(now / 320) * 0.22;
+        ctx.save();
+        ctx.globalAlpha = state.phase === 'drawing' ? 0.35 : 0.9;
+        ctx.fillStyle = '#f5dd62';
+        ctx.beginPath();
+        ctx.arc(start.x, start.y, 4.2 * pulse, 0, TAU);
+        ctx.fill();
+        ctx.globalAlpha *= 0.35;
+        ctx.beginPath();
+        ctx.arc(start.x, start.y, 11 * pulse, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawStroke() {
+        if (state.stroke.length < 2) {
+            drawTip();
+            return;
+        }
+        if (showHeat && state.result) {
+            // Il tratto resta visibile ma spento: sopra, la runa ideale dice dove si è scostato.
+            ctx.save();
+            ctx.globalAlpha = 0.22;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 3.5;
+            ctx.strokeStyle = '#c77dff';
+            ctx.beginPath();
+            ctx.moveTo(state.stroke[0].x, state.stroke[0].y);
+            for (let i = 1; i < state.stroke.length; i += 1) ctx.lineTo(state.stroke[i].x, state.stroke[i].y);
+            ctx.stroke();
+            ctx.restore();
+            drawHeatStroke();
+            return;
+        }
+        const path = new Path2D();
+        path.moveTo(state.stroke[0].x, state.stroke[0].y);
+        for (let i = 1; i < state.stroke.length; i += 1) path.lineTo(state.stroke[i].x, state.stroke[i].y);
+
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        if (!reduceMotion) {
+            ctx.shadowColor = 'rgba(199, 125, 255, 0.7)';
+            ctx.shadowBlur = 22;
+        }
+        ctx.strokeStyle = 'rgba(157, 78, 222, 0.45)';
+        ctx.lineWidth = 13;
+        ctx.stroke(path);
+        ctx.shadowBlur = 0;
+        const gradient = ctx.createLinearGradient(box.x, box.y, box.x + box.size, box.y + box.size);
+        gradient.addColorStop(0, '#f4e9ff');
+        gradient.addColorStop(0.55, '#c77dff');
+        gradient.addColorStop(1, '#9d4edd');
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 5.5;
+        ctx.stroke(path);
+        ctx.restore();
+        drawTip();
+    }
+
+    function drawHeatStroke() {
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 5.5;
+        for (let i = 1; i < ghost.length; i += 1) {
+            const wrong = Math.max(heat[i - 1], heat[i]);
+            const color = wrong < 0.35 ? 'rgba(245, 221, 98, 0.95)'
+                : wrong < 0.65 ? 'rgba(199, 125, 255, 0.9)'
+                : 'rgba(255, 110, 120, 0.85)';
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(ghost[i - 1].x, ghost[i - 1].y);
+            ctx.lineTo(ghost[i].x, ghost[i].y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function drawTip() {
+        if (state.phase !== 'drawing' || !state.stroke.length) return;
+        const tip = state.stroke[state.stroke.length - 1];
+        const glow = ctx.createRadialGradient(tip.x, tip.y, 0, tip.x, tip.y, 26);
+        glow.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+        glow.addColorStop(0.35, 'rgba(199, 125, 255, 0.55)');
+        glow.addColorStop(1, 'rgba(157, 78, 222, 0)');
+        ctx.save();
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(tip.x, tip.y, 26, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawParticles(delta) {
+        if (!state.particles.length) return;
+        ctx.save();
+        for (const particle of state.particles) {
+            particle.life -= delta * 1.15;
+            if (particle.life <= 0) continue;
+            particle.x += particle.vx * delta;
+            particle.y += particle.vy * delta;
+            particle.vy += 190 * delta;
+            particle.vx *= 0.985;
+            ctx.globalAlpha = Math.max(0, particle.life) * 0.9;
+            ctx.fillStyle = particle.gold ? '#f5dd62' : '#c77dff';
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.radius, 0, TAU);
+            ctx.fill();
+        }
+        ctx.restore();
+        state.particles = state.particles.filter(particle => particle.life > 0);
+    }
+
+    /* ======================= audio ======================= */
+
+    let audio = null;
+
+    function ensureAudio() {
+        if (state.muted || audio) return;
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return;
+        try { audio = new AudioCtor(); } catch { audio = null; }
+    }
+
+    function chime(score) {
+        if (state.muted) return;
+        // Il contesto audio si crea fuori dal gesto: su alcune macchine la creazione
+        // del dispositivo blocca il thread e il tratto sembrerebbe congelato.
+        setTimeout(() => {
+            ensureAudio();
+            playChime(score);
+        }, 0);
+    }
+
+    function playChime(score) {
+        if (!audio) return;
+        if (audio.state === 'suspended') audio.resume?.();
+        const now = audio.currentTime;
+        const base = 280 + score * 300;
+        [1, 1.5, 2].forEach((multiplier, index) => {
+            const osc = audio.createOscillator();
+            const gain = audio.createGain();
+            osc.type = index === 2 ? 'triangle' : 'sine';
+            osc.frequency.value = base * multiplier;
+            const peak = 0.11 / (index + 1);
+            gain.gain.setValueAtTime(0.0001, now + index * 0.02);
+            gain.gain.exponentialRampToValueAtTime(peak, now + 0.02 + index * 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.85);
+            osc.connect(gain).connect(audio.destination);
+            osc.start(now + index * 0.02);
+            osc.stop(now + 1);
+        });
+    }
+
+    /* ======================= comandi ======================= */
+
+    function resetStroke() {
+        state.phase = 'idle';
+        state.stroke = [];
+        state.coverage = 0;
+        state.result = null;
+        lit = new Array(SAMPLE_COUNT).fill(false);
+        heat = new Array(SAMPLE_COUNT).fill(0);
+        showHeat = false;
+        stageHint.classList.remove('is-hidden');
+        updateReadout();
+    }
+
+    canvas.addEventListener('pointerdown', beginStroke);
+    canvas.addEventListener('pointermove', extendStroke);
+    canvas.addEventListener('pointerup', endStroke);
+    canvas.addEventListener('pointercancel', endStroke);
+    canvas.addEventListener('pointerleave', event => {
+        if (event.pointerType === 'mouse' && state.phase === 'drawing') endStroke(event);
+    });
+
+    retryButton.addEventListener('click', () => {
+        resetStroke();
+        rebuildGhost();
+        refreshChips();
+    });
+
+    muteButton.addEventListener('click', () => {
+        state.muted = !state.muted;
+        muteButton.setAttribute('aria-pressed', String(state.muted));
+        muteButton.setAttribute('aria-label', state.muted ? 'Attiva i suoni' : 'Silenzia i suoni');
+        muteButton.textContent = state.muted ? '×' : '♪';
+    });
+
+    window.addEventListener('keydown', event => {
+        if (event.key === '1' || event.key === '2' || event.key === '3') {
+            selectRune(Number(event.key) - 1);
+        } else if (event.key.toLowerCase() === 'r') {
+            resetStroke();
+            rebuildGhost();
+        } else if (event.key.toLowerCase() === 'm') {
+            muteButton.click();
+        }
+    });
+
+    // Misura subito, senza passare da requestAnimationFrame: in una scheda in
+    // secondo piano i frame sono sospesi e il canvas resterebbe della misura vecchia.
+    const queueMeasure = () => measure();
+    window.addEventListener('resize', queueMeasure);
+    window.addEventListener('orientationchange', queueMeasure);
+    if ('ResizeObserver' in window) new ResizeObserver(queueMeasure).observe(stage);
+
+    /* ======================= avvio ======================= */
+
+    renderChips();
+    measure();
+    updateReadout();
+    requestAnimationFrame(frame);
+
+    // Superficie di prova: permette di misurare il riconoscimento senza toccare l'interfaccia.
+    window.__sigilli = {
+        runes: RUNES.map(rune => ({ id: rune.id, name: rune.name })),
+        template(id, count) {
+            const rune = RUNES.find(entry => entry.id === id);
+            if (!rune) return null;
+            return resample(rune.points, count || SAMPLE_COUNT).map(point => ({ ...point }));
+        },
+        recognize(points) {
+            const scores = evaluateStroke(points);
+            return scores && scores.map(entry => ({
+                id: RUNES[entry.index].id,
+                score: Math.round(entry.score * 100),
+                distance: Number(entry.distance.toFixed(4)),
+                angle: entry.angle,
+                reversed: entry.reversed
+            }));
+        },
+        status() {
+            return {
+                phase: state.phase,
+                points: state.stroke.length,
+                coverage: Number(state.coverage.toFixed(2)),
+                result: state.result && {
+                    percent: state.result.percent,
+                    ms: Math.round(state.result.ms),
+                    scores: state.result.scores.map(entry => ({ id: RUNES[entry.index].id, score: Math.round(entry.score * 100) }))
+                }
+            };
+        }
+    };
+})();
+</script>
+</body>
+</html>
