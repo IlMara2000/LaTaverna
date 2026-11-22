@@ -384,34 +384,20 @@ function autoPay(state, player, cost, extraGeneric = 0) {
     player.manaPool = payMana(player.manaPool, cost, 0, extraGeneric);
 }
 
-/** Lancia una magia dalla mano pagando il costo con la riserva e le terre disponibili. */
-export function castSpell(currentState, playerId, uid, target = '', mode = null) {
-    const state = clone(currentState);
-    const player = requireTurn(state, playerId);
-    const instantSpeed = isInstant(player.hand.find(card => card.uid === uid) || {});
-    if (!['main1', 'main2'].includes(state.phase) && !(state.phase === 'combat' && instantSpeed)) {
-        throw new Error('Durante il combattimento puoi lanciare solo istantanei.');
-    }
-    let index = player.hand.findIndex(card => card.uid === uid);
-    let fromCommandZone = false;
-    if (index < 0) {
-        const czIndex = (player.commandZone || []).findIndex(card => card.uid === uid);
-        if (czIndex >= 0) { fromCommandZone = true; index = czIndex; }
-        else throw new Error('La carta non è nella tua mano.');
-    }
-    const card = fromCommandZone ? player.commandZone[index] : player.hand[index];
-    if (isLand(card)) throw new Error('Le terre si giocano dal pulsante Gioca terra.');
-    // Tax del comandante: +2 incolore per ogni lancio precedente.
+/** Il costo da pagare: il comandante rilanciato costa {2} in più per ogni lancio. */
+export const spellCost = (player, card, fromCommandZone = false) => {
     const tax = fromCommandZone ? (player.commanderCasts?.[card.uid] || 0) * 2 : 0;
-    const cost = tax > 0 ? `${card.manaCost || ''}{${tax}}` : (card.manaCost || '');
-    autoPay(state, player, cost);
-    if (fromCommandZone) {
-        player.commandZone.splice(index, 1);
-        player.commanderCasts = player.commanderCasts || {};
-        player.commanderCasts[card.uid] = (player.commanderCasts[card.uid] || 0) + 1;
-    } else {
-        player.hand.splice(index, 1);
-    }
+    return tax > 0 ? `${card.manaCost || ''}{${tax}}` : (card.manaCost || '');
+};
+
+/**
+ * La risoluzione di una magia, quando la carta ha già lasciato la zona di
+ * partenza e il costo è già pagato. È qui perché lo stack (engine/stack.js)
+ * risolve la stessa magia più tardi: due copie della stessa regola sono due
+ * comportamenti diversi da mantenere allineati.
+ */
+export function resolveSpell(state, playerId, card, target = '', mode = null) {
+    const player = state.playersData[playerId];
     if (isPermanentCard(card)) {
         const permanent = {
             ...card,
@@ -435,6 +421,34 @@ export function castSpell(currentState, playerId, uid, target = '', mode = null)
         state.log = [...resolveOracleText(card, state, playerId, target, 0, false, mode).log, ...state.log];
     }
     return settle(state);
+}
+
+/** Lancia una magia dalla mano pagando il costo con la riserva e le terre disponibili. */
+export function castSpell(currentState, playerId, uid, target = '', mode = null) {
+    const state = clone(currentState);
+    const player = requireTurn(state, playerId);
+    const instantSpeed = isInstant(player.hand.find(card => card.uid === uid) || {});
+    if (!['main1', 'main2'].includes(state.phase) && !(state.phase === 'combat' && instantSpeed)) {
+        throw new Error('Durante il combattimento puoi lanciare solo istantanei.');
+    }
+    let index = player.hand.findIndex(card => card.uid === uid);
+    let fromCommandZone = false;
+    if (index < 0) {
+        const czIndex = (player.commandZone || []).findIndex(card => card.uid === uid);
+        if (czIndex >= 0) { fromCommandZone = true; index = czIndex; }
+        else throw new Error('La carta non è nella tua mano.');
+    }
+    const card = fromCommandZone ? player.commandZone[index] : player.hand[index];
+    if (isLand(card)) throw new Error('Le terre si giocano dal pulsante Gioca terra.');
+    autoPay(state, player, spellCost(player, card, fromCommandZone));
+    if (fromCommandZone) {
+        player.commandZone.splice(index, 1);
+        player.commanderCasts = player.commanderCasts || {};
+        player.commanderCasts[card.uid] = (player.commanderCasts[card.uid] || 0) + 1;
+    } else {
+        player.hand.splice(index, 1);
+    }
+    return resolveSpell(state, playerId, card, target, mode);
 }
 
 /**
@@ -880,6 +894,11 @@ export function passTurn(currentState, playerId, { skipCombat = false } = {}) {
     }
     return settle(state);
 }
+
+// Agganci per lo strato M1 (engine/turn.js, stack.js, sba.js): il pagamento dei
+// costi, l'uscita di un giocatore e il controllo del vincitore restano scritti
+// una volta sola, nel motore storico, invece di essere riscritti accanto.
+export { autoPay as paySpellCost, eliminate as eliminatePlayer, settle as settleState };
 
 export const matchSummary = state => ({
     turn: state.turn,

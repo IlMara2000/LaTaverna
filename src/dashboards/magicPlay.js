@@ -13,6 +13,7 @@ import {
 } from './magicMatchEngine.js';
 import { abilityLabel, parseCardAbilities, textSupport } from './magicEffects.js';
 import { showMatchTable } from '../match/table.js';
+import { viewFor } from './magic/engine/view.js';
 import { enterImmersive } from '../match/immersive.js';
 import './magicPlay.css';
 
@@ -1290,8 +1291,28 @@ export function showMagicPlay(container, options = {}) {
     };
 
     // Il tap non scrive la carta: chiede al motore, che è l'unico a poterla tappare.
+    // Passi, priorità e mosse legali sono del motore (engine/view.js): il tavolo
+    // le mostra e basta. Se il view model non è disponibile si gioca lo stesso,
+    // senza gli indicatori, invece di rompere il tavolo.
+    const engineMeta = current => {
+        try {
+            const view = viewFor(current, clientId);
+            return {
+                phases: view.steps,
+                priority: view.priority.label,
+                priorityMine: view.priority.mine,
+                actions: view.legalActions,
+                stack: view.stack,
+                pendingChoice: view.pendingChoice
+            };
+        } catch {
+            return { phases: [], priority: '', priorityMine: false, actions: [], stack: [], pendingChoice: null };
+        }
+    };
+
     function renderPlaying(current) {
         const views = tableView(current);
+        const meta = engineMeta(current);
         if (!table) {
             container.innerHTML = '<main class="magic-page magic-play"><div id="play-table"></div></main>';
             table = showMatchTable(container.querySelector('#play-table'), {
@@ -1303,6 +1324,12 @@ export function showMagicPlay(container, options = {}) {
                 status: views.status,
                 mana: views.mana,
                 life: views.life,
+                phases: meta.phases,
+                priority: meta.priority,
+                priorityMine: meta.priorityMine,
+                actions: meta.actions,
+                stack: meta.stack,
+                pendingChoice: meta.pendingChoice,
                 tileExtra: cardActions,
                 onPreview: ({ id }) => openCardZoom(findCardByUid(id)),
                 onExit: () => navigateTo('magic', container),
@@ -1315,7 +1342,9 @@ export function showMagicPlay(container, options = {}) {
         if (table.update({
             own: views.own, hand: views.hand, opponents: views.opponents,
             commands: commandsMarkup(), zones: views.zones,
-            status: views.status, mana: views.mana, life: views.life
+            status: views.status, mana: views.mana, life: views.life,
+            phases: meta.phases, priority: meta.priority, priorityMine: meta.priorityMine,
+            actions: meta.actions, stack: meta.stack, pendingChoice: meta.pendingChoice
         })) bindActions();
         restoreTarget();
     }

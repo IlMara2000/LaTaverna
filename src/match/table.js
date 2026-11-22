@@ -5,12 +5,20 @@
  * e gli restituisce intenzioni. Un tocco su una carta chiede l'anteprima
  * (`onPreview`); le mosse restano sui pulsanti della carta e della barra.
  *
- * Opzioni: own, hand, opponents, commands, zones, status, mana, tileExtra,
- * onPreview, onExit, onAbandon.
+ * Opzioni: own, hand, opponents, commands, zones, status, mana, phases,
+ * priority, priorityMine, actions, stack, pendingChoice, tileExtra, onPreview,
+ * onExit, onAbandon.
+ *
+ * `phases`, `priority`, `actions`, `stack` e `pendingChoice` arrivano dal view
+ * model del motore (engine/view.js): il tavolo li mostra senza calcolare
+ * regole, e le mosse che l'interfaccia può offrire sono solo quelle elencate
+ * in `actions`. Lo stack si legge come una pila: si risolve l'ultimo arrivato,
+ * e il tavolo scrive per primo quello.
  */
 
 import './table.css';
 import './arena.css';
+import './phases.css';
 import { exitImmersive } from './immersive.js';
 
 /* ───────────────────────────── markup ───────────────────────────── */
@@ -190,6 +198,12 @@ export function showMatchTable(host, options = {}) {
     zones: options.zones || null,
     status: options.status || '',
     mana: options.mana || '',
+    phases: options.phases || [],
+    priority: options.priority || '',
+    priorityMine: Boolean(options.priorityMine),
+    actions: options.actions || [],
+    stack: options.stack || [],
+    pendingChoice: options.pendingChoice || null,
     tileExtra: options.tileExtra || null,
     life: options.life ?? '',
     lastLife: options.life ?? '',
@@ -216,7 +230,10 @@ export function showMatchTable(host, options = {}) {
   host.innerHTML = `<div class="mt-table">
     <header class="mt-arena-bar">
       <span class="mt-arena-bar__tag">TAVOLO · MAGIC</span>
+      <ol class="mt-phases" data-slot="phases" aria-hidden="true"></ol>
       <p class="mt-arena-bar__status" data-slot="status"></p>
+      <p class="mt-priority" data-slot="priority" data-mine="false" aria-live="polite"></p>
+      <p class="mt-stack" data-slot="stack" aria-live="polite" hidden></p>
       <p class="mt-arena-bar__vitals" data-slot="vitals"></p>
       <div class="mt-arena-bar__actions">
         <button type="button" class="mt-arena-bar__button" data-zones aria-haspopup="dialog">Cimiteri</button>
@@ -236,6 +253,9 @@ export function showMatchTable(host, options = {}) {
     menu: root.querySelector('[data-slot="menu"]'),
     status: root.querySelector('[data-slot="status"]'),
     vitals: root.querySelector('[data-slot="vitals"]'),
+    phases: root.querySelector('[data-slot="phases"]'),
+    priority: root.querySelector('[data-slot="priority"]'),
+    stack: root.querySelector('[data-slot="stack"]'),
   };
 
   // Nessun gate di rotazione: il tavolo ha un impaginato anche in verticale,
@@ -252,8 +272,47 @@ export function showMatchTable(host, options = {}) {
   };
   const cardsHtml = (cards, side, zone) => (cards || []).map(card => paintCard(card, side, zone)).join('');
 
+  /* La striscia dei passi: una tacca per passo, quella corrente più larga.
+     Il testo per gli screen reader dice il nome del passo, perché le tacche
+     da sole non significano nulla. */
+  function renderPhases() {
+    if (!slots.phases) return;
+    const current = state.phases.find(step => step.active);
+    slots.phases.innerHTML = `${state.phases.map(step => `<li class="mt-phases__step${step.active ? ' is-active' : ''}${step.done ? ' is-done' : ''}" title="${step.label}"></li>`).join('')}${current ? `<li class="mt-sr-only">Passo corrente: ${current.label}</li>` : ''}`;
+  }
+
+  // Nel tavolo le regole non si calcolano: priorità e mosse legali arrivano dal
+  // motore. L'elenco delle mosse resta leggibile come attributo, così un test
+  // può verificare che ogni comando mostrato sia una mossa legale.
+  function renderPriority() {
+    if (slots.priority) {
+      slots.priority.textContent = state.priority || '';
+      slots.priority.dataset.mine = state.priorityMine ? 'true' : 'false';
+    }
+    root.dataset.legalActions = state.actions.map(action => action.id).join(' ');
+  }
+
+  /* Lo stack è una pila: si risolve per primo l'ultimo arrivato, quindi il
+     tavolo scrive per primo quello e non l'ordine di arrivo. Con una scelta
+     aperta la barra dice cosa si aspetta, senza mostrare le opzioni di un
+     altro giocatore (il view model le nasconde già). */
+  function renderStack() {
+    root.dataset.stackSize = String((state.stack || []).length);
+    root.dataset.pendingChoice = state.pendingChoice ? state.pendingChoice.kind : '';
+    if (!slots.stack) return;
+    const top = [...(state.stack || [])].reverse().slice(0, 2);
+    const parts = [];
+    if (top.length) parts.push(top.map(item => item.sourceName).join(' ← '));
+    if (state.pendingChoice) parts.push(state.pendingChoice.prompt);
+    slots.stack.textContent = parts.join(' · ');
+    slots.stack.hidden = parts.length === 0;
+  }
+
   function renderBar() {
     if (slots.status) slots.status.textContent = state.status || '';
+    renderPhases();
+    renderPriority();
+    renderStack();
     if (slots.vitals) {
       const lost = state.life !== '' && state.lastLife !== '' && Number(state.life) < Number(state.lastLife);
       slots.vitals.textContent = [
@@ -449,6 +508,12 @@ export function showMatchTable(host, options = {}) {
       if (next.status !== undefined) { state.status = next.status; barChanged = true; }
       if (next.mana !== undefined) { state.mana = next.mana; barChanged = true; }
       if (next.life !== undefined) { state.life = next.life; barChanged = true; }
+      if (next.phases !== undefined) { state.phases = next.phases; barChanged = true; }
+      if (next.priority !== undefined) { state.priority = next.priority; barChanged = true; }
+      if (next.priorityMine !== undefined) { state.priorityMine = Boolean(next.priorityMine); barChanged = true; }
+      if (next.actions !== undefined) { state.actions = next.actions; barChanged = true; }
+      if (next.stack !== undefined) { state.stack = next.stack; barChanged = true; }
+      if (next.pendingChoice !== undefined) { state.pendingChoice = next.pendingChoice; barChanged = true; }
       if (changed) {
         render('board');
         if (barChanged) renderBar();

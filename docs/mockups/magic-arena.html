@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mockup · Tavolo Magic · La Taverna</title>
+<!--
+  MOCKUP MISURATO, NON UI DI PRODUZIONE.
+
+  Serve a fissare la struttura del tavolo Arena-style (passi, priorità, stack,
+  campo a tre corsie, mano, zone, comandi) e a misurare le soglie prima di
+  toccare src/match/table.js. Alimentato da scripts/fixtures/magic-view.json,
+  cioè dalla stessa forma che restituisce engine/view.js: se il view model
+  cambia, cambia questa fixture e il mockup se ne accorge.
+
+  Stati: ?stato=base|stack|blocchi|bersagli|mana
+  Misure: window.__mockupMetrics() (usata da scripts/test-magic-mockup.mjs).
+-->
+<style>
+  :root {
+    --u: calc(100dvh / 100);
+    --ink: #f4efe4;
+    --muted: rgb(244 239 228 / 66%);
+    --gold: #ffd682;
+    --line: rgb(255 255 255 / 13%);
+    --amethyst: #9c86e6;
+    --walnut: #2a1d18;
+    --panel: rgb(18 26 34 / 82%);
+    --tap: 180ms;
+  }
+  * { box-sizing: border-box; }
+  html, body { block-size: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background:
+      radial-gradient(120% 80% at 50% 0%, #26343f 0%, #131c24 55%, #080c10 100%);
+  }
+  button { font: inherit; color: inherit; }
+
+  .arena {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    grid-template-areas: "bar" "foes" "field" "zones" "hand" "cmd";
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+    gap: calc(0.6 * var(--u));
+    padding: max(4px, calc(0.6 * var(--u)));
+    min-inline-size: 0;
+  }
+
+  /* ── barra: passi + priorità ─────────────────────────────────────── */
+  .bar {
+    grid-area: bar;
+    display: flex;
+    align-items: center;
+    gap: max(6px, calc(0.8 * var(--u)));
+    min-inline-size: 0;
+    padding: max(4px, calc(0.4 * var(--u))) max(6px, calc(0.8 * var(--u)));
+    border: thin solid var(--line);
+    border-radius: max(6px, calc(0.8 * var(--u)));
+    background: linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(0 0 0 / 22%));
+  }
+  .phases {
+    display: flex;
+    align-items: center;
+    gap: max(2px, calc(0.25 * var(--u)));
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-inline-size: 0;
+    overflow: hidden;
+  }
+  .phases__step {
+    display: grid;
+    place-items: center;
+    inline-size: max(10px, calc(1.1 * var(--u)));
+    block-size: max(14px, 18px);
+    border-radius: 3px;
+    background: rgb(255 255 255 / 12%);
+  }
+  .phases__step.is-done { background: rgb(156 134 230 / 38%); }
+  .phases__step.is-active {
+    inline-size: max(18px, calc(2.2 * var(--u)));
+    background: linear-gradient(180deg, var(--gold), #c99a3f);
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 35%) inset;
+  }
+  .priority {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: max(11px, calc(1.15 * var(--u)));
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    color: var(--gold);
+  }
+  .priority__dot {
+    inline-size: max(8px, calc(0.8 * var(--u)));
+    block-size: max(8px, calc(0.8 * var(--u)));
+    border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 0 3px rgb(255 214 130 / 22%);
+  }
+  .bar__meta {
+    margin-inline-start: auto;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: max(11px, calc(1.1 * var(--u)));
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .bar__meta b { font-size: max(16px, calc(1.7 * var(--u))); color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  /* ── avversari ───────────────────────────────────────────────────── */
+  .foes { grid-area: foes; display: grid; gap: max(4px, calc(0.4 * var(--u))); min-inline-size: 0; }
+  .foe {
+    display: flex;
+    align-items: center;
+    gap: max(6px, calc(0.6 * var(--u)));
+    min-inline-size: 0;
+    padding: max(3px, calc(0.3 * var(--u))) max(6px, calc(0.6 * var(--u)));
+    border: thin solid var(--line);
+    border-radius: max(6px, calc(0.7 * var(--u)));
+    background: rgb(0 0 0 / 20%);
+  }
+  .foe__name { font-size: max(11px, calc(1.1 * var(--u))); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .foe__life { font-size: max(16px, calc(1.6 * var(--u))); color: var(--gold); font-variant-numeric: tabular-nums; }
+  .foe__cmd { font-size: max(11px, calc(1 * var(--u))); padding: 2px 6px; border-radius: 999px; background: rgb(190 70 70 / 35%); color: #ffc9c9; white-space: nowrap; }
+  .foe__count { font-size: max(11px, calc(1 * var(--u))); color: var(--muted); }
+  .foe__board { display: flex; align-items: center; gap: 3px; margin-inline-start: auto; min-inline-size: 0; }
+  /* Il campo avversario è una vista ridotta: si tocca per aprirlo, non si legge qui. */
+  .foe__board .card { inline-size: clamp(24px, 2.8vw, 36px); border-radius: 3px; }
+  .foe__board .card__name { font-size: 10px; }
+
+  /* ── campo ───────────────────────────────────────────────────────── */
+  /* Righe a contenuto: una corsia non si schiaccia mai sotto l'altezza della
+     sua carta. Se lo schermo è basso è il campo a scorrere, e la carta resta
+     intera (prima la corsia terre tagliava le carte a 85px su 128). */
+  .field { grid-area: field; display: grid; grid-template-rows: repeat(3, min-content); align-content: space-between; gap: max(3px, calc(0.35 * var(--u))); min-block-size: 0; }
+  /* Il campo di un telefono in orizzontale non contiene sempre tre corsie
+     intere: scorre, ma ogni carta resta intera e sopra i 44px. Meglio
+     scorrere che tagliare le carte a metà. */
+  .field { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .lane { display: flex; flex-direction: column; gap: 3px; min-block-size: 0; }
+  .lane__label {
+    font-size: max(10px, calc(0.95 * var(--u)));
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  /* `align-items: flex-start` è obbligatorio: con lo stretch predefinito la
+     carta perde il rapporto 63/88 e diventa un rettangolo alto quanto la
+     corsia (difetto visto nel primo screenshot del mockup). */
+  .lane__cards { display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; justify-content: center; gap: max(3px, calc(0.4 * var(--u))); min-block-size: 0; }
+
+
+  /* ── carta ───────────────────────────────────────────────────────── */
+  .card {
+    position: relative;
+    /* Larghezza legata anche all'altezza: su un desktop 1280×800 tre corsie
+       da 92px non entrano, e la terza verrebbe tagliata. */
+    inline-size: clamp(56px, min(6.2vw, 10.5vh), 92px);
+    aspect-ratio: 63 / 88;
+    display: flex;
+    align-items: flex-end;
+    padding: 4px;
+    border: thin solid rgb(0 0 0 / 55%);
+    border-radius: max(4px, calc(0.5 * var(--u)));
+    background:
+      linear-gradient(160deg, rgb(255 255 255 / 16%), rgb(0 0 0 / 8%) 40%),
+      linear-gradient(180deg, #4b5f6d, #2a3540 70%, #1b232b);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 45%);
+    transition: transform var(--tap) ease, box-shadow var(--tap) ease;
+    min-inline-size: 0;
+  }
+  .card--land { background: linear-gradient(180deg, #4a5a3a, #2b3524 70%, #1d2318); }
+  .card--instant { background: linear-gradient(180deg, #3c4f6d, #263347 70%, #1a2230); }
+  .card--artifact { background: linear-gradient(180deg, #5b5566, #363141 70%, #221f29); }
+  .card.is-tapped { transform: rotate(9deg) translateY(2px); }
+  .card.is-attacking { transform: translateY(-4px); box-shadow: 0 6px 0 rgb(212 90 90 / 45%), 0 2px 6px rgb(0 0 0 / 45%); }
+  .card.is-legal { outline: 2px solid var(--gold); outline-offset: 1px; }
+  /* Il nome sta in alto a tutta larghezza: in basso si scontrava con il P/T e
+     su 79px restavano otto caratteri utili. I numeri restano in basso. */
+  .card__name {
+    position: absolute;
+    inset-block-start: 2px;
+    inset-inline: 2px;
+    z-index: 1;
+    display: block;
+    padding: 1px 3px;
+    border-radius: 3px;
+    background: rgb(0 0 0 / 52%);
+    font-size: max(10px, calc(0.9 * var(--u)));
+    line-height: 1.15;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 85%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card__pt, .card__badge {
+    position: absolute;
+    z-index: 2;
+    font-size: max(10px, calc(0.95 * var(--u)));
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .card__pt {
+    inset-block-end: 2px;
+    inset-inline-end: 3px;
+    padding: 0 3px;
+    border-radius: 3px;
+    background: rgb(0 0 0 / 72%);
+    color: var(--gold);
+  }
+  .card__badge {
+    inset-block-end: 2px;
+    inset-inline-start: 3px;
+    padding: 0 3px;
+    border-radius: 3px;
+    background: rgb(0 0 0 / 72%);
+  }
+  .card__badge--counter { color: #9fe6a0; }
+  /* Danno al centro in basso: il P/T occupa già l'angolo destro. */
+  .card__badge--damage { color: #ffb3b3; inset-inline-start: 50%; }
+  .card__badge--cmd { color: var(--amethyst); inset-inline-start: 3px; inset-block-end: 18px; }
+
+  /* ── zone ────────────────────────────────────────────────────────── */
+  .zones { grid-area: zones; display: flex; align-content: flex-start; gap: max(4px, calc(0.4 * var(--u))); min-inline-size: 0; }
+  .zone__chip {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-block-size: 44px;
+    padding: 0 max(6px, calc(0.6 * var(--u)));
+    border: thin solid var(--line);
+    border-radius: max(6px, calc(0.7 * var(--u)));
+    background: rgb(255 255 255 / 6%);
+    font-size: max(11px, calc(1 * var(--u)));
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .zone__chip b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  /* ── stack ───────────────────────────────────────────────────────── */
+  /* In verticale lo stack è una pillola sopra i comandi: come cella della
+     griglia creava una settima riga implicita, spingeva su la barra comandi e
+     lasciava una fascia vuota in fondo (visto a 390×844). */
+  .stack {
+    grid-area: stack;
+    position: absolute;
+    inset-block-end: calc(max(44px, 6.5 * var(--u)) + 80px);
+    inset-inline-end: max(6px, calc(0.6 * var(--u)));
+    z-index: 6;
+    min-inline-size: 0;
+  }
+  .stack__pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-block-size: 44px;
+    padding-inline: 10px;
+    border: thin solid var(--gold);
+    border-radius: 999px;
+    background: rgb(18 26 34 / 94%);
+    box-shadow: 0 6px 18px rgb(0 0 0 / 45%);
+    color: var(--gold);
+    font-size: max(11px, calc(1 * var(--u)));
+  }
+  .stack__body { display: none; }
+  .stack__list { display: none; margin: 0; padding: 0; list-style: none; flex-direction: column; gap: 6px; }
+  .stack__title { margin: 0 0 4px; font-size: max(10px, calc(0.95 * var(--u))); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .stack__item {
+    display: grid;
+    gap: 2px;
+    padding: 6px;
+    border: thin solid var(--line);
+    border-inline-start: 3px solid var(--amethyst);
+    border-radius: 6px;
+    background: var(--panel);
+    font-size: max(11px, calc(0.95 * var(--u)));
+  }
+  .stack__item strong { font-size: max(11px, calc(1.05 * var(--u))); }
+
+  /* ── mano ────────────────────────────────────────────────────────── */
+  .hand { grid-area: hand; display: flex; align-items: flex-end; gap: max(6px, calc(0.8 * var(--u))); min-inline-size: 0; }
+  /* Il ventaglio usa una misura sola (`--hand-card`) per carta e sovrapposizione:
+     con due clamp indipendenti il passo scendeva sotto metà carta e il tocco
+     finiva sulla carta successiva (misurato: 390×844, mano non raggiungibile). */
+  .hand__fan { --hand-card: clamp(48px, 9.6vw, 96px); display: flex; align-items: flex-end; min-inline-size: 0; }
+  .hand__fan .card { flex: 0 0 auto; align-self: flex-end; inline-size: var(--hand-card); }
+  .hand__fan .card + .card { margin-inline-start: calc(-0.36 * var(--hand-card)); }
+  .hand__fan .card.is-selected { transform: translateY(-10px); outline: 2px solid var(--gold); }
+  .hand__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-inline-start: auto; }
+  .btn {
+    min-block-size: 44px;
+    min-inline-size: 44px;
+    padding: 0 max(10px, calc(1 * var(--u)));
+    border: thin solid rgb(255 255 255 / 22%);
+    border-radius: max(6px, calc(0.7 * var(--u)));
+    background: rgb(255 255 255 / 8%);
+    font-size: max(11px, calc(1.05 * var(--u)));
+    letter-spacing: 0.03em;
+    cursor: pointer;
+  }
+  .btn:hover { background: rgb(255 255 255 / 14%); }
+  .btn:active { transform: translateY(1px); }
+  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .btn--primary {
+    border-color: rgb(255 214 130 / 60%);
+    background: linear-gradient(180deg, #ffd682, #c8993d);
+    color: #201607;
+    font-weight: 700;
+  }
+
+  /* ── comandi ─────────────────────────────────────────────────────── */
+  .cmd {
+    grid-area: cmd;
+    display: flex;
+    align-items: center;
+    gap: max(6px, calc(0.7 * var(--u)));
+    padding: max(4px, calc(0.4 * var(--u)));
+    border: thin solid var(--line);
+    border-radius: max(6px, calc(0.8 * var(--u)));
+    background: linear-gradient(180deg, rgb(42 29 24 / 88%), rgb(12 9 8 / 92%));
+  }
+  .cmd__actions { display: flex; align-items: center; gap: max(4px, calc(0.5 * var(--u))); min-inline-size: 0; }
+  .cmd__idle { font-size: max(11px, calc(1 * var(--u))); color: var(--muted); }
+  .cmd__mana { display: flex; align-items: center; gap: 5px; margin-inline-start: auto; font-size: max(11px, calc(1 * var(--u))); color: var(--muted); }
+  .pip {
+    display: grid;
+    place-items: center;
+    inline-size: max(18px, calc(1.9 * var(--u)));
+    block-size: max(18px, calc(1.9 * var(--u)));
+    border-radius: 50%;
+    border: thin solid rgb(0 0 0 / 45%);
+    font-size: max(10px, calc(0.95 * var(--u)));
+    font-weight: 700;
+    color: #10151a;
+  }
+  .pip--G { background: #9fe6a0; }
+  .pip--U { background: #a9d6ff; }
+  .pip--W { background: #f6f0d6; }
+
+  /* ── modale di scelta ────────────────────────────────────────────── */
+  .choice { position: fixed; inset: 0; display: grid; place-items: center; background: rgb(4 7 10 / 66%); z-index: 30; }
+  .choice[hidden] { display: none; }
+  .choice__panel {
+    inline-size: min(560px, calc(100vw - 24px));
+    max-block-size: calc(100dvh - 32px);
+    overflow: auto;
+    padding: max(10px, calc(1.2 * var(--u)));
+    border: thin solid rgb(255 214 130 / 45%);
+    border-radius: max(8px, calc(1 * var(--u)));
+    background: linear-gradient(180deg, #1b242c, #10161b);
+    box-shadow: 0 18px 48px rgb(0 0 0 / 55%);
+  }
+  .choice__title { margin: 0 0 8px; font-size: max(16px, calc(1.8 * var(--u))); }
+  .choice__hint { margin: 0 0 10px; font-size: max(11px, calc(1.05 * var(--u))); color: var(--muted); }
+  .choice__options { display: grid; gap: 6px; margin: 0 0 10px; padding: 0; list-style: none; }
+  .choice__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: thin solid var(--line);
+    border-radius: 6px;
+    background: rgb(255 255 255 / 4%);
+    font-size: max(11px, calc(1.05 * var(--u)));
+  }
+  .choice__row select {
+    min-block-size: 32px;
+    margin-inline-start: auto;
+    font-size: max(11px, calc(1 * var(--u)));
+  }
+  .choice__actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* ── orizzontale / desktop: corsie laterali ──────────────────────── */
+  @media (min-aspect-ratio: 1/1) {
+    .arena {
+      grid-template-columns: minmax(74px, 96px) minmax(0, 1fr) minmax(120px, 168px);
+      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        "bar bar bar"
+        "zones foes stack"
+        "zones field stack"
+        "zones hand stack"
+        "cmd cmd cmd";
+    }
+    .stack { position: static; inset: auto; }
+    .stack__body { display: block; }
+    .field { align-content: start; }
+    .zones { flex-direction: column; }
+    .zone__chip { inline-size: 100%; }
+    .stack__pill { display: none; }
+    .stack__list { display: flex; }
+    .lane--others .lane__cards { flex-wrap: wrap; }
+  }
+
+  /* Telefono in orizzontale: carte al minimo toccabile e mano più stretta,
+     altrimenti le corsie non entrano nemmeno scorrendo. */
+  @media (max-width: 560px) {
+    /* In verticale la barra alta non ha spazio per tutto: la vita sta nei\n       comandi, qui resta il turno. */\n    .bar__meta span { display: none; }\n    .foe__count { display: none; }\n  }\n\n  @media (max-height: 520px) {
+    .card { inline-size: 44px; }
+    /* Sul campo a 44px il nome non si legge: resta l'etichetta accessibile e la
+       scheda completa al tocco. Meglio niente che tre lettere. */
+    .lane .card__name { display: none; }
+    .hand__fan { --hand-card: 64px; }
+    .hand__fan .card + .card { margin-inline-start: calc(-0.3 * var(--hand-card)); }
+    .foe__board .card { inline-size: 26px; }
+    .foe__board .card__name { display: none; }
+    .hand__actions .btn { min-block-size: 44px; }
+    /* Tre corsie in colonna, una accanto all'altra: tutte visibili in 390px di
+       altezza, ognuna scorre in orizzontale invece di tagliare le carte. */
+    .field {
+      grid-template-rows: auto;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      column-gap: max(4px, calc(0.5 * var(--u)));
+      overflow: visible;
+    }
+    .lane__cards { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .card { transition: none; }
+    .card.is-tapped { transform: rotate(9deg); }
+  }
+</style>
+</head>
+<body>
+<main class="arena" data-state="base">
+  <header class="bar" data-block="bar">
+    <ol class="phases" id="phases" aria-label="Passi del turno"></ol>
+    <p class="priority" id="priority" aria-live="polite"><span class="priority__dot" aria-hidden="true"></span><span id="priority-label">La tua priorità</span></p>
+    <div class="bar__meta"><b id="turn">Turno 4</b><span id="life">Vite 32</span></div>
+  </header>
+
+  <section class="foes" id="foes" aria-label="Avversari"></section>
+
+  <section class="field" id="field" aria-label="Il tuo campo">
+    <div class="lane lane--others">
+      <span class="lane__label">Permanenti</span>
+      <div class="lane__cards" id="lane-others"></div>
+    </div>
+    <div class="lane lane--creatures">
+      <span class="lane__label">Creature</span>
+      <div class="lane__cards" id="lane-creatures"></div>
+    </div>
+    <div class="lane lane--lands">
+      <span class="lane__label">Terre</span>
+      <div class="lane__cards" id="lane-lands"></div>
+    </div>
+  </section>
+
+  <aside class="zones" id="zones" aria-label="Zone di gioco"></aside>
+
+  <aside class="stack" id="stack" aria-label="Stack">
+    <button type="button" class="stack__pill" id="stack-pill">Stack <b id="stack-count">0</b></button>
+    <div class="stack__body" id="stack-body">
+      <p class="stack__title">Stack</p>
+      <ol class="stack__list" id="stack-list"></ol>
+    </div>
+  </aside>
+
+  <section class="hand" aria-label="La tua mano">
+    <div class="hand__fan" id="hand"></div>
+    <div class="hand__actions" id="hand-actions"></div>
+  </section>
+
+  <footer class="cmd" data-block="cmd">
+    <div class="cmd__actions" id="cmd-actions"></div>
+    <div class="cmd__mana" id="mana">
+      <span>Riserva</span>
+      <span class="pip pip--U">1</span>
+      <span class="pip pip--G">2</span>
+    </div>
+  </footer>
+</main>
+
+<div class="choice" id="choice" hidden role="dialog" aria-modal="true" aria-labelledby="choice-title">
+  <div class="choice__panel">
+    <h2 class="choice__title" id="choice-title">Scegli</h2>
+    <p class="choice__hint" id="choice-hint"></p>
+    <ul class="choice__options" id="choice-options"></ul>
+    <div class="choice__actions">
+      <button type="button" class="btn" id="choice-cancel">Annulla</button>
+      <button type="button" class="btn btn--primary" id="choice-confirm">Conferma</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+const params = new URLSearchParams(location.search);
+const stato = params.get('stato') || 'base';
+
+const el = id => document.getElementById(id);
+const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+
+const card = (view, { legal = false, selected = false } = {}) => {
+  const type = String(view.typeLine || '').toLowerCase();
+  const classes = ['card'];
+  if (/\bland\b/.test(type)) classes.push('card--land');
+  else if (/\binstant\b/.test(type)) classes.push('card--instant');
+  else if (/\bartifact\b/.test(type)) classes.push('card--artifact');
+  if (view.tapped) classes.push('is-tapped');
+  if (view.attacking) classes.push('is-attacking');
+  if (legal) classes.push('is-legal');
+  if (selected) classes.push('is-selected');
+  const pt = view.power && view.toughness ? `<span class="card__pt">${esc(view.power)}/${esc(view.toughness)}</span>` : '';
+  const counter = view.counters > 0 ? `<span class="card__badge card__badge--counter">+${esc(view.counters)}</span>` : '';
+  const damage = view.damage > 0 ? `<span class="card__badge card__badge--damage">−${esc(view.damage)}</span>` : '';
+  const commander = view.commander ? '<span class="card__badge card__badge--cmd">CMD</span>' : '';
+  const zone = view.zone === 'hand' ? 'hand' : view.zone === 'foe' ? 'foe' : 'board';
+  return `<div class="${classes.join(' ')}" data-card-id="${esc(view.id)}" data-zone="${zone}"
+    tabindex="0" role="button" aria-label="${esc(view.name)}${view.power ? ` ${view.power}/${view.toughness}` : ''}">
+    <span class="card__name">${esc(view.name)}</span>${pt}${counter}${damage}${commander}
+  </div>`;
+};
+
+const foeHtml = foe => `<div class="foe">
+    <span class="foe__name">${esc(foe.name)}</span>
+    <span class="foe__life">${esc(foe.life)} ♥</span>
+    ${foe.commanderDamage > 0 ? `<span class="foe__cmd">CMD ${esc(foe.commanderDamage)}/21</span>` : ''}
+    <span class="foe__count">${esc(foe.handCount)} in mano · ${esc(foe.graveyardCount)} cimitero</span>
+    <div class="foe__board">${(foe.battlefield || []).map(c => card({ ...c, zone: 'foe' })).join('')}</div>
+  </div>`;
+
+const zoneChip = (label, count) => `<button type="button" class="zone__chip" aria-label="${esc(label)}: ${esc(count)}">${esc(label)} <b>${esc(count)}</b></button>`;
+
+function render(view) {
+  el('phases').innerHTML = view.steps.map((step, index) =>
+    `<li class="phases__step${step.active ? ' is-active' : ''}${step.done ? ' is-done' : ''}"
+      title="${esc(step.label)}" aria-current="${step.active ? 'step' : 'false'}"
+      aria-label="${esc(`Passo ${index + 1}: ${step.label}`)}"></li>`).join('');
+  el('priority-label').textContent = view.priority.label;
+  el('turn').textContent = `Turno ${view.turn}`;
+  el('life').textContent = `Vite ${view.me.life}`;
+  el('foes').innerHTML = view.opponents.map(foeHtml).join('');
+
+  const mine = view.me.battlefield || [];
+  const legalIds = new Set((view.legalTargets || []).map(target => target.id));
+  const laneOf = test => mine.filter(test);
+  const isCreature = c => /\bcreature\b/i.test(String(c.typeLine || ''));
+  const isLand = c => /\bland\b/i.test(String(c.typeLine || ''));
+  const board = list => list.map(c => card(c, { legal: legalIds.has(c.id) })).join('');
+  el('lane-creatures').innerHTML = board(laneOf(isCreature));
+  el('lane-others').innerHTML = board(laneOf(c => !isCreature(c) && !isLand(c)));
+  el('lane-lands').innerHTML = board(laneOf(isLand));
+  if (!mine.length) el('lane-creatures').innerHTML = '<span class="lane__label">Campo vuoto</span>';
+
+  el('zones').innerHTML = [
+    zoneChip('Grimorio', view.me.zones.library),
+    zoneChip('Cimitero', view.me.zones.graveyard.length),
+    zoneChip('Esilio', view.me.zones.exile.length),
+    zoneChip('Comando', view.me.zones.command.length)
+  ].join('');
+
+  // Contratto del mockup: ogni comando mostrato deve essere una mossa legale.
+  window.__mockupLegalIds = view.legalActions.map(action => action.id);
+  // La barra comandi raccoglie le mosse di turno; terra e lancio restano sulla
+  // carta in mano, altrimenti lo stesso comando comparirebbe due volte.
+  const commands = view.legalActions
+    .filter(action => !action.manual && !['playLand', 'castSpell', 'castResponse'].includes(action.type))
+    .slice(0, 3);
+  el('cmd-actions').innerHTML = commands.map((action, index) =>
+    `<button type="button" class="btn${index === 0 ? ' btn--primary' : ''}" data-action="${esc(action.id)}">${esc(action.label.length > 20 ? `${action.label.slice(0, 19)}…` : action.label)}</button>`
+  ).join('') || '<span class="cmd__idle">Nessuna mossa: la priorità è degli altri</span>';
+  el('stack-count').textContent = String(view.stack.length);
+  el('stack-list').innerHTML = view.stack.map(item =>
+    `<li class="stack__item"><strong>${esc(item.sourceName)}</strong><span>${esc(item.kind === 'spell' ? 'Magia' : 'Abilità')} · ${esc(item.controllerId)}</span></li>`
+  ).join('') || '<li class="stack__item"><span>Stack vuoto</span></li>';
+
+  el('hand').innerHTML = view.me.hand.map(c => card(c, { selected: c.id === 'h2' })).join('');
+  const castable = view.legalActions.filter(action => ['castSpell', 'playLand'].includes(action.type)).slice(0, 1);
+  el('hand-actions').innerHTML = castable.map(action =>
+    `<button type="button" class="btn" data-action="${esc(action.id)}">${esc(action.label.split(' ').slice(0, 3).join(' '))}</button>`
+  ).join('');
+
+  el('mana').innerHTML = `<span>Riserva</span>${['W', 'U', 'B', 'R', 'G'].filter(color => (view.me.manaPool[color] || 0) > 0)
+    .map(color => `<span class="pip pip--${color}">${view.me.manaPool[color]}</span>`).join('') || '<span>vuota</span>'}`;
+
+  if (view.pendingChoice) renderChoice(view.pendingChoice);
+  else el('choice').hidden = true;
+}
+
+function renderChoice(choice) {
+  el('choice').hidden = false;
+  el('choice-title').textContent = choice.title;
+  el('choice-hint').textContent = choice.hint || 'Sono elencate solo le opzioni legali.';
+  el('choice-options').innerHTML = choice.kind === 'blockers'
+    ? choice.rows.map(row => `<li class="choice__row"><span>${esc(row.attacker)}</span>
+        <select aria-label="${esc(`Bloccante per ${row.attacker}`)}">${row.options.map(option =>
+          `<option>${esc(option)}</option>`).join('')}</select></li>`).join('')
+    : choice.options.map(option =>
+        `<li class="choice__row"><button type="button" class="btn">${esc(option.label)}</button></li>`).join('');
+  el('choice-confirm').hidden = choice.kind !== 'blockers';
+}
+
+const states = {
+  base: view => view,
+  stack: view => ({
+    ...view,
+    stack: [
+      { id: 's2', controllerId: 'me', sourceName: 'Sussurro di Jace', kind: 'spell', targets: [] },
+      { id: 's1', controllerId: 'foe1', sourceName: 'Predone Goblin', kind: 'ability', targets: [] }
+    ]
+  }),
+  blocchi: view => ({
+    ...view,
+    step: { id: 'declareBlockers', index: 6, label: 'Bloccanti' },
+    steps: view.steps.map(step => ({
+      ...step,
+      active: step.id === 'declareBlockers',
+      done: ['untap', 'upkeep', 'draw', 'main1', 'beginCombat', 'declareAttackers'].includes(step.id)
+    })),
+    priority: { playerId: 'me', mine: true, label: 'La tua priorità' },
+    legalTargets: [{ id: 'f1-c1' }],
+    pendingChoice: {
+      kind: 'blockers',
+      title: 'Scegli chi blocca',
+      hint: 'Un bloccante per attaccante. Il Predone Goblin non ha volare.',
+      rows: [
+        { attacker: 'Predone Goblin 2/2', options: ['Nessuno', 'Guardiana di Tempio', 'Elfo Esploratore'] },
+        { attacker: 'Drago Fanciullo 5/5', options: ['Nessuno', 'Guardiana di Tempio'] }
+      ]
+    },
+    legalActions: [{ type: 'declareBlockers', playerId: 'me', label: 'Conferma blocchi', legal: true, id: 'declareBlockers:select' }]
+  }),
+  bersagli: view => ({
+    ...view,
+    legalTargets: [{ id: 'f1-c1' }, { id: 'f1-c2' }],
+    pendingChoice: {
+      kind: 'targets',
+      title: 'Scegli un bersaglio',
+      hint: 'Sussurro di Jace · {U} · una creatura o un giocatore',
+      options: [
+        { label: 'Predone Goblin (Giocatore 2)' },
+        { label: 'Drago Fanciullo (Giocatore 2)' }
+      ]
+    }
+  }),
+  mana: view => ({
+    ...view,
+    priority: { playerId: 'me', mine: true, label: 'Pagamento manuale' },
+    legalActions: [{ type: 'tapMana', playerId: 'me', uid: 'me-l2', label: 'Tappa Pianura', legal: true, id: 'tapMana:me-l2' }]
+  })
+};
+
+const fixture = await fetch('../../scripts/fixtures/magic-view.json').then(response => response.json());
+const arena = document.querySelector('.arena');
+arena.dataset.state = stato;
+render((states[stato] || states.base)(fixture));
+
+document.getElementById('choice-cancel').addEventListener('click', () => { el('choice').hidden = true; });
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') el('choice').hidden = true;
+});
+
+// Le misure che lo script legge: un solo posto, così il test non conosce il CSS.
+window.__mockupMetrics = () => {
+  const box = element => {
+    const rect = element?.getBoundingClientRect();
+    return rect ? { x: rect.x, y: rect.y, w: rect.width, h: rect.height, bottom: rect.bottom, right: rect.right } : null;
+  };
+  const visible = element => {
+    const rect = box(element);
+    if (!rect || !rect.w || !rect.h) return false;
+    return rect.y < innerHeight && rect.bottom > 0 && rect.x < innerWidth && rect.right > 0;
+  };
+  const reachable = selector => {
+    const element = document.querySelector(selector);
+    const rect = element?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return false;
+    const x = rect.x + rect.width / 2;
+    const y = rect.y + rect.height / 2;
+    if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) return false;
+    const hit = document.elementFromPoint(x, y);
+    return Boolean(hit && (hit === element || element.contains(hit)));
+  };
+  const fontSize = selector => {
+    const element = document.querySelector(selector);
+    return element ? Number.parseFloat(getComputedStyle(element).fontSize) : null;
+  };
+  const widths = selector => [...document.querySelectorAll(selector)].map(element => element.getBoundingClientRect().width);
+  const board = widths('[data-zone="board"]');
+  const hand = widths('.hand [data-card-id]');
+  const cmd = box(document.querySelector('.cmd'));
+  const choice = document.querySelector('.choice');
+  // Con una modale aperta il fondo non è cliccabile: è il comportamento giusto,
+  // quindi il test verifica che la modale stia davvero sopra ai comandi.
+  const commandElement = document.querySelector('#cmd-actions .btn');
+  const commandBox = commandElement?.getBoundingClientRect();
+  const hitOnPass = commandBox && commandBox.width
+    ? document.elementFromPoint(commandBox.x + commandBox.width / 2, commandBox.y + commandBox.height / 2)
+    : null;
+  const modalOnTop = Boolean(choice && !choice.hidden && hitOnPass && choice.contains(hitOnPass));
+  const choicePanel = choice && !choice.hidden ? box(choice.querySelector('.choice__panel')) : null;
+  return {
+    viewport: { w: innerWidth, h: innerHeight },
+    state: arena.dataset.state,
+    barRatio: cmd ? Number((cmd.h / innerHeight).toFixed(3)) : null,
+    cards: {
+      boardMin: board.length ? Math.min(...board) : null,
+      handMin: hand.length ? Math.min(...hand) : null,
+      boardCount: board.length,
+      handCount: hand.length
+    },
+    fonts: {
+      name: fontSize('.card__name'),
+      label: fontSize('.lane__label'),
+      button: fontSize('.btn'),
+      meta: fontSize('.bar__meta b')
+    },
+    phasesVisible: visible(document.querySelector('.phases')),
+    phaseActiveReachable: reachable('.phases__step.is-active'),
+    stackVisible: visible(document.querySelector('.stack__list')) || visible(document.querySelector('.stack__pill')),
+    stackCount: document.querySelectorAll('.stack__item').length,
+    commandReachable: reachable('#cmd-actions .btn'),
+    handReachable: reachable('.hand [data-card-id]'),
+    zonesReachable: reachable('.zone__chip'),
+    choice: choicePanel
+      ? {
+          // `choicePanel` è già un rettangolo, non un elemento: niente `visible()`.
+          visible: choicePanel.w > 0 && choicePanel.h > 0
+            && choicePanel.y < innerHeight && choicePanel.bottom > 0,
+          fits: choicePanel.y >= 0 && choicePanel.bottom <= innerHeight && choicePanel.w <= innerWidth,
+          w: Math.round(choicePanel.w),
+          h: Math.round(choicePanel.h)
+        }
+      : null,
+    modalOnTop,
+    // Nessun comando inventato: ogni `data-action` deve stare fra le mosse legali.
+    actions: [...document.querySelectorAll('[data-action]')].map(element => element.dataset.action),
+    legalIds: window.__mockupLegalIds || [],
+    overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+    reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches
+  };
+};
+window.__mockupReady = true;
+</script>
+</body>
+</html>
