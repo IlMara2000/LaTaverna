@@ -2,15 +2,14 @@
  * Tavolo di gioco: markup, viste e comandi del solo campo.
  *
  * Non conosce le regole e non possiede lo stato: riceve le carte dal chiamante
- * e gli restituisce intenzioni. `onTogglePermanent` è una richiesta, non una
- * scrittura: la carta cambia dopo che il motore ha confermato.
+ * e gli restituisce intenzioni. Un tocco su una carta chiede l'anteprima
+ * (`onPreview`); le mosse restano sui pulsanti della carta e della barra.
  *
  * Opzioni: own, hand, opponents, commands, zones, status, mana, tileExtra,
- * onTogglePermanent, onPreview, onExit, onAbandon.
+ * onPreview, onExit, onAbandon.
  */
 
 import './table.css';
-import './rotate-gate.css';
 import './arena.css';
 import { exitImmersive } from './immersive.js';
 
@@ -24,7 +23,7 @@ const counterLabel = card => (card.counters > 0 ? `+${card.counters}` : '');
 
 function tileHtml(card, side, zone = 'board', extra = '') {
   const art = card.image
-    ? `<img class="mt-card__art" src="${esc(card.image)}" alt="" loading="lazy" decoding="async">`
+    ? `<img class="mt-card__art" src="${esc(card.image)}" alt="" loading="lazy" decoding="async" draggable="false">`
     : '<span class="mt-card__art mt-card__art--empty" aria-hidden="true"></span>';
   const pressed = zone === 'board' ? ` aria-pressed="${card.tapped ? 'true' : 'false'}"` : '';
   const label = [card.name, statLine(card)].filter(Boolean).join(' · ');
@@ -63,7 +62,13 @@ function laneHtml(kind, label, cards, inner) {
 
 function fieldHtml(cards, side, paint) {
   const list = cards || [];
-  return `<div class="mt-field mt-field--${esc(side)}">${LANES.map(lane => {
+  // Campo vuoto: una riga di testo invece di un riquadro vuoto che sembra un errore.
+  const emptyLine = list.length ? '' : '<p class="mt-row__empty">Nessun permanente in campo</p>';
+  // Molla elastica: in verticale spinge le tue carte verso il basso (vicino alla
+  // mano) e lascia lo spazio libero in mezzo al tavolo. Su un contenitore che
+  // scorre il margine automatico vale zero, quindi non nasconde nulla.
+  const spring = side === 'own' ? '<div class="mt-field__spring" aria-hidden="true"></div>' : '';
+  return `<div class="mt-field mt-field--${esc(side)}">${emptyLine}${spring}${LANES.map(lane => {
     const group = list.filter(lane.match);
     return laneHtml(lane.kind, lane.label, group, group.map(card => paint(card, side, 'board')).join(''));
   }).join('')}</div>`;
@@ -98,6 +103,7 @@ function menuHtml(open) {
     <div class="mt-menu__drawer" role="dialog" aria-modal="true" aria-label="Partita">
       <p class="mt-menu__title">Partita</p>
       <button type="button" class="mt-menu__item" data-menu-close>Chiudi</button>
+      <button type="button" class="mt-menu__item" data-zones>Cimiteri e zone</button>
       <button type="button" class="mt-menu__item" data-menu-exit>Esci e torna a Magic</button>
       <button type="button" class="mt-menu__item mt-menu__item--danger" data-menu-abandon>Abbandona la partita</button>
     </div>
@@ -222,75 +228,18 @@ export function showMatchTable(host, options = {}) {
       <div data-slot="zones"></div>
       <div data-slot="menu"></div>
     </div>
-  </div>
-  <div class="rotate-gate" data-rotate-gate role="status" aria-live="polite">
-    <div class="rotate-gate__panel">
-      <div class="rotate-gate__icon" aria-hidden="true"></div>
-      <p class="rotate-gate__text">La partita si gioca in orizzontale.</p>
-      <p class="rotate-gate__hint">Ruota il dispositivo per continuare.</p>
-      <button type="button" class="rotate-gate__exit" data-gate-exit>Esci dal tavolo</button>
-    </div>
   </div>`;
   const root = host.firstElementChild;
-  const stage = root.querySelector('.mt-stage');
   const slots = {
     board: root.querySelector('[data-slot="board"]'),
     zones: root.querySelector('[data-slot="zones"]'),
     menu: root.querySelector('[data-slot="menu"]'),
     status: root.querySelector('[data-slot="status"]'),
     vitals: root.querySelector('[data-slot="vitals"]'),
-    rotateGate: host.querySelector('[data-rotate-gate]'),
   };
 
-  // Gate di rotazione: osserva il viewport e mostra il gate in verticale.
-  // Il solo evento 'change' di matchMedia non scatta in alcuni browser/ambienti
-  // (es. ridimensionamento programmatico o schermo che non emette orientationchange),
-  // quindi si rivaluta anche su resize e orientationchange.
-  const PORTRAIT_QUERY = '(orientation: portrait)';
-  // Tre casi, tre comportamenti:
-  // - mouse: nessun gate, il tavolo resta un riquadro 16:9 (vedi arena.css);
-  // - touch con screen.orientation.lock: avviso di 2 secondi, una volta per partita;
-  // - touch senza lock (iOS Safari): gate pieno, perché la rotazione non si può
-  //   imporre e in verticale il campo resterebbe illeggibile.
-  const coarsePointer = typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia('(pointer: coarse)').matches;
-  const canLockOrientation = typeof screen !== 'undefined'
-    && Boolean(screen.orientation)
-    && typeof screen.orientation.lock === 'function';
-  let noticeConsumed = false;
-  let portraitMql = null;
-  let onOrientationChange = null;
-  let onResize = null;
-  const applyRotation = (portrait) => {
-    const vertical = Boolean(portrait);
-    const notice = vertical && coarsePointer && canLockOrientation && !noticeConsumed;
-    const blocking = vertical && coarsePointer && !canLockOrientation;
-    if (notice) noticeConsumed = true;
-    if (slots.rotateGate) {
-      slots.rotateGate.classList.toggle('is-visible', notice || blocking);
-      slots.rotateGate.classList.toggle('is-blocking', blocking);
-    }
-    if (stage) stage.inert = blocking;
-  };
-  const gateExit = slots.rotateGate?.querySelector('[data-gate-exit]');
-  const onGateExit = () => options.onExit?.();
-  gateExit?.addEventListener('click', onGateExit);
-  const recomputeRotation = () => {
-    if (portraitMql) applyRotation(portraitMql.matches);
-    else if (typeof window !== 'undefined') applyRotation(window.innerHeight > window.innerWidth);
-  };
-  if (typeof window !== 'undefined') {
-    if (typeof window.matchMedia === 'function') {
-      portraitMql = window.matchMedia(PORTRAIT_QUERY);
-      onOrientationChange = () => recomputeRotation();
-      portraitMql.addEventListener('change', onOrientationChange);
-    }
-    onResize = () => recomputeRotation();
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onResize);
-    recomputeRotation();
-  }
+  // Nessun gate di rotazione: il tavolo ha un impaginato anche in verticale,
+  // quindi la partita non si blocca più chiedendo di ruotare il dispositivo.
 
   const activeOpponent = () => state.opponents.find(foe => foe.id === state.activeOpponentId) || state.opponents[0] || null;
   const paintCard = (card, side, zone) => {
@@ -408,7 +357,11 @@ export function showMatchTable(host, options = {}) {
         return;
       }
       if (action.matches('[data-zones]')) {
+        // Il pannello si apre dal menu: il menu si chiude, altrimenti resta
+        // sopra i cimiteri appena aperti.
+        state.menuOpen = false;
         state.zonesOpen = true;
+        render('menu');
         render('zones');
         return;
       }
@@ -440,17 +393,11 @@ export function showMatchTable(host, options = {}) {
     if (!card) return;
     // I comandi dentro la tile non sono un tocco sulla carta.
     if (event.target.closest('button:not([data-card-id]), select, input, textarea')) return;
-    // La pressione prolungata ha già aperto l'anteprima: il rilascio non deve
-    // anche tappare la carta o riaprire l'anteprima.
-    if (suppressClick) { suppressClick = false; return; }
     const id = card.dataset.cardId;
     if (!id) return;
-    if (card.dataset.side === 'own' && card.dataset.zone === 'board') {
-      const view = state.views.get(id);
-      options.onTogglePermanent?.({ id, tapped: !view?.tapped });
-    } else {
-      options.onPreview?.({ id });
-    }
+    // Un tocco sulla carta apre sempre l'anteprima: tappare il mana resta sul
+    // pulsante «Mana» della carta, così non si confonde lettura e mossa.
+    options.onPreview?.({ id });
   };
 
   const markKeyboard = event => {
@@ -472,56 +419,9 @@ export function showMatchTable(host, options = {}) {
     render('menu');
     focusToggle();
   };
-  // Pressione prolungata (≈0,35 s): anteprima della carta con testo, mana e
-  // forza/costituzione. Un tocco breve resta il comando di sempre.
-  let pressTimer = 0;
-  let pressId = null;
-  let suppressClick = false;
-  let suppressTimer = 0;
-  const cancelPress = () => {
-    if (pressTimer) clearTimeout(pressTimer);
-    pressTimer = 0;
-    pressId = null;
-  };
-  // Fine della pressione, ovunque cada il dito: il click che segue il rilascio
-  // sulla carta va ignorato, ma lo stato non deve restare appeso se si rilascia
-  // fuori (altrimenti il tocco successivo sparirebbe).
-  const endPress = () => {
-    cancelPress();
-    if (!suppressClick) return;
-    if (suppressTimer) clearTimeout(suppressTimer);
-    suppressTimer = setTimeout(() => {
-      suppressClick = false;
-      suppressTimer = 0;
-    }, 50);
-  };
-  const onPointerDown = event => {
-    if (event.button && event.button !== 0) return;
-    const card = event.target.closest('[data-card-id]');
-    if (!card) return;
-    if (event.target.closest('button:not([data-card-id]), select, input, textarea')) return;
-    cancelPress();
-    pressId = card.dataset.cardId || null;
-    if (!pressId) return;
-    pressTimer = setTimeout(() => {
-      pressTimer = 0;
-      suppressClick = true;
-      options.onPreview?.({ id: pressId });
-    }, 350);
-  };
-  const onPointerMove = event => {
-    if (!pressTimer) return;
-    if (Math.abs(event.movementX || 0) + Math.abs(event.movementY || 0) > 6) cancelPress();
-  };
-  root.addEventListener('pointerdown', onPointerDown);
-  root.addEventListener('pointermove', onPointerMove);
-  root.addEventListener('pointerup', endPress);
-  root.addEventListener('pointercancel', endPress);
-  root.addEventListener('pointerleave', endPress);
-  // Un rilascio fuori dal tavolo non arriva a root: senza questi listener lo
-  // stato di soppressione resterebbe attivo.
-  window.addEventListener('pointerup', endPress);
-  window.addEventListener('pointercancel', endPress);
+  // Niente pressione prolungata: su iOS apre il menu di sistema (copia, «Apri
+  // immagine»…) e il tocco sulla carta non arriva mai al tavolo. L'anteprima
+  // si apre con un tocco singolo, che è anche il gesto più naturale.
   root.addEventListener('click', onClick);
   root.addEventListener('keydown', markKeyboard);
   document.addEventListener('keydown', onEscape);
@@ -568,25 +468,9 @@ export function showMatchTable(host, options = {}) {
     destroy() {
       if (state.disposed) return;
       state.disposed = true;
-      if (portraitMql && onOrientationChange) portraitMql.removeEventListener('change', onOrientationChange);
-      if (onResize) {
-        window.removeEventListener('resize', onResize);
-        window.removeEventListener('orientationchange', onResize);
-      }
-      cancelPress();
-      if (suppressTimer) clearTimeout(suppressTimer);
-      suppressClick = false;
-      root.removeEventListener('pointerdown', onPointerDown);
-      root.removeEventListener('pointermove', onPointerMove);
-      root.removeEventListener('pointerup', endPress);
-      root.removeEventListener('pointercancel', endPress);
-      root.removeEventListener('pointerleave', endPress);
-      window.removeEventListener('pointerup', endPress);
-      window.removeEventListener('pointercancel', endPress);
       root.removeEventListener('click', onClick);
       root.removeEventListener('keydown', markKeyboard);
       document.removeEventListener('keydown', onEscape);
-      gateExit?.removeEventListener('click', onGateExit);
       state.views.clear();
       host.innerHTML = '';
       document.documentElement.style.overflow = pageOverflow.html;

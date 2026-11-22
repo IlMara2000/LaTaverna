@@ -23,14 +23,8 @@ export async function enterImmersive(element) {
   } catch {
     return false;
   }
-  try {
-    const orientation = screen.orientation;
-    // Anche il lock può restare appeso (browser incorporati): senza limite la
-    // partita non parte pur essendo il tavolo già pronto.
-    await settleWithin(Promise.resolve(orientation?.lock?.('landscape')), 800);
-  } catch {
-    /* il lock non è disponibile: resta il gate di rotazione */
-  }
+  // Niente lock dell'orientamento: il tavolo ha un impaginato verticale, quindi
+  // forzare l'orizzontale toglieva solo la scelta a chi gioca da telefono.
   return true;
 }
 

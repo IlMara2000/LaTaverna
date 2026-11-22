@@ -1287,13 +1287,6 @@ export function showMagicPlay(container, options = {}) {
     };
 
     // Il tap non scrive la carta: chiede al motore, che è l'unico a poterla tappare.
-    const requestTap = ({ id }) => {
-        const mine = myData();
-        const card = (mine?.battlefield || []).find(item => idOf(item) === id);
-        if (!card || card.tapped || !isManaSource(card, mine?.colorIdentity || [])) return;
-        void commit(current => tapMana(current, clientId, id, 'auto'));
-    };
-
     function renderPlaying(current) {
         const views = tableView(current);
         if (!table) {
@@ -1308,7 +1301,6 @@ export function showMagicPlay(container, options = {}) {
                 mana: views.mana,
                 life: views.life,
                 tileExtra: cardActions,
-                onTogglePermanent: requestTap,
                 onPreview: ({ id }) => openCardZoom(findCardByUid(id)),
                 onExit: () => navigateTo('magic', container),
                 onAbandon: () => void leaveRoom()

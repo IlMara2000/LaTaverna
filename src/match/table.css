@@ -22,6 +22,22 @@
 body.magic-table-active .nav-logo-right,
 body.magic-table-active .floating-trigger { display: none !important; }
 
+/* Il campo è un gioco, non una pagina da selezionare: senza queste righe la
+   pressione lunga su una carta apre il menu di sistema di Apple (copia, «Apri
+   immagine») e il tocco non arriva mai al tavolo. */
+.mt-table,
+.mt-table * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.mt-table img { -webkit-user-drag: none; user-drag: none; }
+.mt-table .mt-card { cursor: zoom-in; touch-action: manipulation; }
+/* Il tocco cade sulla carta, non sull'immagine: l'arte non intercetta il gesto. */
+.mt-table .mt-card__art { pointer-events: none; }
+.mt-table .mt-card__actions button { touch-action: manipulation; }
+
 .mt-stage { position: absolute; inset: 0; }
 
 /* Lo slot deve occupare tutto lo stage, altrimenti la griglia di .mt-board
@@ -730,3 +746,97 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 .mt-table .mt-commands .mp-combat .mp-overline,
 .mt-table .mt-commands .mp-mulligan .mp-overline { font-size: calc(1.2 * var(--u)); }
+
+/* ═══════════════════ verticale: il tavolo si gioca anche così ═══════════════════
+   In verticale la risorsa scarsa è la larghezza: due file di carte (loro sopra,
+   tu sotto), i comandi sopra la mano e la mano come ultima fascia, sotto il
+   pollice. Le misure strutturali sono in pixel, perché con --u legato
+   all'altezza le carte diventerebbero larghe 185 px e i pulsanti 27 px. */
+@media (orientation: portrait) {
+  /* Loro in alto, il tuo campo elastico, comandi e mano in basso. I due campi
+     non hanno un'altezza fissa: vuoti si riducono a una riga di testo. */
+  .mt-board {
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+  }
+  /* Ordine di lettura verticale: loro, tu, comandi, mano. */
+  .mt-board > .mt-opponent-head { grid-row: 1; }
+  .mt-board > .mt-field--opponent { grid-row: 2; }
+  .mt-board > .mt-field--own { grid-row: 3; }
+  .mt-board > .mt-commands { grid-row: 4; }
+  .mt-board > .mt-hand { grid-row: 5; }
+
+  .mt-table .mt-opponent-head { padding: 4px 8px; gap: 8px; font-size: 11px; }
+  .mt-table .mt-opponent-head__life { font-size: 15px; }
+  .mt-table .mt-opponent-head__cmd,
+  .mt-table .mt-opponent-head__count { font-size: 10px; }
+
+  /* Corsie: una carta alta 108 px, il campo scorre se le corsie non entrano.
+     Le corsie vuote spariscono: in verticale ogni pixel è di una carta. */
+  .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; gap: 4px; padding: 4px 4px 12px; }
+  .mt-table .mt-field--opponent { max-block-size: 26dvh; }
+  /* Le tue carte stanno vicine ai comandi e alla mano, come su un tavolo vero:
+     lo spazio libero resta in mezzo, non sotto le creature. */
+  .mt-table .mt-field__spring { flex: 0 0 0; margin-block-start: auto; }
+  .mt-table .mt-row__empty { padding-inline: 4px; font-size: 11px; }
+  /* Campo vuoto: niente lastra, solo la riga di testo. Una lastra vuota sembra
+     un errore di caricamento e occupa lo spazio della mano. */
+  .mt-table .mt-field:not(:has(.mt-card)) { background: none; border-color: transparent; box-shadow: none; }
+  .mt-table .mt-field::-webkit-scrollbar { display: none; }
+  .mt-table .mt-lane { flex: 0 0 auto; }
+  .mt-table .mt-lane.is-empty { display: none; }
+  .mt-table .mt-lane__label { font-size: 10px; line-height: 1.2; padding-inline: 2px; }
+  .mt-table .mt-lane__cards { flex: 0 0 auto; block-size: 128px; gap: 6px; padding-block: 0; }
+  .mt-table .mt-lane .mt-card { block-size: 100%; max-inline-size: none; }
+  .mt-table .mt-lane .mt-card__actions { padding: 2px; gap: 2px; max-block-size: 100%; overflow: hidden; }
+  .mt-table .mt-lane .mt-card__actions button { min-block-size: 0; padding: 1px 4px; font-size: 10px; }
+
+  /* Comandi: sotto il proprio campo, sopra la mano. */
+  .mt-table .mt-commands { max-block-size: 24dvh; font-size: 12px; }
+  /* Comandi su una riga sola che scorre: senza, «Passa il turno» e «Comandante»
+     occupavano tre righe e il selettore del bersaglio finiva sotto il bordo.
+     Gli elementi non si restringono, altrimenti il testo va a capo dentro il
+     pulsante e la riga diventa alta il doppio. */
+  .mt-table.mt-table .mt-commands .mp-toolbar { flex-wrap: nowrap; overflow-x: auto; }
+  .mt-table.mt-table .mt-commands .mp-toolbar > * { flex: 0 0 auto; }
+  .mt-table.mt-table .mt-commands .mp-toolbar .mp-button,
+  .mt-table.mt-table .mt-commands .mp-toolbar .mp-small { white-space: nowrap; }
+  /* Il comandante si accorcia con i puntini: così passano in una schermata
+     «Passa il turno», comandante e vite senza tagliare un pulsante a metà. */
+  .mt-table.mt-table .mt-commands .mp-commander-cast { max-inline-size: 34%; }
+  .mt-table.mt-table .mt-commands .mp-life { flex-wrap: nowrap; }
+  .mt-table .mt-commands:has(.mp-combat, .mp-mulligan) { max-block-size: 40dvh; }
+  /* Doppia classe: magicPlay.css arriva dopo table.css e riporta i pulsanti a
+     misure da pagina (32 px). Il prefisso vince quell'ordine di import. */
+  .mt-table.mt-table .mp-button,
+  .mt-table.mt-table .mp-small,
+  .mt-table.mt-table .mp-button.mp-soft { min-block-size: 40px; padding-inline: 10px; font-size: 12px; }
+  .mt-table .mt-commands select,
+  .mt-table .mt-commands input { min-block-size: 40px; font-size: 12px; }
+  .mt-table .mt-commands .mp-notice,
+  .mt-table .mt-commands .mp-mana span,
+  .mt-table .mt-commands .mp-life span,
+  .mt-table .mt-commands .mp-target,
+  .mt-table .mt-commands .mp-log summary,
+  .mt-table .mt-commands .mp-effects summary { font-size: 11px; }
+  .mt-table .mt-commands .mp-combat p,
+  .mt-table .mt-commands .mp-mulligan p,
+  .mt-table .mt-commands .mp-combat label,
+  .mt-table .mt-commands .mp-mulligan label { font-size: 12px; }
+  .mt-table .mt-commands .mp-life strong { font-size: 15px; }
+
+  /* Mano: carte larghe, comandi fuori dall'arte invece che sopra. */
+  .mt-table .mt-hand { block-size: min(28dvh, 186px); padding: 6px; gap: 8px; }
+  .mt-table .mt-hand .mt-card { block-size: 100%; inline-size: 104px; aspect-ratio: auto; max-inline-size: none; }
+  .mt-table .mt-hand .mt-card__art { flex: 1 1 auto; block-size: auto; }
+  .mt-table .mt-hand .mt-card__actions { position: static; max-block-size: none; overflow: visible; padding: 4px 0 0; background: none; }
+  .mt-table.mt-table .mt-hand .mt-card__actions button { min-block-size: 40px; font-size: 12px; }
+
+  /* Barra: restano turno, ESCI e ☰. «Cimiteri» passa nel menu: nella barra
+     rubava lo spazio che serve a leggere di chi è il turno. */
+  .mt-table .mt-arena-bar__button[data-zones] { display: none; }
+  .mt-table .mt-arena-bar { padding-inline-end: 58px; }
+  .mt-table .mt-menu__toggle { inset-block-start: 7px; inset-inline-end: 8px; }
+  .mt-table .mt-zones__panel { inset-block: 8px; inset-inline-end: 8px; inset-inline-start: 8px; inline-size: auto; }
+}

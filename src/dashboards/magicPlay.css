@@ -130,7 +130,7 @@
 .mp-zoom-copy p { margin: 0; color: #bfaed0; font-size: .84rem; line-height: 1.55; }
 .mp-zoom-support { margin: 0; padding: 6px 10px; border-radius: 8px; background: rgba(196, 164, 255, .12); color: #d9c8f2; font-size: .76rem; letter-spacing: .02em; }
 .mp-zoom-fallback { display: grid; place-items: center; min-height: 200px; border-radius: 12px; background: #2a1c44; color: #bfaed0; margin: 0; }
-.mp-zoom-close { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #4b3668; background: rgba(12, 7, 22, .88); color: #efe6f7; font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.mp-zoom-close { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #4b3668; background: rgba(12, 7, 22, .88); color: #efe6f7; font-size: 1.15rem; line-height: 1; cursor: pointer; }
 .mp-zoom-close:hover { border-color: #c4a4ff; }
 .magic-play .mp-board-copy { display: flex; flex-direction: column; gap: 2px; font-size: .72rem; }
 .magic-play .mp-board-copy strong { font-size: .76rem; line-height: 1.15; }
