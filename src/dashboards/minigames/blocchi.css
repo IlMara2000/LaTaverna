@@ -91,7 +91,8 @@ body:has(.blocks-game) #nav-home-btn {
 .blocks-eyebrow,
 .blocks-level-select > span {
     color: var(--amethyst-light);
-    font-size: 0.62rem;
+    /* Soglia del manuale: 10px (0,62rem dava 9,92px). */
+    font-size: 0.625rem;
     font-weight: 900;
     letter-spacing: 0.22em;
     text-align: center;
@@ -130,7 +131,7 @@ body:has(.blocks-game) #nav-home-btn {
     padding: 6px 9px;
     background: rgba(157, 78, 222, 0.08);
     color: rgba(255, 255, 255, 0.62);
-    font-size: 0.5rem;
+    font-size: 0.625rem;
     font-weight: 900;
     letter-spacing: 0.08em;
 }
@@ -146,7 +147,7 @@ body:has(.blocks-game) #nav-home-btn {
 .blocks-help summary {
     padding: 10px 14px;
     color: rgba(255, 255, 255, 0.68);
-    font-size: 0.58rem;
+    font-size: 0.625rem;
     font-weight: 900;
     letter-spacing: 0.12em;
     text-align: center;
@@ -164,13 +165,18 @@ body:has(.blocks-game) #nav-home-btn {
     display: grid;
     gap: 4px;
     color: rgba(255, 255, 255, 0.46);
-    font-size: 0.52rem;
+    font-size: 0.625rem;
     text-align: center;
 }
 
 .blocks-help kbd {
     color: #fff;
-    font: 800 0.52rem 'Montserrat', sans-serif;
+    font: 800 0.625rem 'Montserrat', sans-serif;
+}
+
+/* L'hint del pulsante online eredita il `smaller` del browser: 9,92px. */
+.blocks-game .minigame-online-mode-button small {
+    font-size: 0.625rem;
 }
 
 .blocks-level-select {
@@ -277,7 +283,7 @@ body:has(.blocks-game) #nav-home-btn {
     align-items: center;
     justify-content: space-between;
     color: rgba(255, 255, 255, 0.46);
-    font-size: 0.52rem;
+    font-size: 0.625rem;
     font-weight: 900;
     letter-spacing: 0.08em;
 }
@@ -344,7 +350,8 @@ body:has(.blocks-game) #nav-home-btn {
 
 .blocks-hud span {
     color: rgba(255, 255, 255, 0.44);
-    font-size: 0.52rem;
+    /* Soglia del manuale: 10px. Era 0,52rem (8,3px) fuori dal telefono. */
+    font-size: 0.625rem;
     font-weight: 900;
     letter-spacing: 0.1em;
 }
@@ -352,6 +359,10 @@ body:has(.blocks-game) #nav-home-btn {
 .blocks-hud span small {
     float: right;
     color: rgba(255, 255, 255, 0.25);
+    /* Il default `smaller` del browser portava il tasto «C» a 8,8px a 390px.
+       Ereditare la dimensione dell'etichetta evitava anche che il «C»
+       risultasse più grande del testo che lo contiene. */
+    font-size: 1em;
 }
 
 .blocks-hud strong {
@@ -454,7 +465,8 @@ body:has(.blocks-game) #nav-home-btn {
 
 .blocks-overlay > div > span {
     color: var(--amethyst-light);
-    font-size: 0.58rem;
+    /* Era 0,58rem (9,3px): sotto la soglia di leggibilità. */
+    font-size: 0.625rem;
     font-weight: 900;
     letter-spacing: 0.2em;
 }
@@ -492,7 +504,8 @@ body:has(.blocks-game) #nav-home-btn {
 
 .blocks-final-stats small {
     color: rgba(255, 255, 255, 0.38);
-    font-size: 0.47rem;
+    /* Era 0,47rem (7,5px) nell'overlay di fine partita. */
+    font-size: 0.625rem;
 }
 
 .blocks-overlay-actions {
@@ -627,7 +640,7 @@ body:has(.blocks-game) #nav-home-btn {
 
     .blocks-board-topline,
     .blocks-objective > div:first-child {
-        font-size: 0.46rem;
+        font-size: 0.625rem;
     }
 
     .blocks-touch-controls {
