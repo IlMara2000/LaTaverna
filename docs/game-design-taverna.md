@@ -92,6 +92,37 @@ Se la scheda non sta in una pagina, il gioco è troppo grande per un primo esper
 | Impostore / Numeri | leggo → parlo/indovino → verifico | i giochi sociali vivono di tempi e turni chiari, non di grafica |
 | Scacchi / Dama / Tris | valuto → muovo → l'avversario risponde | i giochi a informazione completa restano dritti: la rotazione confonderebbe la scacchiera |
 
-## 9. Come usare questo manuale
+## 9. Combattimento, duelli e stanze (lezioni Hollow Knight)
+
+Hollow Knight è il riferimento quando un gioco deve *far sentire* un colpo invece di contarlo soltanto.
+
+- **Telegrafo prima del colpo.** Ogni attacco ha un preavviso visibile (posa, colore, suono) e una finestra di reazione onesta: almeno 350 ms su telefono, di più se il colpo toglie molto.
+- **Ritmo attacco → finestra → punizione.** Dopo ogni colpo subito il giocatore deve poter dire cosa avrebbe dovuto fare. Danno senza spiegazione = frustrazione.
+- **Economia dell'aggressione.** In Hollow Knight curare costa anima, e l'anima si guadagna colpendo: la fuga non è mai la scelta migliore. Lo stesso vale per qualsiasi risorsa di cura in Taverna.
+- **Un nemico, una differenza.** Le varianti riusano lo scheletro e cambiano un solo parametro (ritmo, portata, direzione). Insegnano più di nemici nuovi e costano una frazione.
+- **La stanza insegna.** Prima la meccanica da sola, in sicurezza; poi la combinazione; poi il twist. Il boss riusa ciò che la stanza ha già insegnato.
+- **Coerenza, non prevedibilità.** Stessa mano visiva ovunque, ma il giocatore non deve capire in anticipo quando arriva il riposo o la ricompensa.
+- **Atmosfera come informazione.** Buio, suono e spazio dicono dove si è al sicuro: non sono decorazione.
+- **Picchi e respiro.** Dopo una prova dura serve una pausa, altrimenti il picco successivo non si sente.
+
+## 10. Difficoltà e accessibilità (Celeste, linee guida Xbox)
+
+- La difficoltà è soggettiva: **preset multipli** (idealmente quattro o più) e cambio **in qualsiasi momento** senza perdere progressi.
+- L'aiuto conserva il nucleo — lettura, scelte, percorso — e riduce solo la barriera meccanica: velocità più bassa, tempi più larghi, invulnerabilità. Non "il gioco gioca da solo".
+- Etichette non paternalistiche e nessun premio negato a chi usa l'aiuto.
+- Ritentare deve costare poco: riavvio immediato, checkpoint ravvicinati, animazioni di sconfitta brevi.
+- Nei duelli della Taverna questo si traduce in: livello di difficoltà dichiarato, tempo di risposta visibile, nessuna attesa fra gli scontri.
+
+## 11. Progettare un duello leggibile su un telefono
+
+1. Una sola informazione nuova per scontro: la runa avversaria, il suo tempo, il contraccolpo.
+2. Il pericolo è sempre visibile nello stesso punto dello schermo; mai sotto il pollice.
+3. Il punteggio del colpo (precisione, tempo, margine) compare **nel momento del contatto**, non dopo.
+4. Chi perde uno scambio sa perché: runa sbagliata, troppo lento, tratto impreciso — tre cause, tre messaggi diversi.
+5. La partita si chiude in meno di due minuti e la rivincita parte con un tocco.
+
+## 12. Come usare questo manuale
 
 Ogni nuova proposta di gioco parte dalla scheda del punto 3, passa la checklist del punto 5 prima di scrivere codice, e chiude con le misure del punto 6. Le decisioni nuove che funzionano si aggiungono al punto 8, così la prossima volta si parte da lì invece che da zero.
+
+Riferimenti usati per questo manuale: *The Art of Game Design* (Schell), MDA, il lavoro di Alexander Brazie sul core loop, la ricerca su juice e game feel (DiGRA 2018, IEEE ToG 2021), GMTK, Unity Learn, le analisi di Hollow Knight (Team Cherry, GameDev.net, Jason de Heras sul design dei nemici), il modello assist di Celeste e le linee guida Xbox sull'accessibilità (XAG 108).
