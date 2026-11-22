@@ -107,6 +107,17 @@ export const MINIGAMES = [
         initFn: 'initNumeri'
     },
     {
+        id: 'sigilli',
+        name: 'SIGILLI',
+        category: 'strategy',
+        icon: '✶',
+        players: '1 giocatore · duello contro l’Oste',
+        duration: '1-3 min',
+        description: 'L’Oste scaglia una runa: tracciane la controruna prima che il tempo scada. La precisione del tratto è la tua lama.',
+        color: 'linear-gradient(135deg, #2b1055, #f5dd62)',
+        initFn: 'initSigilli'
+    },
+    {
         id: 'tictactoe',
         name: 'Tic Tac Toe',
         category: 'party',

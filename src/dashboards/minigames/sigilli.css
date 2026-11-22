@@ -1,0 +1,357 @@
+/* SIGILLI — duello di rune: shell, HUD del duello, tela di tracciatura. */
+
+.sigilli-game {
+    --sigilli-border: rgba(199, 125, 255, 0.22);
+    --sigilli-panel: rgba(13, 7, 23, 0.86);
+    position: fixed;
+    inset: 0;
+    z-index: 320;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom));
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(157, 78, 222, 0.24), transparent 58%),
+        radial-gradient(ellipse at 50% 118%, rgba(245, 221, 98, 0.06), transparent 52%),
+        #07040d;
+    color: #efe5f7;
+    overflow: hidden;
+}
+
+.sigilli-game [hidden] { display: none !important; }
+
+/* La shell centra i figli: senza stretch barra, HUD, palco e piede si
+   restringono al contenuto e il piede va a capo oltre il bordo. */
+.sigilli-topbar,
+.sigilli-hud,
+.sigilli-stage,
+.sigilli-footer {
+    width: 100%;
+    align-self: stretch;
+}
+
+body:has(.sigilli-game) #navbar-trigger,
+body:has(.sigilli-game) #nav-home-btn { display: none !important; }
+
+/* --------------------------------------------------------------- barra */
+
+.sigilli-topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+}
+
+.sigilli-exit {
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+}
+
+.sigilli-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    letter-spacing: 0.18em;
+}
+
+.sigilli-brand span { color: #f5dd62; font-size: 12px; }
+
+.sigilli-icon {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--sigilli-border);
+    border-radius: 12px;
+    background: rgba(157, 78, 222, 0.12);
+    color: #efe5f7;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.sigilli-icon[aria-pressed="true"] { opacity: 0.5; }
+
+/* ----------------------------------------------------------- HUD duello */
+
+.sigilli-hud {
+    display: grid;
+    gap: 7px;
+}
+
+.sigilli-hearts {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+}
+
+.sigilli-hearts-label { color: rgba(239, 229, 247, 0.5); font-weight: 800; }
+.sigilli-hearts-label:nth-of-type(2) { margin-left: auto; }
+
+.sigilli-hearts-row { display: flex; gap: 5px; }
+
+.sigilli-heart {
+    color: rgba(239, 229, 247, 0.24);
+    font-size: 15px;
+    line-height: 1;
+}
+
+.sigilli-heart.is-full {
+    color: #f5dd62;
+    text-shadow: 0 0 10px rgba(245, 221, 98, 0.55);
+}
+
+.sigilli-cast {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    align-items: center;
+    gap: 4px 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--sigilli-border);
+    border-radius: 14px;
+    background: var(--sigilli-panel);
+}
+
+.sigilli-cast-shape {
+    width: 44px;
+    height: 44px;
+    border: 1px solid rgba(245, 221, 98, 0.28);
+    border-radius: 10px;
+    background: rgba(245, 221, 98, 0.06);
+}
+
+.sigilli-cast-copy { display: grid; gap: 2px; min-width: 0; }
+.sigilli-cast-copy strong {
+    overflow: hidden;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sigilli-cast-copy small { color: #c77dff; font-size: 10.5px; font-weight: 700; }
+
+.sigilli-timer {
+    grid-column: 1 / -1;
+    height: 6px;
+    margin-top: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.sigilli-timer i {
+    display: block;
+    height: 100%;
+    transform-origin: left center;
+    transform: scaleX(1);
+    border-radius: inherit;
+    background: linear-gradient(90deg, #9d4edd, #c77dff 55%, #f5dd62);
+}
+
+/* --------------------------------------------------------------- tela */
+
+.sigilli-stage {
+    position: relative;
+    /* La shell centra i figli: senza larghezza esplicita il palco (riempito
+       solo da figli assoluti) collassa a 0 px. */
+    width: 100%;
+    align-self: stretch;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+#sigilli-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--sigilli-border);
+    border-radius: 20px;
+    background: radial-gradient(ellipse at 50% 45%, #1a1027, #0a0611 74%);
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.sigilli-stage-hint {
+    position: absolute;
+    right: 0;
+    bottom: 10px;
+    left: 0;
+    margin: 0;
+    color: rgba(239, 229, 247, 0.42);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+}
+
+.sigilli-stage-hint.is-hidden { opacity: 0; }
+
+/* -------------------------------------------------------------- piede */
+
+.sigilli-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px 12px;
+    min-height: 22px;
+    color: rgba(239, 229, 247, 0.56);
+    font-size: 11px;
+    letter-spacing: 0.03em;
+}
+
+.sigilli-last { font-weight: 800; color: #efe5f7; }
+.sigilli-verdict b { color: #f5dd62; }
+
+/* ---------------------------------------------------- schermate modali */
+
+.sigilli-screen,
+.sigilli-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(157, 78, 222, 0.22), transparent 60%),
+        rgba(5, 2, 10, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.sigilli-card {
+    display: grid;
+    gap: 10px;
+    width: min(100%, 460px);
+    /* Con la griglia l'altezza massima non si applicava: la scheda usciva dal
+       bordo in orizzontale. In flex la percentuale ha un riferimento definito. */
+    max-height: 100%;
+    min-height: 0;
+    padding: clamp(16px, 4vw, 26px);
+    border: 1px solid rgba(199, 125, 255, 0.3);
+    border-radius: 22px;
+    background: linear-gradient(165deg, rgba(157, 78, 222, 0.14), rgba(9, 4, 16, 0.96));
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    overflow-y: auto;
+    text-align: center;
+}
+
+.sigilli-eyebrow {
+    color: #c77dff;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.2em;
+}
+
+.sigilli-card .main-title {
+    margin: 0;
+    font-size: clamp(1.7rem, 8vw, 2.3rem);
+}
+
+.sigilli-card .main-title em {
+    display: block;
+    margin-top: 4px;
+    color: rgba(239, 229, 247, 0.5);
+    font-size: 0.42em;
+    font-style: normal;
+    letter-spacing: 0.12em;
+}
+
+.sigilli-intro {
+    margin: 0;
+    color: rgba(239, 229, 247, 0.62);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.sigilli-legend {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.sigilli-rune-card {
+    display: grid;
+    gap: 2px;
+    padding: 8px 4px;
+    border: 1px solid rgba(199, 125, 255, 0.18);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.sigilli-rune-card b { color: #f5dd62; font-size: 18px; line-height: 1; }
+.sigilli-rune-card em { font-size: 11px; font-style: normal; font-weight: 800; letter-spacing: 0.04em; }
+.sigilli-rune-card small { color: rgba(239, 229, 247, 0.5); font-size: 10px; }
+
+.sigilli-levels { min-height: 0; }
+
+.sigilli-start {
+    min-height: 46px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+}
+
+.sigilli-quiet {
+    min-height: 40px;
+    border: 0;
+    background: transparent;
+    color: rgba(239, 229, 247, 0.5);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+
+.sigilli-quiet:hover { color: #efe5f7; }
+
+.sigilli-over-title {
+    margin: 0;
+    font-family: Georgia, serif;
+    font-size: clamp(1.5rem, 7vw, 2rem);
+    color: #f5dd62;
+}
+
+.sigilli-over-copy {
+    margin: 0;
+    color: rgba(239, 229, 247, 0.68);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* ------------------------------------------------------- schermi bassi */
+
+@media (max-height: 520px) {
+    .sigilli-game { gap: 6px; padding: 7px 10px; }
+    /* I comandi restano sopra i 40 px anche in orizzontale: la regola del
+       manuale vale a ogni altezza. */
+    .sigilli-topbar { min-height: 40px; }
+    .sigilli-exit, .sigilli-icon { min-height: 40px; height: 40px; }
+    .sigilli-cast { grid-template-columns: 40px 1fr; padding: 6px 8px; }
+    .sigilli-cast-shape { width: 36px; height: 36px; }
+    .sigilli-stage-hint { bottom: 6px; }
+
+    /* In orizzontale la scheda deve entrare senza scroll: il pulsante di avvio
+       non può finire sotto il bordo. */
+    .sigilli-card { gap: 6px; padding: 10px 12px; }
+    .sigilli-card .main-title { font-size: 1.4rem; }
+    .sigilli-card .main-title em { font-size: 0.36em; }
+    .sigilli-intro { font-size: 11px; line-height: 1.35; }
+    .sigilli-rune-card { padding: 4px 2px; }
+    .sigilli-rune-card b { font-size: 15px; }
+    .sigilli-start { min-height: 44px; }
+    .sigilli-quiet { min-height: 40px; }
+    .sigilli-levels { max-height: 78px; overflow-y: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sigilli-stage-hint { transition: none; }
+}
