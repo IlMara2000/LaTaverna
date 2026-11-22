@@ -159,10 +159,17 @@
 /* Mulligan sul telefono: la mano finiva sotto la piega, dopo campo, riserva e
    diario, quindi si sceglieva se tenere o rimescolare senza vedere le carte.
    Qui la schermata diventa alta quanto lo schermo: hud compatto, pannello con i
-   due pulsanti, poi le sette carte in griglia 4 + 3, tutte visibili insieme. */
-@media (max-width: 560px) {
+   due pulsanti, poi le sette carte in griglia 4 + 3, tutte visibili insieme.
+   Vale anche per il telefono in orizzontale: a 844×390 la pagina non scorre
+   (body overflow hidden) e i pulsanti del mulligan finivano sotto il bordo,
+   quindi la mano non si poteva né tenere né rimescolare. */
+@media (max-width: 560px), (orientation: landscape) and (max-height: 520px) {
     body:has(.magic-play .mp-mulligan) { overflow: hidden; }
     .magic-play:has(.mp-mulligan) {
+        /* flex: la pagina riempie il contenitore. Con la sola block-size 100dvh
+           in orizzontale restava alta quanto il suo contenuto (262 px) e la
+           mano finiva in 7 px. */
+        flex: 1 1 auto; min-block-size: 0;
         block-size: 100dvh; max-block-size: 100dvh; overflow: hidden;
         gap: 8px; padding-block: 10px 10px; padding-bottom: 10px;
     }
@@ -195,6 +202,28 @@
         display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
     }
     .magic-play:has(.mp-mulligan) .mp-hand-card .mp-small { min-block-size: 30px; padding: 4px 6px; font-size: .66rem; }
+}
+
+/* Mulligan su telefono in orizzontale: il contenitore lascia 262 px utili
+   (16 px di padding in alto, 112 in fondo), troppo pochi per hud, pannello e
+   sette carte in colonna. Qui il pannello va a sinistra, la mano a destra:
+   i due pulsanti e le carte stanno insieme senza scorrere la pagina. */
+@media (orientation: landscape) and (max-height: 520px) {
+    .magic-play:has(.mp-mulligan) .mp-hud { display: none; }
+    .magic-play:has(.mp-mulligan) > .mp-table {
+        display: grid;
+        grid-template-columns: minmax(240px, 36%) minmax(0, 1fr);
+        align-items: start;
+        gap: 8px;
+    }
+    .magic-play:has(.mp-mulligan) .mp-hand {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        gap: 6px;
+        align-content: start;
+        max-block-size: 100%;
+        overflow-y: auto;
+    }
 }
 
 @media (max-width: 640px) {
