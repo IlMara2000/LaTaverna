@@ -7,13 +7,15 @@ import {
 } from '../services/minigameMultiplayer.js';
 import { canPayMana, emptyManaPool, isManaSource, manaAbilityOptions, manaPoolLabel, manaProductionOptions, payMana } from './magicRules.js';
 import {
-    MATCH_RULES, PHASE_LABEL, adjustLife, advancePhase, castSpell, concedeMatch, createMatch,
-    activateAbility, castResponse, declareAttackers, declareBlockers, discardCards, mulliganAction, passTurn,
-    playLand, powerOf, resolveCombat, tapMana, toughnessOf
+    MATCH_RULES, PHASE_LABEL, adjustLife, concedeMatch, discardCards, mulliganAction,
+    playLand, powerOf, tapMana, toughnessOf
 } from './magicMatchEngine.js';
 import { abilityLabel, parseCardAbilities, textSupport } from './magicEffects.js';
 import { showMatchTable } from '../match/table.js';
 import { viewFor } from './magic/engine/view.js';
+import { applyAction } from './magic/engine/actions.js';
+import { createEngineMatch, isEngineState, passPriority, withEngine } from './magic/engine/turn.js';
+import { stepOf } from './magic/engine/state.js';
 import { enterImmersive } from '../match/immersive.js';
 import './magicPlay.css';
 
@@ -141,9 +143,20 @@ export function showMagicPlay(container, options = {}) {
     const nameOf = id => (id === clientId ? 'Tu' : (gameState()?.playerNames?.[id] || label(id)));
     const gameState = () => state();
     const myData = () => gameState()?.playersData?.[clientId] || null;
+    // Chi può agire non è (più) solo chi ha il turno: con lo stack la priorità
+    // passa, e una scelta in sospeso vale come una mossa da fare. Il tavolo usa
+    // questa per abilitare i pulsanti, `activePlayer` per dire a chi tocca.
     const isMyTurn = () => {
         const current = gameState();
-        return Boolean(current && !current.mulliganActive && !current.winner && current.activePlayer === clientId);
+        if (!current || current.mulliganActive || current.winner) return false;
+        if (current.pendingChoice) return current.pendingChoice.playerId === clientId;
+        if (current.priority) return current.priority.playerId === clientId;
+        return current.activePlayer === clientId;
+    };
+    const myPriority = () => {
+        const current = gameState();
+        if (!current?.priority) return Boolean(current && !current.winner && current.activePlayer === clientId);
+        return current.priority.playerId === clientId;
     };
     // Due tipi di avviso: 'move' è l'esito di un tentativo (mana insufficiente,
     // carta non giocabile, partita cambiata) e sparisce da solo dopo qualche
@@ -238,7 +251,10 @@ export function showMagicPlay(container, options = {}) {
             if (busy || disposed || !localGame) return false;
             busy = true;
             try {
-                const next = updater(structuredClone(localGame));
+                // Una partita salvata prima dello strato M1 si aggiorna alla prima
+                // mossa: così il tavolo non resta con metà motore.
+                const base = isEngineState(localGame) ? localGame : withEngine(localGame);
+                const next = autoPassIfIdle(updater(structuredClone(base)), clientId);
                 next.revision = (localGame.revision || 0) + 1;
                 localGame = next;
                 // La mossa è passata: l'avviso del tentativo precedente non serve più.
@@ -270,9 +286,10 @@ export function showMagicPlay(container, options = {}) {
             const result = await updateMinigameRoomData(room.code, data => {
                 const current = data.magic?.game;
                 if (!current) throw new Error('La partita non è più attiva.');
+                const base = isEngineState(current) ? current : withEngine(current);
                 let next;
                 try {
-                    next = updater(structuredClone(current));
+                    next = updater(structuredClone(base));
                 } catch (error) {
                     engineRejected = true;
                     throw error;
@@ -295,6 +312,109 @@ export function showMagicPlay(container, options = {}) {
         } finally {
             busy = false;
         }
+    }
+
+    /* ── priorità, stack e passaggi automatici ────────────────────────────
+       Ogni pulsante del tavolo è una mossa tipizzata (engine/actions.js): il
+       motore decide se è legale, l'interfaccia non la esegue da sola. Gli
+       aiuti qui sotto tengono l'esperienza di prima — un tocco per chiudere il
+       turno, nessun tocco per lasciar risolvere una magia — senza scavalcare
+       priorità e stack. */
+
+    /** La mossa con il mio identificativo, applicata allo stato più recente. */
+    const doAction = (current, action) => applyAction(current, { ...action, playerId: clientId });
+
+    const safePass = (state, id) => {
+        try { return passPriority(state, id); } catch { return state; }
+    };
+
+    /**
+     * Passa la priorità di tutti gli altri, una volta ciascuno: chiudere il turno
+     * o svuotare lo stack. Dopo il passaggio di un altro la priorità torna al
+     * giocatore attivo, quindi senza questo limite si passerebbe anche i passi
+     * che quello stesso giocatore deve ancora giocare.
+     */
+    function passForOthers(current, me) {
+        let state = current;
+        const passati = new Set();
+        for (let guard = 0; guard < 8; guard += 1) {
+            const holder = state.priority?.playerId;
+            if (!holder || holder === me || passati.has(holder)) break;
+            passati.add(holder);
+            try { state = passPriority(state, holder); } catch { break; }
+        }
+        return state;
+    }
+
+    /** Il lancio va sullo stack e cede subito la priorità: si può rispondere. */
+    function castWithPriority(current, { uid, mode = null } = {}) {
+        const target = container.querySelector('#play-target')?.value || chosenTarget || '';
+        let state = doAction(current, { type: 'castToStack', uid, mode, target });
+        if (state.priority?.playerId === clientId) state = safePass(state, clientId);
+        return state;
+    }
+
+    /**
+     * Fuori dal proprio turno la priorità non deve diventare un tocco in più:
+     * se il giocatore non ha una magia da giocare né blocchi da assegnare, si
+     * passa da soli (è quello che fa l'Arena). Le due eccezioni sono i blocchi —
+     * una decisione del difensore — e una risposta che il giocatore può davvero
+     * lanciare: lì il tavolo aspetta lui.
+     */
+    function autoPassIfIdle(current, id) {
+        const state = current;
+        if (!state || state.winner || state.mulliganActive || state.pendingChoice) return state;
+        if (state.activePlayer === id) return state;
+        if (state.priority?.playerId !== id) return state;
+        if (state.step === 'declareBlockers' && state.combat?.defender === id && !state.combat?.blockersDeclared) {
+            // I blocchi sono una scelta del difensore, ma solo se c'è qualcosa da
+            // scegliere: senza attaccanti o senza creature stappate non c'è nulla
+            // da decidere e il passo va avanti da solo.
+            const attaccanti = (state.combat?.attackerIds || []).length;
+            const puoBloccare = (state.playersData?.[id]?.battlefield || []).some(card => isCreature(card) && !card.tapped);
+            if (attaccanti && puoBloccare) return state;
+        }
+        const canAct = (state.playersData?.[id]?.hand || []).some(card => {
+            if (/\bland\b/i.test(String(card?.typeLine || ''))) return false;
+            try {
+                applyAction(structuredClone(state), { type: 'castToStack', playerId: id, uid: card.uid });
+                return true;
+            } catch { return false; }
+        });
+        return canAct ? state : safePass(state, id);
+    }
+
+    /**
+     * «Passa il turno» del tavolo: attraversa i passi lasciando passare tutti e
+     * si ferma dove serve una decisione vera — una scelta in sospeso, una
+     * creatura pronta da mandare all'attacco (primo tocco), una magia sullo
+     * stack che deve ancora risolvere. Lo stack lo lascia svuotare: chi ha
+     * lanciato ha già dato la possibilità di rispondere.
+     */
+    /** Le creature che possono davvero attaccare adesso. */
+    const readyAttackers = state => (state.playersData?.[clientId]?.battlefield || [])
+        .filter(card => isCreature(card) && !card.tapped && !card.summoningSick && !/\bdefender\b/i.test(String(card.oracleText || '')));
+
+    function passTurnEngine(current, { skipCombat = false } = {}) {
+        let state = current;
+        const attaccoDaScegliere = () => !skipCombat && stepOf(state) === 'declareAttackers' && readyAttackers(state).length > 0;
+        for (let guard = 0; guard < 40; guard += 1) {
+            if (state.winner || state.mulliganActive || state.pendingChoice) break;
+            if (state.activePlayer !== clientId) break;
+            if (attaccoDaScegliere()) break; // il pannello mostra chi può attaccare
+            if ((state.stack || []).length) {
+                state = passForOthers(state, clientId);
+                if ((state.stack || []).length) break; // qualcuno deve rispondere
+                continue;
+            }
+            // Il passaggio degli altri può chiudere il passo: allora il giro dopo
+            // decide se fermarsi (attaccanti pronti, scelta in sospeso, stack).
+            const dopoAltri = passForOthers(state, clientId);
+            if (dopoAltri !== state) { state = dopoAltri; continue; }
+            state = safePass(state, clientId);
+            if (state.activePlayer !== clientId) break;
+        }
+        return state;
     }
 
     function refreshRoom(next) {
@@ -426,7 +546,7 @@ export function showMagicPlay(container, options = {}) {
         await enterImmersive(document.documentElement);
         setNotice('Distribuisco le carte…');
         try {
-            const match = createMatch({
+            const match = createEngineMatch({
                 players: order.map(id => ({ id, name: `Giocatore ${order.indexOf(id) + 1}`, cards: ready[id].cards, commanders: ready[id].commanders || [] }))
             });
             const result = await updateMinigameRoomData(room.code, data => ({
@@ -512,130 +632,165 @@ export function showMagicPlay(container, options = {}) {
             if (!current.playersData?.[BOT_ID]?.keptHand) botTimer = setTimeout(() => botMulliganChoice(), 350);
             return;
         }
-        // In attesa dei blocchi: li dichiara il bot se è lui il difensore,
-        // altrimenti si aspetta la mossa del giocatore senza fare polling.
-        if (current.phase === 'combat' && current.combat?.step === 'blockers') {
-            if (current.combat.defender === BOT_ID) botTimer = setTimeout(() => botBlock(), 350);
-            return;
-        }
-        // Un turno da finire, anche ripreso dopo che il giocatore ha dichiarato i blocchi.
-        if (current.activePlayer === BOT_ID) botTimer = setTimeout(() => botTurn(), 450);
+        if (botToMove()) botTimer = setTimeout(() => botMove(), 380);
     }
 
-    function botBlock() {
-        if (!botMode || disposed || busy) return;
-        try {
-            const current = structuredClone(localGame);
-            const combat = current.combat;
-            const defenderData = current.playersData[BOT_ID];
-            const blockerCandidates = defenderData.battlefield.filter(card => isCreature(card) && !card.tapped);
-            const assignments = {};
-            const used = new Set();
-            const attackers = (combat.attackerIds || []).map(uid => {
-                const ownerId = current.players.find(id => (current.playersData[id]?.battlefield || []).some(card => idOf(card) === uid));
-                const card = ownerId ? (current.playersData[ownerId]?.battlefield || []).find(item => idOf(item) === uid) : null;
-                return { uid, card };
-            });
-            for (const att of attackers) {
-                if (!att.card) continue;
-                let best = null;
-                for (const blk of blockerCandidates) {
-                    if (used.has(idOf(blk))) continue;
-                    const blkTough = toughnessOf(blk);
-                    const attPow = powerOf(att.card);
-                    const blkPow = powerOf(blk);
-                    const attTough = toughnessOf(att.card);
-                    if (blkTough > attPow || blkPow >= attTough) {
-                        if (!best || powerOf(blk) < powerOf(best)) best = blk;
-                    }
-                }
-                if (best) {
-                    assignments[att.uid] = idOf(best);
-                    used.add(idOf(best));
-                }
-            }
-            const next = declareBlockers(current, BOT_ID, assignments);
-            next.revision = (localGame.revision || 0) + 1;
-            localGame = next;
-            render();
-            scheduleBotIfNeeded();
-        } catch (error) { setNotice(error.message || 'Blocco bot non riuscito.'); }
-    }
-
-    // Il turno del bot è una macchina a stati: si ferma quando serve una mossa del
-    // giocatore (i blocchi) e riparte da dove era, invece di rifare tutto da capo.
+    // ── il bot ──────────────────────────────────────────────────────────
+    // Con stack e priorità il bot non ha più un «turno» da percorrere in un
+    // ciclo: ha un diritto di parola, e ogni timer fa una sola mossa — la stessa
+    // che farebbe il giocatore, con una mossa tipizzata.
     const BOT_ID = 'bot';
 
-    // Tappa le fonti di mana (terre, artefatti, creature) che aiutano a lanciare
-    // le magie in mano: preferisce le fonti non-creatura, per non sprecare un
-    // attaccante, e tappa solo se serve davvero mana per una magia non lanciabile.
-    function botTapManaSources(current) {
-        let next = current;
-        for (let outer = 0; outer < 12; outer += 1) {
-            const player = next.playersData[BOT_ID];
-            const uncastable = player.hand.filter(card => !isLand(card) && !canPayMana(player.manaPool, card.manaCost || ''));
-            if (!uncastable.length) break;
-            const hasHaste = card => (card?.keywords || []).some(k => String(k).toLowerCase() === 'haste') || /\bhaste\b/i.test(card?.oracleText || '');
-            const usable = card => isManaSource(card, player.colorIdentity || [])
-                && !card.tapped
-                && !(isCreature(card) && card.summoningSick && !hasHaste(card));
-            const candidates = player.battlefield
-                .filter(card => usable(card))
-                .sort((a, b) => (isCreature(a) ? 1 : 0) - (isCreature(b) ? 1 : 0));
-            let tapped = false;
-            for (const source of candidates) {
-                const abilities = manaAbilityOptions(source, player.colorIdentity || []);
-                const options = manaProductionOptions(source, player.colorIdentity || []);
-                if (!abilities.length || !options.length) continue;
-                // Simula il tap prima di farlo davvero: evita di sprecare una fonte.
-                let helpful = false;
-                for (let i = 0; i < options.length; i += 1) {
-                    const paid = payMana(player.manaPool, abilities[i].cost);
-                    if (!paid) continue;
-                    const simulated = { ...paid };
-                    for (const color of options[i]) simulated[color] = (simulated[color] || 0) + 1;
-                    if (uncastable.some(card => canPayMana(simulated, card.manaCost || ''))) { helpful = true; break; }
-                }
-                if (!helpful) continue;
-                try {
-                    next = tapMana(next, BOT_ID, idOf(source), 'auto');
-                    tapped = true;
-                    break;
-                } catch { /* fonte già tappata o non attivabile */ }
-            }
-            if (!tapped) break;
-        }
-        return next;
+    const safePassBot = state => {
+        try { return passPriority(state, BOT_ID); } catch { return state; }
+    };
+
+    /** Il bot ha una priorità o una scelta da fare adesso? */
+    function botToMove() {
+        const current = localGame;
+        if (!current || current.winner || current.mulliganActive) return false;
+        if (current.pendingChoice) return current.pendingChoice.playerId === BOT_ID;
+        return current.priority?.playerId === BOT_ID;
     }
 
-    function botPlayLandAndSpells(current) {
-        let next = current;
-        const player = () => next.playersData[BOT_ID];
+    /** L'istantaneo che il bot può davvero lanciare adesso, se ce n'è uno. */
+    function botResponseCard(state) {
+        const player = state.playersData?.[BOT_ID];
+        return (player?.hand || []).find(card => {
+            if (isLand(card)) return false;
+            const instant = /\binstant\b/i.test(String(card.typeLine || '')) || /\bflash\b/i.test(String(card.oracleText || ''));
+            if (!instant) return false;
+            try {
+                applyAction(structuredClone(state), { type: 'castToStack', playerId: BOT_ID, uid: card.uid });
+                return true;
+            } catch { return false; }
+        }) || null;
+    }
+
+    /** Una terra e una magia per volta: dopo il lancio la priorità va all'avversario. */
+    function botPlayOne(current) {
+        let state = current;
+        const player = () => state.playersData[BOT_ID];
         if (player().landsPlayed < 1) {
-            const landCard = player().hand.find(isLand);
-            if (landCard) { try { next = playLand(next, BOT_ID, landCard.uid); } catch { /* terra non giocabile */ } }
+            const land = player().hand.find(isLand);
+            if (land) { try { state = playLand(state, BOT_ID, land.uid); } catch { /* terra non giocabile */ } }
         }
-        // Attiva le abilità di mana disponibili prima di lanciare, per sfruttare
-        // anche artefatti e creature mana, non solo le terre.
-        next = botTapManaSources(next);
-        // Lancia prima i comandanti dalla zona di comando, se possibile.
-        for (let guard = 0; guard < 4; guard += 1) {
-            const cmd = (player().commandZone || [])[0];
-            if (!cmd) break;
-            try { next = castSpell(next, BOT_ID, cmd.uid, ''); } catch { break; }
-            next = botTapManaSources(next);
+        const candidates = player().hand
+            .filter(card => !isLand(card))
+            .sort((a, b) => (Number(b.cmc) || 0) - (Number(a.cmc) || 0));
+        for (const card of candidates) {
+            try {
+                const cast = applyAction(state, { type: 'castToStack', playerId: BOT_ID, uid: card.uid, target: '' });
+                return safePassBot(cast);
+            } catch { /* non pagabile o fase sbagliata */ }
         }
-        // Dal costo più alto al più basso: sfrutta tutta la mana disponibile.
-        for (let guard = 0; guard < 12; guard += 1) {
-            const candidates = player().hand
-                .filter(card => !isLand(card))
-                .sort((a, b) => (Number(b.cmc) || 0) - (Number(a.cmc) || 0));
-            const castable = candidates.find(card => {
-                try { next = castSpell(next, BOT_ID, card.uid, ''); return true; } catch { return false; }
-            });
-            if (!castable) break;
+        const commander = (player().commandZone || [])[0];
+        if (commander) {
+            try {
+                return safePassBot(applyAction(state, { type: 'castToStack', playerId: BOT_ID, uid: commander.uid }));
+            } catch { /* pedaggio non pagabile */ }
         }
-        return next;
+        return state;
+    }
+
+    /** Blocchi del bot: una creatura per attaccante, poi cede la priorità. */
+    function botBlock(state) {
+        const defender = state.playersData[BOT_ID];
+        const blockers = (defender?.battlefield || []).filter(card => isCreature(card) && !card.tapped);
+        const assignments = {};
+        const used = new Set();
+        for (const uid of state.combat?.attackerIds || []) {
+            const ownerId = state.players.find(id => (state.playersData[id]?.battlefield || []).some(card => idOf(card) === uid));
+            const attacker = ownerId ? (state.playersData[ownerId]?.battlefield || []).find(card => idOf(card) === uid) : null;
+            if (!attacker) continue;
+            let best = null;
+            for (const blocker of blockers) {
+                if (used.has(idOf(blocker))) continue;
+                // Blocca solo se sopravvive o se uccide: perdere una creatura per
+                // niente è peggio che prendere il danno.
+                if (toughnessOf(blocker) > powerOf(attacker) || powerOf(blocker) >= toughnessOf(attacker)) {
+                    if (!best || powerOf(blocker) < powerOf(best)) best = blocker;
+                }
+            }
+            if (best) { assignments[uid] = [idOf(best)]; used.add(idOf(best)); }
+        }
+        try {
+            return safePassBot(applyAction(state, { type: 'declareBlockers', playerId: BOT_ID, blockers: assignments }));
+        } catch { return safePassBot(state); }
+    }
+
+    /** La scelta in sospeso del bot: scarto o ordine dei bloccanti. */
+    function botChoice(choice) {
+        if (choice.kind !== 'discard') return choice.options.map(option => option.id);
+        const hand = localGame?.playersData?.[BOT_ID]?.hand || [];
+        return [...hand]
+            .sort((a, b) => (isLand(b) ? 1 : 0) - (isLand(a) ? 1 : 0) || (Number(a.cmc) || 0) - (Number(b.cmc) || 0))
+            .slice(0, choice.max)
+            .map(card => card.uid);
+    }
+
+    /** Una sola decisione per volta, letta dallo stato: priorità e passi veri. */
+    function botTakePriority(state) {
+        const step = stepOf(state);
+        const mine = state.activePlayer === BOT_ID;
+        if ((state.stack || []).length) {
+            // Risponde solo a una magia altrui, e solo se ha un istantaneo.
+            if (!state.stack.some(item => item.controllerId === BOT_ID)) {
+                const response = botResponseCard(state);
+                if (response) {
+                    try { return safePassBot(applyAction(state, { type: 'castToStack', playerId: BOT_ID, uid: response.uid })); } catch { /* non pagabile */ }
+                }
+            }
+            return safePassBot(state);
+        }
+        if (!mine) return safePassBot(state);
+        if (step === 'main1' || step === 'main2') {
+            const after = botPlayOne(state);
+            if (after === state) return safePassBot(state);
+            return after.priority?.playerId === BOT_ID ? safePassBot(after) : after;
+        }
+        if (step === 'declareAttackers') {
+            const ready = (state.playersData[BOT_ID]?.battlefield || [])
+                .filter(card => isCreature(card) && !card.tapped && !card.summoningSick && !/\bdefender\b/i.test(String(card.oracleText || '')))
+                .map(idOf);
+            const opponent = state.players.find(id => id !== BOT_ID && !state.playersData[id]?.eliminated) || '';
+            try {
+                return safePassBot(applyAction(state, { type: 'declareAttackers', playerId: BOT_ID, uids: ready, defender: opponent }));
+            } catch { return safePassBot(state); }
+        }
+        if (step === 'declareBlockers' && state.combat?.defender === BOT_ID && !state.combat.blockersDeclared) {
+            return botBlock(state);
+        }
+        return safePassBot(state);
+    }
+
+    /** Un passo del bot per volta: la catena riparte dal timer finché serve. */
+    function botMove() {
+        if (!botMode || disposed || !localGame) return;
+        botTimer = null;
+        // Una mossa del giocatore può essere a metà scrittura: si riprova invece
+        // di lasciare il tavolo fermo sulla priorità del bot.
+        if (busy) { scheduleBotIfNeeded(); return; }
+        busy = true;
+        try {
+            let state = structuredClone(localGame);
+            if (state.pendingChoice?.playerId === BOT_ID) {
+                state = applyAction(state, { type: 'choose', playerId: BOT_ID, selection: botChoice(state.pendingChoice) });
+            } else if (state.priority?.playerId === BOT_ID) {
+                state = botTakePriority(state);
+            }
+            // Se la palla passa al giocatore e lui non ha risposte, il tavolo non
+            // deve aspettare un tocco: si passa da soli, come fa l'Arena.
+            state = autoPassIfIdle(state, clientId);
+            state.revision = (localGame.revision || 0) + 1;
+            localGame = state;
+            render();
+        } catch (error) {
+            setNotice(error.message || 'Mossa del bot non riuscita.');
+        } finally {
+            busy = false;
+            if (botMode) scheduleBotIfNeeded();
+        }
     }
 
     function botMulliganChoice() {
@@ -668,71 +823,6 @@ export function showMagicPlay(container, options = {}) {
         scheduleBotIfNeeded();
     }
 
-    function botTurn() {
-        if (!botMode || disposed || !localGame) return;
-        busy = true;
-        try {
-            let current = structuredClone(localGame);
-            if (current.mulliganActive || current.winner || current.activePlayer !== BOT_ID) {
-                busy = false;
-                scheduleBotIfNeeded();
-                return;
-            }
-            for (let guard = 0; guard < 6 && current.activePlayer === BOT_ID && !current.winner; guard += 1) {
-                if (current.phase === 'main1' || current.phase === 'main2') {
-                    current = botPlayLandAndSpells(current);
-                    current = advancePhase(current, BOT_ID);
-                    continue;
-                }
-                if (current.phase === 'combat') {
-                    if (!current.combat) {
-                        const attackers = current.playersData[BOT_ID].battlefield
-                            .filter(card => isCreature(card) && !card.tapped && !card.summoningSick)
-                            .map(card => idOf(card));
-                        const opponents = current.players.filter(id => id !== BOT_ID && !current.playersData[id]?.eliminated);
-                        try { current = declareAttackers(current, BOT_ID, attackers, opponents[0] || ''); }
-                        catch { current = advancePhase(current, BOT_ID); }
-                        continue;
-                    }
-                    // Gli attaccanti aspettano i blocchi del giocatore: si riprende dopo.
-                    if (current.combat.step === 'blockers') break;
-                    if (current.combat.step === 'damage') {
-                        current = resolveCombat(current, BOT_ID);
-                        if (current.winner) break;
-                        // Il danno segnato va reso visibile: proseguendo nello stesso
-                        // ciclo, la pulizia di inizio turno lo azzerava prima del
-                        // render e l'animazione sulla carta non partiva mai.
-                        break;
-                    }
-                    current = advancePhase(current, BOT_ID);
-                    continue;
-                }
-                if (current.phase === 'end') {
-                    const hand = current.playersData[BOT_ID].hand;
-                    const overflow = hand.length - 7;
-                    if (overflow > 0) {
-                        // Scarta prima le terre di troppo, poi le carte più economiche.
-                        const uids = [...hand]
-                            .sort((a, b) => (isLand(b) ? 1 : 0) - (isLand(a) ? 1 : 0) || (Number(a.cmc) || 0) - (Number(b.cmc) || 0))
-                            .slice(0, overflow)
-                            .map(card => card.uid);
-                        try { current = discardCards(current, BOT_ID, uids); } catch { /* scarto non necessario */ }
-                    }
-                    current = advancePhase(current, BOT_ID);
-                    continue;
-                }
-                break;
-            }
-            current.revision = (localGame.revision || 0) + 1;
-            localGame = current;
-            render();
-        } catch (error) {
-            setNotice(error.message || 'Turno bot non riuscito.');
-        } finally {
-            busy = false;
-            scheduleBotIfNeeded();
-        }
-    }
 
     async function startBotMatch() {
         if (busy) return;
@@ -746,7 +836,7 @@ export function showMagicPlay(container, options = {}) {
         try {
             const cards = await hydrateCards(deckCards(deck));
             const commanderCards = deck?.commanders?.length ? await hydrateCards(deck.commanders.map(id => collection.get(String(id))).filter(Boolean)) : [];
-            const match = createMatch({
+            const match = createEngineMatch({
                 players: [
                     { id: clientId, name: 'Tu', cards: structuredClone(cards), commanders: structuredClone(commanderCards) },
                     { id: BOT_ID, name: 'Bot', cards: structuredClone(cards), commanders: structuredClone(commanderCards) }
@@ -790,16 +880,32 @@ export function showMagicPlay(container, options = {}) {
     };
 
     function phaseButton(player) {
-        if (!isMyTurn()) return '';
+        // «Passa il turno» è di chi ha il turno, non di chi ha solo la parola:
+        // il difensore ha la priorità ma non può chiudere il turno altrui.
+        if (gameState().activePlayer !== clientId || !isMyTurn() || gameState().pendingChoice) return '';
         // Con la mano oltre sette carte il turno non si chiude: prima si scarta.
         if (gameState().pendingDiscard && player.hand.length > MATCH_RULES.openingHand) return '';
         // Un solo pulsante, ma il combattimento è una scelta: quando ci sono
         // creature pronte il motore si ferma lì e mostra chi attacca; il secondo
-        // tocco («Non attaccare») chiude il turno. Le altre fasi le attraversa
-        // il motore, non l'utente.
-        const inCombat = gameState().phase === 'combat' && !gameState().combat;
+        // tocco («Non attaccare») attraversa il passo. Gli altri passi li
+        // attraversa il motore, non l'utente.
+        const inCombat = stepOf(gameState()) === 'declareAttackers';
         return `<button type="button" class="mp-button" data-phase="next"${inCombat ? ' data-skip-combat="1"' : ''}>${inCombat ? 'Non attaccare' : 'Passa il turno'}</button>`;
     }
+
+    // Con qualcosa sullo stack, o con i blocchi già dichiarati, il passo avanza
+    // solo se tutti passano: il pulsante lo dice invece di lasciare il tavolo
+    // fermo senza spiegazione.
+    const priorityButton = () => {
+        const current = gameState();
+        if (!current || current.winner || current.pendingChoice) return '';
+        if (!myPriority()) return '';
+        const waiting = (current.stack || []).length > 0
+            || (current.step === 'declareBlockers' && current.combat?.blockersDeclared)
+            || current.activePlayer !== clientId;
+        if (!waiting) return '';
+        return '<button type="button" class="mp-button mp-soft" data-pass-priority>Passa la priorità</button>';
+    };
 
     function boardCard(card, mine) {
         const power = powerOf(card);
@@ -904,6 +1010,8 @@ export function showMagicPlay(container, options = {}) {
         if (current.phase !== 'combat') return '';
         const mine = myData();
         if (!current.combat) {
+            // Il passo degli attaccanti è uno solo: prima si passa la priorità.
+            if (stepOf(current) === 'beginCombat') return `<section class="mp-combat"><span class="mp-overline">COMBATTIMENTO</span><p>Inizio del combattimento.</p></section>`;
             // Chi non sta attaccando aspetta: il pannello dei blocchi arriva dopo
             // la dichiarazione degli attaccanti.
             if (!isMyTurn()) return `<section class="mp-combat"><span class="mp-overline">COMBATTIMENTO</span><p>L’avversario sta scegliendo gli attaccanti.</p></section>`;
@@ -917,6 +1025,12 @@ export function showMagicPlay(container, options = {}) {
             </section>`;
         }
         if (current.combat.step === 'blockers') {
+            if (current.combat.blockersDeclared) {
+                return `<section class="mp-combat"><span class="mp-overline">BLOCCHI DICHIARATI</span>
+                    <p>Il danno è simultaneo: si risolve quando tutti passano la priorità.</p>
+                    <button type="button" class="mp-button" data-resolve-combat>Risolvi il danno</button>
+                </section>`;
+            }
             if (current.combat.defender !== clientId) {
                 return `<section class="mp-combat"><span class="mp-overline">IN ATTESA DEI BLOCCHI</span><p>${esc(nameOf(current.combat.defender))} sta scegliendo i bloccanti.</p></section>`;
             }
@@ -932,7 +1046,7 @@ export function showMagicPlay(container, options = {}) {
             </section>`;
         }
         if (current.combat.step === 'damage') {
-            if (current.activePlayer !== clientId) return `<section class="mp-combat"><span class="mp-overline">DANNO DA COMBATTIMENTO</span><p>In attesa che ${esc(nameOf(current.activePlayer))} risolva il danno.</p></section>`;
+            if (!myPriority()) return `<section class="mp-combat"><span class="mp-overline">DANNO DA COMBATTIMENTO</span><p>In attesa che ${esc(nameOf(current.priority?.playerId || current.activePlayer))} passi la priorità: il danno è simultaneo.</p></section>`;
             return `<section class="mp-combat"><span class="mp-overline">DANNO DA COMBATTIMENTO</span><p>${current.combat.blockers && Object.keys(current.combat.blockers).length ? 'I blocchi sono dichiarati.' : 'Nessun blocco.'} Il danno è simultaneo.</p><button type="button" class="mp-button" data-resolve-combat>Risolvi il danno</button></section>`;
         }
         return '';
@@ -1216,12 +1330,12 @@ export function showMagicPlay(container, options = {}) {
         const commanderButtons = (mine.commandZone || []).map(card => {
             const tax = (mine.commanderCasts?.[card.uid] || 0) * 2;
             const cost = tax > 0 ? `${card.manaCost || ''} +${tax}` : (card.manaCost || '');
-            const canCast = isMyTurn() && ['main1', 'main2'].includes(current.phase);
+            const canCast = isMyTurn() && current.activePlayer === clientId && ['main1', 'main2'].includes(current.phase);
             return `<button type="button" class="mp-small mp-commander-cast" data-cast-commander="${esc(card.uid)}" ${canCast ? '' : 'disabled'}>Comandante · ${esc(card.name)} <small>${renderCardSymbols(cost)}</small></button>`;
         }).join('');
         // «Passa il turno» apre la barra: resta visibile anche quando il resto
         // dei controlli va in scorrimento.
-        return `<div class="mp-toolbar">${phaseButton(mine)}${commanderButtons}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave title="Lascia il tavolo">Lascia</button></div>
+        return `<div class="mp-toolbar">${phaseButton(mine)}${priorityButton()}${commanderButtons}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave title="Lascia il tavolo">Lascia</button></div>
             <div class="mp-mana"><span class="mp-mana__pool" title="${esc(`Riserva: ${manaPoolLabel(mine.manaPool)}`)}">Riserva: ${manaSymbols(mine.manaPool) || 'vuota'}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>
             <p id="play-notice" class="mp-notice" role="status" aria-live="polite" title="${esc(notice)}">${esc(notice)}</p>
             ${current.phase !== 'combat' ? `<label class="mp-target" title="Bersaglio della magia">Bersaglio<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
@@ -1244,12 +1358,17 @@ export function showMagicPlay(container, options = {}) {
         const uid = card.uid || '';
         const nodeId = idOf(card);
         if ((mine.hand || []).some(item => item.uid === uid)) {
+            // Con una scelta in sospeso si risponde a quella, non si lancia altro.
+            if (current.pendingChoice && current.pendingChoice.playerId === clientId) {
+                if (current.pendingChoice.kind !== 'discard') return '';
+                return `<button type="button" class="mp-small" data-discard="${esc(uid)}">${selectedDiscards.has(uid) ? 'Non scartare' : 'Scarta'}</button>`;
+            }
             // Fuori dal proprio turno resta una mossa: la risposta con un
             // istantaneo (o una carta con lampo) prima che l'avversario prosegua.
             if (!isMyTurn()) {
                 const canRespond = Boolean(current && !current.winner && !current.mulliganActive
-                    && ['main1', 'main2', 'combat'].includes(current.phase)
-                    && (/\binstant\b/i.test(String(card.typeLine || '')) || /\bflash\b/i.test(String(card.oracleText || ''))));
+                    && (/\binstant\b/i.test(String(card.typeLine || '')) || /\bflash\b/i.test(String(card.oracleText || '')))
+                    && myPriority());
                 return canRespond ? `<button type="button" class="mp-small" data-respond="${esc(uid)}">Rispondi</button>` : '';
             }
             if (current.pendingDiscard && mine.hand.length > MATCH_RULES.openingHand) {
@@ -1272,7 +1391,8 @@ export function showMagicPlay(container, options = {}) {
             return `<button type="button" class="mp-small" data-play="${esc(uid)}" ${disabled}>${land ? 'Gioca terra' : 'Lancia'}</button>`;
         }
         const buttons = [];
-        if (current.phase === 'combat' && isCreature(card) && !card.tapped && !card.summoningSick && isMyTurn()) {
+        if (stepOf(current) === 'declareAttackers' && current.activePlayer === clientId
+            && isCreature(card) && !card.tapped && !card.summoningSick && isMyTurn()) {
             const attacking = selectedAttackers.has(nodeId);
             buttons.push(`<button type="button" class="mp-small" data-attacker="${esc(nodeId)}">${attacking ? 'Non attacca' : 'Attacca'}</button>`);
         }
@@ -1390,7 +1510,7 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-start-bot]')?.addEventListener('click', () => void startBotMatch());
         container.querySelector('[data-new-match]')?.addEventListener('click', () => void returnToLobby());
         const pulsanteFase = container.querySelector('[data-phase]');
-        pulsanteFase?.addEventListener('click', () => act(current => passTurn(current, clientId, { skipCombat: pulsanteFase.dataset.skipCombat === '1' })));
+        pulsanteFase?.addEventListener('click', () => act(current => passTurnEngine(current, { skipCombat: pulsanteFase.dataset.skipCombat === '1' })));
         // Tutta la scheda apre la carta, tranne i suoi comandi: i pulsanti interni
         // (Lancia, Mana, Attacca, In fondo, Scarta) non devono aprire altro.
         container.querySelectorAll('[data-zoom-card]').forEach(card => card.addEventListener('click', event => {
@@ -1410,16 +1530,16 @@ export function showMagicPlay(container, options = {}) {
             if (!card) return;
             act(current => isLand(card)
                 ? playLand(current, clientId, uid)
-                : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''), { resetTarget: !isLand(card) });
+                : castWithPriority(current, { uid }), { resetTarget: !isLand(card) });
         }));
         container.querySelectorAll('[data-cast-mode]').forEach(button => button.addEventListener('click', () => {
             const [uid, mode] = String(button.dataset.castMode || '').split(':');
             if (!uid) return;
-            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)), { resetTarget: true });
+            act(current => castWithPriority(current, { uid, mode: Number(mode) }), { resetTarget: true });
         }));
         container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.castCommander;
-            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''));
+            act(current => castWithPriority(current, { uid }), { resetTarget: true });
         }));
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
             // Tappare per mana è una preparazione, non una mossa conclusa: le
@@ -1427,7 +1547,7 @@ export function showMagicPlay(container, options = {}) {
             act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
         }));
         container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
-            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { resetTarget: true });
+            act(current => castWithPriority(current, { uid: button.dataset.respond }), { resetTarget: true });
         }));
         container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.attacker;
@@ -1436,14 +1556,25 @@ export function showMagicPlay(container, options = {}) {
         }));
         container.querySelector('[data-declare-attack]')?.addEventListener('click', () => {
             const defender = container.querySelector('#play-defender')?.value || '';
-            act(current => declareAttackers(current, clientId, [...selectedAttackers], defender));
+            act(current => {
+                const next = doAction(current, { type: 'declareAttackers', uids: [...selectedAttackers], defender });
+                return safePass(next, clientId);
+            });
         });
         container.querySelector('[data-declare-block]')?.addEventListener('click', () => {
             const assignments = {};
-            container.querySelectorAll('[data-block]').forEach(select => { assignments[select.dataset.block] = select.value; });
-            act(current => declareBlockers(current, clientId, assignments));
+            container.querySelectorAll('[data-block]').forEach(select => {
+                if (select.value) assignments[select.dataset.block] = [select.value];
+            });
+            act(current => {
+                const next = doAction(current, { type: 'declareBlockers', blockers: assignments });
+                return safePass(next, clientId);
+            });
         });
-        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombat(current, clientId)));
+        // Il danno non si «risolve» con un pulsante: si passa la priorità e
+        // accade quando tutti hanno passato (CR 510.2).
+        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
+        container.querySelector('[data-pass-priority]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
         container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
             current.playersData[clientId].manaPool = emptyManaPool();
             return current;
@@ -1457,7 +1588,10 @@ export function showMagicPlay(container, options = {}) {
             render();
         }));
         container.querySelector('[data-confirm-discard]')?.addEventListener('click', () => {
-            act(current => discardCards(current, clientId, [...selectedDiscards]));
+            const selection = [...selectedDiscards];
+            act(current => current.pendingChoice?.kind === 'discard'
+                ? doAction(current, { type: 'choose', selection })
+                : discardCards(current, clientId, selection));
         });
     }
 
@@ -1470,15 +1604,15 @@ export function showMagicPlay(container, options = {}) {
             if (!card) return;
             act(current => isLand(card)
                 ? playLand(current, clientId, uid)
-                : castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || ''), { resetTarget: !isLand(card) });
+                : castWithPriority(current, { uid }), { resetTarget: !isLand(card) });
         }));
         container.querySelectorAll('[data-cast-mode]').forEach(button => button.addEventListener('click', () => {
             const [uid, mode] = String(button.dataset.castMode || '').split(':');
             if (!uid) return;
-            act(current => castSpell(current, clientId, uid, container.querySelector('#play-target')?.value || '', Number(mode)), { resetTarget: true });
+            act(current => castWithPriority(current, { uid, mode: Number(mode) }), { resetTarget: true });
         }));
         container.querySelectorAll('[data-cast-commander]').forEach(button => button.addEventListener('click', () => {
-            act(current => castSpell(current, clientId, button.dataset.castCommander, container.querySelector('#play-target')?.value || ''), { resetTarget: true });
+            act(current => castWithPriority(current, { uid: button.dataset.castCommander }), { resetTarget: true });
         }));
         container.querySelectorAll('[data-tap]').forEach(button => button.addEventListener('click', () => {
             // Tappare per mana è una preparazione, non una mossa conclusa: le
@@ -1486,12 +1620,16 @@ export function showMagicPlay(container, options = {}) {
             act(current => tapMana(current, clientId, button.dataset.tap, 'auto'));
         }));
         container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
-            act(current => castResponse(current, clientId, button.dataset.respond, container.querySelector('#play-target')?.value || ''), { resetTarget: true });
+            act(current => castWithPriority(current, { uid: button.dataset.respond }), { resetTarget: true });
         }));
         container.querySelectorAll('[data-ability]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.ability;
             const index = Number(button.dataset.abilityIndex) || 0;
-            act(current => activateAbility(current, clientId, uid, index, container.querySelector('#play-target')?.value || ''));
+            act(current => {
+                const target = container.querySelector('#play-target')?.value || '';
+                const next = doAction(current, { type: 'activateToStack', uid, index, target });
+                return next.priority?.playerId === clientId ? safePass(next, clientId) : next;
+            });
         }));
         container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.attacker;
@@ -1500,16 +1638,27 @@ export function showMagicPlay(container, options = {}) {
         }));
         container.querySelector('[data-declare-attack]')?.addEventListener('click', () => {
             const defender = container.querySelector('#play-defender')?.value || '';
-            act(current => declareAttackers(current, clientId, [...selectedAttackers], defender));
+            act(current => {
+                const next = doAction(current, { type: 'declareAttackers', uids: [...selectedAttackers], defender });
+                return safePass(next, clientId);
+            });
         });
         container.querySelector('[data-declare-block]')?.addEventListener('click', () => {
             const assignments = {};
-            container.querySelectorAll('[data-block]').forEach(select => { assignments[select.dataset.block] = select.value; });
-            act(current => declareBlockers(current, clientId, assignments));
+            container.querySelectorAll('[data-block]').forEach(select => {
+                if (select.value) assignments[select.dataset.block] = [select.value];
+            });
+            act(current => {
+                const next = doAction(current, { type: 'declareBlockers', blockers: assignments });
+                return safePass(next, clientId);
+            });
         });
-        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombat(current, clientId)));
+        // Il danno non si «risolve» con un pulsante: si passa la priorità e
+        // accade quando tutti hanno passato (CR 510.2).
+        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
+        container.querySelector('[data-pass-priority]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
         const pulsanteFase = container.querySelector('[data-phase]');
-        pulsanteFase?.addEventListener('click', () => act(current => passTurn(current, clientId, { skipCombat: pulsanteFase.dataset.skipCombat === '1' })));
+        pulsanteFase?.addEventListener('click', () => act(current => passTurnEngine(current, { skipCombat: pulsanteFase.dataset.skipCombat === '1' })));
         container.querySelectorAll('[data-life]').forEach(button => button.addEventListener('click', () => {
             act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)));
         }));
@@ -1519,7 +1668,10 @@ export function showMagicPlay(container, options = {}) {
             render();
         }));
         container.querySelector('[data-confirm-discard]')?.addEventListener('click', () => {
-            act(current => discardCards(current, clientId, [...selectedDiscards]));
+            const selection = [...selectedDiscards];
+            act(current => current.pendingChoice?.kind === 'discard'
+                ? doAction(current, { type: 'choose', selection })
+                : discardCards(current, clientId, selection));
         });
         container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
             current.playersData[clientId].manaPool = emptyManaPool();
