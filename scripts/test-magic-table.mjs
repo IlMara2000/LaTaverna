@@ -26,6 +26,11 @@
  *  - un elemento esce dal tavolo senza essere dentro un contenitore che scorre;
  *  - nel combattimento (attacco, blocco, richiesta di scarto) pulsanti, tendine
  *    o carte escono dallo schermo o scendono sotto le stesse soglie;
+ *  - l'attacco non segna la creatura come attaccante, o il bloccante scelto
+ *    non risulta assegnato sulla carta (pannello aperto ma mossa non applicata);
+ *  - la schermata del danno non arriva, o il combattimento non si chiude: dopo
+ *    «Risolvi il danno» e «Conferma blocchi» il pannello deve sparire e il
+ *    tavolo tornare ai comandi normali, tutti dentro le soglie;
  *  - avviso, riga comandi o selettore del bersaglio non stanno nella barra.
  *
  * Il mazzo è finto ma valido per il Commander (100 carte, comandante bianco,
@@ -61,7 +66,9 @@ const MISURE = [
     { nome: 'telefono verticale', w: 390, h: 844 }
 ];
 
-// Combattimento: uno scenario per schermata, ognuno in una partita nuova.
+// Combattimento: ogni scenario parte da una partita nuova. Attacco e blocco
+// proseguono oltre il pannello d'ingresso fino alla schermata del danno e alla
+// chiusura del combattimento, così si misura il flusso e non solo l'apertura.
 const SCENARI = ['attacco', 'blocco', 'scarto'];
 
 /* ── server di sviluppo ───────────────────────────────────────────────────── */
@@ -382,42 +389,80 @@ const COMBATTIMENTO = scenario => `(async () => {
         return false;
     };
 
-    let raggiunta = true;
-    if (SCENARIO === 'attacco') {
-        await mioTurno();
-        giocaTerra(); await attendi(500);
-        evoca(); await attendi(900);
-        await premi();                  // chiude il primo turno
-        await mioTurno();               // la creatura non ha più la debolezza
-        await attendi(400);
-        await premi();                  // il turno si ferma al combattimento
-        raggiunta = await attesa('.mp-combat [data-declare-attack]');
-    } else if (SCENARIO === 'blocco') {
-        await mioTurno();
-        giocaTerra(); await attendi(500);
-        evoca(); await attendi(900);
-        await premi();                  // primo turno
-        await mioTurno();
-        await attendi(300);
-        await premi();                  // combattimento mio: non attacco
-        await premi(1400);              // «Non attaccare»
-        raggiunta = await attesa('[data-block]');   // il bot attacca, tocca a me bloccare
-    } else {
+    // Le tappe del combattimento. Ogni schermata si misura dove compare e ogni
+    // mossa vera lascia un segno verificabile (la carta segnata ATTACCA/BLOCCA,
+    // le righe del diario), non solo un pannello aperto. La guida è chiamata in
+    // fondo, quando gli helper di misura qui sotto sono già definiti.
+    async function guida() {
+        const esito = {
+            raggiunta: true, attaccanteSegnato: null, bloccanteSegnato: null,
+            bloccantiDisponibili: null, bloccato: '', chiuso: null
+        };
+        if (SCENARIO === 'attacco') {
+            await mioTurno();
+            giocaTerra(); await attendi(500);
+            evoca(); await attendi(900);
+            await premi();                  // chiude il primo turno
+            await mioTurno();               // la creatura non ha più la debolezza
+            await attendi(400);
+            await premi();                  // il turno si ferma al combattimento
+            esito.raggiunta = await attesa('.mp-combat [data-declare-attack]');
+            if (!esito.raggiunta) return esito;
+            misuri('attacco', '[data-attacker], [data-declare-attack], #play-defender');
+            await scegliAttaccanti();
+            q('[data-declare-attack]')?.click();
+            await attendi(250);
+            // Il segnale ATTACCA sulla carta prova che l'attacco è stato
+            // dichiarato davvero, non che il pannello sia solo comparso.
+            esito.attaccanteSegnato = Boolean(q('.mt-card.is-attacking, .mt-card__badge--attack'));
+            // Il bot difende da solo (350ms): poi il danno aspetta me.
+            esito.raggiunta = await attesa('[data-resolve-combat]', 20000);
+            if (!esito.raggiunta) return esito;
+            misuri('danno', '[data-resolve-combat], [data-phase], .mp-toolbar button');
+            q('[data-resolve-combat]')?.click();
+            esito.chiuso = await attesaChiusura();
+            misuri('chiusura', '[data-phase], .mp-toolbar button');
+            return esito;
+        }
+        if (SCENARIO === 'blocco') {
+            await mioTurno();
+            giocaTerra(); await attendi(500);
+            evoca(); await attendi(900);
+            await premi();                  // primo turno
+            await mioTurno();
+            await attendi(300);
+            await premi();                  // combattimento mio: non attacco
+            await premi(1400);              // «Non attaccare»
+            esito.raggiunta = await attesa('[data-block]');   // il bot attacca, tocca a me bloccare
+            if (!esito.raggiunta) return esito;
+            misuri('blocco', '[data-block], [data-declare-block]');
+            // Assegnazione vera: si sceglie un bloccante, non si conferma una
+            // tendina vuota (che non dimostrerebbe nulla sui blocchi).
+            const tendina = q('[data-block]');
+            esito.bloccantiDisponibili = tendina ? tendina.options.length - 1 : 0;
+            if (esito.bloccantiDisponibili > 0) {
+                tendina.value = tendina.options[1].value;
+                tendina.dispatchEvent(new Event('change', { bubbles: true }));
+                esito.bloccato = tendina.options[1].textContent.trim();
+            }
+            q('[data-declare-block]')?.click();
+            await attendi(250);
+            esito.bloccanteSegnato = Boolean(q('.mt-card.is-blocking, .mt-card__badge--block'));
+            // Il bot è il giocatore attivo: risolve il danno e prosegue da solo,
+            // quindi qui si misura la chiusura del flusso, non un pulsante mio.
+            esito.chiuso = await attesaChiusura();
+            misuri('chiusura', '[data-phase], .mp-toolbar button');
+            return esito;
+        }
         await mioTurno();
         await premi();                  // primo turno senza giocare nulla
         await mioTurno();               // pesco l'ottava carta
         await attendi(400);
         await premi();                  // fine turno: prima si scarta
-        raggiunta = await attesa('[data-confirm-discard]');
+        esito.raggiunta = await attesa('[data-confirm-discard]');
+        if (esito.raggiunta) misuri('scarto', '[data-discard], [data-confirm-discard]');
+        return esito;
     }
-
-    // I pulsanti «Attacca» stanno sulle carte in campo, il resto nel pannello:
-    // si prendono da tutta la pagina, altrimenti la carta non si misura.
-    const SELETTORI = {
-        attacco: '[data-attacker], [data-declare-attack], #play-defender',
-        blocco: '[data-block], [data-declare-block]',
-        scarto: '[data-discard], [data-confirm-discard]'
-    };
     // Quanto di un elemento si vede davvero: il riquadro si interseca con
     // ogni contenitore che ritaglia (mano e comandi scorrono, i pulsanti delle
     // carte stanno dentro un riquadro con overflow nascosto) e con lo schermo.
@@ -426,18 +471,25 @@ const COMBATTIMENTO = scenario => `(async () => {
         let alto = r.top, sinistra = r.left, basso = r.bottom, destra = r.right;
         // Un ritaglio dentro un contenitore che scorre si recupera scorrendo:
         // solo quello dentro un contenitore fermo rende l'elemento irraggiungibile.
-        let bloccatoY = false, bloccatoX = false;
+        // Decide il primo contenitore che ritaglia davvero: se scorre, il comando
+        // si porta dentro scorrendolo e i bordi più esterni non lo tagliano più
+        // (era il caso di «Lascia» dentro la riga comandi scorrevole in verticale).
+        let bloccatoY = false, bloccatoX = false, recuperabileY = false, recuperabileX = false;
         for (let p = el.parentElement; p; p = p.parentElement) {
             const stile = getComputedStyle(p);
             const c = p.getBoundingClientRect();
             const scorreY = (stile.overflowY === 'auto' || stile.overflowY === 'scroll') && p.scrollHeight > p.clientHeight + 1;
             const scorreX = (stile.overflowX === 'auto' || stile.overflowX === 'scroll') && p.scrollWidth > p.clientWidth + 1;
-            if (stile.overflowY !== 'visible') {
-                if (r.bottom > c.bottom + 1 || r.top < c.top - 1) bloccatoY = bloccatoY || !scorreY;
+            if (stile.overflowY !== 'visible' && !recuperabileY) {
+                if (r.bottom > c.bottom + 1 || r.top < c.top - 1) {
+                    if (scorreY) recuperabileY = true; else bloccatoY = true;
+                }
                 alto = Math.max(alto, c.top); basso = Math.min(basso, c.bottom);
             }
-            if (stile.overflowX !== 'visible') {
-                if (r.right > c.right + 1 || r.left < c.left - 1) bloccatoX = bloccatoX || !scorreX;
+            if (stile.overflowX !== 'visible' && !recuperabileX) {
+                if (r.right > c.right + 1 || r.left < c.left - 1) {
+                    if (scorreX) recuperabileX = true; else bloccatoX = true;
+                }
                 sinistra = Math.max(sinistra, c.left); destra = Math.min(destra, c.right);
             }
         }
@@ -460,7 +512,12 @@ const COMBATTIMENTO = scenario => `(async () => {
         }
         return nomi.join(' < ') + ' | ' + (cassetto || 'senza ritagli');
     };
-    const elementi = [...document.querySelectorAll(SELETTORI[SCENARIO])].map(el => {
+    const schermate = [];
+    // Una schermata alla volta: attacco, blocchi, danno e chiusura hanno comandi
+    // diversi (tendine, pannello, barra) e vanno misurati dove compaiono.
+    const misuri = (nome, selettori) => {
+        const carte = [...document.querySelectorAll('.mt-hand .mt-card, .mp-hand .mp-hand-card')].map(el => riquadro(el));
+        const elementi = [...document.querySelectorAll(selettori)].map(el => {
         const r = el.getBoundingClientRect();
         const stile = getComputedStyle(el);
         const visibile = visibileDi(el);
@@ -483,54 +540,133 @@ const COMBATTIMENTO = scenario => `(async () => {
             inMano: Boolean(el.closest('.mt-hand')),
             visibile: stile.display !== 'none' && stile.visibility !== 'hidden' && Number(stile.opacity) > 0.05
         };
-    });
-    const carte = [...document.querySelectorAll('.mt-hand .mt-card, .mp-hand .mp-hand-card')].map(el => riquadro(el));
+        });
+        schermate.push({
+            nome,
+            pannello: riquadro(q('.mp-combat')),
+            pulsanteTurno: riquadro(fase()),
+            elementi,
+            carte: carte.length,
+            carta: carte[0] || null,
+            overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            altezzaDocumento: document.documentElement.scrollHeight
+        });
+    };
+
+    // Chiuso vuol dire che il pannello del combattimento è sparito e resta il
+    // tavolo: il flusso non si è fermato su un comando che non si vede.
+    const attesaChiusura = async (limite = 20000) => {
+        const inizio = Date.now();
+        while (Date.now() - inizio < limite) {
+            if (!q('.mp-combat') && !q('[data-block]')) return true;
+            await attendi(250);
+        }
+        return false;
+    };
+
+    // Un attaccante alla volta: ogni tocco ridisegna il tavolo, e un elenco di
+    // nodi raccolto prima del tocco contiene carte che non esistono più.
+    const scegliAttaccanti = async () => {
+        const uids = [...new Set([...document.querySelectorAll('[data-attacker]')].map(bottone => bottone.dataset.attacker))];
+        for (const uid of uids) {
+            const bottone = document.querySelector('[data-attacker="' + CSS.escape(uid) + '"]');
+            if (bottone && bottone.textContent.trim() === 'Attacca') { bottone.click(); await attendi(220); }
+        }
+        return uids.length;
+    };
+
+    const esito = await guida();
 
     return JSON.stringify({
         scenario: SCENARIO,
-        raggiunta,
-        pannello: riquadro(q('.mp-combat') || q('.mp-discard')),
-        pulsanteTurno: riquadro(fase()),
-        elementi,
-        carte: carte.length,
-        carta: carte[0] || null,
-        overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        altezzaDocumento: document.documentElement.scrollHeight
+        ...esito,
+        schermate,
+        // Il diario prova che danno e blocchi sono stati risolti dal motore, non
+        // solo disegnati: le righe arrivano dallo stato della partita.
+        diario: String(q('.mp-log')?.textContent || '').replace(/\\s+/g, ' ').trim(),
+        barra: String(q('.mt-arena-bar__status')?.textContent || '').replace(/\\s+/g, ' ').trim()
     });
 })()`;
 
 const controllaCombattimento = (lotta, scenario, { nome, h }) => {
     const problemi = [];
-    const visibili = lotta.elementi.filter(elemento => elemento.visibile);
-    if (!lotta.raggiunta || !visibili.length) return [`${nome} · ${scenario}: schermata non raggiunta (nessun controllo trovato)`];
-    for (const elemento of visibili) {
-        const minimo = elemento.tipo === 'select' ? SOGLIE.tendina
-            : elemento.inCarta ? SOGLIE.chipCarta : SOGLIE.pulsanteCombattimento;
-        if (elemento.h < minimo) {
-            problemi.push(`${nome} · ${scenario}: ${elemento.tipo} «${elemento.testo}» alto ${elemento.h}px, sotto la soglia di ${minimo}px`);
+    const titolo = parte => `${nome} · ${scenario}/${parte}`;
+    const schermate = lotta.schermate || [];
+    if (!schermate.length) {
+        return { problemi: [`${titolo('ingresso')}: schermata non raggiunta (nessun controllo trovato)`] };
+    }
+    for (const schermata of schermate) {
+        const visibili = schermata.elementi.filter(elemento => elemento.visibile);
+        const dove = titolo(schermata.nome);
+        if (!visibili.length) problemi.push(`${dove}: nessun comando visibile (pannello senza pulsanti)`);
+        for (const elemento of visibili) {
+            const minimo = elemento.tipo === 'select' ? SOGLIE.tendina
+                : elemento.inCarta ? SOGLIE.chipCarta : SOGLIE.pulsanteCombattimento;
+            if (elemento.h < minimo) {
+                problemi.push(`${dove}: ${elemento.tipo} «${elemento.testo}» alto ${elemento.h}px, sotto la soglia di ${minimo}px`);
+            }
+            // Fuori dallo schermo o mangiato da un contenitore che non scorre.
+            const tagliatoY = elemento.bloccatoY && elemento.visibileH < elemento.h * 0.6;
+            // La mano è una striscia che scorre: una carta tagliata a destra si
+            // raggiunge scorrendo, non è un comando fuori dallo schermo.
+            const tagliatoX = elemento.bloccatoX && !elemento.inMano && elemento.visibileW < elemento.w * 0.6;
+            if (tagliatoY || tagliatoX) {
+                problemi.push(`${dove}: ${elemento.tipo} «${elemento.testo}» si vede solo ${elemento.visibileW}x${elemento.visibileH} di ${elemento.w}x${elemento.h} (${elemento.catena}) [${elemento.diagnosi}]`);
+            }
         }
-        // Fuori dallo schermo o mangiato da un contenitore che non scorre.
-        const tagliatoY = elemento.bloccatoY && elemento.visibileH < elemento.h * 0.6;
-        // La mano è una striscia che scorre: una carta tagliata a destra si
-        // raggiunge scorrendo, non è un comando fuori dallo schermo.
-        const tagliatoX = elemento.bloccatoX && !elemento.inMano && elemento.visibileW < elemento.w * 0.6;
-        if (tagliatoY || tagliatoX) {
-            problemi.push(`${nome} · ${scenario}: ${elemento.tipo} «${elemento.testo}» si vede solo ${elemento.visibileW}x${elemento.visibileH} di ${elemento.w}x${elemento.h} (${elemento.catena}) [${elemento.diagnosi}]`);
+        if (schermata.carta && schermata.carta.h < SOGLIE.cartaMano) {
+            problemi.push(`${dove}: carta in mano alta ${schermata.carta.h}px, sotto la soglia di ${SOGLIE.cartaMano}px`);
+        }
+        if (schermata.overflowX > 0) problemi.push(`${dove}: pagina che scorre in orizzontale di ${schermata.overflowX}px`);
+        if (schermata.altezzaDocumento > h + SOGLIE.scarto) {
+            problemi.push(`${dove}: pagina alta ${schermata.altezzaDocumento}px su ${h}px`);
         }
     }
-    if (lotta.carta && lotta.carta.h < SOGLIE.cartaMano) {
-        problemi.push(`${nome} · ${scenario}: carta in mano alta ${lotta.carta.h}px, sotto la soglia di ${SOGLIE.cartaMano}px`);
+
+    // Le mosse vere, non i pannelli: la carta segnata come attaccante o
+    // bloccante dice che il motore ha applicato la scelta, e il diario dice che
+    // il danno è stato risolto invece di lasciare il combattimento a metà.
+    if (scenario === 'attacco') {
+        if (lotta.attaccanteSegnato !== true) {
+            problemi.push(`${titolo('attacco')}: nessuna creatura segnata come attaccante dopo «Dichiara attaccanti»`);
+        }
+        if (!schermate.some(schermata => schermata.nome === 'danno')) {
+            problemi.push(`${titolo('danno')}: schermata del danno non raggiunta (i blocchi del bot non si chiudono)`);
+        }
     }
-    if (lotta.overflowX > 0) problemi.push(`${nome} · ${scenario}: pagina che scorre in orizzontale di ${lotta.overflowX}px`);
-    if (lotta.altezzaDocumento > h + SOGLIE.scarto) {
-        problemi.push(`${nome} · ${scenario}: pagina alta ${lotta.altezzaDocumento}px su ${h}px`);
+    if (scenario === 'blocco') {
+        if (lotta.bloccantiDisponibili === 0) {
+            problemi.push(`${titolo('blocco')}: nessuna creatura da assegnare come bloccante`);
+        } else if (lotta.bloccanteSegnato !== true) {
+            problemi.push(`${titolo('blocco')}: il bloccante scelto (${lotta.bloccato || '—'}) non risulta assegnato: nessuna carta con «BLOCCA»`);
+        }
     }
-    return problemi;
+    const chiusura = schermate.find(schermata => schermata.nome === 'chiusura');
+    if (scenario !== 'scarto' && chiusura) {
+        if (lotta.chiuso !== true) {
+            problemi.push(`${titolo('chiusura')}: il combattimento non si chiude in 20s, il pannello resta sul tavolo (${lotta.barra || 'stato sconosciuto'})`);
+        } else {
+            if (!/(danni a|muore)/.test(lotta.diario || '')) {
+                problemi.push(`${titolo('chiusura')}: il diario non registra il danno risolto`);
+            }
+            if (scenario === 'blocco' && !/blocca \d+ attaccant/.test(lotta.diario || '')) {
+                problemi.push(`${titolo('chiusura')}: il diario non registra i blocchi assegnati`);
+            }
+        }
+    }
+    return { problemi };
 };
 
-const rigaCombattimento = ({ w, h }, scenario, lotta, problemi) => {
-    const controlli = lotta.elementi.filter(elemento => elemento.visibile).length;
-    return `  ${scenario.padEnd(10)}${`${w}x${h}`.padEnd(12)}${`${controlli} controlli`.padEnd(14)}${problemi.length ? 'X' : 'ok'}`;
+const righeCombattimento = (misura, scenario, lotta, problemi) => {
+    const { nome, w, h } = misura;
+    const schermate = lotta.schermate && lotta.schermate.length
+        ? lotta.schermate : [{ nome: 'ingresso', elementi: [] }];
+    return schermate.map(schermata => {
+        const controlli = schermata.elementi.filter(elemento => elemento.visibile).length;
+        const prefisso = `${nome} · ${scenario}/${schermata.nome}`;
+        const rotto = problemi.some(problema => problema.startsWith(prefisso));
+        return `  ${`${scenario}/${schermata.nome}`.padEnd(20)}${`${w}x${h}`.padEnd(12)}${`${controlli} controlli`.padEnd(14)}${rotto ? 'X' : 'ok'}`;
+    });
 };
 
 /* ── controlli ────────────────────────────────────────────────────────────── */
@@ -646,9 +782,9 @@ const eseguiTutto = async () => {
                 await cdp.invia('Page.navigate', { url: `${base}/magic/partita` });
                 await new Promise(risolvi => setTimeout(risolvi, 2500));
                 const lotta = JSON.parse(await cdp.valuta(COMBATTIMENTO(scenario)));
-                const lista = controllaCombattimento(lotta, scenario, misura);
-                righeLotta.push(rigaCombattimento(misura, scenario, lotta, lista));
-                problemiLotta.push(...lista);
+                const esitoLotta = controllaCombattimento(lotta, scenario, misura);
+                righeLotta.push(...righeCombattimento(misura, scenario, lotta, esitoLotta.problemi));
+                problemiLotta.push(...esitoLotta.problemi);
             }
         }
     } finally {
@@ -657,7 +793,7 @@ const eseguiTutto = async () => {
         await server.ferma();
     }
 
-    console.log('\ncombattimento              misura      controlli     esito');
+    console.log(`\n${'  schermata'.padEnd(22)}${'misura'.padEnd(12)}${'controlli'.padEnd(14)}esito`);
     for (const riga of righeLotta) console.log(riga);
 
     const rotti = esiti.filter(esito => esito.problemi.length);
