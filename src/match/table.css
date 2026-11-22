@@ -401,6 +401,30 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-commands .mp-life,
 .mt-commands .mp-discard { display: flex; flex-wrap: wrap; align-items: center; gap: calc(0.6 * var(--u)); margin: 0; padding: 0; border: 0; background: none; }
 
+/* In verticale la riga dello scarto sta su una riga sua: dentro la barra
+   stretta il pulsante «Scarta» finiva schiacciato a 9 px, irraggiungibile
+   proprio quando serve per chiudere il turno. */
+@media (max-width: 640px) {
+  /* Griglia, non flex: la colonna del testo può accorciarsi (`minmax(0, 1fr)`)
+     e il pulsante tiene la sua larghezza. Con il flex il testo spingeva
+     «Scarta» fuori dalla barra, dove restava visibile per 9 px. */
+  .mt-table.mt-table .mt-commands .mp-discard {
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .mt-table.mt-table .mt-commands .mp-discard span { min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mt-table.mt-table .mt-commands .mp-discard .mp-button { white-space: nowrap; }
+  /* Con lo scarto in corso la barra si allunga di una riga invece di comprimere
+     il pulsante: l'altezza fissa la tagliava fuori dal suo bordo. */
+  .mt-table.mt-table .mt-commands .mp-toolbar:has(.mp-discard) {
+    flex-wrap: wrap;
+    block-size: auto;
+    min-block-size: max(calc(4 * var(--u)), 40px);
+  }
+}
+
 .mt-commands .mp-mana span,
 .mt-commands .mp-life span,
 .mt-commands .mp-discard span { color: var(--mt-muted); font-size: calc(1.15 * var(--u)); }
