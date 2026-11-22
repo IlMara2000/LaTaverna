@@ -775,7 +775,9 @@ body.magic-table-active .floating-trigger { display: none !important; }
   /* Corsie: una carta alta 108 px, il campo scorre se le corsie non entrano.
      Le corsie vuote spariscono: in verticale ogni pixel è di una carta. */
   .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; gap: 4px; padding: 4px 4px 12px; }
-  .mt-table .mt-field--opponent { max-block-size: 26dvh; }
+  /* Tetto basso al campo avversario: con 26dvh si mangiava il tuo campo e le
+     tue carte finivano tagliate dal bordo. Il resto va alle carte che giochi. */
+  .mt-table .mt-field--opponent { max-block-size: 18dvh; }
   /* Le tue carte stanno vicine ai comandi e alla mano, come su un tavolo vero:
      lo spazio libero resta in mezzo, non sotto le creature. */
   .mt-table .mt-field__spring { flex: 0 0 0; margin-block-start: auto; }
@@ -830,7 +832,10 @@ body.magic-table-active .floating-trigger { display: none !important; }
   .mt-table .mt-hand { block-size: min(28dvh, 186px); padding: 6px; gap: 8px; }
   .mt-table .mt-hand .mt-card { block-size: 100%; inline-size: 104px; aspect-ratio: auto; max-inline-size: none; }
   .mt-table .mt-hand .mt-card__art { flex: 1 1 auto; block-size: auto; }
-  .mt-table .mt-hand .mt-card__actions { position: static; max-block-size: none; overflow: visible; padding: 4px 0 0; background: none; }
+  /* I pulsanti della mano stanno su una riga che scorre: con due modi da
+     scegliere si impilavano e l'arte spariva. */
+  .mt-table .mt-hand .mt-card__actions { position: static; flex: 0 0 auto; max-block-size: none; overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; padding: 4px 0 0; background: none; scrollbar-width: none; }
+  .mt-table .mt-hand .mt-card__actions::-webkit-scrollbar { display: none; }
   .mt-table.mt-table .mt-hand .mt-card__actions button { min-block-size: 40px; font-size: 12px; }
 
   /* Barra: restano turno, ESCI e ☰. «Cimiteri» passa nel menu: nella barra
@@ -839,4 +844,69 @@ body.magic-table-active .floating-trigger { display: none !important; }
   .mt-table .mt-arena-bar { padding-inline-end: 58px; }
   .mt-table .mt-menu__toggle { inset-block-start: 7px; inset-inline-end: 8px; }
   .mt-table .mt-zones__panel { inset-block: 8px; inset-inline-end: 8px; inset-inline-start: 8px; inline-size: auto; }
+}
+
+/* ═══════════ telefono in orizzontale: campi affiancati, carte leggibili ═══════════
+   Con cinque fasce impilate in 390 px di altezza le carte scendevano a 32×45.
+   Qui il campo si divide in due colonne (loro a sinistra, tu a destra), la
+   mano prende una fascia sua e i comandi restano una riga sola che scorre. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .mt-table { --mt-bar-h: 46px; }
+
+  .mt-table .mt-board {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    padding: 4px 6px;
+    gap: 4px;
+  }
+  .mt-table .mt-board > .mt-opponent-head { grid-column: 1 / -1; grid-row: 1; }
+  .mt-table .mt-board > .mt-field--opponent { grid-column: 1; grid-row: 2; }
+  .mt-table .mt-board > .mt-field--own { grid-column: 2; grid-row: 2; }
+  .mt-table .mt-board > .mt-commands { grid-column: 1 / -1; grid-row: 3; }
+  .mt-table .mt-board > .mt-hand { grid-column: 1 / -1; grid-row: 4; block-size: 112px; padding: 4px; }
+
+  /* Corsie: una carta alta 104 px, il campo scorre quando le corsie non entrano.
+     Le corsie vuote spariscono del tutto, etichetta compresa. */
+  .mt-table .mt-lane.is-empty { display: none; }
+  .mt-table .mt-lane:not(.is-empty) { flex: 0 0 auto; }
+  .mt-table .mt-lane__cards { flex: 0 0 auto; block-size: 112px; padding-block: 0; }
+  .mt-table .mt-lane .mt-card { block-size: 100%; max-inline-size: none; }
+  .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; }
+
+  /* Comandi: una riga che scorre, senza testi spezzati dentro i pulsanti. */
+  /* 16dvh: nella barra restano visibili la riga comandi e l'avviso (errori come
+     «Mana insufficiente»): a 12dvh l'avviso finiva sotto il bordo e un tocco
+     sbagliato sembrava non fare nulla. */
+  .mt-table.mt-table .mt-commands { max-block-size: 17dvh; overflow-y: auto; }
+  .mt-table.mt-table .mt-commands:has(.mp-combat, .mp-mulligan) { max-block-size: 30dvh; }
+  .mt-table.mt-table .mt-commands .mp-toolbar { flex-wrap: nowrap; overflow-x: auto; }
+  .mt-table.mt-table .mt-commands .mp-toolbar > * { flex: 0 0 auto; }
+  .mt-table.mt-table .mt-commands .mp-toolbar .mp-button,
+  .mt-table.mt-table .mt-commands .mp-toolbar .mp-small { white-space: nowrap; }
+  /* L'avviso (errori compresi) sta in cima alla barra: così si legge senza
+     scorrere, mentre riserva e bersaglio restano sotto. */
+  .mt-table.mt-table .mt-commands .mp-notice { order: -1; flex: 1 1 100%; }
+  /* Diario ed effetti non spariscono: restano in fondo alla barra, raggiunti
+     scorrendola, così le informazioni della partita non si perdono. */
+
+  /* Mano: i pulsanti stanno sotto l'arte, non sopra, e restano da dito. */
+  .mt-table .mt-hand { justify-content: flex-start; }
+  .mt-table .mt-hand .mt-card { block-size: 100%; inline-size: 92px; aspect-ratio: auto; max-inline-size: none; }
+  .mt-table .mt-hand .mt-card__art { flex: 1 1 auto; block-size: auto; }
+  .mt-table .mt-hand .mt-card__actions { position: static; flex: 0 0 auto; max-block-size: none; overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; padding: 2px 0 0; background: none; scrollbar-width: none; }
+  .mt-table .mt-hand .mt-card__actions::-webkit-scrollbar { display: none; }
+  /* 36 px: la carta in mano è larga 92, il pulsante occupa quasi tutta la
+     larghezza, e i pixel risparmiati vanno alle carte del campo. */
+  .mt-table.mt-table .mt-hand .mt-card__actions button { min-block-size: 36px; padding: 1px 4px; font-size: 11px; }
+
+  /* Il ☰ non copre la testata dell'avversario: sta nella barra e la testata gli
+     lascia il posto a destra, così il conteggio delle carte resta leggibile. */
+  .mt-table .mt-arena-bar { padding-inline-end: 54px; }
+  .mt-table .mt-opponent-head { padding-inline-end: 56px; }
+  .mt-table .mt-menu__toggle { inset-block-start: 3px; inset-inline-end: 6px; }
+}
+
+@media (orientation: landscape) and (max-height: 360px) {
+  .mt-table .mt-board > .mt-hand { block-size: 108px; }
+  .mt-table .mt-lane__cards { block-size: 96px; }
 }
