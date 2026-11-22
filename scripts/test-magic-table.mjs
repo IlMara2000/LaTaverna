@@ -17,6 +17,9 @@
  *
  * Esce con codice 1 se, a una delle misure:
  *  - il tavolo non occupa tutto lo schermo (regole desktop finite in produzione);
+ *  - nel mulligan non si vedono tutte e sette le carte o i pulsanti «Tieni» e
+ *    «Rimescola e pesca» finiscono fuori dallo schermo (a 667×375 la mano
+ *    scorreva in due colonne e mostrava tre carte su sette);
  *  - una carta del campo scende sotto la soglia di leggibilità o viene tagliata
  *    dal bordo del suo campo;
  *  - una carta in mano o il suo pulsante scendono sotto soglia;
@@ -27,10 +30,11 @@
  * terre base ripetute) e viene scritto in localStorage: il test non dipende da
  * account, Supabase o Scryfall, così può girare offline.
  */
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'node:net';
+
+import { serveSorgenti, serverTemporaneo } from './lib/dev-server.mjs';
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), '..');
 const browser = process.env.AGENT_BROWSER || 'agent-browser';
@@ -42,6 +46,7 @@ const SOGLIE = {
     cartaCampo: 96,     // carta permanente nel campo: 80x112 a 844x390, 77x108 a 667x375
     cartaMano: 96,      // carta in mano
     pulsanteMano: 32,   // pulsante sotto la carta in mano (36 sul telefono in orizzontale)
+    pulsanteMulligan: 32, // «Tieni» e «Rimescola e pesca» (40 e 48 sul telefono)
     scarto: 2           // tolleranza per arrotondamenti dei subpixel
 };
 
@@ -53,74 +58,8 @@ const MISURE = [
 
 /* ── server di sviluppo ───────────────────────────────────────────────────── */
 
-const serveSorgenti = async url => {
-    try {
-        const risposta = await fetch(`${url}/src/dashboards/magicPlay.js`, { signal: AbortSignal.timeout(4000) });
-        if (!risposta.ok) return false;
-        return /javascript/.test(risposta.headers.get('content-type') || '') && (await risposta.text()).includes('export');
-    } catch {
-        return false;
-    }
-};
-
-// Si prova a occupare la porta: se il sistema la concede è libera. Il bind è su
-// tutte le interfacce, così vale sia per 127.0.0.1 sia per ::1 (localhost).
-const portaOccupata = numero => new Promise(risolvi => {
-    const prova = createServer();
-    prova.once('error', () => risolvi(true));
-    prova.once('listening', () => prova.close(() => risolvi(false)));
-    prova.listen(numero);
-});
-
-const portaLibera = async inizio => {
-    for (let numero = inizio; numero < inizio + 40; numero++) {
-        if (await portaOccupata(numero)) continue;
-        return numero;
-    }
-    return null;
-};
-
-let vite = null;
-
-const avviaVite = async () => {
-    const inizio = 4320;
-    const numero = await portaLibera(inizio);
-    if (!numero) throw new Error('nessuna porta libera per un Vite temporaneo');
-    // Lo stdin resta aperto: il CLI di Vite esce quando lo stdin finisce.
-    vite = spawn(join(radice, 'node_modules', '.bin', 'vite'), ['--port', String(numero), '--strictPort'], {
-        cwd: radice,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, CI: '1' }
-    });
-    vite.stdin.on('error', () => { /* stdin chiuso: pazienza */ });
-    let registro = '';
-    vite.stdout.on('data', pezzo => { registro += pezzo; });
-    vite.stderr.on('data', pezzo => { registro += pezzo; });
-    const url = `http://localhost:${numero}`;
-    for (let tentativo = 0; tentativo < 60; tentativo++) {
-        if (await serveSorgenti(url)) return url;
-        if (vite.exitCode !== null) break;
-        await new Promise(risolvi => setTimeout(risolvi, 500));
-    }
-    throw new Error(`Vite temporaneo non pronto su ${url}\n${registro.slice(-600)}`);
-};
-
-const fermaVite = async () => {
-    const processo = vite;
-    vite = null;
-    if (!processo || processo.exitCode !== null) return;
-    for (const flusso of [processo.stdin, processo.stdout, processo.stderr]) {
-        try { flusso?.destroy?.(); } catch { /* già chiuso */ }
-    }
-    processo.unref?.();
-    await new Promise(risolvi => {
-        let forzatura = null;
-        const fatto = () => { clearTimeout(forzatura); risolvi(); };
-        processo.once('exit', fatto);
-        forzatura = setTimeout(() => { try { processo.kill('SIGKILL'); } catch { /* già morto */ } }, 1500);
-        try { if (!processo.kill('SIGTERM')) fatto(); } catch { fatto(); }
-    });
-};
+// Il Vite temporaneo (libreria condivisa) parte solo se BASE non serve i sorgenti.
+const server = serverTemporaneo({ radice, portaIniziale: 4320 });
 
 /* ── browser e CDP ────────────────────────────────────────────────────────── */
 
@@ -268,8 +207,10 @@ const scriviMazzo = async cdp => {
 
 /* ── misura dentro la pagina ──────────────────────────────────────────────── */
 
-// Avvia la partita (o la riprende), tiene la mano e gioca una terra, così nel
-// campo c'è almeno una carta da misurare. Restituisce una stringa JSON.
+// Avvia la partita, misura il mulligan, tiene la mano e gioca una terra, così
+// nel campo c'è almeno una carta da misurare. Restituisce una stringa JSON.
+// Il mulligan si misura prima di tenerlo: è lì che si sceglie cosa mettere in
+// fondo, e le sette carte devono stare tutte visibili insieme.
 const MISURA = `(async () => {
     const attendi = ms => new Promise(r => setTimeout(r, ms));
     const q = s => document.querySelector(s);
@@ -277,12 +218,43 @@ const MISURA = `(async () => {
     const riquadro = el => { if (!el) return null; const b = el.getBoundingClientRect();
         return { x: arrotonda(b.x), y: arrotonda(b.y), w: arrotonda(b.width), h: arrotonda(b.height), r: arrotonda(b.right), b: arrotonda(b.bottom) }; };
 
-    for (let i = 0; i < 25 && !q('[data-start-bot]') && !q('.mt-hand'); i++) await attendi(400);
-    if (!q('.mt-hand')) {
-        q('[data-start-bot]')?.click();
-        for (let i = 0; i < 30 && !q('[data-mulligan="keep"]') && !q('.mt-hand'); i++) await attendi(400);
-        q('[data-mulligan="keep"]')?.click();
+    // Durante il mulligan la mano è .mp-hand, sorella del pannello e non
+    // figlia: sono proprio le regole CSS su .mp-hand a decidere quante carte
+    // entrano nello schermo.
+    for (let i = 0; i < 25 && !q('[data-start-bot]') && !q('.mp-mulligan') && !q('.mt-hand'); i++) await attendi(400);
+    if (!q('.mp-mulligan') && !q('.mt-hand')) q('[data-start-bot]')?.click();
+    for (let i = 0; i < 40 && !q('.mp-mulligan') && !q('.mt-hand'); i++) await attendi(400);
+    for (let i = 0; i < 25 && !q('.mp-hand .mp-hand-card'); i++) await attendi(300);
+
+    // Una carta è «visibile» quando sta dentro la finestra della mano: il
+    // getBoundingClientRect non tiene conto del ritaglio, quindi si confronta
+    // con il riquadro del contenitore, non con la sua dimensione dichiarata.
+    let mulligan = null;
+    const pannello = q('.mp-mulligan');
+    if (pannello) {
+        const finestraMano = q('.mp-hand')?.getBoundingClientRect() || null;
+        const carteMulligan = [...document.querySelectorAll('.mp-hand .mp-hand-card')];
+        const dentro = (r, c) => r.top >= c.top - 1 && r.bottom <= c.bottom + 1 && r.left >= c.left - 1 && r.right <= c.right + 1;
+        const nelloSchermo = el => {
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return r.top >= -1 && r.left >= -1 && r.bottom <= innerHeight + 1 && r.right <= innerWidth + 1;
+        };
+        mulligan = {
+            pannello: riquadro(pannello),
+            carta: riquadro(carteMulligan[0]),
+            carte: carteMulligan.length,
+            visibili: finestraMano ? carteMulligan.filter(carta => dentro(carta.getBoundingClientRect(), finestraMano)).length : 0,
+            tenere: riquadro(q('[data-mulligan="keep"]')),
+            rimescola: riquadro(q('[data-mulligan="redraw"]')),
+            tenereInSchermo: nelloSchermo(q('[data-mulligan="keep"]')),
+            rimescolaInSchermo: nelloSchermo(q('[data-mulligan="redraw"]')),
+            overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+            altezzaDocumento: document.documentElement.scrollHeight
+        };
     }
+
+    q('[data-mulligan="keep"]')?.click();
     for (let i = 0; i < 40 && !q('.mt-hand .mt-card'); i++) await attendi(300);
 
     const terraInMano = () => [...document.querySelectorAll('.mt-hand [data-play]')]
@@ -337,6 +309,7 @@ const MISURA = `(async () => {
     }
 
     return JSON.stringify({
+        mulligan,
         vp: innerWidth + 'x' + innerHeight,
         coarse: matchMedia('(pointer: coarse)').matches,
         fine: matchMedia('(pointer: fine)').matches,
@@ -364,8 +337,30 @@ const MISURA = `(async () => {
 
 /* ── controlli ────────────────────────────────────────────────────────────── */
 
-const controlla = (misura, { w, h }) => {
+const controllaMulligan = (m, h) => {
     const problemi = [];
+    if (!m) return ['schermata del mulligan non comparsa prima della mano'];
+    if (m.carte !== 7) problemi.push(`mulligan con ${m.carte} carte invece di 7`);
+    if (m.visibili !== m.carte) {
+        problemi.push(`nel mulligan si vedono ${m.visibili} carte su ${m.carte}: le altre restano fuori dalla mano`);
+    }
+    for (const [etichetta, riquadro, inSchermo] of [
+        ['«Tieni questa mano»', m.tenere, m.tenereInSchermo],
+        ['«Rimescola e pesca»', m.rimescola, m.rimescolaInSchermo]
+    ]) {
+        if (!riquadro) { problemi.push(`pulsante ${etichetta} assente nel mulligan`); continue; }
+        if (!inSchermo) problemi.push(`pulsante ${etichetta} fuori dallo schermo (${riquadro.w}x${riquadro.h} a ${riquadro.x},${riquadro.y})`);
+        if (riquadro.h < SOGLIE.pulsanteMulligan) {
+            problemi.push(`pulsante ${etichetta} alto ${riquadro.h}px, sotto la soglia di ${SOGLIE.pulsanteMulligan}px`);
+        }
+    }
+    if (m.overflowX > 0) problemi.push(`mulligan che scorre in orizzontale di ${m.overflowX}px`);
+    if (m.altezzaDocumento > h + SOGLIE.scarto) problemi.push(`mulligan che scorre in verticale: pagina alta ${m.altezzaDocumento}px su ${h}px`);
+    return problemi;
+};
+
+const controlla = (misura, { w, h }) => {
+    const problemi = controllaMulligan(misura.mulligan, h);
     const nota = [];
     if (misura.errore) return { problemi: [`tavolo non montato (${misura.errore}${misura.avviso ? ': ' + misura.avviso : ''})`], nota };
 
@@ -410,8 +405,11 @@ const controlla = (misura, { w, h }) => {
 
 const rigaMisura = ({ nome, w, h }, misura) => {
     const cella = valore => (valore ? `${valore.w}x${valore.h}` : '—');
+    const mulligan = misura.mulligan ? `${misura.mulligan.visibili}/${misura.mulligan.carte}` : '—';
     return [
         `${nome} ${w}x${h}`.padEnd(34),
+        mulligan.padEnd(6),
+        cella(misura.mulligan?.carta).padEnd(8),
         cella(misura.cartaCampo).padEnd(8),
         cella(misura.cartaMano).padEnd(8),
         (misura.pulsanteMano ? `${misura.pulsanteMano.h}px` : '—').padEnd(6),
@@ -423,14 +421,14 @@ const rigaMisura = ({ nome, w, h }, misura) => {
 
 const eseguiTutto = async () => {
     if (!base) base = 'http://localhost:3000';
-    if (!(await serveSorgenti(base))) base = await avviaVite();
+    if (!(await serveSorgenti(base))) base = await server.avvia();
 
     const cdp = await collegaCdp(apriBrowser(`${base}/magic/partita`));
     const esiti = [];
     try {
         await scriviMazzo(cdp);
         console.log('misura del tavolo Magic · telefono touch (pointer: coarse)\n');
-        console.log('misura'.padEnd(34) + 'campo'.padEnd(9) + 'mano'.padEnd(9) + 'tasto'.padEnd(7) + 'coarse');
+        console.log('misura'.padEnd(34) + 'mull'.padEnd(7) + 'm.carta'.padEnd(9) + 'campo'.padEnd(9) + 'mano'.padEnd(9) + 'tasto'.padEnd(7) + 'coarse');
         for (const misura of MISURE) {
             await emulaTelefono(cdp, misura);
             await emulaTocco(cdp);
@@ -445,7 +443,7 @@ const eseguiTutto = async () => {
     } finally {
         cdp.chiudi();
         chiudiBrowser();
-        if (vite) await fermaVite();
+        await server.ferma();
     }
 
     const rotti = esiti.filter(esito => esito.problemi.length);
@@ -462,12 +460,12 @@ const eseguiTutto = async () => {
     console.log(`Tutte le ${esiti.length} misure sono dentro le soglie.`);
 };
 
-process.on('SIGINT', async () => { chiudiBrowser(); await fermaVite(); process.exit(130); });
+process.on('SIGINT', async () => { chiudiBrowser(); await server.ferma(); process.exit(130); });
 
 eseguiTutto()
     .catch(async errore => {
         console.error(`\nMisura non eseguita: ${errore.message}`);
         chiudiBrowser();
-        await fermaVite();
+        await server.ferma();
         process.exitCode = 1;
     });

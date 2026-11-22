@@ -17,11 +17,12 @@
  * modifica al CSS o al JS della scheda carta riporti le carte troppo strette,
  * la tendina staccata dal bordo o l'arte fuori dal palco.
  */
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { connect as netConnect, createServer } from 'node:net';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { serveSorgenti, serverTemporaneo } from './lib/dev-server.mjs';
 
 const radice = join(dirname(fileURLToPath(import.meta.url)), '..');
 const sorgente = readFileSync(join(radice, 'scripts/mobile-audit.js'), 'utf8');
@@ -58,147 +59,10 @@ const raggiungibile = async () => {
     }
 };
 
-// Il test legge i moduli così come stanno in `src/`: se la porta espone la build
-// statica (`scripts/serve-dist.mjs`), `/src/...` non esiste e la misura non
-// partirebbe. In quel caso il test si accende un Vite suo, su una porta libera,
-// e lo spegne all'uscita.
-const serveSorgenti = async url => {
-    try {
-        const risposta = await fetch(`${url}/src/dashboards/magic.js`, { signal: AbortSignal.timeout(4000) });
-        if (!risposta.ok) return false;
-        return /javascript/.test(risposta.headers.get('content-type') || '') && (await risposta.text()).includes('export');
-    } catch {
-        return false;
-    }
-};
-
-// Una porta è libera solo se nessuno l'ascolta su nessuna delle due famiglie:
-// Vite si lega a `localhost`, che qui è `::1`, quindi una sonda legata a
-// `127.0.0.1` dichiara libera una porta occupata e `--strictPort` fa poi fallire
-// l'avvio con `Port 4300 is already in use`.
-const inAscolto = (numero, host) => new Promise(risolvi => {
-    let connessione;
-    let scadenza = null;
-    const chiudi = esito => {
-        if (scadenza) clearTimeout(scadenza);
-        try { connessione?.destroy(); } catch { /* già chiusa */ }
-        risolvi(esito);
-    };
-    try {
-        connessione = netConnect(numero, host);
-    } catch {
-        risolvi(false);
-        return;
-    }
-    // Un listener che accetta ma non risponde è comunque occupato.
-    scadenza = setTimeout(() => chiudi(true), 600);
-    connessione.once('connect', () => chiudi(true));
-    connessione.once('error', () => chiudi(false));
-});
-
-const portaOccupata = async numero => (await inAscolto(numero, '127.0.0.1')) || (await inAscolto(numero, '::1'));
-
-const portaLibera = async inizio => {
-    for (let numero = inizio; numero < inizio + 40; numero++) {
-        if (await portaOccupata(numero)) continue;
-        const libera = await new Promise(risolvi => {
-            const prova = createServer();
-            prova.once('error', () => risolvi(false));
-            prova.once('listening', () => prova.close(() => risolvi(true)));
-            prova.listen(numero);
-        });
-        if (libera) return numero;
-    }
-    return null;
-};
-
-const avviaViteSu = async numero => {
-    // Lo stdin resta aperto: il CLI di Vite esce quando lo stdin finisce, e con
-    // `ignore` (cioè /dev/null) si spegnerebbe a metà corsa. `CI=1` disattiva
-    // anche le scorciatoie da tastiera, che non servono qui.
-    const processo = spawn(join(radice, 'node_modules', '.bin', 'vite'), ['--port', String(numero), '--strictPort'], {
-        cwd: radice,
-        stdio: ['pipe', 'pipe', 'pipe'],
-        env: { ...process.env, CI: '1' }
-    });
-    processo.stdin.on('error', () => { /* stdin chiuso: pazienza */ });
-    processo.once('exit', codice => {
-        if (typeof codice === 'number' && codice !== 0) {
-            console.error(`Vite temporaneo uscito con codice ${codice}\n${registro.slice(-600)}`);
-        }
-    });
-    let registro = '';
-    processo.stdout.on('data', pezzo => { registro += pezzo; });
-    processo.stderr.on('data', pezzo => { registro += pezzo; });
-    const url = `http://localhost:${numero}`;
-    for (let tentativo = 0; tentativo < 60; tentativo++) {
-        if (await serveSorgenti(url)) return { processo, url };
-        if (processo.exitCode !== null) break;
-        await new Promise(risolvi => setTimeout(risolvi, 500));
-    }
-    processo.kill();
-    throw new Error(`Vite temporaneo non pronto su ${url}\n${registro.slice(-600)}`);
-};
-
-// Se la porta scelta viene presa nella corsa tra sonda e avvio, o Vite muore appena
-// partito, il tentativo successivo riparte da una porta diversa invece di ripetere
-// lo stesso numero.
-const avviaVite = async () => {
-    let ultimo = null;
-    for (let tentativo = 0; tentativo < 3; tentativo++) {
-        const numero = await portaLibera(4300 + tentativo * 10);
-        if (!numero) throw new Error('nessuna porta libera per un Vite temporaneo');
-        try {
-            return await avviaViteSu(numero);
-        } catch (errore) {
-            ultimo = errore;
-            console.error(`Vite temporaneo non avviato sulla porta ${numero}: ${String(errore.message).split('\n')[0]}`);
-        }
-    }
-    throw ultimo;
-};
-
-let vite = null;
-
-// SIGTERM e poi SIGKILL: Vite a volte ignora il primo, e i suoi pipe terrebbero
-// vivo questo processo anche dopo la stampa della tabella. Il riavvio aspetta la
-// morte effettiva, così la porta è davvero libera prima di riaccenderlo.
-const fermaVite = async () => {
-    const processo = vite?.processo;
-    vite = null;
-    if (!processo || processo.exitCode !== null) return;
-    for (const flusso of [processo.stdin, processo.stdout, processo.stderr]) {
-        try { flusso?.destroy?.(); } catch { /* già chiuso */ }
-    }
-    processo.unref?.();
-    await new Promise(risolvi => {
-        let forzatura = null;
-        let limite = null;
-        const fatto = () => {
-            clearTimeout(forzatura);
-            clearTimeout(limite);
-            risolvi();
-        };
-        processo.once('exit', fatto);
-        // SIGTERM può restare in sospeso su un processo congelato: SIGKILL lo chiude.
-        forzatura = setTimeout(() => {
-            try { processo.kill('SIGKILL'); } catch { /* già terminato */ }
-        }, 1500);
-        // Rete di sicurezza: non aspettare per sempre se nemmeno SIGKILL fa uscire.
-        limite = setTimeout(fatto, 5000);
-        try {
-            if (!processo.kill('SIGTERM')) fatto();
-        } catch {
-            fatto();
-        }
-    });
-    // I timer qui sopra non sono `unref`: mentre aspettiamo sono loro a tenere vivo
-    // il processo, altrimenti Node uscirebbe con 13 a metà attesa.
-    await new Promise(risolvi => setTimeout(risolvi, 200));
-};
+const server = serverTemporaneo({ radice });
 
 const spegniVite = () => {
-    void fermaVite();
+    void server.ferma();
 };
 
 if (!(await serveSorgenti(base))) {
@@ -206,17 +70,17 @@ if (!(await serveSorgenti(base))) {
         ? `${base} serve la build statica, non i sorgenti: avvio un Vite temporaneo.`
         : `Nessuna risposta da ${base}: avvio un Vite temporaneo.`);
     try {
-        vite = await avviaVite();
+        await server.avvia();
     } catch (errore) {
         console.error(`Impossibile avviare un Vite temporaneo: ${errore.message}`);
         process.exit(1);
     }
-    base = vite.url;
+    base = server.url;
     process.once('exit', spegniVite);
     for (const segnale of ['SIGINT', 'SIGTERM']) process.once(segnale, () => { spegniVite(); process.exit(130); });
 }
 
-const viteVivo = () => Boolean(vite?.processo) && vite.processo.exitCode === null && vite.processo.signalCode === null;
+const viteVivo = () => server.vivo();
 
 // Tre tentativi intervallati: un timeout isolato non deve far ripartire il server.
 const viteRisponde = async (tentativi = 3, pausa = 600) => {
@@ -230,7 +94,7 @@ const viteRisponde = async (tentativi = 3, pausa = 600) => {
 // Il Vite temporaneo può uscire o incantarsi a metà corsa: se non risponde più lo
 // riaccendo, invece di misurare una pagina d'errore (dove localStorage è vietato).
 const assicuraSorgenti = async () => {
-    if (!vite || await viteRisponde()) return;
+    if (!server.processo || await viteRisponde()) return;
     if (viteVivo()) {
         // Sotto carico un dev server può impiegare più dei 4s di timeout: prima di
         // spegnerlo gli do un'altra occasione.
@@ -241,9 +105,9 @@ const assicuraSorgenti = async () => {
     console.log(viteVivo()
         ? 'Il Vite temporaneo è bloccato: lo spengo e lo riaccendo.'
         : 'Il Vite temporaneo è uscito: lo riaccendo.');
-    await fermaVite();
-    vite = await avviaVite();
-    base = vite.url;
+    await server.ferma();
+    await server.avvia();
+    base = server.url;
     esegui('open', `${base}/`);
 };
 
@@ -288,7 +152,7 @@ try {
     } catch { /* il browser può essere già chiuso */ }
     // Atteso, non `void`: uscendo per errore un kill non atteso lascerebbe il Vite
     // vivo (e la porta occupata) dopo la fine del test.
-    await fermaVite();
+    await server.ferma();
 }
 
 const larghezza = (testo, colonne) => String(testo).padEnd(colonne);
