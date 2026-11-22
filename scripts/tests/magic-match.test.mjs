@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     MATCH_RULES, adjustLife, advancePhase, castSpell, createMatch, declareAttackers, declareBlockers,
-    castResponse, discardCards, mulliganAction, playLand, powerOf, resolveCombat, tapMana, validateMatchDeck
+    castResponse, discardCards, mulliganAction, passTurn, playLand, powerOf, resolveCombat, tapMana, validateMatchDeck
 } from '../../src/dashboards/magicMatchEngine.js';
 
 const cards = new Map();
@@ -135,7 +135,9 @@ const fourPlayers = () => {
     for (const id of ['a', 'b', 'c', 'd']) state = mulliganAction(state, id, 'keep');
     return state;
 };
-const passTurn = (state, id) => {
+// Giro di turno fase per fase: serve ai test che non hanno una creatura pronta,
+// quindi non usano `passTurn` del motore (che si ferma al combattimento).
+const nextTurn = (state, id) => {
     let next = advancePhase(state, id);
     next = advancePhase(next, id);
     next = advancePhase(next, id);
@@ -150,13 +152,13 @@ test('quattro giocatori ricevono sette carte e il turno gira in ordine', () => {
     assert.deepEqual(state.players, ['a', 'b', 'c', 'd']);
     assert.ok(state.players.every(id => state.playersData[id].hand.length === 7));
     assert.equal(state.activePlayer, 'a');
-    state = passTurn(state, 'a');
+    state = nextTurn(state, 'a');
     assert.equal(state.activePlayer, 'b');
-    state = passTurn(state, 'b');
+    state = nextTurn(state, 'b');
     assert.equal(state.activePlayer, 'c');
-    state = passTurn(state, 'c');
+    state = nextTurn(state, 'c');
     assert.equal(state.activePlayer, 'd');
-    state = passTurn(state, 'd');
+    state = nextTurn(state, 'd');
     assert.equal(state.activePlayer, 'a');
     assert.equal(state.turn, 2);
 });
@@ -182,9 +184,9 @@ test('un giocatore eliminato viene saltato nel giro di turni', () => {
     state = adjustLife(state, 'a', 'c', -40);
     assert.equal(state.playersData.c.eliminated, true);
     assert.equal(state.winner, null);
-    state = passTurn(state, 'a');
+    state = nextTurn(state, 'a');
     assert.equal(state.activePlayer, 'b');
-    state = passTurn(state, 'b');
+    state = nextTurn(state, 'b');
     assert.equal(state.activePlayer, 'd');
     assert.equal(state.winner, null);
 });
@@ -256,7 +258,7 @@ test('trapassare trasferisce al giocatore il danno che avanza', () => {
 });
 
 test('un istantaneo può rispondere nel turno avversario', () => {
-    const state = passTurn(started(), 'a');
+    const state = nextTurn(started(), 'a');
     assert.equal(state.activePlayer, 'b');
     state.playersData.a.battlefield.push(permanent('Bosco', { typeLine: 'Basic Land — Forest', oracleText: '{T}: Add {G}.', power: '', toughness: '' }));
     state.playersData.a.hand = [{ ...card('Risposta', { typeLine: 'Instant', manaCost: '{G}', cmc: 1, power: '', toughness: '' }), uid: 'r1' }];
@@ -267,7 +269,7 @@ test('un istantaneo può rispondere nel turno avversario', () => {
 });
 
 test('la risposta con bersaglio trova la carta e applica tutte le frasi', () => {
-    let state = passTurn(started(), 'a');
+    let state = nextTurn(started(), 'a');
     // L'identificativo vero contiene dei «:» (clientId:scryfallId:indice): il
     // bersaglio deve restare intero, altrimenti la carta non viene trovata.
     const ringUid = 'b:scryfall-id:1';
@@ -292,10 +294,42 @@ test('la risposta con bersaglio trova la carta e applica tutte le frasi', () => 
 });
 
 test('solo un istantaneo risponde, e nel proprio turno si lancia normalmente', () => {
-    const state = passTurn(started(), 'a');
+    const state = nextTurn(started(), 'a');
     state.playersData.a.hand = [{ ...card('Lenta', { typeLine: 'Sorcery' }), uid: 'x1' }];
     assert.throws(() => castResponse(state, 'a', 'x1'), /istantaneo/i);
     const own = started();
     own.playersData.a.hand = [{ ...card('Risposta', { typeLine: 'Instant', manaCost: '{G}', cmc: 1 }), uid: 'x2' }];
     assert.throws(() => castResponse(own, 'a', 'x2'), /lancia normalmente/i);
+});
+
+test('passTurn si ferma al combattimento con una creatura pronta e prosegue saltandolo', () => {
+    const state = started();
+    state.playersData.a.battlefield = [permanent('pronta')];
+    // Il turno non dichiara «non attacca» al posto del giocatore: con una
+    // creatura pronta si ferma al combattimento e la scelta resta sua.
+    const fermo = passTurn(state, 'a');
+    assert.equal(fermo.activePlayer, 'a');
+    assert.equal(fermo.phase, 'combat');
+    assert.equal(fermo.combat, null);
+    assert.equal(fermo.playersData.a.battlefield[0].tapped, false);
+    assert.match(fermo.log.join(' '), /entra nella fase di combattimento/);
+
+    // Secondo tocco («Non attaccare»): attraversa il combattimento e chiude il
+    // turno senza far attaccare nessuno.
+    const passato = passTurn(fermo, 'a', { skipCombat: true });
+    assert.equal(passato.activePlayer, 'b');
+    assert.equal(passato.phase, 'main1');
+    assert.equal(passato.combat, null);
+    assert.equal(passato.playersData.a.battlefield[0].tapped, false);
+    assert.match(passato.log.join(' '), /non attacca/);
+});
+
+test('passTurn non si ferma al combattimento se nessuna creatura può attaccare', () => {
+    const malata = started();
+    malata.playersData.a.battlefield = [permanent('appena-evocata', { summoningSick: true })];
+    assert.equal(passTurn(malata, 'a').activePlayer, 'b');
+
+    const difensore = started();
+    difensore.playersData.a.battlefield = [permanent('muro', { keywords: ['Defender'] })];
+    assert.equal(passTurn(difensore, 'a').activePlayer, 'b');
 });
