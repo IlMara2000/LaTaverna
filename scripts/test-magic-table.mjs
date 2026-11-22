@@ -24,6 +24,8 @@
  *    dal bordo del suo campo;
  *  - una carta in mano o il suo pulsante scendono sotto soglia;
  *  - un elemento esce dal tavolo senza essere dentro un contenitore che scorre;
+ *  - nel combattimento (attacco, blocco, richiesta di scarto) pulsanti, tendine
+ *    o carte escono dallo schermo o scendono sotto le stesse soglie;
  *  - avviso, riga comandi o selettore del bersaglio non stanno nella barra.
  *
  * Il mazzo è finto ma valido per il Commander (100 carte, comandante bianco,
@@ -47,6 +49,9 @@ const SOGLIE = {
     cartaMano: 96,      // carta in mano
     pulsanteMano: 32,   // pulsante sotto la carta in mano (36 sul telefono in orizzontale)
     pulsanteMulligan: 32, // «Tieni» e «Rimescola e pesca» (40 e 48 sul telefono)
+    pulsanteCombattimento: 32, // «Dichiara attaccanti», «Conferma blocchi», «Scarta»
+    chipCarta: 24,      // «Attacca» e «Mana» stanno sopra l'arte di una carta da 108px
+    tendina: 28,        // tendine del bersaglio e dei bloccanti
     scarto: 2           // tolleranza per arrotondamenti dei subpixel
 };
 
@@ -55,6 +60,9 @@ const MISURE = [
     { nome: 'telefono piccolo orizzontale', w: 667, h: 375 },
     { nome: 'telefono verticale', w: 390, h: 844 }
 ];
+
+// Combattimento: uno scenario per schermata, ognuno in una partita nuova.
+const SCENARI = ['attacco', 'blocco', 'scarto'];
 
 /* ── server di sviluppo ───────────────────────────────────────────────────── */
 
@@ -170,9 +178,11 @@ const MAZZO_PROVA = () => {
         colorIdentity: ['W'], producedMana: ['W'], oracleText: '{T}: Add {W}.'
     });
     // 38 creature diverse (una copia ciascuna) + 61 terre base + comandante = 100.
+    // Creature da un mana: con una terra si evoca subito e il combattimento
+    // arriva al secondo turno invece che al quinto.
     const creature = Array.from({ length: 38 }, (_, indice) => carta(`prova-creatura-${indice}`, `Angelo ${indice + 1}`, 'Creature — Angel', {
-        manaCost: '{2}{W}', power: String(2 + (indice % 3)), toughness: String(2 + (indice % 2)),
-        colors: ['W'], colorIdentity: ['W'], cmc: 3, oracleText: 'Flying'
+        manaCost: '{W}', power: '1', toughness: '1',
+        colors: ['W'], colorIdentity: ['W'], cmc: 1, oracleText: 'Flying'
     }));
     const collezione = [commander, terra, ...creature];
     const mazzo = {
@@ -335,6 +345,194 @@ const MISURA = `(async () => {
     });
 })()`;
 
+/* ── combattimento ────────────────────────────────────────────────────────── */
+
+// Guidare la partita fino a una schermata di combattimento richiede turni veri:
+// si gioca una terra, si evoca una creatura da un mana e si lasciano agire i
+// due giocatori finché la schermata non compare. Ogni scenario parte da una
+// partita nuova perché mano e campo devono essere diversi.
+const COMBATTIMENTO = scenario => `(async () => {
+    const SCENARIO = ${JSON.stringify(scenario)};
+    const attendi = ms => new Promise(r => setTimeout(r, ms));
+    const q = s => document.querySelector(s);
+    const arrotonda = n => Math.round(n);
+    const riquadro = el => { if (!el) return null; const b = el.getBoundingClientRect();
+        return { x: arrotonda(b.x), y: arrotonda(b.y), w: arrotonda(b.width), h: arrotonda(b.height), r: arrotonda(b.right), b: arrotonda(b.bottom) }; };
+
+    for (let i = 0; i < 25 && !q('[data-start-bot]') && !q('.mp-mulligan') && !q('.mt-hand'); i++) await attendi(400);
+    if (!q('.mp-mulligan') && !q('.mt-hand')) q('[data-start-bot]')?.click();
+    for (let i = 0; i < 40 && !q('.mp-mulligan') && !q('.mt-hand'); i++) await attendi(400);
+    q('[data-mulligan="keep"]')?.click();
+    for (let i = 0; i < 40 && !q('[data-phase]'); i++) await attendi(300);
+
+    const fase = () => q('[data-phase]');
+    const mioTurno = async (limite = 30000) => {
+        const inizio = Date.now();
+        while (Date.now() - inizio < limite) { if (fase()) return true; await attendi(250); }
+        return false;
+    };
+    const premi = async (pausa = 900) => { fase()?.click(); await attendi(pausa); };
+    const inMano = testo => [...document.querySelectorAll('[data-play]')]
+        .find(bottone => bottone.textContent.toLowerCase().includes(testo) && !bottone.disabled);
+    const giocaTerra = () => { const b = inMano('gioca terra'); b?.click(); return Boolean(b); };
+    const evoca = () => { const b = inMano('lancia'); b?.click(); return Boolean(b); };
+    const attesa = async (selettore, limite = 30000) => {
+        const inizio = Date.now();
+        while (Date.now() - inizio < limite) { if (q(selettore)) return true; await attendi(300); }
+        return false;
+    };
+
+    let raggiunta = true;
+    if (SCENARIO === 'attacco') {
+        await mioTurno();
+        giocaTerra(); await attendi(500);
+        evoca(); await attendi(900);
+        await premi();                  // chiude il primo turno
+        await mioTurno();               // la creatura non ha più la debolezza
+        await attendi(400);
+        await premi();                  // il turno si ferma al combattimento
+        raggiunta = await attesa('.mp-combat [data-declare-attack]');
+    } else if (SCENARIO === 'blocco') {
+        await mioTurno();
+        giocaTerra(); await attendi(500);
+        evoca(); await attendi(900);
+        await premi();                  // primo turno
+        await mioTurno();
+        await attendi(300);
+        await premi();                  // combattimento mio: non attacco
+        await premi(1400);              // «Non attaccare»
+        raggiunta = await attesa('[data-block]');   // il bot attacca, tocca a me bloccare
+    } else {
+        await mioTurno();
+        await premi();                  // primo turno senza giocare nulla
+        await mioTurno();               // pesco l'ottava carta
+        await attendi(400);
+        await premi();                  // fine turno: prima si scarta
+        raggiunta = await attesa('[data-confirm-discard]');
+    }
+
+    // I pulsanti «Attacca» stanno sulle carte in campo, il resto nel pannello:
+    // si prendono da tutta la pagina, altrimenti la carta non si misura.
+    const SELETTORI = {
+        attacco: '[data-attacker], [data-declare-attack], #play-defender',
+        blocco: '[data-block], [data-declare-block]',
+        scarto: '[data-discard], [data-confirm-discard]'
+    };
+    // Quanto di un elemento si vede davvero: il riquadro si interseca con
+    // ogni contenitore che ritaglia (mano e comandi scorrono, i pulsanti delle
+    // carte stanno dentro un riquadro con overflow nascosto) e con lo schermo.
+    const visibileDi = el => {
+        const r = el.getBoundingClientRect();
+        let alto = r.top, sinistra = r.left, basso = r.bottom, destra = r.right;
+        // Un ritaglio dentro un contenitore che scorre si recupera scorrendo:
+        // solo quello dentro un contenitore fermo rende l'elemento irraggiungibile.
+        let bloccatoY = false, bloccatoX = false;
+        for (let p = el.parentElement; p; p = p.parentElement) {
+            const stile = getComputedStyle(p);
+            const c = p.getBoundingClientRect();
+            const scorreY = (stile.overflowY === 'auto' || stile.overflowY === 'scroll') && p.scrollHeight > p.clientHeight + 1;
+            const scorreX = (stile.overflowX === 'auto' || stile.overflowX === 'scroll') && p.scrollWidth > p.clientWidth + 1;
+            if (stile.overflowY !== 'visible') {
+                if (r.bottom > c.bottom + 1 || r.top < c.top - 1) bloccatoY = bloccatoY || !scorreY;
+                alto = Math.max(alto, c.top); basso = Math.min(basso, c.bottom);
+            }
+            if (stile.overflowX !== 'visible') {
+                if (r.right > c.right + 1 || r.left < c.left - 1) bloccatoX = bloccatoX || !scorreX;
+                sinistra = Math.max(sinistra, c.left); destra = Math.min(destra, c.right);
+            }
+        }
+        alto = Math.max(alto, 0); sinistra = Math.max(sinistra, 0);
+        basso = Math.min(basso, innerHeight); destra = Math.min(destra, innerWidth);
+        return { w: arrotonda(Math.max(0, destra - sinistra)), h: arrotonda(Math.max(0, basso - alto)), bloccatoX, bloccatoY };
+    };
+    const catena = el => {
+        const nomi = [];
+        let cassetto = null;
+        for (let p = el.parentElement; p && nomi.length < 5; p = p.parentElement) {
+            const classe = typeof p.className === 'string' ? p.className.trim().split(' ')[0] : '';
+            nomi.push(classe || p.tagName.toLowerCase());
+            const stile = getComputedStyle(p);
+            if (!cassetto && stile.overflowX !== 'visible') {
+                const c = p.getBoundingClientRect();
+                cassetto = classe + ' ' + arrotonda(c.x) + ',' + arrotonda(c.y) + ' ' + arrotonda(c.width) + 'x' + arrotonda(c.height)
+                    + ' ovf ' + stile.overflowX + '/' + stile.overflowY;
+            }
+        }
+        return nomi.join(' < ') + ' | ' + (cassetto || 'senza ritagli');
+    };
+    const elementi = [...document.querySelectorAll(SELETTORI[SCENARIO])].map(el => {
+        const r = el.getBoundingClientRect();
+        const stile = getComputedStyle(el);
+        const visibile = visibileDi(el);
+        return {
+            tipo: el.tagName.toLowerCase(),
+            testo: String(el.textContent || el.selectedOptions?.[0]?.textContent || '').trim().slice(0, 28),
+            w: arrotonda(r.width), h: arrotonda(r.height), x: arrotonda(r.x), y: arrotonda(r.y),
+            visibileW: visibile.w, visibileH: visibile.h,
+            bloccatoX: visibile.bloccatoX, bloccatoY: visibile.bloccatoY,
+            catena: catena(el),
+            diagnosi: (() => {
+                const stile = getComputedStyle(el);
+                const padre = el.parentElement;
+                const sp = padre ? getComputedStyle(padre) : null;
+                return 'io ' + arrotonda(r.x) + ',' + arrotonda(r.y) + ' ' + arrotonda(r.width) + 'x' + arrotonda(r.height)
+                    + ' flex ' + stile.flex + ' min ' + stile.minInlineSize
+                    + (padre ? ' | padre ' + padre.className + ' ' + sp.display + ' wrap ' + sp.flexWrap + ' w ' + arrotonda(padre.getBoundingClientRect().width) + ' ovf ' + sp.overflowX : '');
+            })(),
+            inCarta: Boolean(el.closest('.mt-card, .mp-hand-card')),
+            inMano: Boolean(el.closest('.mt-hand')),
+            visibile: stile.display !== 'none' && stile.visibility !== 'hidden' && Number(stile.opacity) > 0.05
+        };
+    });
+    const carte = [...document.querySelectorAll('.mt-hand .mt-card, .mp-hand .mp-hand-card')].map(el => riquadro(el));
+
+    return JSON.stringify({
+        scenario: SCENARIO,
+        raggiunta,
+        pannello: riquadro(q('.mp-combat') || q('.mp-discard')),
+        pulsanteTurno: riquadro(fase()),
+        elementi,
+        carte: carte.length,
+        carta: carte[0] || null,
+        overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        altezzaDocumento: document.documentElement.scrollHeight
+    });
+})()`;
+
+const controllaCombattimento = (lotta, scenario, { nome, h }) => {
+    const problemi = [];
+    const visibili = lotta.elementi.filter(elemento => elemento.visibile);
+    if (!lotta.raggiunta || !visibili.length) return [`${nome} · ${scenario}: schermata non raggiunta (nessun controllo trovato)`];
+    for (const elemento of visibili) {
+        const minimo = elemento.tipo === 'select' ? SOGLIE.tendina
+            : elemento.inCarta ? SOGLIE.chipCarta : SOGLIE.pulsanteCombattimento;
+        if (elemento.h < minimo) {
+            problemi.push(`${nome} · ${scenario}: ${elemento.tipo} «${elemento.testo}» alto ${elemento.h}px, sotto la soglia di ${minimo}px`);
+        }
+        // Fuori dallo schermo o mangiato da un contenitore che non scorre.
+        const tagliatoY = elemento.bloccatoY && elemento.visibileH < elemento.h * 0.6;
+        // La mano è una striscia che scorre: una carta tagliata a destra si
+        // raggiunge scorrendo, non è un comando fuori dallo schermo.
+        const tagliatoX = elemento.bloccatoX && !elemento.inMano && elemento.visibileW < elemento.w * 0.6;
+        if (tagliatoY || tagliatoX) {
+            problemi.push(`${nome} · ${scenario}: ${elemento.tipo} «${elemento.testo}» si vede solo ${elemento.visibileW}x${elemento.visibileH} di ${elemento.w}x${elemento.h} (${elemento.catena}) [${elemento.diagnosi}]`);
+        }
+    }
+    if (lotta.carta && lotta.carta.h < SOGLIE.cartaMano) {
+        problemi.push(`${nome} · ${scenario}: carta in mano alta ${lotta.carta.h}px, sotto la soglia di ${SOGLIE.cartaMano}px`);
+    }
+    if (lotta.overflowX > 0) problemi.push(`${nome} · ${scenario}: pagina che scorre in orizzontale di ${lotta.overflowX}px`);
+    if (lotta.altezzaDocumento > h + SOGLIE.scarto) {
+        problemi.push(`${nome} · ${scenario}: pagina alta ${lotta.altezzaDocumento}px su ${h}px`);
+    }
+    return problemi;
+};
+
+const rigaCombattimento = ({ w, h }, scenario, lotta, problemi) => {
+    const controlli = lotta.elementi.filter(elemento => elemento.visibile).length;
+    return `  ${scenario.padEnd(10)}${`${w}x${h}`.padEnd(12)}${`${controlli} controlli`.padEnd(14)}${problemi.length ? 'X' : 'ok'}`;
+};
+
 /* ── controlli ────────────────────────────────────────────────────────────── */
 
 const controllaMulligan = (m, h) => {
@@ -425,6 +623,8 @@ const eseguiTutto = async () => {
 
     const cdp = await collegaCdp(apriBrowser(`${base}/magic/partita`));
     const esiti = [];
+    const righeLotta = [];
+    const problemiLotta = [];
     try {
         await scriviMazzo(cdp);
         console.log('misura del tavolo Magic · telefono touch (pointer: coarse)\n');
@@ -439,6 +639,17 @@ const eseguiTutto = async () => {
             const { problemi, nota } = controlla(risultato, misura);
             console.log(rigaMisura(misura, risultato));
             esiti.push({ misura, problemi, nota });
+
+            // Combattimento: una partita nuova per scenario, perché attacco,
+            // blocco e richiesta di scarto richiedono mani e campi diversi.
+            for (const scenario of SCENARI) {
+                await cdp.invia('Page.navigate', { url: `${base}/magic/partita` });
+                await new Promise(risolvi => setTimeout(risolvi, 2500));
+                const lotta = JSON.parse(await cdp.valuta(COMBATTIMENTO(scenario)));
+                const lista = controllaCombattimento(lotta, scenario, misura);
+                righeLotta.push(rigaCombattimento(misura, scenario, lotta, lista));
+                problemiLotta.push(...lista);
+            }
         }
     } finally {
         cdp.chiudi();
@@ -446,18 +657,22 @@ const eseguiTutto = async () => {
         await server.ferma();
     }
 
+    console.log('\ncombattimento              misura      controlli     esito');
+    for (const riga of righeLotta) console.log(riga);
+
     const rotti = esiti.filter(esito => esito.problemi.length);
     console.log('');
     for (const esito of esiti) {
         if (esito.nota.length) console.log(`nota · ${esito.misura.nome}: ${esito.nota.join('; ')}`);
         for (const problema of esito.problemi) console.log(`ERRORE · ${esito.misura.nome}: ${problema}`);
     }
-    if (rotti.length) {
-        console.log(`\n${rotti.length} misura/e fuori soglia su ${esiti.length}.`);
+    for (const problema of problemiLotta) console.log(`ERRORE · ${problema}`);
+    if (rotti.length || problemiLotta.length) {
+        console.log(`\n${rotti.length + problemiLotta.length} controlli fuori soglia su ${esiti.length + righeLotta.length} misure.`);
         process.exitCode = 1;
         return;
     }
-    console.log(`Tutte le ${esiti.length} misure sono dentro le soglie.`);
+    console.log(`Tutte le ${esiti.length + righeLotta.length} misure sono dentro le soglie.`);
 };
 
 process.on('SIGINT', async () => { chiudiBrowser(); await server.ferma(); process.exit(130); });
