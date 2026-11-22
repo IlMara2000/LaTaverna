@@ -793,6 +793,8 @@ body.magic-table-active .floating-trigger { display: none !important; }
   .mt-table .mt-lane .mt-card { block-size: 100%; max-inline-size: none; }
   .mt-table .mt-lane .mt-card__actions { padding: 2px; gap: 2px; max-block-size: 100%; overflow: hidden; }
   .mt-table .mt-lane .mt-card__actions button { min-block-size: 0; padding: 1px 4px; font-size: 10px; }
+  /* Come in verticale: 24 px di area toccabile sul vetro. */
+  .mt-table.mt-table .mt-lane .mt-card__actions button { min-block-size: 24px; }
 
   /* Comandi: sotto il proprio campo, sopra la mano. */
   .mt-table .mt-commands { max-block-size: 24dvh; font-size: 12px; }
@@ -851,7 +853,9 @@ body.magic-table-active .floating-trigger { display: none !important; }
    Qui il campo si divide in due colonne (loro a sinistra, tu a destra), la
    mano prende una fascia sua e i comandi restano una riga sola che scorre. */
 @media (orientation: landscape) and (max-height: 520px) {
-  .mt-table { --mt-bar-h: 46px; }
+  /* Doppia classe: arena.css arriva dopo table.css e riportava la barra a
+     max(7u, 56px), quindi i 46 px qui sotto non entravano mai in vigore. */
+  .mt-table.mt-table { --mt-bar-h: 46px; }
 
   .mt-table .mt-board {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -872,6 +876,9 @@ body.magic-table-active .floating-trigger { display: none !important; }
   .mt-table .mt-lane__cards { flex: 0 0 auto; block-size: 112px; padding-block: 0; }
   .mt-table .mt-lane .mt-card { block-size: 100%; max-inline-size: none; }
   .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; }
+  /* Sul vetro un pulsante alto 16 px non si centra con il dito: 24 px resta
+     dentro l'arte della carta, ma si tocca. */
+  .mt-table.mt-table .mt-lane .mt-card__actions button { min-block-size: 24px; padding: 1px 4px; font-size: 10px; }
 
   /* Comandi: una riga che scorre, senza testi spezzati dentro i pulsanti. */
   /* 16dvh: nella barra restano visibili la riga comandi e l'avviso (errori come
