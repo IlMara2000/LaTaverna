@@ -13,7 +13,7 @@ import {
 import { abilityLabel, parseCardAbilities, textSupport } from './magicEffects.js';
 import { showMatchTable } from '../match/table.js';
 import { viewFor } from './magic/engine/view.js';
-import { applyAction } from './magic/engine/actions.js';
+import { applyAction, legalActions } from './magic/engine/actions.js';
 import { createEngineMatch, isEngineState, passPriority, withEngine } from './magic/engine/turn.js';
 import { stepOf } from './magic/engine/state.js';
 import { enterImmersive } from '../match/immersive.js';
@@ -374,13 +374,15 @@ export function showMagicPlay(container, options = {}) {
             const puoBloccare = (state.playersData?.[id]?.battlefield || []).some(card => isCreature(card) && !card.tapped);
             if (attaccanti && puoBloccare) return state;
         }
-        const canAct = (state.playersData?.[id]?.hand || []).some(card => {
-            if (/\bland\b/i.test(String(card?.typeLine || ''))) return false;
-            try {
-                applyAction(structuredClone(state), { type: 'castToStack', playerId: id, uid: card.uid });
-                return true;
-            } catch { return false; }
-        });
+        // L'auto-pass deve considerare TUTTE le mosse legali, non solo i lanci
+        // sullo stack: un'abilità attivabile (o qualsiasi altra mossa legale)
+        // tiene aperta la finestra di priorità. Si esclude il solo passPriority
+        // (la mossa «passa») e le mosse manuali (es. Vite ±1).
+        const canAct = (legalActions(state, id) || []).some(action =>
+            action && action.type !== 'passPriority' && action.type !== 'pass' && !action.manual && action.type !== 'declareBlockers'
+        );
+        // I blocchi sono già gestiti sopra: se arriviamo qui senza blocchi reali,
+        // la dichiarazione non conta come mossa che tiene aperta la priorità.
         return canAct ? state : safePass(state, id);
     }
 
