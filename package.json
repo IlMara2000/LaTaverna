@@ -16,6 +16,7 @@
     "test:worker": "node --test scripts/tests/worker-routing.test.mjs scripts/tests/error-report.test.mjs",
     "backup": "node --env-file-if-exists=.env.local scripts/backup-supabase.mjs",
     "test:layout": "node scripts/test-magic-layout.mjs",
+    "test:table": "node scripts/test-magic-table.mjs",
     "test:safe-area": "node scripts/test-card-counter-safe-area.mjs",
     "tunnel": "ngrok http 127.0.0.1:31415 --traffic-policy-file scripts/ngrok-policy.json --inspect=false --log stdout",
     "watch:gateway": "node --env-file-if-exists=.env.local scripts/gateway-watch.mjs",

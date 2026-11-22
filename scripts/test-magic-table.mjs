@@ -1,0 +1,473 @@
+#!/usr/bin/env node
+/**
+ * MISURA DEL TAVOLO MAGIC SU TELEFONO TOUCH
+ *
+ * Apre una partita contro il Bot e misura il tavolo a tre misure di telefono,
+ * emulando un dispositivo touch (`pointer: coarse`, touch a 5 punti, viewport
+ * mobile): con il puntatore fine il tavolo diventa un riquadro 16:9 e le regole
+ * da telefono non entrano in gioco, quindi senza emulazione il test misurerebbe
+ * un'altra cosa.
+ *
+ *   npm run test:table
+ *   BASE=http://localhost:3000 npm run test:table
+ *
+ * Se la porta indicata non serve i sorgenti (tipico con `npm run serve`, che
+ * espone la build statica) il test si accende un Vite suo su una porta libera e
+ * lo spegne all'uscita.
+ *
+ * Esce con codice 1 se, a una delle misure:
+ *  - il tavolo non occupa tutto lo schermo (regole desktop finite in produzione);
+ *  - una carta del campo scende sotto la soglia di leggibilità o viene tagliata
+ *    dal bordo del suo campo;
+ *  - una carta in mano o il suo pulsante scendono sotto soglia;
+ *  - un elemento esce dal tavolo senza essere dentro un contenitore che scorre;
+ *  - avviso, riga comandi o selettore del bersaglio non stanno nella barra.
+ *
+ * Il mazzo è finto ma valido per il Commander (100 carte, comandante bianco,
+ * terre base ripetute) e viene scritto in localStorage: il test non dipende da
+ * account, Supabase o Scryfall, così può girare offline.
+ */
+import { execFileSync, spawn } from 'node:child_process';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:net';
+
+const radice = join(dirname(fileURLToPath(import.meta.url)), '..');
+const browser = process.env.AGENT_BROWSER || 'agent-browser';
+const sessione = `magic-table-${process.pid}`;
+let base = (process.env.BASE || '').replace(/\/+$/, '');
+
+// Soglie: sotto questi pixel le carte non si leggono più (numeri in px CSS).
+const SOGLIE = {
+    cartaCampo: 96,     // carta permanente nel campo: 80x112 a 844x390, 77x108 a 667x375
+    cartaMano: 96,      // carta in mano
+    pulsanteMano: 32,   // pulsante sotto la carta in mano (36 sul telefono in orizzontale)
+    scarto: 2           // tolleranza per arrotondamenti dei subpixel
+};
+
+const MISURE = [
+    { nome: 'telefono orizzontale', w: 844, h: 390 },
+    { nome: 'telefono piccolo orizzontale', w: 667, h: 375 },
+    { nome: 'telefono verticale', w: 390, h: 844 }
+];
+
+/* ── server di sviluppo ───────────────────────────────────────────────────── */
+
+const serveSorgenti = async url => {
+    try {
+        const risposta = await fetch(`${url}/src/dashboards/magicPlay.js`, { signal: AbortSignal.timeout(4000) });
+        if (!risposta.ok) return false;
+        return /javascript/.test(risposta.headers.get('content-type') || '') && (await risposta.text()).includes('export');
+    } catch {
+        return false;
+    }
+};
+
+// Si prova a occupare la porta: se il sistema la concede è libera. Il bind è su
+// tutte le interfacce, così vale sia per 127.0.0.1 sia per ::1 (localhost).
+const portaOccupata = numero => new Promise(risolvi => {
+    const prova = createServer();
+    prova.once('error', () => risolvi(true));
+    prova.once('listening', () => prova.close(() => risolvi(false)));
+    prova.listen(numero);
+});
+
+const portaLibera = async inizio => {
+    for (let numero = inizio; numero < inizio + 40; numero++) {
+        if (await portaOccupata(numero)) continue;
+        return numero;
+    }
+    return null;
+};
+
+let vite = null;
+
+const avviaVite = async () => {
+    const inizio = 4320;
+    const numero = await portaLibera(inizio);
+    if (!numero) throw new Error('nessuna porta libera per un Vite temporaneo');
+    // Lo stdin resta aperto: il CLI di Vite esce quando lo stdin finisce.
+    vite = spawn(join(radice, 'node_modules', '.bin', 'vite'), ['--port', String(numero), '--strictPort'], {
+        cwd: radice,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, CI: '1' }
+    });
+    vite.stdin.on('error', () => { /* stdin chiuso: pazienza */ });
+    let registro = '';
+    vite.stdout.on('data', pezzo => { registro += pezzo; });
+    vite.stderr.on('data', pezzo => { registro += pezzo; });
+    const url = `http://localhost:${numero}`;
+    for (let tentativo = 0; tentativo < 60; tentativo++) {
+        if (await serveSorgenti(url)) return url;
+        if (vite.exitCode !== null) break;
+        await new Promise(risolvi => setTimeout(risolvi, 500));
+    }
+    throw new Error(`Vite temporaneo non pronto su ${url}\n${registro.slice(-600)}`);
+};
+
+const fermaVite = async () => {
+    const processo = vite;
+    vite = null;
+    if (!processo || processo.exitCode !== null) return;
+    for (const flusso of [processo.stdin, processo.stdout, processo.stderr]) {
+        try { flusso?.destroy?.(); } catch { /* già chiuso */ }
+    }
+    processo.unref?.();
+    await new Promise(risolvi => {
+        let forzatura = null;
+        const fatto = () => { clearTimeout(forzatura); risolvi(); };
+        processo.once('exit', fatto);
+        forzatura = setTimeout(() => { try { processo.kill('SIGKILL'); } catch { /* già morto */ } }, 1500);
+        try { if (!processo.kill('SIGTERM')) fatto(); } catch { fatto(); }
+    });
+};
+
+/* ── browser e CDP ────────────────────────────────────────────────────────── */
+
+const esegui = (...argomenti) => {
+    try {
+        return execFileSync(browser, ['--session', sessione, ...argomenti], {
+            cwd: radice, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe']
+        });
+    } catch (errore) {
+        const dettaglio = String(errore.stderr || errore.message || '').trim().split('\n').slice(-2).join(' ');
+        throw new Error(`${browser} ${argomenti[0]} non riuscito: ${dettaglio}`);
+    }
+};
+
+const chiudiBrowser = () => {
+    try { esegui('close'); } catch { /* nessuna sessione aperta */ }
+};
+
+const apriBrowser = url => {
+    esegui('open', url);
+    const cdp = esegui('get', 'cdp-url').trim();
+    if (!cdp.startsWith('ws')) throw new Error(`indirizzo CDP inatteso: ${cdp}`);
+    return cdp;
+};
+
+// Client CDP minimo: serve solo a emulare il telefono e a leggere il DOM.
+const collegaCdp = async url => {
+    if (typeof WebSocket !== 'function') {
+        throw new Error('Node senza WebSocket globale: aggiorna a Node 22 o superiore');
+    }
+    const ws = new WebSocket(url);
+    const attesa = new Map();
+    let sequenza = 0;
+    ws.addEventListener('message', evento => {
+        const messaggio = JSON.parse(evento.data);
+        const pendente = messaggio.id && attesa.get(messaggio.id);
+        if (!pendente) return;
+        attesa.delete(messaggio.id);
+        if (messaggio.error) pendente.no(new Error(JSON.stringify(messaggio.error)));
+        else pendente.si(messaggio.result);
+    });
+    await new Promise((risolvi, rifiuta) => {
+        ws.addEventListener('open', risolvi, { once: true });
+        ws.addEventListener('error', () => rifiuta(new Error('connessione CDP rifiutata')), { once: true });
+    });
+    const invia = (metodo, parametri = {}, sessionId) => new Promise((si, no) => {
+        const id = ++sequenza;
+        attesa.set(id, { si, no });
+        ws.send(JSON.stringify({ id, method: metodo, params: parametri, ...(sessionId ? { sessionId } : {}) }));
+    });
+    const { targetInfos } = await invia('Target.getTargets');
+    const pagina = targetInfos.find(t => t.type === 'page' && t.url.startsWith('http'));
+    if (!pagina) throw new Error('nessuna scheda aperta nel browser');
+    const { sessionId } = await invia('Target.attachToTarget', { targetId: pagina.targetId, flatten: true });
+    await invia('Page.enable', {}, sessionId);
+    await invia('Runtime.enable', {}, sessionId);
+    return {
+        invia: (metodo, parametri) => invia(metodo, parametri, sessionId),
+        valuta: async (espressione) => {
+            const esito = await invia('Runtime.evaluate', {
+                expression: espressione, awaitPromise: true, returnByValue: true
+            }, sessionId);
+            if (esito.exceptionDetails) throw new Error(esito.exceptionDetails.text || 'errore nella pagina');
+            return esito.result.value;
+        },
+        chiudi: () => { try { ws.close(); } catch { /* già chiusa */ } }
+    };
+};
+
+const emulaTelefono = (cdp, { w, h }) => cdp.invia('Emulation.setDeviceMetricsOverride', {
+    width: w, height: h, deviceScaleFactor: 2, mobile: true, screenWidth: w, screenHeight: h,
+    screenOrientation: { type: w > h ? 'landscapePrimary' : 'portraitPrimary', angle: w > h ? 90 : 0 }
+});
+
+// Le media feature non si possono forzare dal CSS: qui si dichiara che il
+// puntatore è un dito, così valgono le regole `(pointer: coarse)`.
+const emulaTocco = async cdp => {
+    await cdp.invia('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    await cdp.invia('Emulation.setEmulatedMedia', {
+        features: [
+            { name: 'pointer', value: 'coarse' },
+            { name: 'any-pointer', value: 'coarse' },
+            { name: 'hover', value: 'none' }
+        ]
+    });
+};
+
+/* ── mazzo di prova ───────────────────────────────────────────────────────── */
+
+// Arte segnaposto: SVG inline con lo stesso rapporto delle carte vere, così le
+// misure non dipendono dalla rete.
+const ARTE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='488' height='680'%3E%3Crect width='488' height='680' fill='%23241a38'/%3E%3C/svg%3E";
+
+const carta = (id, nome, typeLine, extra = {}) => ({
+    id, name: nome, typeLine, image: ARTE, manaCost: extra.manaCost || '',
+    oracleText: extra.oracleText || '', power: extra.power ?? '', toughness: extra.toughness ?? '',
+    keywords: extra.keywords || [], colors: extra.colors || [], colorIdentity: extra.colorIdentity || [],
+    cmc: extra.cmc || 0, producedMana: extra.producedMana || [], rarity: 'common', set: 'prova'
+});
+
+const MAZZO_PROVA = () => {
+    const commander = carta('prova-comandante', 'Angelo della Prova', 'Creature — Angel', {
+        manaCost: '{3}{W}{W}', power: '3', toughness: '4', keywords: ['Flying'],
+        colors: ['W'], colorIdentity: ['W'], cmc: 5,
+        oracleText: 'Flying\nQuando questa creatura entra, guadagni 2 punti vita.'
+    });
+    const terra = carta('prova-pianura', 'Pianura', 'Basic Land — Plains', {
+        colorIdentity: ['W'], producedMana: ['W'], oracleText: '{T}: Add {W}.'
+    });
+    // 38 creature diverse (una copia ciascuna) + 61 terre base + comandante = 100.
+    const creature = Array.from({ length: 38 }, (_, indice) => carta(`prova-creatura-${indice}`, `Angelo ${indice + 1}`, 'Creature — Angel', {
+        manaCost: '{2}{W}', power: String(2 + (indice % 3)), toughness: String(2 + (indice % 2)),
+        colors: ['W'], colorIdentity: ['W'], cmc: 3, oracleText: 'Flying'
+    }));
+    const collezione = [commander, terra, ...creature];
+    const mazzo = {
+        id: 'prova-mazzo', name: 'Mazzo di prova', isPublic: false,
+        commanders: [commander.id],
+        cards: [
+            { cardId: terra.id, quantity: 61 },
+            ...creature.map(c => ({ cardId: c.id, quantity: 1 }))
+        ]
+    };
+    // La cache dei dettagli evita la richiesta a Scryfall: hydrateCards la usa
+    // quando ha già immagine, forza e parole chiave.
+    const cache = Object.fromEntries(collezione.map(c => [c.id, {
+        power: c.power, toughness: c.toughness, keywords: c.keywords, colors: c.colors,
+        colorIdentity: c.colorIdentity, producedMana: c.producedMana, cmc: c.cmc,
+        typeLine: c.typeLine, manaCost: c.manaCost, oracleText: c.oracleText, name: c.name, image: c.image
+    }]));
+    return { collezione, mazzo, cache };
+};
+
+const scriviMazzo = async cdp => {
+    const { collezione, mazzo, cache } = MAZZO_PROVA();
+    const esito = await cdp.valuta(`(() => {
+        localStorage.setItem('taverna_magic_collection_v1', ${JSON.stringify(JSON.stringify(collezione))});
+        localStorage.setItem('taverna_magic_decks_v1', ${JSON.stringify(JSON.stringify([mazzo]))});
+        localStorage.setItem('taverna_magic_card_details_v1', ${JSON.stringify(JSON.stringify(cache))});
+        localStorage.setItem('taverna_magic_match_deck', ${JSON.stringify(mazzo.id)});
+        return JSON.parse(localStorage.getItem('taverna_magic_decks_v1')).length;
+    })()`);
+    if (esito !== 1) throw new Error(`mazzo di prova non salvato (mazzi: ${esito})`);
+};
+
+/* ── misura dentro la pagina ──────────────────────────────────────────────── */
+
+// Avvia la partita (o la riprende), tiene la mano e gioca una terra, così nel
+// campo c'è almeno una carta da misurare. Restituisce una stringa JSON.
+const MISURA = `(async () => {
+    const attendi = ms => new Promise(r => setTimeout(r, ms));
+    const q = s => document.querySelector(s);
+    const arrotonda = n => Math.round(n);
+    const riquadro = el => { if (!el) return null; const b = el.getBoundingClientRect();
+        return { x: arrotonda(b.x), y: arrotonda(b.y), w: arrotonda(b.width), h: arrotonda(b.height), r: arrotonda(b.right), b: arrotonda(b.bottom) }; };
+
+    for (let i = 0; i < 25 && !q('[data-start-bot]') && !q('.mt-hand'); i++) await attendi(400);
+    if (!q('.mt-hand')) {
+        q('[data-start-bot]')?.click();
+        for (let i = 0; i < 30 && !q('[data-mulligan="keep"]') && !q('.mt-hand'); i++) await attendi(400);
+        q('[data-mulligan="keep"]')?.click();
+    }
+    for (let i = 0; i < 40 && !q('.mt-hand .mt-card'); i++) await attendi(300);
+
+    const terraInMano = () => [...document.querySelectorAll('.mt-hand [data-play]')]
+        .find(b => /Gioca terra/i.test(b.textContent) && !b.disabled);
+    let terra = terraInMano();
+    for (let giro = 0; giro < 6 && !terra; giro++) {
+        q('[data-phase="next"]')?.click();
+        await attendi(4500);
+        terra = terraInMano();
+    }
+    terra?.click();
+    await attendi(1200);
+
+    const tavolo = q('.mt-table');
+    if (!tavolo) return JSON.stringify({ errore: 'tavolo non montato', avviso: q('.mp-notice')?.textContent || '' });
+
+    const campo = q('.mt-field--own');
+    const barra = q('.mt-commands');
+    const mano = q('.mt-hand');
+    const cartaCampo = campo?.querySelector('.mt-card') || null;
+    const cartaMano = mano?.querySelector('.mt-card') || null;
+    const pulsanteMano = cartaMano?.querySelector('.mt-card__actions button') || null;
+    const dentroBarra = el => {
+        if (!el || !barra) return null;
+        const r = el.getBoundingClientRect(); const c = barra.getBoundingClientRect();
+        return r.top >= c.top - 2 && r.bottom <= c.bottom + 2;
+    };
+    const riquadroTavolo = tavolo.getBoundingClientRect();
+
+    // Fuori dal tavolo: si ignorano gli elementi che un contenitore scorrevole
+    // ritaglia di proposito (mano e riga comandi scorrono in orizzontale).
+    const ritagliato = el => {
+        for (let p = el.parentElement; p && p !== tavolo; p = p.parentElement) {
+            const s = getComputedStyle(p);
+            if (/(auto|scroll|hidden)/.test(s.overflowX + s.overflowY)) return true;
+        }
+        return false;
+    };
+    const fuori = [];
+    for (const el of tavolo.querySelectorAll('*')) {
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) continue;
+        const s = getComputedStyle(el);
+        if (s.visibility === 'hidden' || s.display === 'none' || Number(s.opacity) < 0.05) continue;
+        const esce = r.left < riquadroTavolo.left - 2 || r.top < riquadroTavolo.top - 2
+            || r.right > riquadroTavolo.right + 2 || r.bottom > riquadroTavolo.bottom + 2;
+        if (!esce || ritagliato(el)) continue;
+        const nome = typeof el.className === 'string' && el.className.trim()
+            ? '.' + el.className.trim().split(/\\s+/)[0] : el.tagName.toLowerCase();
+        fuori.push(nome + ' ' + riquadro(el).w + 'x' + riquadro(el).h + ' @' + riquadro(el).x + ',' + riquadro(el).y);
+        if (fuori.length >= 6) break;
+    }
+
+    return JSON.stringify({
+        vp: innerWidth + 'x' + innerHeight,
+        coarse: matchMedia('(pointer: coarse)').matches,
+        fine: matchMedia('(pointer: fine)').matches,
+        tavolo: riquadro(tavolo),
+        barra: riquadro(q('.mt-arena-bar')),
+        campo: riquadro(campo),
+        cartaCampo: riquadro(cartaCampo),
+        cartaCampoDentro: (() => {
+            if (!cartaCampo || !campo) return null;
+            const c = cartaCampo.getBoundingClientRect(); const f = campo.getBoundingClientRect();
+            return c.top >= f.top - 2 && c.bottom <= f.bottom + 2;
+        })(),
+        comandi: riquadro(barra),
+        avvisoVisibile: dentroBarra(q('.mt-commands .mp-notice')),
+        comandiVisibili: dentroBarra(q('.mt-commands .mp-toolbar')),
+        bersaglioVisibile: dentroBarra(q('.mt-commands .mp-target')),
+        mano: riquadro(mano),
+        cartaMano: riquadro(cartaMano),
+        pulsanteMano: riquadro(pulsanteMano),
+        overflowX: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        altezzaDocumento: document.documentElement.scrollHeight,
+        fuori
+    });
+})()`;
+
+/* ── controlli ────────────────────────────────────────────────────────────── */
+
+const controlla = (misura, { w, h }) => {
+    const problemi = [];
+    const nota = [];
+    if (misura.errore) return { problemi: [`tavolo non montato (${misura.errore}${misura.avviso ? ': ' + misura.avviso : ''})`], nota };
+
+    if (!misura.coarse) problemi.push('il browser non sta emulando un puntatore coarse');
+    if (misura.fine) problemi.push('il browser riporta ancora un puntatore fine');
+
+    const tavolo = misura.tavolo;
+    const scarto = SOGLIE.scarto;
+    if (Math.abs(tavolo.w - w) > scarto || Math.abs(tavolo.h - h) > scarto || Math.abs(tavolo.x) > scarto || Math.abs(tavolo.y) > scarto) {
+        problemi.push(`il tavolo non occupa lo schermo: ${tavolo.w}x${tavolo.h} a ${tavolo.x},${tavolo.y} invece di ${w}x${h} a 0,0`);
+    }
+    if (misura.overflowX > 0) problemi.push(`pagina che scorre in orizzontale di ${misura.overflowX}px`);
+    if (misura.altezzaDocumento > h + scarto) problemi.push(`la pagina è alta ${misura.altezzaDocumento}px su ${h}px`);
+
+    if (!misura.cartaCampo) problemi.push('nessuna carta nel campo dopo aver giocato una terra');
+    else {
+        if (misura.cartaCampo.h < SOGLIE.cartaCampo) {
+            problemi.push(`carta del campo alta ${misura.cartaCampo.h}px, sotto la soglia di ${SOGLIE.cartaCampo}px`);
+        }
+        if (misura.cartaCampoDentro === false) {
+            problemi.push(`carta del campo tagliata dal suo campo (${JSON.stringify(misura.cartaCampo)} dentro ${JSON.stringify(misura.campo)})`);
+        }
+    }
+
+    if (!misura.cartaMano) problemi.push('nessuna carta in mano');
+    else {
+        if (misura.cartaMano.h < SOGLIE.cartaMano) problemi.push(`carta in mano alta ${misura.cartaMano.h}px, sotto la soglia di ${SOGLIE.cartaMano}px`);
+        if (!misura.pulsanteMano || misura.pulsanteMano.h < SOGLIE.pulsanteMano) {
+            problemi.push(`pulsante della carta in mano alto ${misura.pulsanteMano?.h ?? 0}px, sotto la soglia di ${SOGLIE.pulsanteMano}px`);
+        }
+    }
+
+    if (misura.avvisoVisibile !== true) problemi.push('l\'avviso della partita non sta nella barra comandi');
+    if (misura.comandiVisibili !== true) problemi.push('la riga comandi non sta nella barra comandi');
+    if (misura.bersaglioVisibile !== true) problemi.push('il selettore del bersaglio non sta nella barra comandi');
+
+    if (misura.fuori.length) problemi.push(`elementi fuori dal tavolo: ${misura.fuori.join(' · ')}`);
+
+    if (misura.barra && misura.barra.h > 60) nota.push(`barra alta ${misura.barra.h}px`);
+    return { problemi, nota };
+};
+
+const rigaMisura = ({ nome, w, h }, misura) => {
+    const cella = valore => (valore ? `${valore.w}x${valore.h}` : '—');
+    return [
+        `${nome} ${w}x${h}`.padEnd(34),
+        cella(misura.cartaCampo).padEnd(8),
+        cella(misura.cartaMano).padEnd(8),
+        (misura.pulsanteMano ? `${misura.pulsanteMano.h}px` : '—').padEnd(6),
+        misura.coarse ? 'sì' : 'NO'
+    ].join(' ');
+};
+
+/* ── giro completo ────────────────────────────────────────────────────────── */
+
+const eseguiTutto = async () => {
+    if (!base) base = 'http://localhost:3000';
+    if (!(await serveSorgenti(base))) base = await avviaVite();
+
+    const cdp = await collegaCdp(apriBrowser(`${base}/magic/partita`));
+    const esiti = [];
+    try {
+        await scriviMazzo(cdp);
+        console.log('misura del tavolo Magic · telefono touch (pointer: coarse)\n');
+        console.log('misura'.padEnd(34) + 'campo'.padEnd(9) + 'mano'.padEnd(9) + 'tasto'.padEnd(7) + 'coarse');
+        for (const misura of MISURE) {
+            await emulaTelefono(cdp, misura);
+            await emulaTocco(cdp);
+            // Ricarica dopo l'emulazione: il layout deve nascere da telefono.
+            await cdp.invia('Page.navigate', { url: `${base}/magic/partita` });
+            await new Promise(risolvi => setTimeout(risolvi, 2500));
+            const risultato = JSON.parse(await cdp.valuta(MISURA));
+            const { problemi, nota } = controlla(risultato, misura);
+            console.log(rigaMisura(misura, risultato));
+            esiti.push({ misura, problemi, nota });
+        }
+    } finally {
+        cdp.chiudi();
+        chiudiBrowser();
+        if (vite) await fermaVite();
+    }
+
+    const rotti = esiti.filter(esito => esito.problemi.length);
+    console.log('');
+    for (const esito of esiti) {
+        if (esito.nota.length) console.log(`nota · ${esito.misura.nome}: ${esito.nota.join('; ')}`);
+        for (const problema of esito.problemi) console.log(`ERRORE · ${esito.misura.nome}: ${problema}`);
+    }
+    if (rotti.length) {
+        console.log(`\n${rotti.length} misura/e fuori soglia su ${esiti.length}.`);
+        process.exitCode = 1;
+        return;
+    }
+    console.log(`Tutte le ${esiti.length} misure sono dentro le soglie.`);
+};
+
+process.on('SIGINT', async () => { chiudiBrowser(); await fermaVite(); process.exit(130); });
+
+eseguiTutto()
+    .catch(async errore => {
+        console.error(`\nMisura non eseguita: ${errore.message}`);
+        chiudiBrowser();
+        await fermaVite();
+        process.exitCode = 1;
+    });
