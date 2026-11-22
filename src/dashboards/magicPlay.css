@@ -226,11 +226,11 @@
     }
 }
 
-/* Mulligan in orizzontale stretto (667×375): in due colonne la mano restava
-   larga 390 px, tre carte da 217 px e le altre quattro sotto la piega. Qui il
+/* Mulligan in orizzontale basso (667×375 e 844×390): in due colonne la mano
+   restava una striscia e si vedevano tre o quattro carte su sette. Qui il
    pannello va su una riga e le sette carte su una riga sola: si vedono tutte
    insieme, che è l'unico modo per scegliere cosa mettere in fondo. */
-@media (orientation: landscape) and (max-height: 420px) and (max-width: 700px) {
+@media (orientation: landscape) and (max-height: 420px) {
     .magic-play:has(.mp-mulligan) > .mp-table {
         display: flex; flex-direction: column; align-items: stretch; gap: 6px;
     }
@@ -259,3 +259,4 @@
     .magic-play .mp-actions { flex-direction: column; align-items: stretch; }
     .magic-play .mp-life { margin-left: 0; }
 }
+
