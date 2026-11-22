@@ -792,9 +792,12 @@ export function showMagicPlay(container, options = {}) {
         if (!isMyTurn()) return '';
         // Con la mano oltre sette carte il turno non si chiude: prima si scarta.
         if (gameState().pendingDiscard && player.hand.length > MATCH_RULES.openingHand) return '';
-        // Un solo pulsante: chiude il turno intero. Le fasi intermedie le
-        // attraversa il motore, non l'utente.
-        return '<button type="button" class="mp-button" data-phase="next">Passa il turno</button>';
+        // Un solo pulsante, ma il combattimento è una scelta: quando ci sono
+        // creature pronte il motore si ferma lì e mostra chi attacca; il secondo
+        // tocco («Non attaccare») chiude il turno. Le altre fasi le attraversa
+        // il motore, non l'utente.
+        const inCombat = gameState().phase === 'combat' && !gameState().combat;
+        return `<button type="button" class="mp-button" data-phase="next"${inCombat ? ' data-skip-combat="1"' : ''}>${inCombat ? 'Non attaccare' : 'Passa il turno'}</button>`;
     }
 
     function boardCard(card, mine) {
@@ -1357,7 +1360,8 @@ export function showMagicPlay(container, options = {}) {
         container.querySelector('[data-start]')?.addEventListener('click', () => void startMatch());
         container.querySelector('[data-start-bot]')?.addEventListener('click', () => void startBotMatch());
         container.querySelector('[data-new-match]')?.addEventListener('click', () => void returnToLobby());
-        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId)));
+        const pulsanteFase = container.querySelector('[data-phase]');
+        pulsanteFase?.addEventListener('click', () => act(current => passTurn(current, clientId, { skipCombat: pulsanteFase.dataset.skipCombat === '1' })));
         // Tutta la scheda apre la carta, tranne i suoi comandi: i pulsanti interni
         // (Lancia, Mana, Attacca, In fondo, Scarta) non devono aprire altro.
         container.querySelectorAll('[data-zoom-card]').forEach(card => card.addEventListener('click', event => {
@@ -1475,7 +1479,8 @@ export function showMagicPlay(container, options = {}) {
             act(current => declareBlockers(current, clientId, assignments));
         });
         container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombat(current, clientId)));
-        container.querySelector('[data-phase]')?.addEventListener('click', () => act(current => passTurn(current, clientId)));
+        const pulsanteFase = container.querySelector('[data-phase]');
+        pulsanteFase?.addEventListener('click', () => act(current => passTurn(current, clientId, { skipCombat: pulsanteFase.dataset.skipCombat === '1' })));
         container.querySelectorAll('[data-life]').forEach(button => button.addEventListener('click', () => {
             act(current => adjustLife(current, clientId, clientId, Number(button.dataset.life)));
         }));

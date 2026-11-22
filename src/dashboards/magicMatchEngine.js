@@ -847,8 +847,13 @@ export function autoAdvance(currentState, playerId) {
     return state;
 }
 
-/** Chiude il turno per intero, senza fasi da premere una a una. */
-export function passTurn(currentState, playerId) {
+/**
+ * Chiude il turno senza fasi da premere una a una, tranne il combattimento:
+ * con creature pronte il turno si ferma lì, altrimenti il motore dichiarerebbe
+ * «non attacca» per il giocatore e nessuna creatura potrebbe mai attaccare.
+ * `skipCombat` è il secondo tocco, quello che dice «non attaccare».
+ */
+export function passTurn(currentState, playerId, { skipCombat = false } = {}) {
     let state = clone(currentState);
     if (!state || state.winner || state.mulliganActive) return state;
     if (state.activePlayer !== playerId) throw new Error('Non è il tuo turno.');
@@ -860,7 +865,13 @@ export function passTurn(currentState, playerId) {
         const player = state.playersData[playerId];
         if (state.pendingDiscard && player.hand.length > MATCH_RULES.openingHand) break;
         if (state.phase === 'combat') {
-            if (!state.combat) { state = declareAttackers(state, playerId, []); continue; }
+            if (!state.combat) {
+                const pronta = !skipCombat && player.battlefield.some(card =>
+                    isCreature(card) && !card.tapped && !card.summoningSick && !hasKeyword(card, 'defender'));
+                if (pronta) break;
+                state = declareAttackers(state, playerId, []);
+                continue;
+            }
             if (state.combat.step !== 'done') { state = resolveCombat(state, playerId); continue; }
             state = advancePhase(state, playerId);
             continue;
