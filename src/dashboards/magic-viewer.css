@@ -42,7 +42,13 @@
 #ui .mv-hide-deck { display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-height:44px; margin:-8px 0 18px; padding:10px 14px; border:1px solid #e2d8e9; border-radius:14px; color:#4a3657; background:#fff; font-size:.92rem; cursor:pointer; }
 #ui .mv-hide-deck input { inline-size:18px; block-size:18px; margin:0; accent-color:#7b4bb3; }
 #ui .mv-hide-deck small { margin-inline-start:auto; color:#7a6a85; font-size:.78rem; }
-#ui .mv-panel-actions { display:flex; flex-wrap:wrap; gap:8px; }
+#ui .mv-panel-actions { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+#ui .mv-deck-actions { flex-wrap:nowrap; justify-content:flex-end; min-width:0; }
+#ui .mv-deck-filter { display:flex; align-items:center; gap:8px; flex:1 1 140px; min-width:0; max-width:300px; min-height:40px; padding:0 12px; border:1px solid #e2d8e9; border-radius:12px; color:#795a91; background:#fff; box-shadow:inset 2px 2px 5px #38204b0b,inset -2px -2px 5px #fff; }
+#ui .mv-deck-filter>span { font-size:18px; }
+#ui .mv-deck-filter input { width:100%; min-width:0; border:0!important; outline:0; color:#362641!important; background:transparent!important; box-shadow:none!important; font-size:14px; }
+#ui .mv-deck-filter input::placeholder { color:#978ba0; }
+#ui .mv-deck-group[hidden], #ui .mv-deck-card[hidden], #ui .mv-empty[hidden] { display:none; }
 #ui .mv-button, #ui .mv-text-button { min-height:40px; padding:0 15px; border:1px solid #c7a8df; border-radius:12px; color:#502d6d; background:linear-gradient(145deg,#fff,#f2eafb); box-shadow:0 3px 0 #dfd1e9; cursor:pointer; font-weight:700; }
 #ui .mv-button:disabled { opacity:.45; cursor:not-allowed; }
 #ui .mv-soft { border-color:#e4dae9; color:#756781; background:#fff; box-shadow:none; }
@@ -95,6 +101,10 @@
 #ui .mv-modal-close { position:absolute; z-index:1; top:10px; right:10px; width:38px; height:38px; border:1px solid #e7daed; border-radius:50%; color:#593e6b; background:#fff; cursor:pointer; font-size:23px; }
 @media(max-width:650px){
  #ui .mv-import,#ui .mv-panel-heading { align-items:flex-start; flex-direction:column; }
+ #ui .mv-panel-heading { gap:10px; margin-bottom:14px; }
+ #ui .mv-panel-actions { width:100%; gap:10px; }
+ #ui .mv-deck-actions { justify-content:flex-start; }
+ #ui .mv-deck-filter { flex:1 1 auto; max-width:none; }
  #ui .mv-import { width:100%; }
  #ui .mv-file { width:100%; }
  #ui .mv-tabs button { flex:1; justify-content:center; padding-inline:6px; font-size:13px; }
