@@ -418,7 +418,12 @@ body.magic-table-active .floating-trigger { display: none !important; }
 /* Quando c'è una scelta da fare la barra può crescere, ma non oltre un tetto:
    senza, si mangiava il campo e la mano (carte larghe 75px). Il pulsante di
    conferma resta agganciato in fondo se il pannello va in scorrimento. */
-.mt-commands:has(.mp-combat, .mp-mulligan, .mt-choice) {
+/* Lo stato «c'è una scelta in sospeso» arriva come classe da table.js, non da
+   :has, per lo stesso motivo dei campi vuoti: il CSS non deve dedurre dal DOM
+   una cosa che il disegno già sa, e la classe vince sulle media query senza
+   contare i selettori. */
+.mt-commands:has(.mp-combat, .mp-mulligan),
+.mt-commands.is-choice {
   max-block-size: calc(32 * var(--u));
   overflow-y: auto;
 }
@@ -433,7 +438,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
 /* Mentre si sceglie (blocchi o ordine del danno) il diario resta chiuso:
    occupava l'ultima riga utile e faceva comparire una scrollbar nella barra. */
 .mt-commands:has(.mp-combat) .mp-log,
-.mt-commands:has(.mt-choice) .mp-log { display: none; }
+.mt-commands.is-choice .mp-log { display: none; }
 
 /* I pulsanti della Taverna sono pensati per una pagina, non per un riquadro
    16:9: qui si riportano alla scala del tavolo, senza perdere il target. */
@@ -784,7 +789,8 @@ body.magic-table-active .floating-trigger { display: none !important; }
    scorrimento e il turno non si chiudeva più. Qui può crescere. */
 @media (max-width: 560px) {
   .mt-commands { max-block-size: calc(22 * var(--u)); }
-  .mt-commands:has(.mp-combat, .mp-mulligan, .mt-choice) { max-block-size: calc(38 * var(--u)); }
+  .mt-commands:has(.mp-combat, .mp-mulligan),
+  .mt-commands.is-choice { max-block-size: calc(38 * var(--u)); }
 
   /* Sullo schermo stretto la mano conta più del campo avversario: le carte
      devono restare leggibili, non diventare francobolli da 78px. */
@@ -905,7 +911,8 @@ body.magic-table-active .floating-trigger { display: none !important; }
      «Passa il turno», comandante e vite senza tagliare un pulsante a metà. */
   .mt-table.mt-table .mt-commands .mp-commander-cast { max-inline-size: 34%; }
   .mt-table.mt-table .mt-commands .mp-life { flex-wrap: nowrap; }
-  .mt-table .mt-commands:has(.mp-combat, .mp-mulligan, .mt-choice) { max-block-size: 40dvh; }
+  .mt-table .mt-commands:has(.mp-combat, .mp-mulligan),
+  .mt-table .mt-commands.is-choice { max-block-size: 40dvh; }
   /* Doppia classe: magicPlay.css arriva dopo table.css e riporta i pulsanti a
      misure da pagina (32 px). Il prefisso vince quell'ordine di import. */
   .mt-table.mt-table .mp-button,
@@ -980,7 +987,8 @@ body.magic-table-active .floating-trigger { display: none !important; }
      «Mana insufficiente»): a 12dvh l'avviso finiva sotto il bordo e un tocco
      sbagliato sembrava non fare nulla. */
   .mt-table.mt-table .mt-commands { max-block-size: 17dvh; overflow-y: auto; }
-  .mt-table.mt-table .mt-commands:has(.mp-combat, .mp-mulligan, .mt-choice) { max-block-size: 30dvh; }
+  .mt-table.mt-table .mt-commands:has(.mp-combat, .mp-mulligan),
+  .mt-table.mt-table .mt-commands.is-choice { max-block-size: 30dvh; }
   .mt-table.mt-table .mt-commands .mp-toolbar { flex-wrap: nowrap; overflow-x: auto; }
   .mt-table.mt-table .mt-commands .mp-toolbar > * { flex: 0 0 auto; }
   .mt-table.mt-table .mt-commands .mp-toolbar .mp-button,
@@ -1162,12 +1170,12 @@ body.magic-table-active .floating-trigger { display: none !important; }
    stack, riserva, avversario) senza spostare il gioco. */
 
 /* Pressione: ogni comando si abbassa appena sotto il dito. */
-.mt-table :is(.mp-button, .mp-small, .mt-card__actions button, .mt-choice__option, .mt-choice > .mp-button,
+.mt-table :is(.mp-button, .mp-small, .mt-card__actions button, .mt-choice__option,
   .mt-menu__item, .mt-zones__close, .mt-arena-bar__button, .mt-opponents__chip) {
   transition: transform 120ms ease, background-color 140ms ease, border-color 140ms ease, box-shadow 160ms ease;
 }
 
-.mt-table :is(.mp-button, .mp-small, .mt-card__actions button, .mt-choice__option, .mt-choice > .mp-button,
+.mt-table :is(.mp-button, .mp-small, .mt-card__actions button, .mt-choice__option,
   .mt-menu__item, .mt-zones__close, .mt-arena-bar__button, .mt-opponents__chip):active:not(:disabled) {
   transform: scale(0.96);
 }

@@ -515,7 +515,7 @@ export function showMatchTable(host, options = {}) {
     const html = `<div class="mt-board${boardMods ? ` ${boardMods}` : ''}">
       ${opponentHeadHtml(foe)}
       ${fieldHtml(foe?.cards, 'opponent', paintCard)}
-      <div class="mt-commands">${opponentSwitcherHtml(state.opponents, foe?.id || '')}${choiceHtml(choice, state.choiceSelection)}${state.commands}</div>
+      <div class="mt-commands${choice ? ' is-choice' : ''}">${opponentSwitcherHtml(state.opponents, foe?.id || '')}${choiceHtml(choice, state.choiceSelection)}${state.commands}</div>
       ${fieldHtml(state.own, 'own', paintCard)}
       ${handHtml(cardsHtml(state.hand, 'own', 'hand'))}
     </div>`;
