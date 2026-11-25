@@ -115,9 +115,25 @@ body.magic-table-active .floating-trigger { display: none !important; }
   /* Le corsie non scendono sotto una carta leggibile: se non entrano tutte,
      il campo scorre invece di rimpicciolirle. Il pavimento sta sulla base
      della corsia (etichetta più 15u di carte) e non cresce col contenuto,
-     altrimenti una carta alta 221 px gonfiava la corsia oltre il campo. */
-  .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; }
+     altrimenti una carta alta 221 px gonfiava la corsia oltre il campo. La
+     barretta sempre visibile dice che sotto c'è dell'altro: quella di sistema
+     su macOS compare solo mentre si scorre. */
+  .mt-table .mt-field {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 32%) transparent;
+  }
+  .mt-table .mt-field::-webkit-scrollbar { inline-size: 6px; }
+  .mt-table .mt-field::-webkit-scrollbar-thumb { border-radius: 999px; background: rgb(255 255 255 / 32%); }
+  .mt-table .mt-field::-webkit-scrollbar-track { border-radius: 999px; background: rgb(0 0 0 / 22%); }
   .mt-table .mt-lane:not(.is-empty) { flex: 1 0 calc(17 * var(--u)); }
+  /* Un campo occupato su due corsie non ne mostra una sola: prende altezza dal
+     campo più vuoto, e un po' dalla mano. Le carte restano sopra la soglia
+     leggibile e sotto la prima si vede il taglio della successiva. */
+  .mt-board--opp-busy { grid-template-rows: auto minmax(0, 1.45fr) auto minmax(0, 0.85fr) minmax(0, 0.95fr); }
+  .mt-board--own-busy { grid-template-rows: auto minmax(0, 0.85fr) auto minmax(0, 1.45fr) minmax(0, 0.95fr); }
+  .mt-board--opp-busy.mt-board--own-busy { grid-template-rows: auto minmax(0, 1.15fr) auto minmax(0, 1.15fr) minmax(0, 0.85fr); }
 }
 
 .mt-lane {
@@ -133,9 +149,6 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 .mt-lane__label {
   flex: 0 0 auto;
-  /* global.css centra ogni span con !important: l'etichetta sta invece sopra
-     la prima carta, alla sua sinistra. */
-  text-align: start !important;
   padding-inline: calc(0.6 * var(--u));
   /* Pavimento in pixel: con --u a 3,6–7 px l'etichetta scendeva sotto i 10 px. */
   font-size: max(10px, calc(1.15 * var(--u)));
@@ -144,6 +157,11 @@ body.magic-table-active .floating-trigger { display: none !important; }
   text-transform: uppercase;
   color: rgb(244 239 228 / 34%);
 }
+
+/* L'etichetta sta sopra la prima carta, alla sua sinistra. global.css centra
+   ogni span con `#ui * !important`: serve lo stesso peso dell'id, altrimenti
+   torna al centro. */
+#ui .mt-table .mt-lane__label { text-align: start !important; }
 
 .mt-lane__cards {
   display: flex;

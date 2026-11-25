@@ -89,6 +89,10 @@ const LANES = [
   { kind: 'lands', label: 'Terre', match: card => isLand(card) },
 ];
 
+// Un campo con carte in due corsie non entra in una fascia alta una corsia
+// sola: il CSS lo deve sapere prima di decidere dove prendere l'altezza.
+const spansTwoLanes = cards => LANES.filter(lane => (cards || []).some(lane.match)).length > 1;
+
 function laneHtml(kind, label, cards, inner) {
   const empty = !cards.length;
   return `<div class="mt-lane mt-lane--${esc(kind)}${empty ? ' is-empty' : ''}">
@@ -536,7 +540,9 @@ export function showMatchTable(host, options = {}) {
     // telefono). Qui la verità è una sola e viene dal dato che disegniamo.
     const boardMods = [
       (state.own || []).length ? '' : 'mt-board--own-empty',
-      (foe?.cards || []).length ? '' : 'mt-board--opp-empty'
+      (foe?.cards || []).length ? '' : 'mt-board--opp-empty',
+      spansTwoLanes(state.own) ? 'mt-board--own-busy' : '',
+      spansTwoLanes(foe?.cards) ? 'mt-board--opp-busy' : ''
     ].filter(Boolean).join(' ');
     const html = `<div class="mt-board${boardMods ? ` ${boardMods}` : ''}">
       ${opponentHeadHtml(foe)}
