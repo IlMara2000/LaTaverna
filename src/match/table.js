@@ -6,8 +6,14 @@
  * (`onPreview`); le mosse restano sui pulsanti della carta e della barra.
  *
  * Opzioni: own, hand, opponents, commands, zones, status, mana, phases,
- * priority, priorityMine, actions, stack, pendingChoice, tileExtra, onPreview,
- * onExit, onAbandon.
+ * priority, priorityMine, actions, stack, pendingChoice, tileExtra, onChoice,
+ * onPreview, onExit, onAbandon.
+ *
+ * `pendingChoice` non è solo un avviso: quando la scelta spetta a chi guarda,
+ * il tavolo disegna le opzioni e restituisce l'ordine scelto con `onChoice`.
+ * Senza questo pannello una domanda del motore (l'ordine del danno di due
+ * bloccanti, CR 509.3) lasciava la partita ferma, perché nessun pulsante
+ * poteva rispondere.
  *
  * `phases`, `priority`, `actions`, `stack` e `pendingChoice` arrivano dal view
  * model del motore (engine/view.js): il tavolo li mostra senza calcolare
@@ -88,6 +94,40 @@ function fieldHtml(cards, side, paint) {
 
 const handHtml = inner => `<div class="mt-hand">${inner || '<p class="mt-row__empty">Nessuna carta in mano</p>'}</div>`;
 
+/* Scelte in sospeso diverse dallo scarto: lo scarto resta sulla mano, dove le
+   carte si vedono e si toccano. Per tutto il resto il pannello è generico:
+   legge `pendingChoice.options`, e `min`/`max` dicono quante opzioni servono.
+   Con `orderBlockers` l'ordine dei tocchi è l'ordine del danno, quindi accanto
+   a ogni opzione compare il numero di arrivo. */
+function choiceHtml(choice, selection) {
+  // Nessuna scelta (o scelta di un altro): la barra resta quella di sempre.
+  if (!choice) return '';
+  const options = choice.options || [];
+  const order = choice.kind === 'orderBlockers';
+  const min = Math.max(0, Number(choice.min) || 0);
+  const max = Math.max(min, Number(choice.max) || options.length);
+  const picked = selection.length;
+  const ready = picked >= min && picked <= max;
+  const hint = order
+    ? 'Tocca i bloccanti nell’ordine in cui devono subire il danno: il primo per primo.'
+    : (min === max
+      ? `Scegli ${max} ${max === 1 ? 'opzione' : 'opzioni'}.`
+      : `Scegli fra ${min} e ${max} opzioni.`);
+  return `<section class="mt-choice${ready ? ' is-ready' : ''}" data-choice-panel data-kind="${esc(choice.kind)}" aria-live="polite">
+    <p class="mt-choice__title"><span class="mt-choice__kicker">Scelta in sospeso</span>${esc(choice.prompt || 'Scegli.')}</p>
+    <p class="mt-choice__hint">${esc(hint)}</p>
+    <div class="mt-choice__options">${options.map(option => {
+      const at = selection.indexOf(String(option.id));
+      return `<button type="button" class="mt-choice__option" data-choice-option="${esc(option.id)}" aria-pressed="${at >= 0}">${at >= 0 ? `<span class="mt-choice__order">${at + 1}</span>` : ''}${esc(option.label || option.id)}</button>`;
+    }).join('')}</div>
+    <div class="mt-choice__foot">
+      <span class="mt-choice__count">${picked} di ${max}</span>
+      <button type="button" class="mp-button" data-choice-confirm ${ready ? '' : 'disabled'}>${order ? 'Conferma ordine' : 'Conferma'}</button>
+      ${picked ? '<button type="button" class="mp-small" data-choice-clear>Svuota</button>' : ''}
+    </div>
+  </section>`;
+}
+
 function opponentHeadHtml(foe) {
   if (!foe) return '<div class="mt-opponent-head"><span>In attesa di un avversario</span></div>';
   const commandDamage = Math.max(0, ...Object.values(foe.commanderDamage || {}).map(Number));
@@ -150,7 +190,7 @@ function zonesHtml(zones, open) {
 
 /* ───────────────────────────── viste ────────────────────────────── */
 
-const ACTIONS = '[data-menu-toggle],[data-menu-close],[data-menu-exit],[data-menu-abandon],[data-opponent],[data-arena-exit],[data-zones],[data-zones-close]';
+const ACTIONS = '[data-menu-toggle],[data-menu-close],[data-menu-exit],[data-menu-abandon],[data-opponent],[data-arena-exit],[data-zones],[data-zones-close],[data-choice-option],[data-choice-confirm],[data-choice-clear]';
 
 /** Lo stesso ordine di `idOf` in magicPlay.js: `instanceId` prima di `uid`. */
 const cardId = card => String(card?.instanceId ?? card?.uid ?? card?.id ?? '');
@@ -208,12 +248,20 @@ export function showMatchTable(host, options = {}) {
     actions: options.actions || [],
     stack: options.stack || [],
     pendingChoice: options.pendingChoice || null,
+    choiceId: '',
+    choiceSelection: [],
     tileExtra: options.tileExtra || null,
     life: options.life ?? '',
     lastLife: options.life ?? '',
     boardIds: new Set(),
+    handIds: new Set(),
     damageById: new Map(),
     lastFoeLives: new Map(),
+    lastPriority: '',
+    lastStep: -1,
+    lastStack: 0,
+    lastChoice: '',
+    lastMana: undefined,
     menuOpen: false,
     zonesOpen: false,
     keyboardFocus: false,
@@ -266,6 +314,24 @@ export function showMatchTable(host, options = {}) {
   // quindi la partita non si blocca più chiedendo di ruotare il dispositivo.
 
   const activeOpponent = () => state.opponents.find(foe => foe.id === state.activeOpponentId) || state.opponents[0] || null;
+
+  /* La scelta da disegnare: solo se spetta a chi guarda e non è lo scarto,
+     che vive già sulla mano e sulla riga dei comandi. */
+  const pendingChoiceOf = () => {
+    const choice = state.pendingChoice;
+    if (!choice || !choice.mine || choice.kind === 'discard') return null;
+    return choice;
+  };
+
+  // Un lampo breve su un nodo che cambia: la classe si toglie da sola alla fine
+  // dell'animazione, così due cambi consecutivi la fanno ripartire.
+  const flash = (node, className) => {
+    if (!node) return;
+    node.classList.remove(className);
+    void node.offsetWidth;
+    node.classList.add(className);
+    node.addEventListener('animationend', () => node.classList.remove(className), { once: true });
+  };
   const paintCard = (card, side, zone) => {
     const view = toView(card, side, zone);
     state.views.set(view.id, view);
@@ -282,6 +348,9 @@ export function showMatchTable(host, options = {}) {
   function renderPhases() {
     if (!slots.phases) return;
     const current = state.phases.find(step => step.active);
+    const index = state.phases.findIndex(step => step.active);
+    if (state.lastStep !== -1 && index !== state.lastStep) flash(slots.phases, 'is-advancing');
+    state.lastStep = index;
     slots.phases.innerHTML = `${state.phases.map(step => `<li class="mt-phases__step${step.active ? ' is-active' : ''}${step.done ? ' is-done' : ''}" title="${step.label}"></li>`).join('')}${current ? `<li class="mt-sr-only">Passo corrente: ${current.label}</li>` : ''}`;
   }
 
@@ -290,7 +359,13 @@ export function showMatchTable(host, options = {}) {
   // può verificare che ogni comando mostrato sia una mossa legale.
   function renderPriority() {
     if (slots.priority) {
-      slots.priority.textContent = state.priority || '';
+      const next = state.priority || '';
+      const key = `${state.priorityMine ? 'mine' : 'other'}:${next}`;
+      if (state.lastPriority && key !== state.lastPriority) {
+        flash(slots.priority, state.priorityMine ? 'is-mine-turn' : 'is-handover');
+      }
+      state.lastPriority = key;
+      slots.priority.textContent = next;
       slots.priority.dataset.mine = state.priorityMine ? 'true' : 'false';
     }
     root.dataset.legalActions = state.actions.map(action => action.id).join(' ');
@@ -310,6 +385,12 @@ export function showMatchTable(host, options = {}) {
     if (state.pendingChoice) parts.push(state.pendingChoice.prompt);
     slots.stack.textContent = parts.join(' · ');
     slots.stack.hidden = parts.length === 0;
+    const size = (state.stack || []).length;
+    if (size > state.lastStack) flash(slots.stack, 'is-arriving');
+    state.lastStack = size;
+    const choiceKey = state.pendingChoice ? String(state.pendingChoice.id || state.pendingChoice.prompt) : '';
+    if (choiceKey && choiceKey !== state.lastChoice) flash(slots.stack, 'is-choice');
+    state.lastChoice = choiceKey;
   }
 
   function renderBar() {
@@ -318,6 +399,9 @@ export function showMatchTable(host, options = {}) {
     renderPriority();
     renderStack();
     if (slots.vitals) {
+      const mana = state.mana || '';
+      if (state.lastMana !== undefined && mana !== state.lastMana) flash(slots.vitals, 'is-mana');
+      state.lastMana = mana;
       const lost = state.life !== '' && state.lastLife !== '' && Number(state.life) < Number(state.lastLife);
       slots.vitals.textContent = [
         state.life === '' ? '' : `Vite ${state.life}`,
@@ -333,12 +417,19 @@ export function showMatchTable(host, options = {}) {
     }
   }
 
-  /* Corsie appena riempite: l'ingresso è un'animazione breve, una sola volta. */
+  /* Corsie appena riempite: l'ingresso è un'animazione breve, una sola volta,
+     sfalsata di carta in carta così una mano appena pescata «entra» invece di
+     comparire tutta insieme. */
   const markFreshCards = () => {
     const previously = state.boardIds || new Set();
     const nodes = [...slots.board.querySelectorAll('[data-zone="board"]')];
+    let fresh = 0;
     nodes.forEach(node => {
-      if (!previously.has(node.dataset.cardId)) node.classList.add('is-entering');
+      if (!previously.has(node.dataset.cardId)) {
+        node.style.setProperty('--mt-enter-i', String(Math.min(fresh, 8)));
+        node.classList.add('is-entering');
+        fresh += 1;
+      }
       const view = state.views.get(node.dataset.cardId);
       const before = state.damageById.get(node.dataset.cardId) || 0;
       if (view && view.damage > before && previously.has(node.dataset.cardId)) {
@@ -348,6 +439,17 @@ export function showMatchTable(host, options = {}) {
       }
     });
     state.boardIds = new Set(nodes.map(node => node.dataset.cardId));
+    // Anche la mano: la carta pescata entra con la stessa animazione, mentre
+    // quelle già in mano restano ferme.
+    const handNodes = [...slots.board.querySelectorAll('.mt-hand [data-card-id]')];
+    let freshHand = fresh;
+    handNodes.forEach(node => {
+      if (state.handIds.has(node.dataset.cardId)) return;
+      node.style.setProperty('--mt-enter-i', String(Math.min(freshHand, 8)));
+      node.classList.add('is-entering');
+      freshHand += 1;
+    });
+    state.handIds = new Set(handNodes.map(node => node.dataset.cardId));
     state.damageById = new Map([...state.views].map(([id, view]) => [id, view.damage]));
   };
 
@@ -391,6 +493,18 @@ export function showMatchTable(host, options = {}) {
     const foe = activeOpponent();
     const lives = new Map(state.opponents.map(foe2 => [foe2.id, foe2.life]));
     state.views.clear();
+    // La scelta appartiene a una domanda precisa: quando cambia la domanda, la
+    // selezione riparte da zero. Le opzioni sparite non restano appese.
+    const choice = pendingChoiceOf();
+    if (!choice) {
+      state.choiceId = '';
+      state.choiceSelection = [];
+    } else {
+      const key = String(choice.id || `${choice.kind}:${choice.prompt}`);
+      if (key !== state.choiceId) { state.choiceId = key; state.choiceSelection = []; }
+      const valid = new Set((choice.options || []).map(option => String(option.id)));
+      state.choiceSelection = state.choiceSelection.filter(id => valid.has(id));
+    }
     // Lo stato «campo vuoto» diventa una classe sul tabellone: il CSS non deve
     // dedurlo con :has (fragile, e vince per specificità sulle media query del
     // telefono). Qui la verità è una sola e viene dal dato che disegniamo.
@@ -401,7 +515,7 @@ export function showMatchTable(host, options = {}) {
     const html = `<div class="mt-board${boardMods ? ` ${boardMods}` : ''}">
       ${opponentHeadHtml(foe)}
       ${fieldHtml(foe?.cards, 'opponent', paintCard)}
-      <div class="mt-commands">${opponentSwitcherHtml(state.opponents, foe?.id || '')}${state.commands}</div>
+      <div class="mt-commands">${opponentSwitcherHtml(state.opponents, foe?.id || '')}${choiceHtml(choice, state.choiceSelection)}${state.commands}</div>
       ${fieldHtml(state.own, 'own', paintCard)}
       ${handHtml(cardsHtml(state.hand, 'own', 'hand'))}
     </div>`;
@@ -436,6 +550,47 @@ export function showMatchTable(host, options = {}) {
     return rebuilt;
   }
 
+  /* Selezione dipinta sul posto: niente ridisegno del campo a ogni tocco, così
+     la carta che si sta leggendo non si muove e il focus resta sul pulsante. */
+  function paintChoice() {
+    const choice = pendingChoiceOf();
+    const panel = slots.board.querySelector('[data-choice-panel]');
+    if (!choice || !panel) return;
+    const min = Math.max(0, Number(choice.min) || 0);
+    const max = Math.max(min, Number(choice.max) || (choice.options || []).length);
+    panel.querySelectorAll('[data-choice-option]').forEach(button => {
+      const at = state.choiceSelection.indexOf(String(button.dataset.choiceOption));
+      button.setAttribute('aria-pressed', at >= 0 ? 'true' : 'false');
+      let badge = button.querySelector('.mt-choice__order');
+      if (at >= 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'mt-choice__order';
+          button.prepend(badge);
+        }
+        badge.textContent = String(at + 1);
+      } else if (badge) {
+        badge.remove();
+      }
+    });
+    const count = panel.querySelector('.mt-choice__count');
+    if (count) count.textContent = `${state.choiceSelection.length} di ${max}`;
+    const ready = state.choiceSelection.length >= min && state.choiceSelection.length <= max;
+    const confirm = panel.querySelector('[data-choice-confirm]');
+    if (confirm) confirm.disabled = !ready;
+    panel.classList.toggle('is-ready', ready);
+    if (state.choiceSelection.length && !panel.querySelector('[data-choice-clear]')) {
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.className = 'mp-small';
+      clear.dataset.choiceClear = '';
+      clear.textContent = 'Svuota';
+      panel.querySelector('.mt-choice__foot')?.append(clear);
+    } else if (!state.choiceSelection.length) {
+      panel.querySelector('[data-choice-clear]')?.remove();
+    }
+  }
+
   function renderMenu() {
     slots.menu.innerHTML = menuHtml(state.menuOpen);
     if (state.menuOpen && state.keyboardFocus) {
@@ -465,6 +620,35 @@ export function showMatchTable(host, options = {}) {
   const onClick = event => {
     const action = event.target.closest(ACTIONS);
     if (action) {
+      if (action.matches('[data-choice-option]')) {
+        const choice = pendingChoiceOf();
+        if (!choice) return;
+        const id = String(action.dataset.choiceOption);
+        const at = state.choiceSelection.indexOf(id);
+        if (at >= 0) state.choiceSelection.splice(at, 1);
+        else {
+          const max = Math.max(1, Number(choice.max) || (choice.options || []).length);
+          if (state.choiceSelection.length >= max) return;
+          state.choiceSelection.push(id);
+        }
+        paintChoice();
+        return;
+      }
+      if (action.matches('[data-choice-clear]')) {
+        state.choiceSelection = [];
+        paintChoice();
+        return;
+      }
+      if (action.matches('[data-choice-confirm]')) {
+        const choice = pendingChoiceOf();
+        if (!choice) return;
+        const min = Math.max(0, Number(choice.min) || 0);
+        const max = Math.max(min, Number(choice.max) || (choice.options || []).length);
+        if (state.choiceSelection.length < min || state.choiceSelection.length > max) return;
+        action.disabled = true;
+        options.onChoice?.([...state.choiceSelection]);
+        return;
+      }
       if (action.matches('[data-arena-exit]')) {
         options.onExit?.();
         return;
@@ -472,6 +656,9 @@ export function showMatchTable(host, options = {}) {
       if (action.matches('[data-opponent]')) {
         state.activeOpponentId = action.dataset.opponent;
         render('board');
+        // Cambio di avversario: il campo entra invece di sostituirsi di scatto.
+        flash(slots.board.querySelector('.mt-field--opponent'), 'is-swapping');
+        flash(slots.board.querySelector('.mt-opponent-head'), 'is-swapping');
         if (state.keyboardFocus) {
           slots.board.querySelector('[data-opponent][aria-pressed="true"]')?.focus({ preventScroll: true });
         }
@@ -575,7 +762,9 @@ export function showMatchTable(host, options = {}) {
       if (next.priorityMine !== undefined) { state.priorityMine = Boolean(next.priorityMine); barChanged = true; }
       if (next.actions !== undefined) { state.actions = next.actions; barChanged = true; }
       if (next.stack !== undefined) { state.stack = next.stack; barChanged = true; }
-      if (next.pendingChoice !== undefined) { state.pendingChoice = next.pendingChoice; barChanged = true; }
+      // La scelta vive dentro la barra comandi, quindi va ridisegnato il campo:
+      // senza questo il pannello comparirebbe solo alla mossa successiva.
+      if (next.pendingChoice !== undefined) { state.pendingChoice = next.pendingChoice; changed = true; barChanged = true; }
       if (changed) {
         const rebuilt = renderBoard();
         if (barChanged) renderBar();

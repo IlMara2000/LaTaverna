@@ -4,6 +4,7 @@ import { mulliganAction } from '../../src/dashboards/magicMatchEngine.js';
 import { createEngineMatch } from '../../src/dashboards/magic/engine/turn.js';
 import { declareBlockers } from '../../src/dashboards/magic/engine/combat.js';
 import { answerChoice } from '../../src/dashboards/magic/engine/choices.js';
+import { applyAction } from '../../src/dashboards/magic/engine/actions.js';
 import { resetPriority } from '../../src/dashboards/magic/engine/priority.js';
 
 const forest = {
@@ -115,6 +116,21 @@ test('CR 509.3: la domanda sull’ordine la risponde solo chi attacca', () => {
     const answered = answerChoice(blocked, 'a', ['b2', 'b1']);
     assert.deepEqual(answered.combat.order.att, ['b2', 'b1']);
     assert.equal(answered.pendingChoice, null);
+});
+
+// Il tavolo risponde alle scelte con la mossa tipizzata `choose`, non con una
+// scorciatoia: se questo percorso non funziona, il pannello non basta.
+test('CR 509.3: la scelta dell’ordine si risponde con la mossa «choose»', () => {
+    const state = blocking([permanent('att')], [permanent('b1'), permanent('b2')]);
+    const blocked = declareBlockers(state, 'b', { blockers: { att: ['b1', 'b2'] } });
+    const answered = applyAction(blocked, { type: 'choose', playerId: 'a', selection: ['b2', 'b1'] });
+    assert.deepEqual(answered.combat.order.att, ['b2', 'b1']);
+    assert.equal(answered.pendingChoice, null);
+    // Con la domanda chiusa la priorità torna a scorrere: era qui che la
+    // partita restava ferma quando nessun pulsante rispondeva.
+    const passed = applyAction(answered, { type: 'passPriority', playerId: 'a' });
+    assert.equal(passed.pendingChoice, null);
+    assert.equal(passed.priority.playerId, 'b');
 });
 
 test('CR 509.2: solo il difensore dichiara, una volta sola', () => {

@@ -1044,9 +1044,17 @@ export function showMagicPlay(container, options = {}) {
         }
         if (current.combat.step === 'blockers') {
             if (current.combat.blockersDeclared) {
-                return `<section class="mp-combat"><span class="mp-overline">BLOCCHI DICHIARATI</span>
-                    <p>Il danno è simultaneo: si risolve quando tutti passano la priorità.</p>
-                    <button type="button" class="mp-button" data-resolve-combat>Risolvi il danno</button>
+                // Con una domanda aperta il tocco su «Risolvi» non farebbe nulla:
+                // la priorità è ferma finché la scelta non ha risposta. Il
+                // pannello della scelta sta nella barra, qui si dice solo cosa
+                // manca, così non si tocca un pulsante morto.
+                const mineChoice = current.pendingChoice?.playerId === clientId;
+                const pending = Boolean(current.pendingChoice);
+                return `<section class="mp-combat"><span class="mp-overline">${pending ? 'SCELTA IN SOSPESO' : 'BLOCCHI DICHIARATI'}</span>
+                    <p>${pending
+                        ? (mineChoice ? 'Scegli l’ordine del danno qui sopra: finché non rispondi il combattimento resta fermo.' : 'L’attaccante sta scegliendo l’ordine del danno: il combattimento riprende appena risponde.')
+                        : 'Il danno è simultaneo: si risolve quando tutti passano la priorità.'}</p>
+                    ${pending ? '' : '<button type="button" class="mp-button" data-resolve-combat>Risolvi il danno</button>'}
                 </section>`;
             }
             if (current.combat.defender !== clientId) {
@@ -1496,6 +1504,10 @@ export function showMagicPlay(container, options = {}) {
                 stack: meta.stack,
                 pendingChoice: meta.pendingChoice,
                 tileExtra: cardActions,
+                // Il tavolo disegna le opzioni di una scelta in sospeso e le
+                // rimanda qui nell'ordine toccato: è la mossa «choose» del
+                // motore, non una regola ricalcolata dall'interfaccia.
+                onChoice: selection => act(current => doAction(current, { type: 'choose', selection })),
                 onPreview: ({ id }) => openCardZoom(findCardByUid(id)),
                 onExit: () => navigateTo('magic', container),
                 onAbandon: () => void leaveRoom()

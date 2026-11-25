@@ -352,6 +352,125 @@ const MISURA = `(async () => {
     });
 })()`;
 
+/* ── scelta in sospeso: ordine di due bloccanti ───────────────────────────── */
+
+// Il bot blocca con una creatura per attaccante, quindi una partita contro il
+// bot non apre mai la domanda CR 509.3: la si prova montando il tavolo con la
+// stessa `pendingChoice` che il motore produce quando due creature bloccano lo
+// stesso attaccante. È deterministica: nessuna mano casuale, nessun turno da
+// aspettare. Il pannello deve mostrare le opzioni, numerarle nell'ordine dei
+// tocchi e rimandare quella sequenza (`onChoice`), che magicPlay traduce nella
+// mossa `choose`.
+const SCELTA = `(async () => {
+    const attendi = ms => new Promise(r => setTimeout(r, ms));
+    const arrotonda = n => Math.round(n);
+    const riquadro = el => { if (!el) return null; const b = el.getBoundingClientRect();
+        return { x: arrotonda(b.x), y: arrotonda(b.y), w: arrotonda(b.width), h: arrotonda(b.height), r: arrotonda(b.right), b: arrotonda(b.bottom) }; };
+
+    let modulo;
+    try {
+        modulo = await import('/src/match/table.js');
+    } catch (errore) {
+        return JSON.stringify({ errore: String(errore && errore.message || errore) });
+    }
+
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0b0f14';
+    document.body.appendChild(host);
+    const scelte = [];
+    const scelta = {
+        id: 'choice:orderBlockers:prova', kind: 'orderBlockers', mine: true,
+        prompt: 'Ordine del danno di Angelo 1', min: 2, max: 2,
+        options: [{ id: 'b1', label: 'Bloccante uno' }, { id: 'b2', label: 'Bloccante due' }]
+    };
+    const tabella = modulo.showMatchTable(host, {
+        own: [], hand: [],
+        opponents: [{ id: 'bot', name: 'Bot', life: 40, cards: [], handCount: 7, graveyardCount: 0 }],
+        commands: '<div class="mp-toolbar"><button type="button" class="mp-button">Passa il turno</button></div>',
+        pendingChoice: scelta,
+        onChoice: selection => scelte.push(selection)
+    });
+    await attendi(150);
+
+    const panel = host.querySelector('.mt-choice');
+    const opzioni = [...host.querySelectorAll('[data-choice-option]')];
+    const conferma = host.querySelector('[data-choice-confirm]');
+    const stato = {
+        pannello: riquadro(panel),
+        titolo: panel ? panel.querySelector('.mt-choice__title').textContent.replace(/\s+/g, ' ').trim() : '',
+        opzioni: opzioni.map(riquadro),
+        conferma: riquadro(conferma),
+        confermaTesto: conferma ? conferma.textContent.trim() : '',
+        disabilitatoIniziale: Boolean(panel && conferma && conferma.disabled)
+    };
+
+    // Ordine voluto: prima «due», poi «uno». Il secondo tocco non deve spostare
+    // il primo: è l'ordine in cui i bloccanti subiranno il danno.
+    opzioni[1] && opzioni[1].click();
+    await attendi(80);
+    opzioni[0] && opzioni[0].click();
+    await attendi(80);
+
+    const dopo = [...host.querySelectorAll('[data-choice-option]')];
+    stato.ordine = dopo
+        .map(bottone => ({ id: bottone.dataset.choiceOption, n: Number(bottone.querySelector('.mt-choice__order')?.textContent || 0) }))
+        .filter(voce => voce.n > 0)
+        .sort((a, b) => a.n - b.n)
+        .map(voce => voce.id);
+    stato.numeri = dopo.map(bottone => bottone.querySelector('.mt-choice__order')?.textContent.trim() || '');
+    stato.confermaAttiva = Boolean(conferma && !conferma.disabled);
+
+    conferma && conferma.click();
+    await attendi(120);
+    stato.scelte = scelte;
+
+    // Una scelta che non spetta a questo giocatore non mostra opzioni: si vede
+    // solo che l'altro sta scegliendo, come dice il view model.
+    tabella.update({ pendingChoice: { ...scelta, mine: false } });
+    await attendi(100);
+    stato.senzaMia = !host.querySelector('.mt-choice');
+
+    tabella.destroy();
+    host.remove();
+    return JSON.stringify(stato);
+})()`;
+
+const controllaScelta = (scelta, { nome, w, h }) => {
+    const problemi = [];
+    const dove = `${nome} · scelta`;
+    if (scelta.errore) return { problemi: [`${dove}: pannello non montato (${scelta.errore})`] };
+    if (!scelta.pannello) return { problemi: [`${dove}: pannello della scelta in sospeso assente`] };
+    if (scelta.pannello.h < 40) problemi.push(`${dove}: pannello alto ${scelta.pannello.h}px, troppo schiacciato per essere letto`);
+    if (scelta.pannello.y < -2 || scelta.pannello.b > h + 2 || scelta.pannello.x < -2 || scelta.pannello.r > w + 2) {
+        problemi.push(`${dove}: pannello fuori dallo schermo (${JSON.stringify(scelta.pannello)} su ${w}x${h})`);
+    }
+    if (!/Ordine del danno/.test(scelta.titolo)) {
+        problemi.push(`${dove}: il pannello non dice di cosa si tratta («${scelta.titolo}»)`);
+    }
+    if (scelta.opzioni.length !== 2) problemi.push(`${dove}: ${scelta.opzioni.length} opzioni invece di 2`);
+    scelta.opzioni.forEach((opzione, indice) => {
+        if (opzione.h < SOGLIE.pulsanteCombattimento) {
+            problemi.push(`${dove}: opzione ${indice + 1} alta ${opzione.h}px, sotto la soglia di ${SOGLIE.pulsanteCombattimento}px`);
+        }
+        if (opzione.y < -2 || opzione.b > h + 2) {
+            problemi.push(`${dove}: opzione ${indice + 1} fuori dallo schermo (y ${opzione.y}-${opzione.b} su ${h})`);
+        }
+    });
+    if (!scelta.disabilitatoIniziale) problemi.push(`${dove}: «Conferma ordine» era già attivo senza alcuna scelta`);
+    if (JSON.stringify(scelta.ordine) !== JSON.stringify(['b2', 'b1'])) {
+        problemi.push(`${dove}: l'ordine scelto è ${JSON.stringify(scelta.ordine)} invece di ["b2","b1"]`);
+    }
+    if (JSON.stringify(scelta.numeri) !== JSON.stringify(['2', '1'])) {
+        problemi.push(`${dove}: i numeri d'ordine sono ${JSON.stringify(scelta.numeri)} invece di ["2","1"]`);
+    }
+    if (!scelta.confermaAttiva) problemi.push(`${dove}: «Conferma ordine» resta spento con due opzioni scelte`);
+    if (JSON.stringify(scelta.scelte) !== JSON.stringify([['b2', 'b1']])) {
+        problemi.push(`${dove}: il tavolo ha inviato ${JSON.stringify(scelta.scelte)} invece dell'ordine scelto`);
+    }
+    if (!scelta.senzaMia) problemi.push(`${dove}: il pannello resta visibile su una scelta che non spetta al giocatore`);
+    return { problemi };
+};
+
 /* ── combattimento ────────────────────────────────────────────────────────── */
 
 // Guidare la partita fino a una schermata di combattimento richiede turni veri:
@@ -761,6 +880,8 @@ const eseguiTutto = async () => {
     const esiti = [];
     const righeLotta = [];
     const problemiLotta = [];
+    const righeScelta = [];
+    const problemiScelta = [];
     try {
         await scriviMazzo(cdp);
         console.log('misura del tavolo Magic · telefono touch (pointer: coarse)\n');
@@ -775,6 +896,13 @@ const eseguiTutto = async () => {
             const { problemi, nota } = controlla(risultato, misura);
             console.log(rigaMisura(misura, risultato));
             esiti.push({ misura, problemi, nota });
+
+            // Scelta in sospeso a due bloccanti: è deterministica e non
+            // dipende dalla mano, quindi si misura a ogni misura di telefono.
+            const scelta = JSON.parse(await cdp.valuta(SCELTA));
+            const esitoScelta = controllaScelta(scelta, misura);
+            righeScelta.push(`  ${'scelta/ordine 2 bloccanti'.padEnd(24)}${`${misura.w}x${misura.h}`.padEnd(12)}${`${scelta.opzioni?.length ?? 0} opzioni`.padEnd(14)}${esitoScelta.problemi.length ? 'X' : 'ok'}`);
+            problemiScelta.push(...esitoScelta.problemi);
 
             // Combattimento: una partita nuova per scenario, perché attacco,
             // blocco e richiesta di scarto richiedono mani e campi diversi.
@@ -795,6 +923,7 @@ const eseguiTutto = async () => {
 
     console.log(`\n${'  schermata'.padEnd(22)}${'misura'.padEnd(12)}${'controlli'.padEnd(14)}esito`);
     for (const riga of righeLotta) console.log(riga);
+    if (righeScelta.length) for (const riga of righeScelta) console.log(riga);
 
     const rotti = esiti.filter(esito => esito.problemi.length);
     console.log('');
@@ -803,12 +932,13 @@ const eseguiTutto = async () => {
         for (const problema of esito.problemi) console.log(`ERRORE · ${esito.misura.nome}: ${problema}`);
     }
     for (const problema of problemiLotta) console.log(`ERRORE · ${problema}`);
-    if (rotti.length || problemiLotta.length) {
-        console.log(`\n${rotti.length + problemiLotta.length} controlli fuori soglia su ${esiti.length + righeLotta.length} misure.`);
+    for (const problema of problemiScelta) console.log(`ERRORE · ${problema}`);
+    if (rotti.length || problemiLotta.length || problemiScelta.length) {
+        console.log(`\n${rotti.length + problemiLotta.length + problemiScelta.length} controlli fuori soglia su ${esiti.length + righeLotta.length + righeScelta.length} misure.`);
         process.exitCode = 1;
         return;
     }
-    console.log(`Tutte le ${esiti.length + righeLotta.length} misure sono dentro le soglie.`);
+    console.log(`Tutte le ${esiti.length + righeLotta.length + righeScelta.length} misure sono dentro le soglie.`);
 };
 
 process.on('SIGINT', async () => { chiudiBrowser(); await server.ferma(); process.exit(130); });
