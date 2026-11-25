@@ -56,6 +56,7 @@ const SOGLIE = {
     pulsanteMulligan: 32, // «Tieni» e «Rimescola e pesca» (40 e 48 sul telefono)
     pulsanteCombattimento: 32, // «Dichiara attaccanti», «Conferma blocchi», «Scarta»
     chipCarta: 24,      // «Attacca» e «Mana» stanno sopra l'arte di una carta da 108px
+    pipMana: 13,        // pip del costo di mana: 14px sui telefoni in orizzontale
     tendina: 28,        // tendine del bersaglio e dei bloccanti
     scarto: 2           // tolleranza per arrotondamenti dei subpixel
 };
@@ -471,6 +472,89 @@ const controllaScelta = (scelta, { nome, w, h }) => {
     return { problemi };
 };
 
+/* ── costo di mana sulle carte ───────────────────────────────────────────── */
+
+// Il costo arriva al tavolo solo come testo (`{2}{W}`): qui si monta il tavolo
+// con tre carte dai costi noti e si controlla che la pillola ci sia, che i pip
+// siano leggibili e che restino dentro la carta a ogni misura di telefono.
+// Deterministico: nessuna mano casuale, nessun turno da aspettare.
+const MANA = `(async () => {
+    const attendi = ms => new Promise(r => setTimeout(r, ms));
+    const arrotonda = n => Math.round(n);
+    const riquadro = el => { if (!el) return null; const b = el.getBoundingClientRect();
+        return { x: arrotonda(b.x), y: arrotonda(b.y), w: arrotonda(b.width), h: arrotonda(b.height), r: arrotonda(b.right), b: arrotonda(b.bottom) }; };
+
+    let modulo;
+    try {
+        modulo = await import('/src/match/table.js');
+    } catch (errore) {
+        return JSON.stringify({ errore: String(errore && errore.message || errore) });
+    }
+
+    const carta = (id, manaCost, extra) => Object.assign({ id, name: 'Carta ' + id, manaCost, image: '' }, extra || {});
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0b0f14';
+    document.body.appendChild(host);
+    const tabella = modulo.showMatchTable(host, {
+        own: [carta('uno', '{2}{W}', { power: '2', toughness: '2' }), carta('due', '{1}{U}{B}')],
+        hand: [carta('tre', '{3}{W}{W}')],
+        opponents: [{ id: 'bot', name: 'Bot', life: 40, cards: [], handCount: 7, graveyardCount: 0 }],
+        commands: '<div class="mp-toolbar"><button type="button" class="mp-button">Passa il turno</button></div>'
+    });
+    await attendi(150);
+
+    const carte = [...host.querySelectorAll('.mt-card')].map(el => ({
+        id: el.dataset.cardId,
+        etichetta: el.getAttribute('aria-label') || '',
+        carta: riquadro(el),
+        costo: riquadro(el.querySelector('.mt-card__cost')),
+        pips: [...el.querySelectorAll('.mt-card__pip')].map(pip => riquadro(pip))
+    }));
+
+    tabella.destroy();
+    host.remove();
+    return JSON.stringify({ carte });
+})()`;
+
+// Pip attesi per carta e testo che l'etichetta accessibile deve contenere.
+const COSTI = {
+    uno: { pips: 2, testo: '2 W' },
+    due: { pips: 3, testo: '1 U B' },
+    tre: { pips: 3, testo: '3 W W' }
+};
+
+const controllaMana = (mana, { nome, w, h }) => {
+    const problemi = [];
+    const dove = `${nome} · mana`;
+    if (mana.errore) return { problemi: [`${dove}: tavolo non montato (${mana.errore})`] };
+    const carte = mana.carte || [];
+    if (carte.length !== 3) return { problemi: [`${dove}: ${carte.length} carte invece di 3`] };
+    for (const carta of carte) {
+        const atteso = COSTI[carta.id];
+        if (!atteso) { problemi.push(`${dove}: carta inattesa «${carta.id}»`); continue; }
+        if (!carta.costo) { problemi.push(`${dove}: «${carta.id}» senza costo visibile`); continue; }
+        if (carta.pips.length !== atteso.pips) {
+            problemi.push(`${dove}: «${carta.id}» mostra ${carta.pips.length} pip invece di ${atteso.pips}`);
+        }
+        if (carta.costo.x < carta.carta.x - 1 || carta.costo.r > carta.carta.r + 1
+            || carta.costo.y < carta.carta.y - 1 || carta.costo.b > carta.carta.b + 1) {
+            problemi.push(`${dove}: il costo di «${carta.id}» esce dalla carta (${JSON.stringify(carta.costo)} su ${JSON.stringify(carta.carta)})`);
+        }
+        if (carta.costo.y < -2 || carta.costo.b > h + 2 || carta.costo.r > w + 2) {
+            problemi.push(`${dove}: il costo di «${carta.id}» è fuori dallo schermo`);
+        }
+        carta.pips.forEach((pip, indice) => {
+            if (pip.w < SOGLIE.pipMana || pip.h < SOGLIE.pipMana) {
+                problemi.push(`${dove}: pip ${indice + 1} di «${carta.id}» ${pip.w}x${pip.h}px, sotto ${SOGLIE.pipMana}px`);
+            }
+        });
+        if (!carta.etichetta.includes(atteso.testo)) {
+            problemi.push(`${dove}: l'etichetta di «${carta.id}» non dice il costo («${carta.etichetta}»)`);
+        }
+    }
+    return { problemi };
+};
+
 /* ── combattimento ────────────────────────────────────────────────────────── */
 
 // Guidare la partita fino a una schermata di combattimento richiede turni veri:
@@ -882,6 +966,8 @@ const eseguiTutto = async () => {
     const problemiLotta = [];
     const righeScelta = [];
     const problemiScelta = [];
+    const righeMana = [];
+    const problemiMana = [];
     try {
         await scriviMazzo(cdp);
         console.log('misura del tavolo Magic · telefono touch (pointer: coarse)\n');
@@ -904,6 +990,12 @@ const eseguiTutto = async () => {
             righeScelta.push(`  ${'scelta/ordine 2 bloccanti'.padEnd(24)}${`${misura.w}x${misura.h}`.padEnd(12)}${`${scelta.opzioni?.length ?? 0} opzioni`.padEnd(14)}${esitoScelta.problemi.length ? 'X' : 'ok'}`);
             problemiScelta.push(...esitoScelta.problemi);
 
+            // Costo di mana: tre carte dai costi noti (2, 3 e 4 simboli).
+            const mana = JSON.parse(await cdp.valuta(MANA));
+            const esitoMana = controllaMana(mana, misura);
+            righeMana.push(`  ${'mana/costo sulle carte'.padEnd(24)}${`${misura.w}x${misura.h}`.padEnd(12)}${`${mana.carte?.length ?? 0} carte`.padEnd(14)}${esitoMana.problemi.length ? 'X' : 'ok'}`);
+            problemiMana.push(...esitoMana.problemi);
+
             // Combattimento: una partita nuova per scenario, perché attacco,
             // blocco e richiesta di scarto richiedono mani e campi diversi.
             for (const scenario of SCENARI) {
@@ -924,6 +1016,7 @@ const eseguiTutto = async () => {
     console.log(`\n${'  schermata'.padEnd(22)}${'misura'.padEnd(12)}${'controlli'.padEnd(14)}esito`);
     for (const riga of righeLotta) console.log(riga);
     if (righeScelta.length) for (const riga of righeScelta) console.log(riga);
+    if (righeMana.length) for (const riga of righeMana) console.log(riga);
 
     const rotti = esiti.filter(esito => esito.problemi.length);
     console.log('');
@@ -933,12 +1026,15 @@ const eseguiTutto = async () => {
     }
     for (const problema of problemiLotta) console.log(`ERRORE · ${problema}`);
     for (const problema of problemiScelta) console.log(`ERRORE · ${problema}`);
-    if (rotti.length || problemiLotta.length || problemiScelta.length) {
-        console.log(`\n${rotti.length + problemiLotta.length + problemiScelta.length} controlli fuori soglia su ${esiti.length + righeLotta.length + righeScelta.length} misure.`);
+    for (const problema of problemiMana) console.log(`ERRORE · ${problema}`);
+    if (rotti.length || problemiLotta.length || problemiScelta.length || problemiMana.length) {
+        const fuori = rotti.length + problemiLotta.length + problemiScelta.length + problemiMana.length;
+        const totale = esiti.length + righeLotta.length + righeScelta.length + righeMana.length;
+        console.log(`\n${fuori} controlli fuori soglia su ${totale} misure.`);
         process.exitCode = 1;
         return;
     }
-    console.log(`Tutte le ${esiti.length + righeLotta.length + righeScelta.length} misure sono dentro le soglie.`);
+    console.log(`Tutte le ${esiti.length + righeLotta.length + righeScelta.length + righeMana.length} misure sono dentro le soglie.`);
 };
 
 process.on('SIGINT', async () => { chiudiBrowser(); await server.ferma(); process.exit(130); });

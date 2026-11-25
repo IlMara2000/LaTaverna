@@ -35,12 +35,34 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
 const statLine = card => (card.power && card.toughness ? `${card.power}/${card.toughness}` : '');
 const counterLabel = card => (card.counters > 0 ? `+${card.counters}` : '');
 
+/* Costo di mana: il view model lo manda come testo `{2}{W}`. Sul tavolo l'arte
+   è quasi tutta la carta, quindi il costo sta in una pillola in alto a destra
+   con un pip per simbolo: il numero e i colori si leggono anche su una carta
+   da 77 px, senza rubare altezza alla forza e alla costituzione. */
+const MANA_TONES = { W: 'w', U: 'u', B: 'b', R: 'r', G: 'g', C: 'c' };
+const manaSymbols = cost => {
+  const text = String(cost ?? '').trim();
+  if (!text) return [];
+  const braced = [...text.matchAll(/\{([^}]+)\}/g)].map(match => match[1].trim()).filter(Boolean);
+  return braced.length ? braced : text.replace(/\s+/g, '').split('');
+};
+const manaLabel = cost => manaSymbols(cost).join(' ');
+const manaPips = cost => {
+  const symbols = manaSymbols(cost);
+  if (!symbols.length) return '';
+  const pips = symbols.map(symbol => {
+    const tone = MANA_TONES[String(symbol).charAt(0).toUpperCase()] || '';
+    return `<span class="mt-card__pip${tone ? ` mt-card__pip--${tone}` : ''}">${esc(symbol)}</span>`;
+  }).join('');
+  return `<span class="mt-card__cost" aria-hidden="true">${pips}</span>`;
+};
+
 function tileHtml(card, side, zone = 'board', extra = '') {
   const art = card.image
     ? `<img class="mt-card__art" src="${esc(card.image)}" alt="" loading="lazy" decoding="async" draggable="false">`
     : '<span class="mt-card__art mt-card__art--empty" aria-hidden="true"></span>';
   const pressed = zone === 'board' ? ` aria-pressed="${card.tapped ? 'true' : 'false'}"` : '';
-  const label = [card.name, statLine(card)].filter(Boolean).join(' · ');
+  const label = [card.name, manaLabel(card.manaCost), statLine(card)].filter(Boolean).join(' · ');
   const badges = [
     card.commander ? '<span class="mt-card__badge mt-card__badge--commander">CMD</span>' : '',
     card.attacking ? '<span class="mt-card__badge mt-card__badge--attack">ATTACCA</span>' : '',
@@ -54,6 +76,7 @@ function tileHtml(card, side, zone = 'board', extra = '') {
   if (card.blocking) classes.push('is-blocking');
   return `<div class="${classes.join(' ')}" data-card-id="${esc(card.id)}" data-side="${esc(side)}" data-zone="${esc(zone)}"${pressed} aria-label="${esc(label)}">
     ${art}
+    ${manaPips(card.manaCost)}
     ${badges}
     ${extra ? `<div class="mt-card__actions">${extra}</div>` : ''}
   </div>`;
@@ -215,6 +238,9 @@ function toView(card, side, zone) {
     id: cardId(card),
     name: card?.name || 'Carta',
     image: card?.image || '',
+    // Il costo di mana è pubblico anche sulle carte avversarie: la vista lo
+    // tiene perché la carta lo mostra, e non è una regola da ricalcolare.
+    manaCost: card?.manaCost || '',
     tapped: onBoard ? Boolean(card?.tapped) : false,
     counters: Number(card?.counters?.plusOne || 0) || 0,
     power: creature ? stat(card, 'power') : '',

@@ -321,6 +321,54 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-card__badge--attack { inset-block-start: 0; inset-inline: 0; border-radius: 0; border: 0; text-align: center; background: rgb(255 214 130 / 90%); color: #23180a; font-weight: 700; }
 .mt-card__badge--block { inset-block-start: 0; inset-inline: 0; border-radius: 0; border: 0; text-align: center; background: rgb(120 200 255 / 90%); color: #06131d; font-weight: 700; }
 
+/* Costo di mana: pillola in alto a destra, un pip per simbolo. Sta sopra
+   l'arte come i distintivi, ma dall'altro lato: a 77 px di carta si leggono
+   numero e colori senza coprire forza e costituzione. Solo presentazione:
+   il tocco resta alla carta, che ha già i suoi comandi. */
+.mt-card__cost {
+  position: absolute;
+  inset-block-start: calc(0.4 * var(--u));
+  inset-inline-end: calc(0.4 * var(--u));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+  max-inline-size: calc(100% - 0.8 * var(--u));
+  padding: 2px;
+  border: thin solid rgb(255 255 255 / 18%);
+  border-radius: max(9px, calc(1 * var(--u)));
+  background: rgb(8 12 16 / 84%);
+  pointer-events: none;
+}
+
+/* Attaccante e bloccante portano una fascia a tutta larghezza in cima: il
+   costo scende sotto, altrimenti ci finirebbe sopra. */
+.mt-card.is-attacking .mt-card__cost,
+.mt-card.is-blocking .mt-card__cost { inset-block-start: max(calc(2.6 * var(--u)), 18px); }
+
+.mt-card__pip {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: max(14px, calc(2 * var(--u)));
+  block-size: max(14px, calc(2 * var(--u)));
+  padding-inline: 2px;
+  border-radius: 50%;
+  background: rgb(64 70 79 / 96%);
+  color: #f4efe4;
+  font-size: max(9px, calc(1.05 * var(--u)));
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 55%);
+}
+
+.mt-card__pip--w { background: #f0e8d0; color: #241b0a; text-shadow: none; }
+.mt-card__pip--u { background: #2b6cc4; }
+.mt-card__pip--b { background: #1d1f27; box-shadow: inset 0 0 0 1px rgb(255 255 255 / 38%); }
+.mt-card__pip--r { background: #b23a32; }
+.mt-card__pip--g { background: #2c7a4c; }
+.mt-card__pip--c { background: #6d7581; }
+
 /* I comandi restano, ma sovrapposti al piede dell'arte: la carta è tutta
    immagine e i pulsanti non le rubano altezza. */
 .mt-card__actions {
