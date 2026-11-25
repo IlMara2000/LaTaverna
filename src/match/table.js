@@ -39,8 +39,7 @@ const counterLabel = card => (card.counters > 0 ? `+${card.counters}` : '');
    è quasi tutta la carta, quindi il costo sta in una pillola in alto a destra
    con un pip per simbolo: il numero e i colori si leggono anche su una carta
    da 77 px, senza rubare altezza alla forza e alla costituzione. */
-// I colori del mana, in minuscolo: la tonalità del pip è un `mt-card__pip--x`
-// solo per questi simboli, tutto il resto (numeri, X) resta neutro.
+// Solo i cinque colori hanno un pip colorato: numeri e X restano neutri.
 const MANA_COLORS = 'wubrgc';
 const manaSymbols = cost => {
   const text = String(cost ?? '').trim();
@@ -51,8 +50,9 @@ const manaSymbols = cost => {
 const manaLabel = cost => manaSymbols(cost).join(' ');
 const manaPips = cost => {
   const pips = manaSymbols(cost).map(symbol => {
-    const tone = MANA_COLORS.includes(symbol[0].toLowerCase()) ? symbol[0].toLowerCase() : '';
-    return `<span class="mt-card__pip${tone ? ` mt-card__pip--${tone}` : ''}">${esc(symbol)}</span>`;
+    const tone = symbol[0].toLowerCase();
+    const colored = MANA_COLORS.includes(tone) ? ` mt-card__pip--${tone}` : '';
+    return `<span class="mt-card__pip${colored}">${esc(symbol)}</span>`;
   }).join('');
   return pips ? `<span class="mt-card__cost" aria-hidden="true">${pips}</span>` : '';
 };

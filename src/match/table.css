@@ -89,8 +89,6 @@ body.magic-table-active .floating-trigger { display: none !important; }
    dalle etichette finché hanno carte, non da un bordo. */
 .mt-field--own { box-shadow: 0 calc(1.2 * var(--u)) calc(3.2 * var(--u)) rgb(120 92 180 / 10%); }
 
-.mt-field--opponent { box-shadow: none; }
-
 /* Un campo senza carte si riduce a una riga: prima restava alto quanto una
    corsia piena e lasciava due riquadri vuoti che spingevano la mano fuori
    schermo. Lo spazio recuperato torna alle carte vere. */
@@ -120,7 +118,6 @@ body.magic-table-active .floating-trigger { display: none !important; }
      altrimenti una carta alta 221 px gonfiava la corsia oltre il campo. */
   .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; }
   .mt-table .mt-lane:not(.is-empty) { flex: 1 0 calc(17 * var(--u)); }
-  .mt-table .mt-lane__cards { min-block-size: 0; }
 }
 
 .mt-lane {
@@ -172,9 +169,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
   display: flex;
   align-items: center;
   gap: calc(1.2 * var(--u));
-  /* Spazio a destra per il pulsante ☰ del tavolo: senza, il conteggio delle
-     carte finiva sotto l'icona. */
-  /* Lo spazio a destra è per il ☰ del tavolo: in px perché a --u piccoli il
+  /* Spazio a destra per il ☰ del tavolo, in px perché a --u piccoli il
      conteggio delle carte finiva sotto l'icona. */
   padding: calc(0.5 * var(--u)) max(calc(6.4 * var(--u)), 52px) calc(0.5 * var(--u)) calc(1.2 * var(--u));
   /* La testata scritta sul tavolo, non un'altra scatola sopra: l'ombra del
@@ -481,15 +476,9 @@ body.magic-table-active .floating-trigger { display: none !important; }
   background: linear-gradient(180deg, rgb(16 22 28 / 88%) 70%, rgb(16 22 28 / 0%));
 }
 
-/* Quando c'è da scegliere (blocchi, mulligan) la barra deve crescere: con il
-   tetto normale i menu dei blocchi finivano sotto il bordo, invisibili. */
-/* Quando c'è una scelta da fare la barra può crescere, ma non oltre un tetto:
-   senza, si mangiava il campo e la mano (carte larghe 75px). Il pulsante di
-   conferma resta agganciato in fondo se il pannello va in scorrimento. */
-/* Lo stato «c'è una scelta in sospeso» arriva come classe da table.js, non da
-   :has, per lo stesso motivo dei campi vuoti: il CSS non deve dedurre dal DOM
-   una cosa che il disegno già sa, e la classe vince sulle media query senza
-   contare i selettori. */
+/* Con una scelta da fare (blocchi o ordine del danno) la barra cresce, ma non
+   oltre: senza tetto si mangiava campo e mano. Lo stato arriva come classe da
+   table.js, non da :has, così vince sulle media query senza contare i selettori. */
 .mt-commands:has(.mp-combat, .mp-mulligan),
 .mt-commands.is-choice {
   max-block-size: calc(32 * var(--u));

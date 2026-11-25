@@ -114,10 +114,11 @@ body.magic-arena-active #ui #sidebar-menu { display: none !important; }
 body.magic-arena-active #ui #app { padding: 0 !important; overflow: hidden !important; }
 
 /* Mouse: il tavolo è un riquadro 16:9 centrato, il resto è platea. Solo su
-   schermi abbastanza larghi: su una finestra stretta il riquadro 16:9 diventa
-   alto meno di 250px e il tavolo si riduce a testo illeggibile. Sotto i 760px
-   vale il layout a tutto schermo, lo stesso dei telefoni. */
-@media (pointer: fine) and (min-width: 760px) {
+   schermi larghi e in orizzontale: su una finestra stretta il riquadro diventa
+   alto meno di 250px e il tavolo si riduce a testo illeggibile, mentre in una
+   finestra verticale lascerebbe metà schermo nero. Lì valgono le regole base,
+   che sono già a tutto schermo come sui telefoni. */
+@media (pointer: fine) and (min-width: 760px) and (orientation: landscape) {
   .mt-table {
     --u: calc(min(100dvh, 56.25vw) / 100);
     inset: 0;
@@ -132,22 +133,6 @@ body.magic-arena-active #ui #app { padding: 0 !important; overflow: hidden !impo
   .mt-menu__scrim,
   .mt-menu__drawer { position: absolute; }
   .mt-menu__toggle { inset-block-start: calc(1.2 * var(--u)); }
-}
-
-/* Finestra più alta che larga: la cornice 16:9 lascerebbe metà schermo nero e
-   carte da 47 px. Qui il tavolo prende la finestra intera, con le righe che si
-   spartiscono l'altezza vera: stesse regole, solo più spazio alle carte. */
-@media (pointer: fine) and (min-width: 760px) and (orientation: portrait) {
-  .mt-table {
-    --u: calc(100dvh / 100);
-    inset: 0;
-    inline-size: 100%;
-    block-size: 100%;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-  }
 }
 
 /* ═══════════ avvio partita: gerarchia della lobby ═══════════
