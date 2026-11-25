@@ -39,22 +39,22 @@ const counterLabel = card => (card.counters > 0 ? `+${card.counters}` : '');
    è quasi tutta la carta, quindi il costo sta in una pillola in alto a destra
    con un pip per simbolo: il numero e i colori si leggono anche su una carta
    da 77 px, senza rubare altezza alla forza e alla costituzione. */
-const MANA_TONES = { W: 'w', U: 'u', B: 'b', R: 'r', G: 'g', C: 'c' };
+// I colori del mana, in minuscolo: la tonalità del pip è un `mt-card__pip--x`
+// solo per questi simboli, tutto il resto (numeri, X) resta neutro.
+const MANA_COLORS = 'wubrgc';
 const manaSymbols = cost => {
   const text = String(cost ?? '').trim();
   if (!text) return [];
   const braced = [...text.matchAll(/\{([^}]+)\}/g)].map(match => match[1].trim()).filter(Boolean);
-  return braced.length ? braced : text.replace(/\s+/g, '').split('');
+  return braced.length ? braced : [...text.replace(/\s+/g, '')];
 };
 const manaLabel = cost => manaSymbols(cost).join(' ');
 const manaPips = cost => {
-  const symbols = manaSymbols(cost);
-  if (!symbols.length) return '';
-  const pips = symbols.map(symbol => {
-    const tone = MANA_TONES[String(symbol).charAt(0).toUpperCase()] || '';
+  const pips = manaSymbols(cost).map(symbol => {
+    const tone = MANA_COLORS.includes(symbol[0].toLowerCase()) ? symbol[0].toLowerCase() : '';
     return `<span class="mt-card__pip${tone ? ` mt-card__pip--${tone}` : ''}">${esc(symbol)}</span>`;
   }).join('');
-  return `<span class="mt-card__cost" aria-hidden="true">${pips}</span>`;
+  return pips ? `<span class="mt-card__cost" aria-hidden="true">${pips}</span>` : '';
 };
 
 function tileHtml(card, side, zone = 'board', extra = '') {

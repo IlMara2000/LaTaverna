@@ -516,11 +516,12 @@ const MANA = `(async () => {
     return JSON.stringify({ carte });
 })()`;
 
-// Pip attesi per carta e testo che l'etichetta accessibile deve contenere.
+// Simboli attesi per carta: dal numero di pip al testo dell'etichetta
+// accessibile tutto viene da qui, così le due attese non possono divergere.
 const COSTI = {
-    uno: { pips: 2, testo: '2 W' },
-    due: { pips: 3, testo: '1 U B' },
-    tre: { pips: 3, testo: '3 W W' }
+    uno: ['2', 'W'],
+    due: ['1', 'U', 'B'],
+    tre: ['3', 'W', 'W']
 };
 
 const controllaMana = (mana, { nome, w, h }) => {
@@ -533,8 +534,8 @@ const controllaMana = (mana, { nome, w, h }) => {
         const atteso = COSTI[carta.id];
         if (!atteso) { problemi.push(`${dove}: carta inattesa «${carta.id}»`); continue; }
         if (!carta.costo) { problemi.push(`${dove}: «${carta.id}» senza costo visibile`); continue; }
-        if (carta.pips.length !== atteso.pips) {
-            problemi.push(`${dove}: «${carta.id}» mostra ${carta.pips.length} pip invece di ${atteso.pips}`);
+        if (carta.pips.length !== atteso.length) {
+            problemi.push(`${dove}: «${carta.id}» mostra ${carta.pips.length} pip invece di ${atteso.length}`);
         }
         if (carta.costo.x < carta.carta.x - 1 || carta.costo.r > carta.carta.r + 1
             || carta.costo.y < carta.carta.y - 1 || carta.costo.b > carta.carta.b + 1) {
@@ -548,7 +549,7 @@ const controllaMana = (mana, { nome, w, h }) => {
                 problemi.push(`${dove}: pip ${indice + 1} di «${carta.id}» ${pip.w}x${pip.h}px, sotto ${SOGLIE.pipMana}px`);
             }
         });
-        if (!carta.etichetta.includes(atteso.testo)) {
+        if (!carta.etichetta.includes(atteso.join(' '))) {
             problemi.push(`${dove}: l'etichetta di «${carta.id}» non dice il costo («${carta.etichetta}»)`);
         }
     }
