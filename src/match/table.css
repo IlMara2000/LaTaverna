@@ -65,6 +65,12 @@ body.magic-table-active .floating-trigger { display: none !important; }
   block-size: 100%;
   padding: calc(1.4 * var(--u)) calc(1.6 * var(--u));
   gap: calc(0.9 * var(--u));
+  /* Una sola superficie: la luce del tavolo attraversa i campi, la mano e la
+     barra comandi. Prima ogni fascia aveva il suo riquadro e il tavolo
+     sembrava un modulo con cinque scomparti. */
+  background:
+    radial-gradient(90% 62% at 50% 46%, rgb(120 92 180 / 14%), transparent 72%),
+    radial-gradient(70% 45% at 50% 100%, rgb(196 164 255 / 7%), transparent 70%);
 }
 
 /* Ogni campo ha tre corsie sovrapposte: creature in alto, permanenti e magie
@@ -79,13 +85,11 @@ body.magic-table-active .floating-trigger { display: none !important; }
   border-radius: calc(1.2 * var(--u));
 }
 
-.mt-field--own {
-  background: linear-gradient(180deg, rgb(196 164 255 / 8%), rgb(196 164 255 / 2%));
-  border: thin solid rgb(196 164 255 / 16%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
-}
+/* Nessun riquadro: il campo è la superficie. Le corsie restano riconoscibili
+   dalle etichette finché hanno carte, non da un bordo. */
+.mt-field--own { box-shadow: 0 calc(1.2 * var(--u)) calc(3.2 * var(--u)) rgb(120 92 180 / 10%); }
 
-.mt-field--opponent { background: rgb(0 0 0 / 18%); border: thin solid var(--mt-line); }
+.mt-field--opponent { box-shadow: none; }
 
 /* Un campo senza carte si riduce a una riga: prima restava alto quanto una
    corsia piena e lasciava due riquadri vuoti che spingevano la mano fuori
@@ -129,7 +133,9 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 .mt-lane__label {
   flex: 0 0 auto;
-  text-align: start;
+  /* global.css centra ogni span con !important: l'etichetta sta invece sopra
+     la prima carta, alla sua sinistra. */
+  text-align: start !important;
   padding-inline: calc(0.6 * var(--u));
   /* Pavimento in pixel: con --u a 3,6–7 px l'etichetta scendeva sotto i 10 px. */
   font-size: max(10px, calc(1.15 * var(--u)));
@@ -155,7 +161,9 @@ body.magic-table-active .floating-trigger { display: none !important; }
   overscroll-behavior-x: contain;
 }
 
-.mt-lane.is-empty .mt-lane__label { color: rgb(244 239 228 / 20%); }
+/* Una corsia vuota non si annuncia: lo spazio va alle carte vere e la
+   superficie resta continua. L'etichetta torna quando arriva la prima carta. */
+.mt-lane.is-empty .mt-lane__label { display: none; }
 
 .mt-opponent-head {
   display: flex;
@@ -163,12 +171,16 @@ body.magic-table-active .floating-trigger { display: none !important; }
   gap: calc(1.2 * var(--u));
   /* Spazio a destra per il pulsante ☰ del tavolo: senza, il conteggio delle
      carte finiva sotto l'icona. */
-  padding: calc(0.5 * var(--u)) calc(6.4 * var(--u)) calc(0.5 * var(--u)) calc(1.2 * var(--u));
-  border: thin solid var(--mt-line);
-  border-radius: calc(1 * var(--u));
-  background: rgb(8 12 16 / 55%);
+  /* Lo spazio a destra è per il ☰ del tavolo: in px perché a --u piccoli il
+     conteggio delle carte finiva sotto l'icona. */
+  padding: calc(0.5 * var(--u)) max(calc(6.4 * var(--u)), 52px) calc(0.5 * var(--u)) calc(1.2 * var(--u));
+  /* La testata scritta sul tavolo, non un'altra scatola sopra: l'ombra del
+     testo basta a tenerla leggibile sull'arte. */
+  border: 0;
+  background: transparent;
   font-size: calc(1.5 * var(--u));
   letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 70%);
   text-transform: uppercase;
   color: var(--mt-muted);
 }
@@ -446,9 +458,14 @@ body.magic-table-active .floating-trigger { display: none !important; }
   max-block-size: calc(16 * var(--u));
   padding: calc(0.45 * var(--u)) calc(0.8 * var(--u));
   overflow-y: auto;
-  border: thin solid var(--mt-line);
+  border: thin solid rgb(255 255 255 / 9%);
   border-radius: calc(1.2 * var(--u));
-  background: linear-gradient(180deg, rgb(20 27 34 / 92%), rgb(12 17 22 / 92%));
+  /* Vetro, non una fascia opaca: sotto si vede ancora la superficie del
+     tavolo, così la barra galleggia invece di tagliarlo in due. */
+  background: rgb(10 15 20 / 58%);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  box-shadow: 0 0 calc(2.4 * var(--u)) rgb(0 0 0 / 28%);
   font-size: calc(1.3 * var(--u));
   scrollbar-width: thin;
 }
@@ -458,7 +475,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
   inset-block-start: calc(-0.45 * var(--u));
   z-index: 2;
   padding-block: calc(0.2 * var(--u));
-  background: linear-gradient(180deg, #141b22 70%, rgb(20 27 34 / 0%));
+  background: linear-gradient(180deg, rgb(16 22 28 / 88%) 70%, rgb(16 22 28 / 0%));
 }
 
 /* Quando c'è da scegliere (blocchi, mulligan) la barra deve crescere: con il
@@ -894,8 +911,11 @@ body.magic-table-active .floating-trigger { display: none !important; }
    In verticale la risorsa scarsa è la larghezza: due file di carte (loro sopra,
    tu sotto), i comandi sopra la mano e la mano come ultima fascia, sotto il
    pollice. Le misure strutturali sono in pixel, perché con --u legato
-   all'altezza le carte diventerebbero larghe 185 px e i pulsanti 27 px. */
-@media (orientation: portrait) {
+   all'altezza le carte diventerebbero larghe 185 px e i pulsanti 27 px.
+   Solo col dito: su una finestra desktop più alta che larga vale la cornice
+   16:9 di arena.css, e questo impaginato le stava sopra lasciando il campo del
+   giocatore a 0 px (le sue carte sparivano sotto la mano). */
+@media (orientation: portrait) and (pointer: coarse) {
   /* Loro in alto, il tuo campo elastico, comandi e mano in basso. I due campi
      non hanno un'altezza fissa: vuoti si riducono a una riga di testo. */
   .mt-board {

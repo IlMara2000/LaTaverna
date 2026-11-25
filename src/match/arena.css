@@ -134,6 +134,22 @@ body.magic-arena-active #ui #app { padding: 0 !important; overflow: hidden !impo
   .mt-menu__toggle { inset-block-start: calc(1.2 * var(--u)); }
 }
 
+/* Finestra più alta che larga: la cornice 16:9 lascerebbe metà schermo nero e
+   carte da 47 px. Qui il tavolo prende la finestra intera, con le righe che si
+   spartiscono l'altezza vera: stesse regole, solo più spazio alle carte. */
+@media (pointer: fine) and (min-width: 760px) and (orientation: portrait) {
+  .mt-table {
+    --u: calc(100dvh / 100);
+    inset: 0;
+    inline-size: 100%;
+    block-size: 100%;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 /* ═══════════ avvio partita: gerarchia della lobby ═══════════
    Il markup è quello di lobbyMarkup(): qui si cambia solo l'ordine e il peso.
    Un invito grande, il mazzo come riga di impostazione, gli amici in secondo
