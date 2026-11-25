@@ -115,9 +115,12 @@ body.magic-table-active .floating-trigger { display: none !important; }
     grid-template-rows: auto auto auto auto minmax(0, 1fr);
   }
   /* Le corsie non scendono sotto una carta leggibile: se non entrano tutte,
-     il campo scorre invece di rimpicciolirle. */
+     il campo scorre invece di rimpicciolirle. Il pavimento sta sulla base
+     della corsia (etichetta più 15u di carte) e non cresce col contenuto,
+     altrimenti una carta alta 221 px gonfiava la corsia oltre il campo. */
   .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; }
-  .mt-table .mt-lane__cards { min-block-size: calc(15 * var(--u)); }
+  .mt-table .mt-lane:not(.is-empty) { flex: 1 0 calc(17 * var(--u)); }
+  .mt-table .mt-lane__cards { min-block-size: 0; }
 }
 
 .mt-lane {
