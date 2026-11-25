@@ -130,6 +130,10 @@ export function showMagicPlay(container, options = {}) {
     // battito di presenza): il bersaglio scelto resta, e sparisce solo quando
     // quella carta non è più un'opzione valida.
     let chosenTarget = '';
+    // Uid delle carte che il motore considera giocabili adesso (lancio o terra).
+    // Serve a spegnere «Lancia» sulle carte che non puoi pagare, invece di far
+    // scoprire l'errore solo dopo il tocco. `null` = view non disponibile.
+    let playableUids = null;
     // Aggiornamento immediato quando la finestra torna in primo piano: i browser
     // rallentano i timer delle schede nascoste e il tavolo sembrerebbe fermo.
     let syncNow = () => {};
@@ -143,6 +147,18 @@ export function showMagicPlay(container, options = {}) {
     const nameOf = id => (id === clientId ? 'Tu' : (gameState()?.playerNames?.[id] || label(id)));
     const gameState = () => state();
     const myData = () => gameState()?.playersData?.[clientId] || null;
+    // Swipe dal bordo destro e tasto Indietro sono lo stesso gesto di navigazione:
+    // dentro una partita non devono farla saltare. Chi vuole uscire lo fa con
+    // «Lascia» o dal menu del tavolo, con una scelta esplicita.
+    const historyGuard = () => {
+        if (disposed) return false;
+        const current = gameState();
+        if (!current || current.winner || detached) return false;
+        try { history.pushState({ tavernaDestination: 'magicPlay' }, '', '/magic/partita'); } catch { /* senza history la partita resta comunque aperta */ }
+        setNotice('Sei in partita: per uscire usa «Lascia» o il menu del tavolo.');
+        return true;
+    };
+    window.__tavernaHistoryGuard = historyGuard;
     // Chi può agire non è (più) solo chi ha il turno: con lo stack la priorità
     // passa, e una scelta in sospeso vale come una mossa da fare. Il tavolo usa
     // questa per abilitare i pulsanti, `activePlayer` per dire a chi tocca.
@@ -1332,13 +1348,22 @@ export function showMagicPlay(container, options = {}) {
         const commanderButtons = (mine.commandZone || []).map(card => {
             const tax = (mine.commanderCasts?.[card.uid] || 0) * 2;
             const cost = tax > 0 ? `${card.manaCost || ''} +${tax}` : (card.manaCost || '');
-            const canCast = isMyTurn() && current.activePlayer === clientId && ['main1', 'main2'].includes(current.phase);
-            return `<button type="button" class="mp-small mp-commander-cast" data-cast-commander="${esc(card.uid)}" ${canCast ? '' : 'disabled'}>Comandante · ${esc(card.name)} <small>${renderCardSymbols(cost)}</small></button>`;
+            const canCast = playableUids
+                ? playableUids.has(String(card.uid))
+                : (isMyTurn() && current.activePlayer === clientId && ['main1', 'main2'].includes(current.phase));
+            const why = canCast ? '' : ' title="Il comandante non è lanciabile adesso: servono mana e priorità."';
+            return `<button type="button" class="mp-small mp-commander-cast" data-cast-commander="${esc(card.uid)}" ${canCast ? '' : 'disabled'}${why}>Comandante · ${esc(card.name)} <small>${renderCardSymbols(cost)}</small></button>`;
         }).join('');
+        // La riserva di mana compare solo quando c'è qualcosa dentro: una riga
+        // «vuota» fissa rubava spazio senza dire niente di utile.
+        const manaPoolHtml = manaSymbols(mine.manaPool);
+        const manaRow = manaPoolHtml
+            ? `<div class="mp-mana"><span class="mp-mana__pool" title="${esc(`Riserva: ${manaPoolLabel(mine.manaPool)}`)}">Riserva: ${manaPoolHtml}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>`
+            : '';
         // «Passa il turno» apre la barra: resta visibile anche quando il resto
         // dei controlli va in scorrimento.
         return `<div class="mp-toolbar">${phaseButton(mine)}${priorityButton()}${commanderButtons}${discard}<div class="mp-life"><span>Vite</span><button type="button" class="mp-small" data-life="-1" ${isMyTurn() ? '' : 'disabled'}>−</button><strong>${mine.life}</strong><button type="button" class="mp-small" data-life="1" ${isMyTurn() ? '' : 'disabled'}>＋</button></div><button type="button" class="mp-small" data-leave title="Lascia il tavolo">Lascia</button></div>
-            <div class="mp-mana"><span class="mp-mana__pool" title="${esc(`Riserva: ${manaPoolLabel(mine.manaPool)}`)}">Riserva: ${manaSymbols(mine.manaPool) || 'vuota'}</span><button type="button" class="mp-small" data-clear-mana ${isMyTurn() ? '' : 'disabled'}>Svuota</button></div>
+            ${manaRow}
             <p id="play-notice" class="mp-notice" role="status" aria-live="polite" title="${esc(notice)}">${esc(notice)}</p>
             ${current.phase !== 'combat' ? `<label class="mp-target" title="Bersaglio della magia">Bersaglio<select id="play-target"><option value="">Nessun bersaglio</option>${targetOptions()}</select></label>` : ''}
             ${combatPanel()}
@@ -1382,15 +1407,19 @@ export function showMagicPlay(container, options = {}) {
             // «scegli uno» in ingresso si risolve con i suoi inneschi.
             const permanentCard = /\b(?:creature|artifact|enchantment|planeswalker)\b/i.test(String(card.typeLine || ''));
             const modal = isLand(card) || permanentCard ? null : parseCardAbilities(card).spells.find(spell => spell.modes?.length);
+            // Se il view model dice quali mosse sono legali, il pulsante segue
+            // quella verità: una magia non pagabile non si presenta come giocabile.
+            const canPlay = playableUids ? playableUids.has(String(uid)) : true;
+            const notPlayable = ' title="Non puoi giocarla adesso: serve la priorità, la fase giusta o abbastanza mana."';
             if (modal) {
                 return modal.modes.map((option, modeIndex) => {
-                    const supported = option.effects.length > 0 && option.unsupported.length === 0;
-                    return `<button type="button" class="mp-small" data-cast-mode="${esc(`${uid}:${modeIndex}`)}" ${supported ? '' : 'disabled'} title="${esc(`${option.text} · costo ${card.manaCost || '0'}`)}"><span class="mp-mode-icon" aria-hidden="true">${effectIcon(option.effects)}</span> ${esc(modeLabel(option.text))}</button>`;
+                    const supported = option.effects.length > 0 && option.unsupported.length === 0 && canPlay;
+                    const modeTitle = `${option.text} · costo ${card.manaCost || '0'}${canPlay ? '' : ' · non giocabile adesso'}`;
+                    return `<button type="button" class="mp-small" data-cast-mode="${esc(`${uid}:${modeIndex}`)}" ${supported ? '' : 'disabled'} title="${esc(modeTitle)}"><span class="mp-mode-icon" aria-hidden="true">${effectIcon(option.effects)}</span> ${esc(modeLabel(option.text))}</button>`;
                 }).join('');
             }
             const land = isLand(card);
-            const disabled = land && (mine.landsPlayed >= 1 || !['main1', 'main2'].includes(current.phase)) ? 'disabled' : '';
-            return `<button type="button" class="mp-small" data-play="${esc(uid)}" ${disabled}>${land ? 'Gioca terra' : 'Lancia'}</button>`;
+            return `<button type="button" class="mp-small" data-play="${esc(uid)}" ${canPlay ? '' : 'disabled'}${canPlay ? '' : notPlayable}>${land ? 'Gioca terra' : 'Lancia'}</button>`;
         }
         const buttons = [];
         if (stepOf(current) === 'declareAttackers' && current.activePlayer === clientId
@@ -1403,9 +1432,14 @@ export function showMagicPlay(container, options = {}) {
         }
         // Abilità attivate: solo quelle che il motore sa applicare davvero. Il
         // resto resta nel diario come «da gestire a mano», non simula nulla.
-        if (isMyTurn() && ['main1', 'main2'].includes(current.phase)) {
+        // Si attivano con la priorità, anche fuori dal proprio turno e fuori
+        // dalle fasi principali (un'abilità attivata è veloce come un istantaneo).
+        // Il filtro sul costo non deve escludere il sacrificio: «Sacrifica questa
+        // creatura: …» non ha né {T} né mana, ma è una mossa legale a tutti gli effetti.
+        if (isMyTurn() && !current.pendingChoice) {
             parseCardAbilities(card).activated.forEach((ability, index) => {
-                if (!ability.supported || (!ability.cost.tap && !ability.cost.manaCost)) return;
+                if (!ability.supported) return;
+                if (!ability.cost.tap && !ability.cost.manaCost && !ability.cost.sacrificeSelf) return;
                 buttons.push(`<button type="button" class="mp-small mp-ability" data-ability="${esc(uid)}" data-ability-index="${index}" title="${esc(ability.text)}">${esc(abilityLabel(ability))}</button>`);
             });
         }
@@ -1435,6 +1469,15 @@ export function showMagicPlay(container, options = {}) {
     function renderPlaying(current) {
         const views = tableView(current);
         const meta = engineMeta(current);
+        // Le mosse legali del view model decidono anche lo stato dei pulsanti in
+        // mano: se il motore non elenca `castToStack`/`playLand` per una carta,
+        // il suo pulsante è spento invece di far scoprire l'errore al tocco.
+        const actions = meta.actions || [];
+        playableUids = actions.length
+            ? new Set(actions
+                .filter(action => action.uid && ['castToStack', 'playLand', 'activateToStack'].includes(action.type))
+                .map(action => String(action.uid)))
+            : null;
         if (!table) {
             container.innerHTML = '<main class="magic-page magic-play"><div id="play-table"></div></main>';
             table = showMatchTable(container.querySelector('#play-table'), {
@@ -1694,6 +1737,7 @@ export function showMagicPlay(container, options = {}) {
 
     const cleanup = () => {
         disposed = true;
+        if (window.__tavernaHistoryGuard === historyGuard) window.__tavernaHistoryGuard = null;
         teardownTable();
         closeCardZoom();
         document.body.classList.remove('magic-table-active');

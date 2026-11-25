@@ -70,13 +70,17 @@ function laneHtml(kind, label, cards, inner) {
 
 function fieldHtml(cards, side, paint) {
   const list = cards || [];
-  // Campo vuoto: una riga di testo invece di un riquadro vuoto che sembra un errore.
-  const emptyLine = list.length ? '' : '<p class="mt-row__empty">Nessun permanente in campo</p>';
+  // Campo vuoto: una sola riga, non un riquadro alto quanto una corsia piena.
+  // Prima le tre etichette di corsia restavano impilate in mezzo al vuoto e
+  // rubavano mezza schermata alla mano.
+  if (!list.length) {
+    return `<div class="mt-field mt-field--${esc(side)} mt-field--empty"><p class="mt-row__empty">Nessun permanente in campo</p></div>`;
+  }
   // Molla elastica: in verticale spinge le tue carte verso il basso (vicino alla
   // mano) e lascia lo spazio libero in mezzo al tavolo. Su un contenitore che
   // scorre il margine automatico vale zero, quindi non nasconde nulla.
   const spring = side === 'own' ? '<div class="mt-field__spring" aria-hidden="true"></div>' : '';
-  return `<div class="mt-field mt-field--${esc(side)}">${emptyLine}${spring}${LANES.map(lane => {
+  return `<div class="mt-field mt-field--${esc(side)}">${spring}${LANES.map(lane => {
     const group = list.filter(lane.match);
     return laneHtml(lane.kind, lane.label, group, group.map(card => paint(card, side, 'board')).join(''));
   }).join('')}</div>`;
@@ -347,18 +351,75 @@ export function showMatchTable(host, options = {}) {
     state.damageById = new Map([...state.views].map(([id, view]) => [id, view.damage]));
   };
 
+  // Il campo si ridisegna a ogni mossa: senza questo, chi sta scorrendo una
+  // corsia o la mano tornerebbe all'inizio a ogni aggiornamento (e il salto si
+  // vede come un «frame» sbagliato). Si conserva la posizione e la si rimette
+  // subito dopo il nuovo markup.
+  function captureBoardScroll() {
+    const lanes = new Map();
+    const fields = new Map();
+    slots.board.querySelectorAll('.mt-field').forEach(field => {
+      const side = field.classList.contains('mt-field--own') ? 'own' : 'opponent';
+      fields.set(side, field.scrollTop);
+      field.querySelectorAll('.mt-lane').forEach(lane => {
+        const kind = [...lane.classList].find(name => name.startsWith('mt-lane--'));
+        const scroller = lane.querySelector('.mt-lane__cards');
+        if (kind && scroller) lanes.set(`${side}:${kind}`, scroller.scrollLeft);
+      });
+    });
+    const hand = slots.board.querySelector('.mt-hand');
+    return { lanes, fields, hand: hand ? hand.scrollLeft : 0 };
+  }
+
+  function restoreBoardScroll(saved) {
+    if (!saved) return;
+    slots.board.querySelectorAll('.mt-field').forEach(field => {
+      const side = field.classList.contains('mt-field--own') ? 'own' : 'opponent';
+      if (saved.fields.has(side)) field.scrollTop = saved.fields.get(side);
+      field.querySelectorAll('.mt-lane').forEach(lane => {
+        const kind = [...lane.classList].find(name => name.startsWith('mt-lane--'));
+        const scroller = lane.querySelector('.mt-lane__cards');
+        const x = kind ? saved.lanes.get(`${side}:${kind}`) : undefined;
+        if (scroller && x != null) scroller.scrollLeft = x;
+      });
+    });
+    const hand = slots.board.querySelector('.mt-hand');
+    if (hand && saved.hand) hand.scrollLeft = saved.hand;
+  }
+
   function renderBoard() {
     const foe = activeOpponent();
     const lives = new Map(state.opponents.map(foe2 => [foe2.id, foe2.life]));
     state.views.clear();
-    slots.board.innerHTML = `<div class="mt-board">
+    // Lo stato «campo vuoto» diventa una classe sul tabellone: il CSS non deve
+    // dedurlo con :has (fragile, e vince per specificità sulle media query del
+    // telefono). Qui la verità è una sola e viene dal dato che disegniamo.
+    const boardMods = [
+      (state.own || []).length ? '' : 'mt-board--own-empty',
+      (foe?.cards || []).length ? '' : 'mt-board--opp-empty'
+    ].filter(Boolean).join(' ');
+    const html = `<div class="mt-board${boardMods ? ` ${boardMods}` : ''}">
       ${opponentHeadHtml(foe)}
       ${fieldHtml(foe?.cards, 'opponent', paintCard)}
       <div class="mt-commands">${opponentSwitcherHtml(state.opponents, foe?.id || '')}${state.commands}</div>
       ${fieldHtml(state.own, 'own', paintCard)}
       ${handHtml(cardsHtml(state.hand, 'own', 'hand'))}
     </div>`;
-    markFreshCards();
+    // Ridisegnare il campo ricrea ogni <img> e ricalcola il layout: se il markup
+    // è identico (battito di presenza, notifica uguale) non si tocca il DOM e
+    // non si ruba un frame. Il confronto è sul markup già costruito, quindi
+    // anche i pulsanti delle abilità restano aggiornati quando cambia la priorità.
+    // Il ritorno dice se i nodi sono nuovi: solo allora chi chiama rilega i
+    // comandi, altrimenti aggiungerebbe doppi listener.
+    let rebuilt = false;
+    if (html !== state.lastBoardHtml) {
+      rebuilt = true;
+      const scroll = captureBoardScroll();
+      slots.board.innerHTML = html;
+      restoreBoardScroll(scroll);
+      markFreshCards();
+      state.lastBoardHtml = html;
+    }
     // Il colpo sull'avversario attivo si vede sulla sua testata.
     state.opponents.forEach(foe2 => {
       const before = state.lastFoeLives.get(foe2.id);
@@ -372,6 +433,7 @@ export function showMatchTable(host, options = {}) {
       }
     });
     state.lastFoeLives = lives;
+    return rebuilt;
   }
 
   function renderMenu() {
@@ -515,12 +577,12 @@ export function showMatchTable(host, options = {}) {
       if (next.stack !== undefined) { state.stack = next.stack; barChanged = true; }
       if (next.pendingChoice !== undefined) { state.pendingChoice = next.pendingChoice; barChanged = true; }
       if (changed) {
-        render('board');
+        const rebuilt = renderBoard();
         if (barChanged) renderBar();
         // I cimiteri cambiano a ogni rimozione: se il pannello è aperto si
         // aggiorna insieme al campo, senza richiedere un altro tocco.
         if (state.zonesOpen) updateZonesPanel();
-        return true;
+        return rebuilt;
       }
       if (barChanged) {
         renderBar();

@@ -227,6 +227,12 @@ document.addEventListener('DOMContentLoaded', initApp);
 
 // Public shop URLs support refresh and browser Back/Forward without touching auth callbacks.
 const onPublicHistory = event => {
+    // Un gesto di ritorno (swipe dal bordo, tasto Indietro) non deve buttare
+    // fuori da una partita in corso: chi è al tavolo decide lui quando uscire.
+    const guard = window.__tavernaHistoryGuard;
+    if (typeof guard === 'function') {
+        try { if (guard(event)) return; } catch { /* un guard rotto non blocca la navigazione */ }
+    }
     const destination = destinationFromPath(location.pathname) || event.state?.tavernaDestination;
     if (destination) void navigateTo(destination, document.getElementById('app'), { fromHistory: true });
     else location.reload();

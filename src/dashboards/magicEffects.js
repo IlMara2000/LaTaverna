@@ -386,12 +386,38 @@ function parseModes(lines, start) {
     return { modes, next: index };
 }
 
+// L'interpretazione di una carta dipende solo dal suo testo: lo stesso mago
+// viene parsato a ogni ridisegno del tavolo (rivelatore, pulsanti, inneschi).
+// La cache per testo evita di rifare decine di regex per ogni mossa; è limitata
+// e a scorrimento, così non cresce con le partite. Il risultato è di sola
+// lettura: chi lo riceve non lo modifica.
+const PARSE_CACHE_LIMIT = 400;
+const PARSE_CACHE = new Map();
+const parseCacheKey = card => [
+    String(card?.name || ''),
+    String(card?.typeLine || card?.type_line || ''),
+    String(card?.oracleText || card?.oracle_text || ''),
+    (card?.keywords || []).map(word => String(word).toLowerCase()).join(',')
+].join('\u0001');
+
 /**
  * Divide il testo della carta in abilità innescate, attivate, frasi da magia,
  * modi tra cui scegliere e testi statici (anthem, tipo scelto). Restituisce
  * anche ciò che non è stato capito, così l'interfaccia può dirlo.
  */
 export function parseCardAbilities(card) {
+    const key = parseCacheKey(card);
+    const cached = PARSE_CACHE.get(key);
+    if (cached) return cached;
+    const parsed = parseCardAbilitiesUncached(card);
+    if (PARSE_CACHE.size >= PARSE_CACHE_LIMIT) {
+        PARSE_CACHE.delete(PARSE_CACHE.keys().next().value);
+    }
+    PARSE_CACHE.set(key, parsed);
+    return parsed;
+}
+
+function parseCardAbilitiesUncached(card) {
     const text = normalizeText(card);
     const triggers = [];
     const activated = [];

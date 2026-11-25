@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mulliganAction } from '../../src/dashboards/magicMatchEngine.js';
 import { createEngineMatch, passPriority } from '../../src/dashboards/magic/engine/turn.js';
-import { castToStack } from '../../src/dashboards/magic/engine/stack.js';
+import { activateToStack, castToStack } from '../../src/dashboards/magic/engine/stack.js';
 import { openChoice } from '../../src/dashboards/magic/engine/choices.js';
 import { applyAction, legalActions } from '../../src/dashboards/magic/engine/actions.js';
 import { viewFor } from '../../src/dashboards/magic/engine/view.js';
@@ -117,6 +117,52 @@ test('le mosse legali nello stato M1 seguono la priorità e lo stack', () => {
     const after = legalActions(state, 'a');
     assert.ok(!after.some(action => action.type === 'castToStack' && action.uid === 'elfo-1'));
     assert.equal(stepOf(state), 'main1');
+});
+
+test('le abilità attivate con {T} e con sacrificio vanno sullo stack e si risolvono', () => {
+    let state = started();
+    state.playersData.a.battlefield = [
+        permanent('pinger', { oracleText: '{T}: Draw a card.' }),
+        permanent('sacco', { name: 'Sacco', oracleText: 'Sacrifice this creature: Draw a card.' })
+    ];
+    const legal = legalActions(state, 'a');
+    assert.ok(legal.some(action => action.type === 'activateToStack' && action.uid === 'pinger'), 'l’abilità {T} è una mossa legale');
+    assert.ok(legal.some(action => action.type === 'activateToStack' && action.uid === 'sacco'), 'l’abilità con sacrificio è una mossa legale');
+
+    const handBefore = state.playersData.a.hand.length;
+    state = applyAction(state, { type: 'activateToStack', playerId: 'a', uid: 'pinger', index: 0 });
+    assert.equal(state.playersData.a.battlefield.find(card => card.uid === 'pinger').tapped, true, 'il costo {T} si paga all’attivazione');
+    assert.equal(state.stack.length, 1);
+    state = passPriority(state, 'a');
+    state = passPriority(state, 'b');
+    assert.equal(state.playersData.a.hand.length, handBefore + 1);
+    assert.equal(state.stack.length, 0);
+
+    state = applyAction(state, { type: 'activateToStack', playerId: 'a', uid: 'sacco', index: 0 });
+    assert.ok(!state.playersData.a.battlefield.some(card => card.uid === 'sacco'), 'la fonte è sacrificata subito');
+    assert.ok(state.playersData.a.graveyard.some(card => card.uid === 'sacco'));
+    state = passPriority(state, 'a');
+    state = passPriority(state, 'b');
+    assert.equal(state.playersData.a.hand.length, handBefore + 2, 'l’effetto si risolve anche se la fonte è sparita');
+});
+
+test('le abilità con effetto tappare e danno applicano il bersaglio scelto', () => {
+    let state = started();
+    state.playersData.a.battlefield = [
+        permanent('tapper', { oracleText: '{T}: Tap target creature.' }),
+        permanent('pinger', { oracleText: '{T}: This creature deals 1 damage to any target.' })
+    ];
+    state.playersData.b.battlefield = [permanent('orso', { toughness: '3' })];
+
+    state = applyAction(state, { type: 'activateToStack', playerId: 'a', uid: 'tapper', index: 0, target: 'card:b:orso' });
+    state = passPriority(state, 'a');
+    state = passPriority(state, 'b');
+    assert.equal(state.playersData.b.battlefield.find(card => card.uid === 'orso').tapped, true, '«tappare» è applicato');
+
+    state = applyAction(state, { type: 'activateToStack', playerId: 'a', uid: 'pinger', index: 0, target: 'card:b:orso' });
+    state = passPriority(state, 'a');
+    state = passPriority(state, 'b');
+    assert.equal(state.playersData.b.battlefield.find(card => card.uid === 'orso').damageMarked, 1, '«danno» è applicato');
 });
 
 test('le nuove mosse passano da applyAction come le vecchie', () => {

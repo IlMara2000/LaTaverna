@@ -87,6 +87,35 @@ body.magic-table-active .floating-trigger { display: none !important; }
 
 .mt-field--opponent { background: rgb(0 0 0 / 18%); border: thin solid var(--mt-line); }
 
+/* Un campo senza carte si riduce a una riga: prima restava alto quanto una
+   corsia piena e lasciava due riquadri vuoti che spingevano la mano fuori
+   schermo. Lo spazio recuperato torna alle carte vere. */
+.mt-field.mt-field--empty {
+  justify-content: center;
+  padding-block: calc(0.6 * var(--u));
+}
+.mt-field--empty .mt-row__empty { color: rgb(244 239 228 / 48%); }
+
+/* Un campo vuoto non ha nulla da riempire: le sue righe vanno a chi ha carte
+   davvero (campo con permanenti e mano). Lo stato arriva come classe da
+   table.js, così non serve :has né si litiga con le media query del telefono.
+   Solo sui tavoli alti: il telefono in orizzontale ha già il suo impaginato. */
+@media (orientation: landscape) and (min-height: 521px) {
+  .mt-board--opp-empty:not(.mt-board--own-empty) {
+    grid-template-rows: auto auto auto minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+  .mt-board--own-empty:not(.mt-board--opp-empty) {
+    grid-template-rows: auto minmax(0, 0.8fr) auto auto minmax(0, 1.2fr);
+  }
+  .mt-board--own-empty.mt-board--opp-empty {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  }
+  /* Le corsie non scendono sotto una carta leggibile: se non entrano tutte,
+     il campo scorre invece di rimpicciolirle. */
+  .mt-table .mt-field { overflow-y: auto; overscroll-behavior: contain; }
+  .mt-table .mt-lane__cards { min-block-size: calc(15 * var(--u)); }
+}
+
 .mt-lane {
   display: flex;
   flex: 1 1 0;
@@ -102,7 +131,8 @@ body.magic-table-active .floating-trigger { display: none !important; }
   flex: 0 0 auto;
   text-align: start;
   padding-inline: calc(0.6 * var(--u));
-  font-size: calc(1 * var(--u));
+  /* Pavimento in pixel: con --u a 3,6–7 px l'etichetta scendeva sotto i 10 px. */
+  font-size: max(10px, calc(1.15 * var(--u)));
   line-height: 1.4;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -112,7 +142,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-lane__cards {
   display: flex;
   flex: 1 1 auto;
-  align-items: stretch;
+  align-items: center;
   gap: calc(0.6 * var(--u));
   min-block-size: 0;
   padding-block: calc(0.15 * var(--u));
@@ -120,6 +150,9 @@ body.magic-table-active .floating-trigger { display: none !important; }
   overflow-y: hidden;
   scrollbar-width: thin;
   scroll-snap-type: x proximity;
+  /* Lo scorrimento orizzontale della corsia non deve concatenarsi alla pagina
+     e trasformarsi in un gesto di ritorno del browser. */
+  overscroll-behavior-x: contain;
 }
 
 .mt-lane.is-empty .mt-lane__label { color: rgb(244 239 228 / 20%); }
@@ -157,6 +190,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
   overflow-y: hidden;
   scrollbar-width: thin;
   scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
   border-radius: calc(1.2 * var(--u));
 }
 
@@ -167,6 +201,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
      sinistra, invece di essere tagliate fuori dallo scorrimento. */
   justify-content: flex-start;
   justify-content: safe center;
+  align-items: center;
   overflow-y: visible;
   padding-block: calc(0.8 * var(--u)) calc(0.4 * var(--u));
 }
@@ -180,7 +215,11 @@ body.magic-table-active .floating-trigger { display: none !important; }
 }
 
 /* ─────────────────────── la carta ───────────────────────
-   Alta quanto la fascia, larga di conseguenza (63/88 come una carta vera). */
+   Alta quanto la fascia, larga di conseguenza (63/88 come una carta vera),
+   ma con un tetto che conserva il rapporto quando la fascia è molto alta:
+   senza, la carta si allungava e l'arte si deformava. In verticale e sul
+   telefono in orizzontale le regole locali danno un'altezza in pixel che
+   scavalca questo min(). */
 
 /* Niente minimo 44×44 sulle carte del campo: su schermi bassi deformava
    l'arte in un quadrato e la faceva uscire dalla corsia. Il target toccabile
@@ -188,7 +227,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
 .mt-card {
   position: relative;
   flex: 0 0 auto;
-  block-size: 100%;
+  block-size: min(100%, calc(22 * var(--u) * 88 / 63));
   min-block-size: 0;
   min-inline-size: 0;
   aspect-ratio: 63 / 88;
@@ -265,7 +304,7 @@ body.magic-table-active .floating-trigger { display: none !important; }
   inset-inline-start: calc(0.4 * var(--u));
   padding: 0 calc(0.5 * var(--u));
   border-radius: calc(0.4 * var(--u));
-  font-size: calc(1.2 * var(--u));
+  font-size: max(10px, calc(1.2 * var(--u)));
   letter-spacing: 0.06em;
   background: rgb(8 12 16 / 88%);
   border: thin solid rgb(255 255 255 / 16%);
@@ -298,11 +337,31 @@ body.magic-table-active .floating-trigger { display: none !important; }
   background: rgb(255 255 255 / 12%);
   color: inherit;
   font: inherit;
-  font-size: calc(1.3 * var(--u));
+  font-size: max(11px, calc(1.3 * var(--u)));
   cursor: pointer;
 }
 
+/* Su un dito i comandi principali della mano hanno un bersaglio pieno. */
+@media (pointer: coarse) {
+  .mt-hand .mt-card__actions button { min-block-size: 44px; }
+}
+
+/* Il comando di turno resta sempre in vista: la barra può scorrere, lui no. */
+.mt-commands .mp-toolbar { position: sticky; inset-block-start: 0; z-index: 2; }
+.mt-commands .mp-toolbar > .mp-button:first-child { flex: 0 0 auto; }
+
 .mt-card__actions button:active { background: rgb(255 255 255 / 22%); }
+
+/* Una mossa non legale si vede subito: spenta e non toccabile. */
+.mt-card__actions button:disabled { opacity: 0.42; cursor: not-allowed; }
+
+/* La carta che puoi giocare adesso si accende: l'occhio va lì senza leggere. */
+.mt-card__actions button[data-play]:not(:disabled),
+.mt-card__actions button[data-cast-mode]:not(:disabled) {
+  border-color: rgb(255 214 130 / 70%);
+  background: rgb(255 214 130 / 16%);
+  box-shadow: 0 0 calc(1.2 * var(--u)) rgb(255 214 130 / 24%);
+}
 
 /* Le magie modali hanno un pulsante per modo con il testo intero: dentro una
    carta da 96px andavano a capo su tre righe e coprivano arte e nome. Restano
@@ -783,6 +842,12 @@ body.magic-table-active .floating-trigger { display: none !important; }
     grid-template-rows: auto auto minmax(0, 1fr) auto auto;
     padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px));
     gap: 6px;
+  }
+  .mt-board--own-empty:not(.mt-board--opp-empty) {
+    grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  }
+  .mt-board--own-empty.mt-board--opp-empty {
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
   }
   /* Ordine di lettura verticale: loro, tu, comandi, mano. */
   .mt-board > .mt-opponent-head { grid-row: 1; }
