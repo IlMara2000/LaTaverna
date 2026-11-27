@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cookie — LaTaverna</title>
+    <style>
+      :root { color-scheme: dark light; }
+      body {
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+        max-width: 860px;
+        font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: #14110d;
+        color: #f5efe4;
+      }
+      h1 { font-size: 28px; margin: 0 0 12px; }
+      h2 { font-size: 20px; margin: 32px 0 8px; }
+      a { color: #e0a458; }
+      .cookie-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px; }
+      .cookie-table th, .cookie-table td {
+        padding: 10px 12px;
+        /* Grigio caldo a metà: si vede sia su fondo scuro sia su fondo chiaro. */
+        border-bottom: 1px solid rgba(128, 110, 84, 0.35);
+        text-align: left;
+        vertical-align: top;
+      }
+      .cookie-table th { font-weight: 600; }
+      /* I pulsanti .tv-btn arrivano da consent.css, importato da consent.js. */
+      .cookie-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      @media (prefers-color-scheme: light) {
+        body { background: #fdf8ef; color: #231d15; }
+        a { color: #a2621c; }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="cookie-root"></main>
+    <p><a href="/">Torna al tavolo</a></p>
+    <script type="module">
+      import { initConsent } from '/src/privacy/consent.js';
+      import { mountCookiePage } from '/src/privacy/cookie-page.js';
+      initConsent();
+      mountCookiePage(document.getElementById('cookie-root'));
+    </script>
+  </body>
+</html>

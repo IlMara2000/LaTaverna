@@ -12,6 +12,7 @@ import './styles/magic-amethyst-surface.css';
 import './styles/standalone.css';
 import './styles/entry-pages.css';
 import './styles/platform-layout.css';
+import { initConsent } from './privacy/consent.js';
 import { supabase } from './services/supabase.js';
 import { renderTavernEntrance } from './components/features/auth/TavernEntrance.js';
 import { initLogin } from './components/features/auth/Login.js';
@@ -35,6 +36,8 @@ if (location.pathname.replace(/\/+$/, '') === '/carte/scippo') {
     history.replaceState(history.state, '', `/scippo${location.search}${location.hash}`);
 }
 
+// Prima di qualsiasi cosa che legga il consenso: banner e pulsante del footer passano da qui.
+initConsent();
 applyCachedAppPreferences();
 const cleanupMotionPreferences = initMotionPreferences();
 if (import.meta.hot) import.meta.hot.dispose(cleanupMotionPreferences);

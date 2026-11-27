@@ -90,6 +90,7 @@ export function showLobby(container) {
                     <a href="/privacy">Privacy</a><span aria-hidden="true">·</span>
                     <a href="/termini">Termini</a><span aria-hidden="true">·</span>
                     <a href="/cookie">Cookie e terzi</a><span aria-hidden="true">·</span>
+                    <button type="button" data-consent-open>Preferenze cookie</button><span aria-hidden="true">·</span>
                     <a href="/community">Community</a><span aria-hidden="true">·</span>
                     <a href="/segnala">Segnala contenuto</a>
                 </nav>

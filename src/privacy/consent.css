@@ -1,0 +1,216 @@
+:root {
+  --tv-consent-bg: #14110d;
+  --tv-consent-fg: #f5efe4;
+  --tv-consent-muted: #cbbfa9;
+  --tv-consent-accent: #e0a458;
+  --tv-consent-line: rgba(245, 239, 228, 0.18);
+  --tv-consent-radius: 14px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --tv-consent-bg: #fdf8ef;
+    --tv-consent-fg: #231d15;
+    --tv-consent-muted: #5c5245;
+    --tv-consent-accent: #a2621c;
+    --tv-consent-line: rgba(35, 29, 21, 0.16);
+  }
+}
+
+.tv-consent {
+  position: fixed;
+  inset-inline: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 2147483000;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border: 1px solid var(--tv-consent-line);
+  border-radius: var(--tv-consent-radius);
+  background: var(--tv-consent-bg);
+  color: var(--tv-consent-fg);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Il banner è fisso in basso: finché è aperto lascia sotto il footer tanto spazio
+   quanto è alto lui, così scorrendo fino in fondo i link legali finiscono sopra il
+   banner e restano cliccabili. `--tv-consent-space` è la sua altezza misurata più il
+   distacco dal bordo; non si tocca il padding di #app perché la lobby lo azzera. */
+body.tv-consent-open #ui .taverna-legal-links {
+  margin-bottom: var(--tv-consent-space, 0px);
+}
+
+.tv-consent__text { max-width: 62ch; }
+.tv-consent__text h2 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+}
+.tv-consent__text p { margin: 0; color: var(--tv-consent-muted); }
+
+.tv-consent__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.tv-consent__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tv-consent-accent);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tv-btn {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--tv-consent-line);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tv-btn--ghost { background: transparent; color: var(--tv-consent-fg); }
+/* Il testo del pulsante pieno usa il colore di sfondo del tema: scuro su accento chiaro, chiaro su accento scuro. */
+.tv-btn--solid { background: var(--tv-consent-accent); border-color: var(--tv-consent-accent); color: var(--tv-consent-bg); }
+.tv-btn:focus-visible,
+.tv-consent__link:focus-visible,
+.tv-consent-switch:focus-visible {
+  outline: 3px solid var(--tv-consent-accent);
+  outline-offset: 2px;
+}
+
+/* Nel footer il pulsante si legge come gli altri link legali. */
+#ui .taverna-legal-links button[data-consent-open] {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #bda5cf;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+#ui .taverna-legal-links button[data-consent-open]:hover,
+#ui .taverna-legal-links button[data-consent-open]:focus-visible {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.tv-consent-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483001;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.tv-consent-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 6, 4, 0.6);
+  backdrop-filter: blur(2px);
+}
+.tv-consent-modal__panel {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 20px 22px 18px;
+  border: 1px solid var(--tv-consent-line);
+  border-radius: var(--tv-consent-radius);
+  background: var(--tv-consent-bg);
+  color: var(--tv-consent-fg);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.tv-consent-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tv-consent-modal__head h2 { margin: 0; font-size: 18px; }
+.tv-consent-modal__lead { margin: 8px 0 14px; color: var(--tv-consent-muted); }
+.tv-consent__icon {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--tv-consent-line);
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tv-consent-list { margin: 0; padding: 0; list-style: none; }
+.tv-consent-list__item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-top: 1px solid var(--tv-consent-line);
+}
+.tv-consent-list__item p { margin: 4px 0 0; color: var(--tv-consent-muted); font-size: 14px; }
+
+.tv-consent-switch {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 26px;
+  margin-top: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--tv-consent-line);
+  background: rgba(0, 0, 0, 0.25);
+  appearance: none;
+  cursor: pointer;
+  position: relative;
+}
+.tv-consent-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--tv-consent-muted);
+  transition: transform 120ms ease;
+}
+.tv-consent-switch:checked { background: var(--tv-consent-accent); border-color: var(--tv-consent-accent); }
+.tv-consent-switch:checked::after { transform: translateX(20px); background: #14110d; }
+/* I necessari sono sempre attivi: lo switch resta acceso e non si tocca. */
+.tv-consent-switch--locked {
+  pointer-events: none;
+  opacity: 0.55;
+  background: var(--tv-consent-accent);
+  border-color: var(--tv-consent-accent);
+}
+.tv-consent-switch--locked::after { transform: translateX(20px); background: #14110d; }
+
+.tv-consent-modal__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.tv-consent-modal__note {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--tv-consent-muted);
+}
+.tv-consent-modal__note a { color: var(--tv-consent-accent); }
+
+@media (max-width: 560px) {
+  .tv-consent { flex-direction: column; align-items: stretch; }
+  .tv-consent__actions { justify-content: stretch; }
+  .tv-consent__actions .tv-btn { flex: 1 1 auto; }
+}

@@ -39,6 +39,11 @@ export default defineConfig(({ mode }) => {
         },
       },
       rollupOptions: {
+        // La pagina Cookie è un ingresso separato: senza questo finisce in `dist` solo in sviluppo.
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          cookie: path.resolve(__dirname, 'cookie.html'),
+        },
         output: {
           // Organizza i file in sottocartelle pulite nel build finale
           chunkFileNames: 'assets/js/[name]-[hash].js',
