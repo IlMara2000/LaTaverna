@@ -43,6 +43,19 @@ export const powerOf = card => basePower(card) + (card?.counters?.plusOne || 0)
     + (card?.turnBoost?.power || 0) + (card?.anthemBoost?.power || 0);
 export const toughnessOf = card => baseToughness(card) + (card?.counters?.plusOne || 0)
     + (card?.turnBoost?.toughness || 0) + (card?.anthemBoost?.toughness || 0);
+// Un'Aura è un incantesimo che si attacca: il tipo lo dice, il testo «Enchant…»
+// lo conferma quando la tipologia non è aggiornata.
+const isAura = card => /\baura\b/i.test(typeLine(card)) || /^enchant\b/im.test(oracleText(card));
+
+/** La creatura indicata dal bersaglio di una magia: «card:proprietario:uid». */
+function hostOfSpell(state, target) {
+    const [kind, ownerId, ...rest] = String(target || '').split(':');
+    if (kind !== 'card') return null;
+    const uid = rest.join(':');
+    const host = (state.playersData?.[ownerId]?.battlefield || []).find(card => String(card.uid || card.instanceId || '') === uid);
+    return host && isCreature(host) ? host : null;
+}
+
 const clone = value => structuredClone(value);
 const shuffle = items => {
     for (let index = items.length - 1; index > 0; index -= 1) {
@@ -254,7 +267,13 @@ function beginTurn(state, id) {
     const player = state.playersData[id];
     // Lo stappare del turno toglie anche la debolezza da evocazione: una creatura
     // lanciata dopo questo momento resta "malata" fino al prossimo stappare.
-    for (const card of player.battlefield) { card.tapped = false; card.summoningSick = false; card.enteredThisTurn = false; }
+    for (const card of player.battlefield) {
+        card.tapped = false;
+        card.summoningSick = false;
+        card.enteredThisTurn = false;
+        // Una sola abilità di lealtà per turno di ogni planeswalker (CR 606.3).
+        card.loyaltyUsed = false;
+    }
     player.landsPlayed = 0;
     player.manaPool = emptyManaPool();
     // Mantenimento: gli inneschi «all'inizio del tuo mantenimento» scattano prima
@@ -361,16 +380,16 @@ export function tapMana(currentState, playerId, uid, color = 'auto') {
     return state;
 }
 
-function autoPay(state, player, cost, extraGeneric = 0) {
+function autoPay(state, player, cost, extraGeneric = 0, xValue = 0) {
     if (!cost) return;
-    if (canPayMana(player.manaPool, cost, 0, extraGeneric)) {
-        player.manaPool = payMana(player.manaPool, cost, 0, extraGeneric);
+    if (canPayMana(player.manaPool, cost, xValue, extraGeneric)) {
+        player.manaPool = payMana(player.manaPool, cost, xValue, extraGeneric);
         return;
     }
     const desired = player.hand.filter(card => !isLand(card)).map(card => ({ manaCost: card.manaCost || '', extraGeneric }));
     const sources = player.battlefield.filter(card => manaUsable(player, card));
     for (const source of sources) {
-        if (canPayMana(player.manaPool, cost, 0, extraGeneric)) break;
+        if (canPayMana(player.manaPool, cost, xValue, extraGeneric)) break;
         const options = manaProductionOptions(source, player.colorIdentity);
         if (!options.length) continue;
         const choice = options.length === 1 ? 0 : chooseManaProductionOption(player, source, desired);
@@ -378,10 +397,10 @@ function autoPay(state, player, cost, extraGeneric = 0) {
         addManaProduction(player, source, index);
         source.tapped = true;
     }
-    if (!canPayMana(player.manaPool, cost, 0, extraGeneric)) {
+    if (!canPayMana(player.manaPool, cost, xValue, extraGeneric)) {
         throw new Error(`Mana insufficiente o colori errati per ${cost}. Riserva: ${manaPoolLabel(player.manaPool)}.`);
     }
-    player.manaPool = payMana(player.manaPool, cost, 0, extraGeneric);
+    player.manaPool = payMana(player.manaPool, cost, xValue, extraGeneric);
 }
 
 /** Il costo da pagare: il comandante rilanciato costa {2} in più per ogni lancio. */
@@ -396,12 +415,16 @@ export const spellCost = (player, card, fromCommandZone = false) => {
  * risolve la stessa magia più tardi: due copie della stessa regola sono due
  * comportamenti diversi da mantenere allineati.
  */
-export function resolveSpell(state, playerId, card, target = '', mode = null) {
+export function resolveSpell(state, playerId, card, target = '', mode = null, xValue = 0) {
     const player = state.playersData[playerId];
     if (isPermanentCard(card)) {
+        // Un'Aura non resta in campo da sola: si attacca alla creatura indicata
+        // dal bersaglio («card:proprietario:uid»).
+        const host = isAura(card) ? hostOfSpell(state, target) : null;
         const permanent = {
             ...card,
             instanceId: card.uid,
+            attachedTo: host ? host.uid : '',
             tapped: /enters(?: the battlefield)? tapped/i.test(oracleText(card)),
             summoningSick: isCreature(card) && !hasKeyword(card, 'haste'),
             damageMarked: 0,
@@ -410,6 +433,7 @@ export function resolveSpell(state, playerId, card, target = '', mode = null) {
         };
         player.battlefield.push(permanent);
         log(state, `${playerName(state, playerId)} lancia ${card.name}.`);
+        if (host) log(state, `${card.name} si attacca a ${host.name}.`);
         logLines(state, applyEntryStatics(state, playerId, permanent));
         state.log = [...resolveOracleText(permanent, state, playerId, target, 0, true).log, ...state.log];
         // Gli altri permanenti vedono l'ingresso: «quando un'altra creatura che
@@ -418,13 +442,13 @@ export function resolveSpell(state, playerId, card, target = '', mode = null) {
     } else {
         player.graveyard.push(card);
         log(state, `${playerName(state, playerId)} lancia ${card.name}.`);
-        state.log = [...resolveOracleText(card, state, playerId, target, 0, false, mode).log, ...state.log];
+        state.log = [...resolveOracleText(card, state, playerId, target, xValue, false, mode).log, ...state.log];
     }
     return settle(state);
 }
 
 /** Lancia una magia dalla mano pagando il costo con la riserva e le terre disponibili. */
-export function castSpell(currentState, playerId, uid, target = '', mode = null) {
+export function castSpell(currentState, playerId, uid, target = '', mode = null, xValue = 0) {
     const state = clone(currentState);
     const player = requireTurn(state, playerId);
     const instantSpeed = isInstant(player.hand.find(card => card.uid === uid) || {});
@@ -440,7 +464,8 @@ export function castSpell(currentState, playerId, uid, target = '', mode = null)
     }
     const card = fromCommandZone ? player.commandZone[index] : player.hand[index];
     if (isLand(card)) throw new Error('Le terre si giocano dal pulsante Gioca terra.');
-    autoPay(state, player, spellCost(player, card, fromCommandZone));
+    const x = Math.max(0, Number(xValue) || 0);
+    autoPay(state, player, spellCost(player, card, fromCommandZone), 0, x);
     if (fromCommandZone) {
         player.commandZone.splice(index, 1);
         player.commanderCasts = player.commanderCasts || {};
@@ -448,7 +473,7 @@ export function castSpell(currentState, playerId, uid, target = '', mode = null)
     } else {
         player.hand.splice(index, 1);
     }
-    return resolveSpell(state, playerId, card, target, mode);
+    return resolveSpell(state, playerId, card, target, mode, x);
 }
 
 /**
@@ -503,6 +528,35 @@ export function activateAbility(currentState, playerId, uid, index = 0, target =
         log(state, `${card.name} viene sacrificata.`);
     }
     log(state, `${playerName(state, playerId)} attiva ${card.name}.`);
+    const result = applyEffects(ability.effects, {
+        state, controllerId: playerId, card, target, sourceName: card.name
+    });
+    logLines(state, result.log);
+    if (result.unsupported.length) logLines(state, [manualNotice(card.name, result.unsupported)]);
+    return settle(state);
+}
+
+/**
+ * Abilità di lealtà di un planeswalker: cambia la lealtà stampata sul permanente
+ * e risolve il testo dell'abilità. Una sola per turno (CR 606.3); scendere sotto
+ * zero non è permesso, mentre a zero la carta va al cimitero per la 704.5i.
+ */
+export function activateLoyalty(currentState, playerId, uid, index = 0, target = '') {
+    const state = clone(currentState);
+    const player = requireTurn(state, playerId);
+    if (!['main1', 'main2'].includes(state.phase)) throw new Error('Le abilità di lealtà si attivano nelle fasi principali.');
+    const card = player.battlefield.find(item => (item.instanceId || item.uid) === uid);
+    if (!card) throw new Error('La carta non è sul tuo campo.');
+    if (!/\bplaneswalker\b/i.test(typeLine(card))) throw new Error(`${card.name} non è un planeswalker.`);
+    if (card.loyaltyUsed) throw new Error(`${card.name} ha già usato un'abilità di lealtà in questo turno.`);
+    const ability = (parseCardAbilities(card).loyalty || [])[Number(index)];
+    if (!ability) throw new Error('Questa carta non ha abilità di lealtà automatiche.');
+    if (!ability.supported) throw new Error(`${card.name}: abilità da risolvere a mano.`);
+    const next = (Number(card.loyalty) || 0) + ability.change;
+    if (next < 0) throw new Error(`${card.name}: non ha abbastanza lealtà (${card.loyalty}) per ${ability.change}.`);
+    card.loyalty = next;
+    card.loyaltyUsed = true;
+    log(state, `${playerName(state, playerId)} usa ${ability.text.split(':')[0].trim()} su ${card.name} (lealtà ${next}).`);
     const result = applyEffects(ability.effects, {
         state, controllerId: playerId, card, target, sourceName: card.name
     });

@@ -58,7 +58,7 @@ export function targetLabelOf(state, target = '') {
  * esce dalla mano subito, l'effetto aspetta. Le magie non istantanee hanno il
  * vincolo delle fasi principali e dello stack vuoto (CR 307.1, 308.1).
  */
-export function castToStack(currentState, playerId, { uid, target = '', mode = null } = {}) {
+export function castToStack(currentState, playerId, { uid, target = '', mode = null, xValue = 0 } = {}) {
     const state = structuredClone(currentState);
     const player = state.playersData?.[playerId];
     if (!player) throw new Error('Non fai parte di questa partita.');
@@ -88,7 +88,7 @@ export function castToStack(currentState, playerId, { uid, target = '', mode = n
         }
     }
 
-    paySpellCost(state, player, spellCost(player, card, fromCommandZone));
+    paySpellCost(state, player, spellCost(player, card, fromCommandZone), 0, Number(xValue) || 0);
     if (fromCommandZone) {
         player.commandZone.splice(index, 1);
         player.commanderCasts = player.commanderCasts || {};
@@ -108,6 +108,7 @@ export function castToStack(currentState, playerId, { uid, target = '', mode = n
         targetLabel: targetLabelOf(state, target),
         targets: target ? [String(target)] : [],
         mode: mode ?? null,
+        xValue: Math.max(0, Number(xValue) || 0),
         requiresTarget: spellNeedsTarget(card)
     };
     state.stack = [...(state.stack || []), item];
@@ -193,7 +194,7 @@ export function resolveTop(currentState) {
         return settleState(state);
     }
     if (!state.playersData?.[item.controllerId]) return settleState(state);
-    return resolveSpell(state, item.controllerId, item.card, item.target || '', item.mode ?? null);
+    return resolveSpell(state, item.controllerId, item.card, item.target || '', item.mode ?? null, item.xValue || 0);
 }
 
 /** Svuota lo stack risolvendo dalla cima: comodo nei test e nelle partite automatiche. */

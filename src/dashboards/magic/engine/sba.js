@@ -20,20 +20,24 @@ export const SBA_RULES = Object.freeze({
     lethalDamage: '704.5g',
     deathtouch: '704.5h',
     legend: '704.5j',
+    loyalty: '704.5i',
+    aura: '704.5m',
     tokens: '704.5n'
 });
 
-export const SBA_UNSUPPORTED = Object.freeze(['704.5c (veleno)', '704.5i (lealtà)', '704.5m (aure e battaglie)']);
+export const SBA_UNSUPPORTED = Object.freeze(['704.5c (veleno)', '704.5m (battaglie)']);
 
 const typeLine = card => String(card?.typeLine || '');
 const isCreature = card => /\bcreature\b/i.test(typeLine(card));
+const isAura = card => /\baura\b/i.test(typeLine(card))
+    || (/\benchantment\b/i.test(typeLine(card)) && /^enchant\b/im.test(String(card?.oracleText || '')));
 export const idOf = card => String(card?.instanceId ?? card?.uid ?? card?.id ?? '');
 const log = (state, line) => { state.log = [line, ...(state.log || [])].slice(0, 40); };
 const playerName = (state, id) => state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`;
 
 /** La carta come deve stare in una zona pubblica: senza stato di campo. */
 function zoneCard(card) {
-    const { instanceId, damageMarked, turnBoost, counters, attacking, blocking, summoningSick, tapped, ...rest } = card;
+    const { instanceId, damageMarked, turnBoost, counters, attacking, blocking, summoningSick, tapped, attachedTo, ...rest } = card;
     return rest;
 }
 
@@ -51,6 +55,12 @@ function leaveBattlefield(state, ownerId, card, destination = 'graveyard') {
         return;
     }
     (player[destination] = player[destination] || []).push(zoneCard(card));
+}
+
+/** La creatura incantata è ancora in campo? Basta che ci sia, anche se cambiata di controllo. */
+function hostOnBattlefield(state, attachedTo) {
+    const wanted = String(attachedTo);
+    return state.players.some(id => (state.playersData?.[id]?.battlefield || []).some(card => idOf(card) === wanted));
 }
 
 function destroy(state, ownerId, card, performed, rule) {
@@ -122,6 +132,16 @@ export function applyStateBasedActions(currentState) {
                 if (annihilateCounters(card)) {
                     performed.push({ rule: SBA_RULES.counters, card: card.name || idOf(card), ownerId });
                     changed = true;
+                }
+                // 704.5i — un planeswalker a zero lealtà va al cimitero.
+                if (/\bplaneswalker\b/i.test(typeLine(card)) && (Number(card.loyalty) || 0) <= 0) {
+                    if (destroy(state, ownerId, card, performed, SBA_RULES.loyalty)) changed = true;
+                    continue;
+                }
+                // 704.5m — un'Aura senza la creatura a cui era attaccata va al cimitero.
+                if (isAura(card) && card.attachedTo && !hostOnBattlefield(state, card.attachedTo)) {
+                    if (destroy(state, ownerId, card, performed, SBA_RULES.aura)) changed = true;
+                    continue;
                 }
                 if (!isCreature(card)) continue;
 

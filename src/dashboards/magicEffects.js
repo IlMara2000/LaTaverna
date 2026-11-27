@@ -30,6 +30,14 @@ const toCount = (raw, xValue = 0) => {
     return Number.isFinite(number) ? number : 0;
 };
 
+// «X» non ha un valore quando il testo viene letto: si decide al momento del
+// lancio. L'effetto porta il segno e applyEffects lo sostituisce con xValue.
+const isXCount = raw => String(raw ?? '').trim().toLowerCase() === 'x';
+const xMark = raw => (isXCount(raw) ? { x: true } : {});
+
+// «+1: …» / «−3: …» / «0: …»: un'abilità di lealtà, non un costo in mana.
+const LOYALTY_LINE = /^([+-]\d+|0):\s*(.+)$/;
+
 const escapeRegExp = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Testo normalizzato: senza testo fra parentesi, con il nome della carta reso «this». */
@@ -117,22 +125,22 @@ function parseSentence(raw) {
     let match;
 
     if ((match = line.match(new RegExp(`^(?:you )?draw ${COUNT} cards?$`, 'i'))))
-        return { type: 'draw', count: toCount(match[1]) };
+        return { type: 'draw', count: toCount(match[1]), ...xMark(match[1]) };
 
     if ((match = line.match(new RegExp(`^(?:you )?gain ${COUNT} life$`, 'i'))))
-        return { type: 'gainLife', count: toCount(match[1]) };
+        return { type: 'gainLife', count: toCount(match[1]), ...xMark(match[1]) };
 
     if ((match = line.match(new RegExp(`^(each opponent|target player|target opponent|each player|that player) loses ${COUNT} life$`, 'i'))))
-        return { type: 'loseLife', who: match[1].toLowerCase(), count: toCount(match[2]) };
+        return { type: 'loseLife', who: match[1].toLowerCase(), count: toCount(match[2]), ...xMark(match[2]) };
 
     // «Perdi 1 vita»: il soggetto è implicito nel controllore della carta.
     if ((match = line.match(new RegExp(`^(?:you )?lose ${COUNT} life$`, 'i'))))
-        return { type: 'loseLife', who: 'controller', count: toCount(match[1]) };
+        return { type: 'loseLife', who: 'controller', count: toCount(match[1]), ...xMark(match[1]) };
 
     if ((match = line.match(new RegExp(`^(.*?)\\s*deals? ${COUNT} damage to (.+)$`, 'i')))) {
         const to = damageTargets(match[3]);
         if (!to || !subjectIsSelf(match[1])) return null;
-        return { type: 'damage', amount: toCount(match[2]), to };
+        return { type: 'damage', amount: toCount(match[2]), to, ...xMark(match[2]) };
     }
 
     if ((match = line.match(/^(destroy|exile) (.+)$/i))) {
@@ -157,10 +165,10 @@ function parseSentence(raw) {
         };
 
     if ((match = line.match(new RegExp(`^put ${COUNT} \\+1/\\+1 counters? on (target creature|this(?: creature)?)$`, 'i'))))
-        return { type: 'counters', count: toCount(match[1]), to: /^target/i.test(match[2]) ? 'target' : 'self' };
+        return { type: 'counters', count: toCount(match[1]), to: /^target/i.test(match[2]) ? 'target' : 'self', ...xMark(match[1]) };
 
     if ((match = line.match(new RegExp(`^create ${COUNT} (?:tapped )?(\\d+)/(\\d+) (.+?) creature tokens?$`, 'i'))))
-        return { type: 'tokens', count: toCount(match[1]), power: Number(match[2]), toughness: Number(match[3]), label: match[4] };
+        return { type: 'tokens', count: toCount(match[1]), power: Number(match[2]), toughness: Number(match[3]), label: match[4], ...xMark(match[1]) };
 
     if ((match = line.match(/^return (target (?:creature|permanent|artifact|enchantment|land|nonland permanent)) to (?:its|their) owner'?s hand$/i)))
         return { type: 'bounce', scope: 'target' };
@@ -170,10 +178,10 @@ function parseSentence(raw) {
 
     // «Support 2»: un +1/+1 su ciascuna di fino a due creature che controlli.
     if ((match = line.match(new RegExp(`^support ${COUNT}$`, 'i'))))
-        return { type: 'support', count: toCount(match[1]) };
+        return { type: 'support', count: toCount(match[1]), ...xMark(match[1]) };
 
     if ((match = line.match(new RegExp(`^mill ${COUNT} cards?$`, 'i'))))
-        return { type: 'mill', count: toCount(match[1]) };
+        return { type: 'mill', count: toCount(match[1]), ...xMark(match[1]) };
 
     if ((match = line.match(new RegExp(`^search your library for (?:a|one|up to two) basic land cards?,?`, 'i'))))
         return { type: 'searchBasic', count: /up to two/i.test(line) ? 2 : 1 };
@@ -303,6 +311,9 @@ function parseStatic(line) {
     const text = String(line || '').trim().replace(/\.$/, '');
     let match;
     if (/^as this(?:\s+\w+)? enters,? choose a creature type$/i.test(text)) return { type: 'chooseType' };
+    // Aura: il bonus vale sulla creatura a cui è attaccata, non su sé stessa.
+    if ((match = text.match(/^enchanted creature gets? ([+-]\d+)\/([+-]\d+)(?: and (?:has|have) ([a-z ,]+))?$/i)))
+        return { type: 'auraPump', power: Number(match[1]), toughness: Number(match[2]), keywords: keywordListOf(match[3]) };
     if ((match = text.match(/^(other |nontoken |other nontoken )?creatures? you control of the chosen type gets? ([+-]\d+)\/([+-]\d+)(?: and (?:has|have) ([a-z ,]+))?$/i)))
         return anthem('chosenType', '', /^other/i.test(match[1] || ''), Number(match[2]), Number(match[3]), keywordListOf(match[4]));
     if ((match = text.match(/^(other |each other |nontoken |other nontoken )?((?:[A-Z][\w']+ )?creatures?) you control gets? ([+-]\d+)\/([+-]\d+)(?: and (?:has|have) ([a-z ,]+))?$/i)))
@@ -354,6 +365,17 @@ function parseTriggerSubject(raw, prefix) {
 function triggerOf(event, subject, bodyText, line) {
     const body = parseBody(bodyText);
     return { event, subject, effects: body.effects, unsupported: body.unsupported, text: line };
+}
+
+function parseLoyaltyLine(line, match) {
+    const body = parseBody(match[2]);
+    return {
+        change: Number(match[1]),
+        effects: body.effects,
+        unsupported: body.unsupported,
+        text: line,
+        supported: body.effects.length > 0 && body.unsupported.length === 0
+    };
 }
 
 function parseTriggerLine(line) {
@@ -423,6 +445,7 @@ function parseCardAbilitiesUncached(card) {
     const activated = [];
     const spells = [];
     const statics = [];
+    const loyalty = [];
     const manual = [];
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean);
 
@@ -442,6 +465,15 @@ function parseCardAbilitiesUncached(card) {
             const body = parseBody(line.replace(BULLET, ''));
             spells.push({ effects: body.effects, unsupported: body.unsupported, text: line });
             manual.push(...body.unsupported);
+            continue;
+        }
+
+        // Abilità di lealtà: solo per i planeswalker (CR 306.5).
+        const loyaltyMatch = /\bplaneswalker\b/i.test(typeLine(card)) ? line.match(LOYALTY_LINE) : null;
+        if (loyaltyMatch) {
+            const ability = parseLoyaltyLine(line, loyaltyMatch);
+            loyalty.push(ability);
+            manual.push(...ability.unsupported);
             continue;
         }
 
@@ -499,7 +531,7 @@ function parseCardAbilitiesUncached(card) {
         manual.push(...skipped);
     }
 
-    return { triggers, activated, spells, statics, manual: [...new Set(manual)] };
+    return { triggers, activated, spells, statics, loyalty, manual: [...new Set(manual)] };
 }
 
 /** Etichetta breve per il pulsante dell'abilità attivata. */
@@ -552,6 +584,21 @@ export function recomputeStatics(state) {
             if (!statics.length) continue;
             for (const entry of statics) {
                 for (const effect of entry.effects) {
+                    // Aura: il bonus va alla creatura incantata, anche se è di un altro giocatore.
+                    if (effect.type === 'auraPump') {
+                        const host = watcher.attachedTo
+                            ? (data.battlefield || []).find(card => idOf(card) === String(watcher.attachedTo))
+                            : null;
+                        if (!host) continue;
+                        host.anthemBoost = host.anthemBoost || { power: 0, toughness: 0 };
+                        host.anthemBoost.power += effect.power;
+                        host.anthemBoost.toughness += effect.toughness;
+                        host.anthemKeywords = host.anthemKeywords || [];
+                        for (const keyword of effect.keywords) {
+                            if (!host.anthemKeywords.includes(keyword)) host.anthemKeywords.push(keyword);
+                        }
+                        continue;
+                    }
                     if (effect.type !== 'anthem') continue;
                     const subtype = effect.scope === 'chosenType' ? watcher.chosenType : effect.subtype;
                     for (const card of battlefield) {
@@ -752,7 +799,16 @@ export function applyEffects(effects, context = {}) {
     const targetCard = () => (targetData?.kind === 'card' ? targetData.card : null);
     const selfCard = () => (context.card && player.battlefield.includes(context.card) ? context.card : null);
 
-    for (const effect of effects) {
+    // «X»: il testo è rimasto generico, il numero vero è quello scelto al lancio.
+    const xAmount = Math.max(0, Number(xValue) || 0);
+    const resolved = effects.map(effect => {
+        if (!effect.x) return effect;
+        return effect.type === 'damage'
+            ? { ...effect, amount: xAmount }
+            : { ...effect, count: xAmount };
+    });
+
+    for (const effect of resolved) {
         // «se controlli…»: la condizione si valuta ora, non quando si legge il testo.
         if (effect.condition && !conditionMatches(state, controllerId, effect.condition)) {
             log.push(`${sourceName}: condizione non soddisfatta (${effect.condition.kind}).`);

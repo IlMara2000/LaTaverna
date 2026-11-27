@@ -9,7 +9,7 @@
 // chiede a lui, su una copia, se la mossa è possibile.
 
 import {
-    activateAbility, adjustLife, advancePhase, castResponse, castSpell, concedeMatch, declareAttackers,
+    activateAbility, activateLoyalty, adjustLife, advancePhase, castResponse, castSpell, concedeMatch, declareAttackers,
     declareBlockers, discardCards, mulliganAction, passTurn, playLand, resolveCombat, tapMana
 } from '../../magicMatchEngine.js';
 import { isManaSource, manaProductionOptions, spellNeedsTarget } from '../../magicRules.js';
@@ -22,7 +22,7 @@ import { activateToStack, castToStack } from './stack.js';
 import { advanceStep, isEngineState, passPriority } from './turn.js';
 
 export const ACTION_TYPES = Object.freeze([
-    'mulligan', 'pass', 'playLand', 'castSpell', 'castResponse', 'activateAbility', 'tapMana',
+    'mulligan', 'pass', 'playLand', 'castSpell', 'castResponse', 'activateAbility', 'activateLoyalty', 'tapMana',
     'declareAttackers', 'declareBlockers', 'resolveCombat', 'advancePhase', 'discard', 'adjustLife', 'concede',
     // Mosse dello strato M1: priorità, stack, scelte e ordine dei bloccanti.
     'passPriority', 'castToStack', 'activateToStack', 'choose', 'orderBlockers', 'advanceStep'
@@ -44,9 +44,10 @@ export function applyAction(state, action = {}) {
         case 'mulligan': return mulliganAction(state, playerId, action.choice, action.index ?? -1);
         case 'pass': return passTurn(state, playerId, { skipCombat: Boolean(action.skipCombat) });
         case 'playLand': return playLand(state, playerId, action.uid);
-        case 'castSpell': return castSpell(state, playerId, action.uid, action.target || '', action.mode ?? null);
+        case 'castSpell': return castSpell(state, playerId, action.uid, action.target || '', action.mode ?? null, Number(action.xValue) || 0);
         case 'castResponse': return castResponse(state, playerId, action.uid, action.target || '');
         case 'activateAbility': return activateAbility(state, playerId, action.uid, action.index ?? 0, action.target || '');
+        case 'activateLoyalty': return activateLoyalty(state, playerId, action.uid, action.index ?? 0, action.target || '');
         case 'tapMana': return tapMana(state, playerId, action.uid, action.color || 'auto');
         case 'declareAttackers': return declareAttackersForState(state, playerId, action);
         case 'declareBlockers': return isEngineState(state)
@@ -58,7 +59,7 @@ export function applyAction(state, action = {}) {
             ? raise('Il danno da combattimento si risolve passando la priorità nel passo del danno.')
             : resolveCombat(state, playerId);
         case 'passPriority': return passPriority(state, playerId);
-        case 'castToStack': return castToStack(state, playerId, { uid: action.uid, target: action.target || '', mode: action.mode ?? null });
+        case 'castToStack': return castToStack(state, playerId, { uid: action.uid, target: action.target || '', mode: action.mode ?? null, xValue: Number(action.xValue) || 0 });
         case 'activateToStack': return activateToStack(state, playerId, { uid: action.uid, index: action.index ?? 0, target: action.target || '' });
         case 'choose': return answerChoice(state, playerId, action.selection || []);
         case 'orderBlockers': return setBlockerOrder(state, playerId, { attackerId: action.attackerId, order: action.order || [] });
@@ -209,6 +210,15 @@ export function legalActions(state, playerId) {
             out.push(legalAction(
                 { type: 'activateAbility', playerId, uid, index },
                 `Attiva ${card.name}`,
+                { cardId: uid, requiresTarget: /target/i.test(ability.text || '') }
+            ));
+        });
+        parseCardAbilities(card).loyalty.forEach((ability, index) => {
+            if (!ability.supported) return;
+            if (!isLegal(state, { type: 'activateLoyalty', playerId, uid, index })) return;
+            out.push(legalAction(
+                { type: 'activateLoyalty', playerId, uid, index },
+                `${card.name}: ${ability.text.split(':')[0].trim()}`,
                 { cardId: uid, requiresTarget: /target/i.test(ability.text || '') }
             ));
         });
