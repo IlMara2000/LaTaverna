@@ -36,11 +36,12 @@
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Il banner è fisso in basso: finché è aperto lascia sotto il footer tanto spazio
-   quanto è alto lui, così scorrendo fino in fondo i link legali finiscono sopra il
-   banner e restano cliccabili. `--tv-consent-space` è la sua altezza misurata più il
-   distacco dal bordo; non si tocca il padding di #app perché la lobby lo azzera. */
-body.tv-consent-open #ui .taverna-legal-links {
+/* Il banner è fisso in basso: finché è aperto riserva il suo ingombro in fondo alla
+   pagina che scorre, così footer, barre comandi e ultime righe restano cliccabili.
+   `--tv-consent-space` è la sua altezza misurata più il distacco dal bordo. Lo spazio va
+   sul margine dell'ultimo figlio e non sul padding di #app: le pagine impostano quel
+   padding con `!important`, mentre nessuna tocca questo margine. */
+body.tv-consent-open #ui #app > :last-child {
   margin-bottom: var(--tv-consent-space, 0px);
 }
 

@@ -8,7 +8,9 @@
       :root { color-scheme: dark light; }
       body {
         margin: 0 auto;
-        padding: 32px 20px 64px;
+        /* Il banner è fisso in basso: `--tv-consent-space` gli tiene libera l'area
+           finché è aperto, così l'ultima riga con "Torna al tavolo" resta cliccabile. */
+        padding: 32px 20px calc(64px + var(--tv-consent-space, 0px));
         max-width: 860px;
         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         background: #14110d;
