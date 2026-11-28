@@ -47,6 +47,10 @@ export function declareBlockers(currentState, playerId, { blockers = {}, order =
         if (!list.length) continue;
         if (!state.combat.attackerIds.includes(attackerId)) throw new Error('Attaccante non valido.');
         const attacker = (active.battlefield || []).find(card => idOf(card) === attackerId);
+        // Minaccia: una sola creatura non basta a bloccare (CR 702.111b).
+        if (attacker && hasKeyword(attacker, 'menace') && list.length < 2) {
+            throw new Error(`${attacker.name} ha minaccia: va bloccato da due o più creature, oppure da nessuna.`);
+        }
         const ids = [];
         for (const blockerId of list) {
             const blocker = (player.battlefield || []).find(card => idOf(card) === blockerId);
@@ -165,6 +169,10 @@ export function dealCombatDamage(currentState) {
     const attackers = (state.combat.attackerIds || [])
         .map(uid => (active?.battlefield || []).find(card => idOf(card) === uid))
         .filter(Boolean);
+    // Bersaglio scelto all'attacco: un giocatore o un suo planeswalker. La carta
+    // si cerca a ogni passata di danno, perché la prima può già averla uccisa.
+    const walkerUid = state.combat.target?.kind === 'planeswalker' ? String(state.combat.target.uid) : '';
+    const walker = walkerUid ? (defender?.battlefield || []).find(card => idOf(card) === walkerUid) : null;
     const damage = new Map();
     const add = (card, amount) => {
         if (amount <= 0 || !card) return;
@@ -186,6 +194,16 @@ export function dealCombatDamage(currentState) {
             // Non bloccato: il danno va al giocatore. Se i bloccanti sono spariti
             // dopo il primo colpo, ci va solo con trapassare (CR 510.1c).
             const wasBlocked = asList(state.combat.blockers?.[attackerId]).length > 0;
+            // Il planeswalker attaccato non c'è più: l'attacco non colpisce il
+            // giocatore al suo posto, semplicemente non fa danno.
+            if (walkerUid && !walker) continue;
+            if (!wasBlocked && walker) {
+                // Attaccare un planeswalker vuol dire togliergli lealtà (CR 306.8).
+                walker.loyalty = (Number(walker.loyalty) || 0) - remaining;
+                log(state, `${attacker.name} colpisce ${walker.name}: lealtà ${Math.max(0, walker.loyalty)}.`);
+                if (hasKeyword(attacker, 'lifelink')) active.life += remaining;
+                continue;
+            }
             if (!wasBlocked || hasKeyword(attacker, 'trample')) {
                 toPlayer += remaining;
                 if (attacker.isCommander) commanderHits.push({ attacker, amount: remaining });
@@ -294,6 +312,9 @@ export function combatActions(state, playerId) {
                 .filter(card => isCreature(card) && !card.tapped && !card.cannotBlock)
                 .filter(card => !attacker || !hasKeyword(attacker, 'flying') || hasKeyword(card, 'flying') || hasKeyword(card, 'reach'))
                 .map(idOf);
+            // Minaccia: il tavolo sceglie un bloccante per attaccante, e uno solo
+            // non è mai legale, quindi l'attaccante non compare fra le opzioni.
+            if (attacker && hasKeyword(attacker, 'menace')) choices[attackerId] = [];
         }
         out.push({
             type: 'declareBlockers', playerId, blockers: {}, legal: true, requiresSelection: true,

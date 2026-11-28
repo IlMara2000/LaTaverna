@@ -1393,3 +1393,27 @@ body.magic-table-active .floating-trigger { display: none !important; }
   .mt-card__badge--block { animation: none; }
   .mt-phases__step { transition: none; }
 }
+
+/* ── Lealtà dei planeswalker ──────────────────────────────────────────
+   La lealtà è la «vita» del planeswalker: sta sulla carta, in basso a
+   sinistra, dove non copre il costo né forza e costituzione (che su un
+   planeswalker non esistono). */
+.mt-card__loyalty {
+  position: absolute;
+  inset-block-end: 6px;
+  inset-inline-start: 6px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(16 20 28 / 86%);
+  border: thin solid rgb(255 255 255 / 30%);
+  color: #f8e7b6;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  line-height: 1.25;
+  pointer-events: none;
+}

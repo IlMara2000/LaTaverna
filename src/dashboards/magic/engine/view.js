@@ -14,6 +14,7 @@ import { GAME_VERSION, stepsView, stepOf, STEPS, STEP_INDEX } from './state.js';
 import { manaPoolLabel } from '../../magicRules.js';
 
 const isCreature = card => /\bcreature\b/i.test(String(card?.typeLine || ''));
+const isPlaneswalker = card => /\bplaneswalker\b/i.test(String(card?.typeLine || ''));
 const idOf = card => String(card?.instanceId ?? card?.uid ?? card?.id ?? '');
 const counterPlus = card => Number(card?.counters?.plusOne || 0) || 0;
 
@@ -36,6 +37,10 @@ const cardView = (card, zone) => ({
         + num(card?.turnBoost?.toughness) + num(card?.anthemBoost?.toughness)) : '',
     attacking: Boolean(card?.attacking),
     blocking: Boolean(card?.blocking),
+    // La lealtà è il «punteggio vita» del planeswalker: il tavolo la mostra al
+    // posto di forza e costituzione, che su quelle carte non esistono.
+    planeswalker: isPlaneswalker(card),
+    loyalty: isPlaneswalker(card) ? num(card?.loyalty) : null,
     commander: Boolean(card?.isCommander),
     token: Boolean(card?.isToken),
     zone
@@ -122,6 +127,16 @@ export function viewFor(state, playerId) {
             requiresTarget: Boolean(item?.requiresTarget),
             targets: item?.targets || []
         })),
+        // Chi sta subendo il combattimento: il giocatore o il suo planeswalker.
+        combat: state.combat ? {
+            step: state.combat.step || '',
+            defender: state.combat.defender || '',
+            target: state.combat.target || null,
+            attackers: (state.combat.attackerIds || []).map(uid => ({
+                id: uid,
+                blocks: (state.combat.blockers?.[uid] || []).length
+            }))
+        } : null,
         me: me ? {
             id: playerId,
             name: state.playerNames?.[playerId] || 'Tu',

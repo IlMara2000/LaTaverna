@@ -62,7 +62,11 @@ function tileHtml(card, side, zone = 'board', extra = '') {
     ? `<img class="mt-card__art" src="${esc(card.image)}" alt="" loading="lazy" decoding="async" draggable="false">`
     : '<span class="mt-card__art mt-card__art--empty" aria-hidden="true"></span>';
   const pressed = zone === 'board' ? ` aria-pressed="${card.tapped ? 'true' : 'false'}"` : '';
-  const label = [card.name, manaLabel(card.manaCost), statLine(card)].filter(Boolean).join(' · ');
+  const loyalty = card.planeswalker
+    ? `<span class="mt-card__loyalty" title="Lealtà">◆ ${esc(card.loyalty ?? 0)}</span>`
+    : '';
+  const statText = card.planeswalker ? `Lealtà ${card.loyalty ?? 0}` : statLine(card);
+  const label = [card.name, manaLabel(card.manaCost), statText].filter(Boolean).join(' · ');
   const badges = [
     card.commander ? '<span class="mt-card__badge mt-card__badge--commander">CMD</span>' : '',
     card.attacking ? '<span class="mt-card__badge mt-card__badge--attack">ATTACCA</span>' : '',
@@ -77,6 +81,7 @@ function tileHtml(card, side, zone = 'board', extra = '') {
   return `<div class="${classes.join(' ')}" data-card-id="${esc(card.id)}" data-side="${esc(side)}" data-zone="${esc(zone)}"${pressed} aria-label="${esc(label)}">
     ${art}
     ${manaPips(card.manaCost)}
+    ${loyalty}
     ${badges}
     ${extra ? `<div class="mt-card__actions">${extra}</div>` : ''}
   </div>`;
@@ -252,6 +257,12 @@ function toView(card, side, zone) {
     damage: onBoard ? Number(card?.damageMarked || 0) || 0 : 0,
     attacking: onBoard ? Boolean(card?.attacking) : false,
     blocking: onBoard ? Boolean(card?.blocking) : false,
+    // Un planeswalker non ha forza e costituzione: al loro posto mostra la
+    // lealtà, che il danno dell'attacco e delle magie riduce davvero.
+    planeswalker: onBoard && /\bplaneswalker\b/i.test(String(card?.typeLine || '')),
+    loyalty: onBoard && /\bplaneswalker\b/i.test(String(card?.typeLine || ''))
+      ? Number(card?.loyalty) || 0
+      : null,
     commander: Boolean(card?.isCommander),
     side,
     zone,

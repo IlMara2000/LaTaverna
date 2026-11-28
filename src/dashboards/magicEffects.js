@@ -725,7 +725,10 @@ function killPermanent(state, ownerId, card, reason, zone = 'graveyard') {
     owner.battlefield = owner.battlefield.filter(item => item !== card);
     if (card.isCommander) {
         owner.commandZone = owner.commandZone || [];
-        owner.commandZone.push(stripRuntime(card));
+        const leaving = card.printedLoyalty !== undefined
+            ? { ...stripRuntime(card), loyalty: card.printedLoyalty }
+            : stripRuntime(card);
+        owner.commandZone.push(leaving);
         return [`${card.name} ${reason === 'esiliata' ? 'esiliata' : 'distrutta'}: torna nella zona di comando.`];
     }
     if (zone === 'exile' || reason === 'esiliata') {
@@ -751,8 +754,18 @@ function loseLife(state, playerId, amount, note) {
     return log;
 }
 
+const isPlaneswalkerCard = card => /\bplaneswalker\b/i.test(String(card?.typeLine || ''));
+
 function markedDamage(state, ownerId, card, amount) {
     const owner = state.playersData[ownerId];
+    // Un planeswalker non ha costituzione: il danno gli toglie lealtà (CR 306.8)
+    // e a zero lealtà va al cimitero, come per le SBA (704.5i).
+    if (isPlaneswalkerCard(card) && Number.isFinite(Number(card.loyalty))) {
+        card.loyalty = Number(card.loyalty) - amount;
+        const log = [`${amount} danni a ${card.name}: lealtà ${Math.max(0, card.loyalty)}.`];
+        if (card.loyalty <= 0) log.push(...killPermanent(state, ownerId, card, 'muore'));
+        return log;
+    }
     card.damageMarked = (card.damageMarked || 0) + amount;
     const log = [`${amount} danni a ${card.name} (${card.damageMarked}/${toughnessOf(card)}).`];
     if (toughnessOf(card) > 0 && card.damageMarked >= toughnessOf(card) && !hasKeyword(card, 'indestructible')) {

@@ -31,6 +31,7 @@ const oracleText = card => String(card?.oracleText || '');
 const isLand = card => /\bland\b/i.test(typeLine(card));
 const isBasicLand = card => /\bbasic\b/i.test(typeLine(card)) && isLand(card);
 const isCreature = card => /\bcreature\b/i.test(typeLine(card));
+const isPlaneswalker = card => /\bplaneswalker\b/i.test(typeLine(card));
 const isInstant = card => /\binstant\b/i.test(typeLine(card));
 const hasKeyword = (card, word) => (card?.keywords || []).some(keyword => String(keyword).toLowerCase() === word)
     || (card?.anthemKeywords || []).some(keyword => String(keyword).toLowerCase() === word)
@@ -423,6 +424,12 @@ export function resolveSpell(state, playerId, card, target = '', mode = null, xV
         const host = isAura(card) ? hostOfSpell(state, target) : null;
         const permanent = {
             ...card,
+            // La lealtà stampata è la riserva con cui il planeswalker entra: il
+            // valore corrente vive in `loyalty`, quello di partenza in
+            // `printedLoyalty`, così quando la carta lascia il campo torna pieno.
+            ...(isPlaneswalker(card) && Number.isFinite(Number(card.loyalty))
+                ? { loyalty: Number(card.loyalty), printedLoyalty: Number(card.loyalty) }
+                : {}),
             instanceId: card.uid,
             attachedTo: host ? host.uid : '',
             tapped: /enters(?: the battlefield)? tapped/i.test(oracleText(card)),
@@ -573,7 +580,16 @@ export function declareAttackers(currentState, playerId, uids = [], defenderId =
     if (state.combat) throw new Error('Gli attaccanti sono già stati dichiarati.');
     const opponents = state.players.filter(id => id !== playerId && !state.playersData[id]?.eliminated);
     if (!opponents.length) throw new Error('Non ci sono avversari da attaccare.');
-    const defender = defenderId && opponents.includes(defenderId) ? defenderId : opponents[0];
+    // Si può attaccare un giocatore o un suo planeswalker: «planeswalker:chi:uid».
+    // L'identificativo della carta contiene a sua volta dei «:», quindi si
+    // separano solo i primi due campi del bersaglio.
+    const [kind, targetOwner, ...targetRest] = String(defenderId || '').split(':');
+    const targetUid = targetRest.join(':');
+    const targetWalker = kind === 'planeswalker' && opponents.includes(targetOwner)
+        ? (state.playersData[targetOwner]?.battlefield || []).find(card => isPlaneswalker(card)
+            && (card.instanceId || card.uid) === targetUid)
+        : null;
+    const defender = targetWalker ? targetOwner : (defenderId && opponents.includes(defenderId) ? defenderId : opponents[0]);
     const attackers = [];
     for (const uid of uids) {
         const card = player.battlefield.find(item => (item.instanceId || item.uid) === uid);
@@ -600,10 +616,15 @@ export function declareAttackers(currentState, playerId, uids = [], defenderId =
         step: 'blockers',
         attackerIds: attackers.map(card => card.instanceId || card.uid),
         defender,
+        // Il bersaglio vero: il giocatore, oppure un suo planeswalker.
+        target: targetWalker
+            ? { kind: 'planeswalker', ownerId: defender, uid: targetUid }
+            : { kind: 'player', ownerId: defender, uid: '' },
         blockers: {},
         damageDone: false
     };
     log(state, `${playerName(state, playerId)} attacca ${playerName(state, defender)} con ${attackers.length} ${attackers.length === 1 ? 'creatura' : 'creature'}.`);
+    if (targetWalker) log(state, `L'attacco punta a ${targetWalker.name} (lealtà ${Number(targetWalker.loyalty) || 0}).`);
     return state;
 }
 
@@ -632,6 +653,10 @@ export function declareBlockers(currentState, playerId, assignments = {}) {
         if (attacker && hasKeyword(attacker, 'flying')
             && !hasKeyword(blocker, 'flying') && !hasKeyword(blocker, 'reach')) {
             throw new Error(`${blocker.name} non ha volare né portata: non può bloccare ${attacker.name}.`);
+        }
+        // Minaccia: o si blocca con due o più creature, o non si blocca (CR 702.111b).
+        if (attacker && hasKeyword(attacker, 'menace')) {
+            throw new Error(`${attacker.name} ha minaccia: va bloccato da due o più creature.`);
         }
         used.add(blockerId);
         blocker.blocking = attackerId;
@@ -671,6 +696,12 @@ function damagePass(state, firstStrikeOnly) {
     // è già morto nel passaggio di prima colpo.
     const strikesFirst = card => strike(card);
     const strikesNormally = card => !strike(card) || hasKeyword(card, 'double strike');
+    // Se l'attacco punta a un planeswalker, il danno non bloccato toglie lealtà
+    // invece di colpire il giocatore (CR 306.8).
+    const walkerUid = state.combat.target?.kind === 'planeswalker' ? String(state.combat.target.uid) : '';
+    const walker = walkerUid
+        ? (defender?.battlefield || []).find(card => (card.instanceId || card.uid) === walkerUid)
+        : null;
     let toPlayer = 0;
     for (const attacker of attackers) {
         if (firstStrikeOnly ? !strikesFirst(attacker) : !strikesNormally(attacker)) continue;
@@ -679,7 +710,24 @@ function damagePass(state, firstStrikeOnly) {
         const blockerId = state.combat.blockers?.[uid];
         const blocker = blockerId ? defender.battlefield.find(card => (card.instanceId || card.uid) === blockerId) : null;
         if (!blockerId) {
-            // Attaccante non bloccato: il danno va al giocatore attaccato.
+            // Attaccante non bloccato: il danno va al giocatore attaccato, o al
+            // planeswalker scelto quando si è dichiarato l'attacco.
+            if (walker) {
+                walker.loyalty = (Number(walker.loyalty) || 0) - damage;
+                log(state, `${attacker.name} colpisce ${walker.name}: lealtà ${Math.max(0, walker.loyalty)}.`);
+                if (hasKeyword(attacker, 'lifelink')) active.life += damage;
+                if (Number(walker.loyalty) <= 0) {
+                    defender.battlefield = defender.battlefield.filter(card => card !== walker);
+                    const cleaned = (() => {
+                        const { instanceId, damageMarked, turnBoost, counters, attacking, blocking, summoningSick, tapped, attachedTo, printedLoyalty, ...rest } = walker;
+                        return printedLoyalty !== undefined ? { ...rest, loyalty: printedLoyalty } : rest;
+                    })();
+                    if (walker.isCommander) (defender.commandZone = defender.commandZone || []).push(cleaned);
+                    else (defender.graveyard = defender.graveyard || []).push(cleaned);
+                    log(state, `${walker.name} a zero lealtà va al cimitero.`);
+                }
+                continue;
+            }
             toPlayer += damage;
             if (attacker.isCommander) {
                 defender.commanderDamage = defender.commanderDamage || {};

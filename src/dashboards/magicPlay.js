@@ -33,6 +33,9 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&a
 const read = key => { try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; } };
 const isCreature = card => /\bcreature\b/i.test(card?.typeLine || '');
 const isLand = card => /\bland\b/i.test(card?.typeLine || '');
+const isPlaneswalker = card => /\bplaneswalker\b/i.test(card?.typeLine || '');
+const hasKeyword = (card, word) => (card?.keywords || []).some(keyword => String(keyword).toLowerCase() === word)
+    || new RegExp(`\\b${word}\\b`, 'i').test(String(card?.oracleText || ''));
 
 const cardArt = card => card?.image ? `<img src="${esc(card.image)}" alt="" loading="lazy">` : '<span class="mp-card-fallback" aria-hidden="true">Senza immagine</span>';
 
@@ -49,7 +52,11 @@ async function hydrateCards(cards) {
     // una volta, così il tavolo mostra la grafica della carta e non un riquadro vuoto.
     const missing = cards.filter(card => {
         const hit = cache[card.id];
-        return !hit || hit.image === undefined || (card.power === undefined || !Array.isArray(card.keywords));
+        // Anche la lealtà va chiesta una volta: le voci salvate prima dei
+        // planeswalker non ce l'hanno, e senza il dato la carta mostrerebbe 0.
+        const walker = /\bplaneswalker\b/i.test(String(card.typeLine || hit?.typeLine || ''));
+        return !hit || hit.image === undefined || (card.power === undefined || !Array.isArray(card.keywords))
+            || (walker && hit.loyalty === undefined);
     });
     const ids = [...new Set(missing.map(card => card.id))];
     for (let offset = 0; offset < ids.length; offset += 75) {
@@ -65,6 +72,9 @@ async function hydrateCards(cards) {
                     power: card.power ?? '', toughness: card.toughness ?? '', keywords: card.keywords || [],
                     colors: card.colors || [], colorIdentity: card.color_identity || [],
                     producedMana: card.produced_mana || [], cmc: card.cmc || 0,
+                    // La lealtà è la «vita» del planeswalker: senza questo dato la
+                    // carta entrerebbe in campo senza numeri da mostrare.
+                    loyalty: card.loyalty,
                     typeLine: card.type_line || '', manaCost: card.mana_cost || '',
                     oracleText: card.oracle_text || '', name: card.name,
                     image: card.image_uris?.normal || card.image_uris?.large
@@ -90,7 +100,8 @@ async function hydrateCards(cards) {
             oracleText: card.oracleText || details.oracleText || '',
             typeLine: card.typeLine || details.typeLine || '',
             manaCost: card.manaCost || details.manaCost || '',
-            image: card.image || details.image || ''
+            image: card.image || details.image || '',
+            loyalty: card.loyalty ?? details.loyalty
         };
     });
 }
@@ -134,6 +145,10 @@ export function showMagicPlay(container, options = {}) {
     // Serve a spegnere «Lancia» sulle carte che non puoi pagare, invece di far
     // scoprire l'errore solo dopo il tocco. `null` = view non disponibile.
     let playableUids = null;
+    // Abilità attivate che il motore elenca come legali (`uid:indice`): senza
+    // questa lista il pulsante comparve anche su una carta tappata o con la
+    // debolezza da evocazione, e il tocco finiva in un errore.
+    let playableAbilities = null;
     // Aggiornamento immediato quando la finestra torna in primo piano: i browser
     // rallentano i timer delle schede nascoste e il tavolo sembrerebbe fermo.
     let syncNow = () => {};
@@ -380,7 +395,12 @@ export function showMagicPlay(container, options = {}) {
     function autoPassIfIdle(current, id) {
         const state = current;
         if (!state || state.winner || state.mulliganActive || state.pendingChoice) return state;
-        if (state.activePlayer === id) return state;
+        // Dopo i blocchi dell'avversario e a fine combattimento il turno ha solo
+        // da passare: chiedere un tocco sarebbe un passaggio in più per chi ha
+        // già attaccato. Con un istantaneo da lanciare `canAct` lo ferma sotto.
+        const senzaDecisioni = (state.step === 'declareBlockers' && state.combat?.blockersDeclared)
+            || state.step === 'endCombat';
+        if (state.activePlayer === id && !senzaDecisioni) return state;
         if (state.priority?.playerId !== id) return state;
         if (state.step === 'declareBlockers' && state.combat?.defender === id && !state.combat?.blockersDeclared) {
             // I blocchi sono una scelta del difensore, ma solo se c'è qualcosa da
@@ -431,6 +451,30 @@ export function showMagicPlay(container, options = {}) {
             if (dopoAltri !== state) { state = dopoAltri; continue; }
             state = safePass(state, clientId);
             if (state.activePlayer !== clientId) break;
+        }
+        return state;
+    }
+
+    /**
+     * «Risolvi il danno»: passa la priorità finché il combattimento non è
+     * chiuso. Un passo si attraversa una priorità alla volta, quindi un solo
+     * `safePass` lasciava il pannello aperto sul passo successivo. Con il
+     * primo colpo si ferma: il danno arriva in due passate.
+     */
+    function resolveCombatNow(current) {
+        let state = current;
+        for (let guard = 0; guard < 8; guard += 1) {
+            if (!state || state.winner || state.pendingChoice || state.phase !== 'combat') break;
+            const step = stepOf(state);
+            state = safePass(state, clientId);
+            state = passForOthers(state, clientId);
+            if (stepOf(state) === step) break;
+            // Dopo il danno si passa di nuovo la priorità (CR 510.2): con un
+            // istantaneo in mano il turno si ferma lì, così la risposta non si
+            // perde. Le abilità sul campo non fermano: sono sempre disponibili e
+            // farebbero un tocco in più a ogni combattimento.
+            if ((state.playersData?.[clientId]?.hand || []).some(carta =>
+                /\binstant\b/i.test(String(carta.typeLine || '')) || /\bflash\b/i.test(String(carta.oracleText || '')))) break;
         }
         return state;
     }
@@ -761,7 +805,12 @@ export function showMagicPlay(container, options = {}) {
             }
             return safePassBot(state);
         }
-        if (!mine) return safePassBot(state);
+        if (!mine) {
+            // Da difensore il bot ha la priorità nei blocchi e deve usarla:
+            // passarla subito chiudeva il passo con zero bloccanti.
+            if (step === 'declareBlockers' && state.combat?.defender === BOT_ID && !state.combat.blockersDeclared) return botBlock(state);
+            return safePassBot(state);
+        }
         if (step === 'main1' || step === 'main2') {
             const after = botPlayOne(state);
             if (after === state) return safePassBot(state);
@@ -936,6 +985,7 @@ export function showMagicPlay(container, options = {}) {
                 <strong>${esc(card.name)}</strong>
                 <small>${renderCardSymbols(card.manaCost || '')}</small>
                 ${isCreature(card) ? `<b>${power}/${toughness}</b>` : ''}
+                ${isPlaneswalker(card) ? `<b>◆ Lealtà ${Number(card.loyalty) || 0}</b>` : ''}
                 ${card.tapped ? '<i class="mp-tag">tappata</i>' : ''}
             </div>
             ${canTap ? `<button type="button" class="mp-small" data-tap="${esc(idOf(card))}">Mana</button>` : ''}
@@ -1023,6 +1073,21 @@ export function showMagicPlay(container, options = {}) {
         </section>`;
     }
 
+    /**
+     * Il combattimento spiegato in tre righe, senza gergo: chi attacca, chi
+     * blocca, quando arriva il danno. Sta chiusa di default, così chi sa già
+     * giocare non la vede e chi impara la apre una volta.
+     */
+    const combatGuide = () => `<details class="mp-combat-guide">
+        <summary>Come si combatte, in tre mosse</summary>
+        <ol>
+            <li><b>1. Attacchi.</b> Tocca le creature che attaccano, poi scegli chi colpire: il giocatore o un suo planeswalker. Se punti un planeswalker, il danno toglie lealtà a lui e il giocatore non perde vita.</li>
+            <li><b>2. Blocchi.</b> Chi difende mette una creatura davanti a ogni attaccante. Volare si ferma solo con volare o portata; con <i>minaccia</i> una creatura sola non basta.</li>
+            <li><b>3. Danno.</b> Arriva tutto insieme, quando tutti passano la priorità. <i>Prima colpo</i> colpisce per primo, <i>tocco letale</i> uccide con un danno solo, <i>trapassare</i> manda al giocatore il danno che avanza, <i>legame vitale</i> fa guadagnare vita.</li>
+        </ol>
+        <p>Un comandante che fa 21 danni allo stesso giocatore lo elimina. Un planeswalker a zero lealtà va al cimitero.</p>
+    </details>`;
+
     function combatPanel() {
         const current = gameState();
         if (current.phase !== 'combat') return '';
@@ -1033,13 +1098,27 @@ export function showMagicPlay(container, options = {}) {
             // Chi non sta attaccando aspetta: il pannello dei blocchi arriva dopo
             // la dichiarazione degli attaccanti.
             if (!isMyTurn()) return `<section class="mp-combat"><span class="mp-overline">COMBATTIMENTO</span><p>L’avversario sta scegliendo gli attaccanti.</p></section>`;
-            const opponents = current.players.filter(id => id !== clientId && !current.playersData[id]?.eliminated);
+            // Si può attaccare il giocatore o un suo planeswalker: la tendina
+            // elenca entrambi, con la lealtà già scritta accanto.
+            const defenders = current.players
+                .filter(id => id !== clientId && !current.playersData[id]?.eliminated)
+                .flatMap(id => {
+                    const foe = current.playersData[id];
+                    return [
+                        { value: id, label: `${nameOf(id)} · ${foe.life} vite` },
+                        ...(foe.battlefield || []).filter(isPlaneswalker).map(card => ({
+                            value: `planeswalker:${id}:${idOf(card)}`,
+                            label: `${card.name} · lealtà ${Number(card.loyalty) || 0}`
+                        }))
+                    ];
+                });
             return `<section class="mp-combat"><span class="mp-overline">COMBATTIMENTO</span>
-                <p>Seleziona le creature che attaccano, poi dichiara l'attacco. ${selectedAttackers.size} selezionate.</p>
+                <p>Tocca le creature che attaccano, scegli chi colpiscono, poi dichiara. ${selectedAttackers.size} ${selectedAttackers.size === 1 ? 'selezionata' : 'selezionate'}.</p>
                 <div class="mp-row">
-                    <label>Chi attacchi<select id="play-defender">${opponents.map(id => `<option value="${esc(id)}">${esc(nameOf(id))}</option>`).join('')}</select></label>
+                    <label>Chi attacchi<select id="play-defender">${defenders.map(entry => `<option value="${esc(entry.value)}">${esc(entry.label)}</option>`).join('')}</select></label>
                     <button type="button" class="mp-button" data-declare-attack ${selectedAttackers.size ? '' : 'disabled'}>Dichiara attaccanti</button>
                 </div>
+                ${combatGuide()}
             </section>`;
         }
         if (current.combat.step === 'blockers') {
@@ -1055,6 +1134,7 @@ export function showMagicPlay(container, options = {}) {
                         ? (mineChoice ? 'Scegli l’ordine del danno qui sopra: finché non rispondi il combattimento resta fermo.' : 'L’attaccante sta scegliendo l’ordine del danno: il combattimento riprende appena risponde.')
                         : 'Il danno è simultaneo: si risolve quando tutti passano la priorità.'}</p>
                     ${pending ? '' : '<button type="button" class="mp-button" data-resolve-combat>Risolvi il danno</button>'}
+                    ${combatGuide()}
                 </section>`;
             }
             if (current.combat.defender !== clientId) {
@@ -1066,14 +1146,20 @@ export function showMagicPlay(container, options = {}) {
                 ${current.combat.attackerIds.map(uid => {
                     const ownerId = current.players.find(id => (current.playersData[id]?.battlefield || []).some(card => idOf(card) === uid));
                     const attacker = current.playersData[ownerId]?.battlefield.find(card => idOf(card) === uid);
+                    // Minaccia: qui si assegna una creatura per attaccante, e una
+                    // sola non è mai legale. Meglio dirlo che far fallire la conferma.
+                    if (hasKeyword(attacker, 'menace')) {
+                        return `<p class="mp-note">${esc(attacker?.name || 'Attaccante')} ha <b>minaccia</b>: serve più di un bloccante, quindi da qui non si blocca.</p>`;
+                    }
                     return `<label>${esc(attacker?.name || 'Attaccante')}<select data-block="${esc(uid)}"><option value="">Non bloccare</option>${blockers.map(card => `<option value="${esc(idOf(card))}">${esc(card.name)}</option>`).join('')}</select></label>`;
                 }).join('')}
                 <button type="button" class="mp-button" data-declare-block>Conferma blocchi</button>
+                ${combatGuide()}
             </section>`;
         }
         if (current.combat.step === 'damage') {
             if (!myPriority()) return `<section class="mp-combat"><span class="mp-overline">DANNO DA COMBATTIMENTO</span><p>In attesa che ${esc(nameOf(current.priority?.playerId || current.activePlayer))} passi la priorità: il danno è simultaneo.</p></section>`;
-            return `<section class="mp-combat"><span class="mp-overline">DANNO DA COMBATTIMENTO</span><p>${current.combat.blockers && Object.keys(current.combat.blockers).length ? 'I blocchi sono dichiarati.' : 'Nessun blocco.'} Il danno è simultaneo.</p><button type="button" class="mp-button" data-resolve-combat>Risolvi il danno</button></section>`;
+            return `<section class="mp-combat"><span class="mp-overline">DANNO DA COMBATTIMENTO</span><p>${current.combat.blockers && Object.keys(current.combat.blockers).length ? 'I blocchi sono dichiarati.' : 'Nessun blocco.'} Il danno è simultaneo.</p><button type="button" class="mp-button" data-resolve-combat>Risolvi il danno</button>${combatGuide()}</section>`;
         }
         return '';
     }
@@ -1207,6 +1293,7 @@ export function showMagicPlay(container, options = {}) {
                 <span class="mp-overline">${renderCardSymbols(card.manaCost || '')} ${esc(card.typeLine || '')}</span>
                 <strong>${esc(card.name || 'Carta')}</strong>
                 ${isCreature(card) ? `<b>${powerOf(card)}/${toughnessOf(card)}</b>` : ''}
+                ${isPlaneswalker(card) ? `<b>◆ Lealtà ${Number(card.loyalty) || 0}</b>` : ''}
                 <p>${renderCardSymbols(card.oracleText || 'Nessun testo disponibile.')}</p>
                 ${(() => { const support = textSupport(card); return (support.automated || support.manual)
                     ? `<p class="mp-zoom-support">${support.automated} effetti automatici${support.manual ? ` · ${support.manual} da gestire a mano` : ''}</p>`
@@ -1435,7 +1522,10 @@ export function showMagicPlay(container, options = {}) {
             const attacking = selectedAttackers.has(nodeId);
             buttons.push(`<button type="button" class="mp-small" data-attacker="${esc(nodeId)}">${attacking ? 'Non attacca' : 'Attacca'}</button>`);
         }
-        if (isMyTurn() && isManaSource(card, mine.colorIdentity || []) && !card.tapped) {
+        // Come il motore: una creatura con la debolezza da evocazione non tappa
+        // per mana (CR 302.6), a meno che non abbia rapidità.
+        const manaPronta = !isCreature(card) || !card.summoningSick || hasKeyword(card, 'haste');
+        if (isMyTurn() && manaPronta && isManaSource(card, mine.colorIdentity || []) && !card.tapped) {
             buttons.push(`<button type="button" class="mp-small" data-tap="${esc(nodeId)}">Mana</button>`);
         }
         // Abilità attivate: solo quelle che il motore sa applicare davvero. Il
@@ -1447,8 +1537,19 @@ export function showMagicPlay(container, options = {}) {
         if (isMyTurn() && !current.pendingChoice) {
             parseCardAbilities(card).activated.forEach((ability, index) => {
                 if (!ability.supported) return;
+                if (playableAbilities && !playableAbilities.has(`${nodeId}:${index}`)) return;
                 if (!ability.cost.tap && !ability.cost.manaCost && !ability.cost.sacrificeSelf) return;
                 buttons.push(`<button type="button" class="mp-small mp-ability" data-ability="${esc(uid)}" data-ability-index="${index}" title="${esc(ability.text)}">${esc(abilityLabel(ability))}</button>`);
+            });
+            // Abilità di lealtà: il pulsante mostra il cambiamento (+1, −3) e cosa
+            // fa, così si capisce prima di toccarlo che la lealtà cambia.
+            parseCardAbilities(card).loyalty.forEach((ability, index) => {
+                if (!ability.supported) return;
+                if (playableAbilities && !playableAbilities.has(`${nodeId}:${index}`)) return;
+                const change = String(ability.change).replace('-', '−');
+                const what = ability.text.split(':').slice(1).join(':').trim();
+                const short = what.length > 20 ? `${what.slice(0, 19)}…` : what;
+                buttons.push(`<button type="button" class="mp-small mp-loyalty" data-loyalty="${esc(uid)}" data-loyalty-index="${index}" title="${esc(ability.text)}">${esc(change)} · ${esc(short)}</button>`);
             });
         }
         return buttons.join('');
@@ -1485,6 +1586,11 @@ export function showMagicPlay(container, options = {}) {
             ? new Set(actions
                 .filter(action => action.uid && ['castToStack', 'playLand', 'activateToStack'].includes(action.type))
                 .map(action => String(action.uid)))
+            : null;
+        playableAbilities = actions.length
+            ? new Set(actions
+                .filter(action => action.uid && ['activateToStack', 'activateLoyalty'].includes(action.type))
+                .map(action => `${action.uid}:${action.index ?? 0}`))
             : null;
         if (!table) {
             container.innerHTML = '<main class="magic-page magic-play"><div id="play-table"></div></main>';
@@ -1606,6 +1712,26 @@ export function showMagicPlay(container, options = {}) {
         container.querySelectorAll('[data-respond]').forEach(button => button.addEventListener('click', () => {
             act(current => castWithPriority(current, { uid: button.dataset.respond }), { resetTarget: true });
         }));
+        // Abilità attivate e di lealtà: vivono sulla carta del tavolo, quindi il
+        // loro listener va legato qui, non solo nella schermata senza tavolo.
+        container.querySelectorAll('[data-ability]').forEach(button => button.addEventListener('click', () => {
+            const uid = button.dataset.ability;
+            const index = Number(button.dataset.abilityIndex) || 0;
+            act(current => {
+                const target = container.querySelector('#play-target')?.value || '';
+                const next = doAction(current, { type: 'activateToStack', uid, index, target });
+                return next.priority?.playerId === clientId ? safePass(next, clientId) : next;
+            });
+        }));
+        container.querySelectorAll('[data-loyalty]').forEach(button => button.addEventListener('click', () => {
+            const uid = button.dataset.loyalty;
+            const index = Number(button.dataset.loyaltyIndex) || 0;
+            act(current => {
+                const target = container.querySelector('#play-target')?.value || '';
+                const next = doAction(current, { type: 'activateLoyalty', uid, index, target });
+                return next.priority?.playerId === clientId ? safePass(next, clientId) : next;
+            });
+        }));
         container.querySelectorAll('[data-attacker]').forEach(button => button.addEventListener('click', () => {
             const uid = button.dataset.attacker;
             if (selectedAttackers.has(uid)) selectedAttackers.delete(uid); else selectedAttackers.add(uid);
@@ -1630,7 +1756,7 @@ export function showMagicPlay(container, options = {}) {
         });
         // Il danno non si «risolve» con un pulsante: si passa la priorità e
         // accade quando tutti hanno passato (CR 510.2).
-        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
+        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombatNow(current)));
         container.querySelector('[data-pass-priority]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
         container.querySelector('[data-clear-mana]')?.addEventListener('click', () => act(current => {
             current.playersData[clientId].manaPool = emptyManaPool();
@@ -1712,7 +1838,7 @@ export function showMagicPlay(container, options = {}) {
         });
         // Il danno non si «risolve» con un pulsante: si passa la priorità e
         // accade quando tutti hanno passato (CR 510.2).
-        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
+        container.querySelector('[data-resolve-combat]')?.addEventListener('click', () => act(current => resolveCombatNow(current)));
         container.querySelector('[data-pass-priority]')?.addEventListener('click', () => act(current => safePass(current, clientId)));
         const pulsanteFase = container.querySelector('[data-phase]');
         pulsanteFase?.addEventListener('click', () => act(current => passTurnEngine(current, { skipCombat: pulsanteFase.dataset.skipCombat === '1' })));

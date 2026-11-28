@@ -64,7 +64,8 @@ const SOGLIE = {
 const MISURE = [
     { nome: 'telefono orizzontale', w: 844, h: 390 },
     { nome: 'telefono piccolo orizzontale', w: 667, h: 375 },
-    { nome: 'telefono verticale', w: 390, h: 844 }
+    { nome: 'telefono verticale', w: 390, h: 844 },
+    { nome: 'desktop 1280x800', w: 1280, h: 800 }
 ];
 
 // Combattimento: ogni scenario parte da una partita nuova. Attacco e blocco
@@ -696,6 +697,10 @@ const COMBATTIMENTO = scenario => `(async () => {
                 }
                 sinistra = Math.max(sinistra, c.left); destra = Math.min(destra, c.right);
             }
+            // Il tavolo è position: fixed: sopra di lui resta il contenitore
+            // della pagina, largo 0 perché la dashboard è nascosta. Non ritaglia
+            // nulla dell'overlay (prima ogni pulsante risultava alto zero).
+            if (stile.position === 'fixed') break;
         }
         alto = Math.max(alto, 0); sinistra = Math.max(sinistra, 0);
         basso = Math.min(basso, innerHeight); destra = Math.min(destra, innerWidth);

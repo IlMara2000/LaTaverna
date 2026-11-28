@@ -37,8 +37,10 @@ const playerName = (state, id) => state.playerNames?.[id] || `Giocatore ${state.
 
 /** La carta come deve stare in una zona pubblica: senza stato di campo. */
 function zoneCard(card) {
-    const { instanceId, damageMarked, turnBoost, counters, attacking, blocking, summoningSick, tapped, attachedTo, ...rest } = card;
-    return rest;
+    const { instanceId, damageMarked, turnBoost, counters, attacking, blocking, summoningSick, tapped, attachedTo, printedLoyalty, ...rest } = card;
+    // La lealtà è una risorsa del campo: fuori dal campo torna quella stampata,
+    // così un planeswalker rilanciato entra di nuovo pieno.
+    return printedLoyalty !== undefined ? { ...rest, loyalty: printedLoyalty } : rest;
 }
 
 /** Una carta che lascia il campo: un segnalino non esiste più, un comandante torna in zona di comando. */
@@ -133,8 +135,9 @@ export function applyStateBasedActions(currentState) {
                     performed.push({ rule: SBA_RULES.counters, card: card.name || idOf(card), ownerId });
                     changed = true;
                 }
-                // 704.5i — un planeswalker a zero lealtà va al cimitero.
-                if (/\bplaneswalker\b/i.test(typeLine(card)) && (Number(card.loyalty) || 0) <= 0) {
+                // 704.5i — un planeswalker a zero lealtà va al cimitero. Senza
+                // lealtà conosciuta (dati carta incompleti) non si uccide nulla.
+                if (/\bplaneswalker\b/i.test(typeLine(card)) && Number.isFinite(Number(card.loyalty)) && Number(card.loyalty) <= 0) {
                     if (destroy(state, ownerId, card, performed, SBA_RULES.loyalty)) changed = true;
                     continue;
                 }

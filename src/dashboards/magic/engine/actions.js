@@ -34,6 +34,26 @@ const isInstant = card => /\binstant\b/i.test(String(card?.typeLine || ''));
 const hasKeyword = (card, word) => (card?.keywords || []).some(keyword => String(keyword).toLowerCase() === word);
 const idOf = card => String(card?.instanceId ?? card?.uid ?? card?.id ?? '');
 const clone = value => structuredClone(value);
+const isPlaneswalker = card => /\bplaneswalker\b/i.test(String(card?.typeLine || ''));
+
+/**
+ * Chi si può attaccare: ogni avversario e i suoi planeswalker. Il valore è già
+ * la forma che il motore capisce («b» oppure «planeswalker:b:uid»), così il
+ * tavolo non deve costruirla da sé.
+ */
+const attackDefenders = (state, playerId) => state.players
+    .filter(id => id !== playerId && !state.playersData?.[id]?.eliminated)
+    .flatMap(id => {
+        const data = state.playersData[id] || {};
+        const name = state.playerNames?.[id] || `Giocatore ${state.players.indexOf(id) + 1}`;
+        const walkers = (data.battlefield || [])
+            .filter(isPlaneswalker)
+            .map(card => ({
+                value: `planeswalker:${id}:${idOf(card)}`,
+                label: `${card.name || 'Planeswalker'} · lealtà ${Number(card.loyalty) || 0}`
+            }));
+        return [{ value: id, label: `${name} · ${Number(data.life) || 0} vite` }, ...walkers];
+    });
 
 /** Esegue una mossa tipizzata. Le mosse non legali sollevano l'errore del motore. */
 export function applyAction(state, action = {}) {
@@ -117,7 +137,8 @@ function blockersAction(state, playerId, player) {
     for (const attackerId of state.combat.attackerIds || []) {
         const attacker = attackers.find(card => idOf(card) === attackerId);
         if (!attacker) continue;
-        choices[attackerId] = (player.battlefield || [])
+        // Minaccia: una creatura sola non può bloccare, e qui se ne assegna una.
+        choices[attackerId] = hasKeyword(attacker, 'menace') ? [] : (player.battlefield || [])
             .filter(card => isCreature(card) && !card.tapped && !card.cannotBlock)
             .filter(card => !hasKeyword(attacker, 'flying') || hasKeyword(card, 'flying') || hasKeyword(card, 'reach'))
             .map(card => idOf(card));
@@ -240,10 +261,12 @@ export function legalActions(state, playerId) {
                 .filter(card => isCreature(card) && !card.tapped && !card.summoningSick && !hasKeyword(card, 'defender'))
                 .map(card => idOf(card));
             if (ready.length) {
+                const defenders = attackDefenders(state, playerId);
                 out.push({
                     type: 'declareAttackers', playerId, uids: [], legal: true, requiresSelection: true,
                     choices: ready, id: 'declareAttackers:select',
-                    label: 'Scegli chi attacca', defender: state.players.find(id => id !== playerId && !state.playersData?.[id]?.eliminated) || ''
+                    label: 'Scegli chi attacca', defenders,
+                    defender: defenders[0]?.value || ''
                 });
             }
         } else if (blocking) {
@@ -323,18 +346,31 @@ function engineLegalActions(state, playerId, player) {
                 { cardId: uid, requiresTarget: /target/i.test(ability.text || '') }
             ));
         });
+        // Le abilità di lealtà sono velocità stregoneria ma non passano dalla
+        // priorità come le altre: il motore le applica direttamente.
+        parseCardAbilities(card).loyalty.forEach((ability, index) => {
+            if (!ability.supported) return;
+            if (!isLegal(state, { type: 'activateLoyalty', playerId, uid, index })) return;
+            out.push(legalAction(
+                { type: 'activateLoyalty', playerId, uid, index },
+                `${card.name}: ${ability.text.split(':')[0].trim()}`,
+                { cardId: uid, requiresTarget: /target/i.test(ability.text || '') }
+            ));
+        });
     }
 
     if (step === 'declareAttackers' && mine) {
         const ready = (player.battlefield || [])
             .filter(card => isCreature(card) && !card.tapped && !card.summoningSick && !hasKeyword(card, 'defender'))
             .map(card => idOf(card));
+        const defenders = attackDefenders(state, playerId);
         out.push({
             type: 'declareAttackers', playerId, uids: [], legal: true,
             requiresSelection: ready.length > 0, allowEmpty: true, choices: ready,
             id: 'declareAttackers:select',
             label: ready.length ? 'Scegli chi attacca' : 'Non attacca',
-            defender: state.players.find(id => id !== playerId && !state.playersData?.[id]?.eliminated) || ''
+            defenders,
+            defender: defenders[0]?.value || ''
         });
     }
 
