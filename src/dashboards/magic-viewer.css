@@ -1,6 +1,6 @@
 #ui .magic-viewer { width:min(100%,1180px); margin:0 auto; padding:24px clamp(14px,3vw,32px) 90px; color:#fbf7ff; }
 #ui .magic-viewer button, #ui .magic-viewer input, #ui .magic-viewer select { font:inherit; }
-#ui .mv-heading { display:flex; justify-content:space-between; align-items:center; margin:0 0 20px; padding:4px 2px; }
+#ui .mv-heading { display:flex; flex-direction:column; align-items:center; gap:6px; margin:0 0 20px; padding:4px 2px; text-align:center; }
 #ui .mv-eyebrow { color:#c5a5e8; font-size:10px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
 #ui .mv-heading h1 { margin:8px 0; color:#fff; font-size:clamp(30px,5vw,46px); }
 #ui .mv-heading p { margin:0; color:#d8cae5; }
@@ -10,11 +10,15 @@
 #ui .mv-tabs button span { display:grid; place-items:center; min-width:21px; height:21px; padding:0 5px; border-radius:12px; background:#ffffff1c; font-size:11px; }
 #ui .mv-notice { min-height:22px; margin:8px 2px 12px; color:#ead9ff; font-size:13px; }
 #ui .mv-panel { min-height:340px; padding:clamp(16px,3vw,26px); border:1px solid #ffffff35; border-radius:23px; color:#30213d; background:linear-gradient(145deg,#fff 0%,#f8f5fc 72%,#eee5fa); box-shadow:0 16px 38px #09031355,inset 0 1px #fff; }
-#ui .mv-panel-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px; }
+#ui .mv-panel-heading { display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:18px; text-align:center; }
+#ui .mv-panel-heading>div { display:flex; flex-direction:column; align-items:center; gap:6px; }
+#ui .mv-panel-heading :is(.mv-panel-actions, .mv-deck-actions) { justify-content:center; flex-wrap:wrap; }
+#ui .mv-panel-heading>.mv-deck-actions { width:100%; }
+#ui .mv-panel-heading .mv-deck-filter { flex:0 0 auto; max-width:340px; }
 #ui .mv-panel-heading h2 { margin:5px 0; color:#38204b; font-size:clamp(24px,4vw,32px); }
 #ui .mv-panel-heading p { margin:0; color:#70647b; font-size:14px; }
 #ui .mv-panel-heading>strong { flex:none; padding:11px 14px; border-radius:14px; color:#58347a; background:#efe5fa; }
-#ui .mv-import { display:flex; justify-content:space-between; align-items:center; gap:16px; margin:14px 0; padding:17px; border:1px solid #e8dff0; border-radius:17px; background:linear-gradient(140deg,#fff,#f5effb); box-shadow:0 5px 15px #4623620d; }
+#ui .mv-import { display:flex; flex-direction:column; align-items:center; gap:14px; margin:14px 0; padding:17px; border:1px solid #e8dff0; border-radius:17px; background:linear-gradient(140deg,#fff,#f5effb); box-shadow:0 5px 15px #4623620d; text-align:center; }
 #ui .mv-import h3 { margin:0 0 5px; color:#3d2850; }
 #ui .mv-import p { margin:0; color:#74697c; font-size:13px; }
 #ui .mv-file { display:inline-flex; flex:none; align-items:center; justify-content:center; min-height:42px; padding:0 17px; border:1px solid #c7a8df; border-radius:13px; color:#512d70; background:linear-gradient(145deg,#fff,#f4eafb); box-shadow:0 3px 0 #dfd1e9; cursor:pointer; font-weight:700; }
@@ -49,6 +53,15 @@
 #ui .mv-deck-actions { flex-wrap:nowrap; justify-content:flex-end; min-width:0; }
 #ui .mv-deck-filter { display:flex; align-items:center; gap:8px; flex:1 1 140px; min-width:0; max-width:300px; min-height:40px; padding:0 12px; border:1px solid #e2d8e9; border-radius:12px; color:#795a91; background:#fff; box-shadow:inset 2px 2px 5px #38204b0b,inset -2px -2px 5px #fff; }
 #ui .mv-deck-filter>span { font-size:18px; }
+#ui .mv-deck-filter input { text-align:start; }
+/* Il tema scuro impone campi neri a tutti gli input: dentro le superfici chiare
+   del visualizzatore il campo torna trasparente, altrimenti si legge male. */
+html[data-theme="amethyst"] #ui .magic-viewer :is(.mv-search, .mv-deck-filter) input {
+    border:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    color:#362641 !important;
+}
 #ui .mv-deck-filter input { width:100%; min-width:0; border:0!important; outline:0; color:#362641!important; background:transparent!important; box-shadow:none!important; font-size:14px; }
 #ui .mv-deck-filter input::placeholder { color:#978ba0; }
 #ui .mv-deck-group[hidden], #ui .mv-deck-card[hidden], #ui .mv-empty[hidden] { display:none; }

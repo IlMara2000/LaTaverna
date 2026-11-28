@@ -73,12 +73,71 @@ html body #ui #app > :is(.entry-page, .community-page, .legal-page, .settings-pa
     #ui #app .entry-page > header {
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 12px;
+    }
+
+    #ui #app .entry-page > header > button:first-child {
+        align-self: flex-start;
     }
 }
 
-/* 6. La home usa lo stesso margine delle altre pagine. */
+/* 6. Anche Magic sta nella stessa misura centrata; il tavolo di partita è
+escluso perché gestisce da sé le proprie corsie. */
+html body #ui #app > .magic-page:not(.magic-play) {
+    width: min(var(--page-measure), 100%);
+    max-width: var(--page-measure);
+    min-width: 0;
+    margin-inline: auto;
+}
+
+/* 7. Intestazioni di pagina al centro: titolo, occhiello e introduzione
+restano su un asse solo, con la stessa misura di lettura. Le azioni del
+ritorno restano dov'erano. */
+#ui #app :is(.entry-page, .community-page, .legal-page, .magic-page) > header {
+    text-align: center;
+}
+
+#ui #app :is(.entry-page, .community-page, .legal-page, .magic-page) > header
+:is(h1, h2, .crystal-eyebrow, .mv-eyebrow, .community-intro, .legal-inline-note) {
+    width: 100%;
+    margin-inline: auto;
+    text-align: center;
+}
+
+#ui #app :is(.entry-page, .community-page) > header .community-intro,
+#ui #app .legal-page :is(p, li) {
+    max-width: 66ch;
+}
+
+/* Le barre di comandi seguono lo stesso asse delle intestazioni. */
+#ui #app :is(.community-toolbar, .mv-platform-tools, .mv-import-actions) {
+    justify-content: center;
+}
+
+/* 8. Testo corrente giustificato sui schermi larghi: la colonna resta piena
+su entrambi i lati. Serve !important perché global.css ancora il centro a
+tutti gli elementi; le schede strette restano centrate, dove giustificare
+aprirebbe buchi fra le parole. */
+@media (min-width: 760px) {
+    html body #ui #app :is(.entry-page, .community-page, .legal-page, .magic-page) :is(p, li, dd) {
+        text-align: justify !important;
+        hyphens: auto;
+    }
+
+    html body #ui #app :is(.community-panel, .mv-card, .mv-import, .community-toolbar, .mv-panel-heading, [role="status"]) :is(p, li) {
+        text-align: center !important;
+        hyphens: manual;
+    }
+
+    /* L'intestazione di pagina resta centrata su un asse solo. */
+    html body #ui #app :is(.entry-page, .community-page, .legal-page, .magic-page) > header :is(p, li, dd) {
+        text-align: center !important;
+        hyphens: manual;
+    }
+}
+
+/* 9. La home usa lo stesso margine delle altre pagine. */
 @media (max-width: 760px) {
     #ui .taverna-home {
         padding-inline:
