@@ -36,13 +36,29 @@
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-/* Il banner è fisso in basso: finché è aperto riserva il suo ingombro in fondo alla
-   pagina che scorre, così footer, barre comandi e ultime righe restano cliccabili.
-   `--tv-consent-space` è la sua altezza misurata più il distacco dal bordo. Lo spazio va
-   sul margine dell'ultimo figlio e non sul padding di #app: le pagine impostano quel
-   padding con `!important`, mentre nessuna tocca questo margine. */
-body.tv-consent-open #ui #app > :last-child {
-  margin-bottom: var(--tv-consent-space, 0px);
+/* Il banner è fisso in basso: finché è aperto lo spazio utile è quello che resta sopra
+   di lui. `--tv-consent-space` è la sua altezza misurata più il distacco dal bordo, e
+   qui diventa spazio vero invece di sovrapposizione: #app finisce dove comincia il
+   banner (flex: 0 0 auto serve perché #ui lo allungava a tutta altezza) e i giochi a
+   schermo pieno, che si dimensionano su --viewport-height e --visual-viewport-height,
+   scendono dello stesso valore. Così footer, barre comandi e ultime righe restano
+   sopra il banner. */
+body.tv-consent-open #ui #app {
+  flex: 0 0 auto;
+  height: calc(100dvh - var(--tv-consent-space, 0px));
+  /* Il distacco in fondo lo dà il banner: senza questa riga lo scorrimento
+     finisce in spazio vuoto invece che sull'ultima riga di contenuto. */
+  padding-bottom: 16px;
+}
+/* Tavolo Magic: la partita è pensata per l'altezza piena (mano grande e carte intere).
+   Con il banner aperto la pagina resta alta quanto lo schermo e scorre dentro #app,
+   invece di schiacciare la mano e ritagliare le carte. */
+body.tv-consent-open .magic-play { min-height: 100dvh; }
+
+body.tv-consent-open {
+  --viewport-height: calc(100dvh - var(--tv-consent-space, 0px));
+  --viewport-stable-height: calc(100dvh - var(--tv-consent-space, 0px));
+  --visual-viewport-height: calc(100dvh - var(--tv-consent-space, 0px));
 }
 
 .tv-consent__text { max-width: 62ch; }
@@ -87,6 +103,27 @@ body.tv-consent-open #ui #app > :last-child {
 .tv-consent-switch:focus-visible {
   outline: 3px solid var(--tv-consent-accent);
   outline-offset: 2px;
+}
+
+/* Telefono ruotato (altezza minima): il banner resta una riga sola, così il tavolo di
+   gioco conserva spazio utile e i suoi comandi restano sopra il banner. */
+@media (max-height: 520px) {
+  .tv-consent {
+    align-items: center;
+    gap: 8px 16px;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .tv-consent__text { flex: 1 1 220px; max-width: none; }
+  .tv-consent__text h2 { margin: 0 0 2px; font-size: 14px; }
+  .tv-consent__text p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+  }
+  .tv-consent__actions { flex-wrap: nowrap; gap: 6px; }
+  .tv-consent .tv-btn { min-height: 36px; padding: 6px 12px; font-size: 13px; }
 }
 
 /* Nel footer il pulsante si legge come gli altri link legali. */

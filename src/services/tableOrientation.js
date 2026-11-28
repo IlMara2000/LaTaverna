@@ -37,9 +37,19 @@ let table = null;
 let timer = 0;
 let observer = null;
 
+/**
+ * Il banner cookie è fisso in basso e non deve coprire il tavolo: lo spazio
+ * riservato (`--tv-consent-space`, altezza del banner più il distacco) si
+ * toglie dall'altezza utile finché il banner è aperto.
+ */
+function bannerSpace() {
+    const value = Number.parseFloat(getComputedStyle(html).getPropertyValue('--tv-consent-space'));
+    return Number.isFinite(value) ? value : 0;
+}
+
 function measure() {
     const width = window.innerWidth;
-    const height = window.innerHeight;
+    const height = window.innerHeight - bannerSpace();
     const portrait = height > width;
     // I tavoli storici mettono la scelta modalità in un wrapper annidato: è un
     // menu verticale, non un tavolo. Ruotarlo rendeva i testi colonne
