@@ -322,14 +322,31 @@ html.table-compact .blocks-hud > section {
 html.table-compact .blocks-hud .blocks-next-panel { min-height: 0 !important; }
 html.table-compact .blocks-hud .blocks-hold-panel { min-height: 0 !important; }
 
+/* --stage-h è l'altezza del tavolo, non quella che resta dopo la barra in alto:
+   la scacchiera finiva 296px in uno stage da 246. Si dimensiona sullo stage, e
+   per farlo la percentuale va presa dal guscio (il canvas è una griglia dentro
+   di lui). Topline e obiettivo sotto la scacchiera duplicano quelli dell'HUD:
+   qui si tolgono per dare le righe al campo. */
+html.table-compact .blocks-board-shell {
+    height: 100% !important;
+    min-height: 0 !important;
+    grid-template-rows: minmax(0, 1fr);
+}
+html.table-compact :is(.blocks-board-topline, .blocks-objective) { display: none !important; }
 html.table-compact #blocks-board {
-    width: calc((var(--stage-h, 390px) - 18px) / 2) !important;
+    width: auto !important;
+    height: 100% !important;
+    max-width: 100% !important;
     min-width: 0 !important;
-    max-height: calc(var(--stage-h, 390px) - 18px) !important;
-    height: auto !important;
     flex: 0 0 auto;
     margin-inline: 0;
 }
+
+/* Le anteprime erano tre canvas da 78px: 270px di pannello in 314 di schermo.
+   In orizzontale basso ce n'è spazio per una sola. */
+html.table-compact .blocks-next-panel canvas { max-height: 42px !important; }
+html.table-compact .blocks-hold-panel canvas { max-height: 42px !important; }
+html.table-compact .blocks-next-panel canvas:not(:first-child) { display: none !important; }
 
 html.table-compact :is(.blocks-hud, .blocks-objective) {
     max-width: 100%;

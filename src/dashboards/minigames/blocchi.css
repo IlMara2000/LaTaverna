@@ -596,10 +596,21 @@ body:has(.blocks-game) #nav-home-btn {
         grid-template-columns: 1fr 1fr 84px;
     }
 
+    /* La scacchiera prende l'altezza che resta nello stage invece di una misura
+       fissa: a 390×844 la vecchia metà di 100dvh lasciava il pannello RISERVA
+       53px sotto #app e la scacchiera scavalcava i comandi touch. */
+    .blocks-stage { grid-template-rows: minmax(0, 1fr) auto; }
+    .blocks-board-shell {
+        height: 100%;
+        min-height: 0;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+    }
     #blocks-board {
-        width: min(100%, calc((100dvh - 245px) / 2));
+        height: 100%;
+        width: auto;
         min-width: 0;
-        max-height: calc(100dvh - 245px);
+        max-width: 100%;
+        justify-self: center;
     }
 
     .blocks-hud {

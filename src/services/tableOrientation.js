@@ -16,6 +16,9 @@ const CARD_TABLE_SELECTOR = '.scala40-game, .scopa-game, .briscola-game, .solita
 const LANDSCAPE_TABLE_SELECTOR = '.scala40-game, .scopa-game, .briscola-game, .solitario-game, .solo-game-wrapper, .burraco-game';
 const HINT_KEY = 'taverna_table_hint_seen';
 const COMPACT_SHORT_SIDE = 560;
+// Tavoli che non si ruotano ma hanno comunque una versione compatta per gli
+// schermi bassi (table-landscape.css).
+const COMPACT_EXTRA_SELECTOR = '.tictactoe-wrapper, .blocks-game';
 
 // Schermate di avvio (scelta modalità/livello): sono menu verticali, non
 // tavoli. Ruotarle le rendeva colonne di testo illeggibili.
@@ -63,10 +66,11 @@ function measure() {
     const rotated = portrait && landscapeTable && !menuAperto;
     const stageWidth = rotated ? height : width;
     const stageHeight = rotated ? width : height;
-    // Tris non si ruota, ma a 844×390 nemmeno il suo menu entra: teneva i comandi
-    // del menu e del tavolo sotto il bordo. table-landscape.css ha già la sua
-    // versione compatta, quindi vale anche con il menu aperto.
-    const compact = ((landscapeTable && !menuAperto) || Boolean(table?.matches?.('.tictactoe-wrapper')))
+    // Tris e Blocchi non si ruotano, ma a 844×390 nemmeno il loro layout entra
+    // (comandi sotto il bordo, scacchiera alta 480px in uno stage da 302) e
+    // table-landscape.css ha già le regole compatte per entrambi. Vale anche a
+    // menu aperto: il menu di Blocchi resta nel DOM e altrimenti le spegnerebbe.
+    const compact = ((landscapeTable && !menuAperto) || Boolean(table?.matches?.(COMPACT_EXTRA_SELECTOR)))
         && (rotated || stageHeight <= COMPACT_SHORT_SIDE);
 
     html.classList.toggle('table-mode', Boolean(table) && landscapeTable);
