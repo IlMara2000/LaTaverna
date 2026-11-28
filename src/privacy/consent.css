@@ -108,25 +108,33 @@ body.tv-consent-open {
   outline-offset: 2px;
 }
 
-/* Telefono ruotato (altezza minima): il banner resta una riga sola, così il tavolo di
-   gioco conserva spazio utile e i suoi comandi restano sopra il banner. */
-@media (max-height: 520px) {
+/* Banner compatto: telefono ruotato o stretto in verticale. Testo limitato e una
+   sola fila di pulsanti, così il tavolo di gioco conserva lo spazio che gli serve
+   (in verticale erano 288px su 844). Le due regole seguenti aggiungono solo ciò che
+   cambia fra i due formati. */
+@media (max-width: 560px), (max-height: 520px) {
   .tv-consent {
-    align-items: center;
-    gap: 8px 16px;
+    gap: 8px;
     padding: 10px 14px;
     font-size: 13px;
   }
-  .tv-consent__text { flex: 1 1 220px; max-width: none; }
   .tv-consent__text h2 { margin: 0 0 2px; font-size: 14px; }
   .tv-consent__text p {
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
+    -webkit-line-clamp: 2;
     overflow: hidden;
   }
   .tv-consent__actions { flex-wrap: nowrap; gap: 6px; }
-  .tv-consent .tv-btn { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+  /* Su 320px le etichette andavano a capo e i pulsanti crescevano a 52px. */
+  .tv-consent .tv-btn { min-height: 36px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+}
+
+/* Telefono ruotato: il testo sta accanto ai pulsanti, quindi una riga basta. */
+@media (max-height: 520px) {
+  .tv-consent { align-items: center; gap: 8px 16px; }
+  .tv-consent__text { flex: 1 1 220px; max-width: none; }
+  .tv-consent__text p { -webkit-line-clamp: 1; }
 }
 
 /* Nel footer il pulsante si legge come gli altri link legali. */
@@ -250,28 +258,12 @@ body.tv-consent-open {
 }
 .tv-consent-modal__note a { color: var(--tv-consent-accent); }
 
-/* Telefono in verticale: stesse regole del formato orizzontale, ma in colonna perché
-   a 390px il testo e i tre pulsanti non stanno sulla stessa riga. Il banner scende da
-   288px a ~130px: il testo resta leggibile su due righe e il resto è nella pagina
-   Cookie. Il link nel paragrafo sparisce perché è la stessa azione del pulsante
-   "Preferenze", e da solo resterebbe un elemento focalizzabile dentro il testo
-   troncato. */
+/* Telefono stretto: non c'è spazio per due colonne, e il link «Preferenze cookie»
+   dentro il paragrafo sarebbe un elemento focalizzabile dentro il testo troncato
+   (la stessa azione resta nel pulsante «Preferenze»). */
 @media (max-width: 560px) {
-  .tv-consent {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 12px 14px;
-    font-size: 13px;
-  }
-  .tv-consent__text h2 { margin: 0 0 2px; font-size: 14px; }
-  .tv-consent__text p {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-  }
+  .tv-consent { flex-direction: column; align-items: stretch; }
   .tv-consent__link { display: none; }
-  .tv-consent__actions { justify-content: stretch; flex-wrap: nowrap; gap: 6px; }
-  .tv-consent__actions .tv-btn { flex: 1 1 auto; min-height: 36px; padding: 6px 8px; font-size: 12.5px; }
+  .tv-consent__actions { justify-content: stretch; }
+  .tv-consent__actions .tv-btn { flex: 1 1 auto; }
 }

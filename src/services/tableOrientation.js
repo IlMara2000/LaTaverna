@@ -63,7 +63,11 @@ function measure() {
     const rotated = portrait && landscapeTable && !menuAperto;
     const stageWidth = rotated ? height : width;
     const stageHeight = rotated ? width : height;
-    const compact = landscapeTable && !menuAperto && (rotated || stageHeight <= COMPACT_SHORT_SIDE);
+    // Tris non si ruota, ma a 844×390 nemmeno il suo menu entra: teneva i comandi
+    // del menu e del tavolo sotto il bordo. table-landscape.css ha già la sua
+    // versione compatta, quindi vale anche con il menu aperto.
+    const compact = ((landscapeTable && !menuAperto) || Boolean(table?.matches?.('.tictactoe-wrapper')))
+        && (rotated || stageHeight <= COMPACT_SHORT_SIDE);
 
     html.classList.toggle('table-mode', Boolean(table) && landscapeTable);
     html.classList.toggle('table-rotated', rotated);
