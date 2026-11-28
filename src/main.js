@@ -12,6 +12,7 @@ import './styles/magic-amethyst-surface.css';
 import './styles/standalone.css';
 import './styles/entry-pages.css';
 import './styles/platform-layout.css';
+import './styles/apple-base.css';
 import { initConsent } from './privacy/consent.js';
 import { supabase } from './services/supabase.js';
 import { renderTavernEntrance } from './components/features/auth/TavernEntrance.js';

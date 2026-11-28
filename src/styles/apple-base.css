@@ -1,0 +1,532 @@
+/* ==========================================================================
+   LA TAVERNA — APPLE BASE LAYER
+   Strato definitivo per i controlli piccoli: bottoni-tra-pagina, tab,
+   pillole di gioco e colori interattivi.
+
+   Regole del layer:
+   - le card e i bottoni grandi esistenti restano com'erano;
+   - qui vive solo la "carrozzeria" dei controlli: materiale, raggio,
+     hairline, stati hover/press/focus, motion a molla;
+   - niente backdrop-filter (costoso su tavoli e liste lunghe): il vetro
+     è simulato con gradienti e luci interne, così resta 60fps anche
+     con decine di controlli a schermo;
+   - si animano solo transform / opacity / color / background-color /
+     border-color / box-shadow (compositor-friendly).
+   Caricato per ultimo in main.js, quindi ha l'ultima parola.
+   ========================================================================== */
+
+:root,
+html[data-theme="amethyst"] {
+    /* Raggi — scala Apple, non un raggio per componente. */
+    --ab-r-xs: 10px;
+    --ab-r-sm: 14px;
+    --ab-r-md: 18px;
+    --ab-r-lg: 24px;
+    --ab-r-pill: 999px;
+
+    /* Materiali (vetro simulato, zero blur). */
+    --ab-hairline: rgb(255 255 255 / 10%);
+    --ab-hairline-strong: rgb(255 255 255 / 17%);
+    --ab-material: linear-gradient(180deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 3%) 46%, rgb(255 255 255 / 5%)),
+        rgb(14 15 18 / 84%);
+    --ab-material-hover: linear-gradient(180deg, rgb(255 255 255 / 13%), rgb(255 255 255 / 5%) 46%, rgb(255 255 255 / 7%)),
+        rgb(14 15 18 / 88%);
+    --ab-material-press: linear-gradient(180deg, rgb(255 255 255 / 5%), rgb(255 255 255 / 2%)),
+        rgb(14 15 18 / 90%);
+    --ab-material-selected: linear-gradient(180deg, rgb(255 255 255 / 20%), rgb(255 255 255 / 10%)),
+        rgb(75 42 123 / 88%);
+    --ab-track: rgb(6 7 9 / 60%);
+
+    /* Luce e profondità. */
+    --ab-bevel: inset 0 1px 0 rgb(255 255 255 / 13%), inset 0 -1px 0 rgb(0 0 0 / 26%);
+    --ab-shadow: 0 1px 2px rgb(0 0 0 / 28%), 0 8px 22px rgb(0 0 0 / 22%);
+    --ab-shadow-hover: 0 2px 4px rgb(0 0 0 / 30%), 0 12px 28px rgb(0 0 0 / 26%);
+    --ab-shadow-press: inset 0 1px 3px rgb(0 0 0 / 34%);
+
+    /* Tinte: oro Taverna per l'interazione, viola per le superfici. */
+    --ab-tint: #ffc93c;
+    --ab-tint-strong: #e0a800;
+    --ab-tint-soft: rgb(255 201 60 / 14%);
+    --ab-tint-line: rgb(255 201 60 / 38%);
+    --ab-on-tint: #0e0f12;
+    --ab-cream: #f4efe6;
+    --ab-text: #f7f5ef;
+    --ab-text-dim: #bfb3d8;
+
+    /* Motion: curva Apple + molla per il press. */
+    --ab-ease: cubic-bezier(.32, .72, 0, 1);
+    --ab-spring: cubic-bezier(.34, 1.4, .64, 1);
+    --ab-dur: 220ms;
+    --ab-dur-fast: 140ms;
+}
+
+/* --------------------------------------------------------------------------
+   1. BASE
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] body {
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern" 1, "liga" 1;
+}
+
+html[data-theme="amethyst"] #ui :is(button, [role="button"], a, input, select, textarea) {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Numeri allineati nei contatori (vite, carte, punteggi). */
+html[data-theme="amethyst"] #ui :is(
+    .game-bot-count, .counter-value, .counter-extra-chip b, .scopa-result-total,
+    .s40-score, .briscola-score, [data-counter], output
+) {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+}
+
+/* --------------------------------------------------------------------------
+   2. CONTROLLO SECONDARIO CONDIVISO
+   Tutti i bottoncini "tra le pagine" parlano la stessa lingua.
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] #ui :is(
+    .btn-glass, .btn-back-glass, .app-back-button,
+    .s40-dock .s40-button, .scopa-button, .solitario-control, .game-level-button,
+    .mv-button, .taverna-home-dock button,
+    .dnd-tabs button, .reading-tabs button,
+    .session-tool-switcher button, .sidebar-nav-item,
+    .manual-filter-button, .manual-complete-button,
+    .shop-filters button, .reading-secondary, .shop-secondary-action,
+    .minigame-multiplayer-join button
+) {
+    position: relative;
+    border-radius: var(--ab-r-sm) !important;
+    border: 1px solid var(--ab-hairline) !important;
+    background: var(--ab-material) !important;
+    color: var(--ab-text) !important;
+    box-shadow: var(--ab-bevel), var(--ab-shadow) !important;
+    font-weight: 600;
+    letter-spacing: .01em;
+    transition:
+        transform var(--ab-dur) var(--ab-spring),
+        background-color var(--ab-dur) var(--ab-ease),
+        border-color var(--ab-dur) var(--ab-ease),
+        color var(--ab-dur) var(--ab-ease),
+        box-shadow var(--ab-dur) var(--ab-ease) !important;
+    will-change: auto;
+}
+
+/* Hover: si accende il colore, non si sposta il layout. */
+@media (hover: hover) and (pointer: fine) {
+    html[data-theme="amethyst"] #ui :is(
+        .btn-glass, .btn-back-glass, .app-back-button,
+        .s40-dock .s40-button, .scopa-button, .solitario-control, .game-level-button,
+        .mv-button, .taverna-home-dock button,
+        .dnd-tabs button, .reading-tabs button,
+        .session-tool-switcher button, .sidebar-nav-item,
+        .manual-filter-button, .manual-complete-button,
+        .shop-filters button, .reading-secondary, .shop-secondary-action
+    ):hover:not(:disabled, .active, [aria-current], [aria-selected="true"], [aria-pressed="true"]) {
+        background: var(--ab-material-hover) !important;
+        border-color: var(--ab-tint-line) !important;
+        color: #fff !important;
+        box-shadow: var(--ab-bevel), var(--ab-shadow-hover), 0 0 0 1px rgb(201 184 228 / 10%) !important;
+        transform: translateY(-1px);
+    }
+}
+
+/* Press: molla breve, feedback immediato al dito. */
+html[data-theme="amethyst"] #ui :is(
+    .btn-glass, .btn-back-glass, .app-back-button,
+    .s40-dock .s40-button, .scopa-button, .solitario-control, .game-level-button,
+    .mv-button, .taverna-home-dock button,
+    .dnd-tabs button, .reading-tabs button,
+    .session-tool-switcher button, .sidebar-nav-item,
+    .manual-filter-button, .manual-complete-button,
+    .shop-filters button, .reading-secondary, .shop-secondary-action
+):active:not(:disabled) {
+    background: var(--ab-material-press) !important;
+    transform: scale(.965);
+    box-shadow: var(--ab-shadow-press) !important;
+    transition-duration: var(--ab-dur-fast) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. CONTROLLO PRIMARIO (CTA)
+   Il gradiente resta: cambia la finitura, più lucida e precisa.
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] #ui :is(
+    .btn-primary, .reading-primary, .shop-primary-action,
+    .minigame-multiplayer-main, .app-cta
+) {
+    position: relative;
+    border-radius: var(--ab-r-sm) !important;
+    border: 1px solid rgb(255 220 133 / 55%) !important;
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 30%), rgb(255 255 255 / 0%) 52%),
+        linear-gradient(135deg, #ffc93c, #ffc93c 62%, #ffc93c) !important;
+    color: var(--ab-on-tint) !important;
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 55%),
+        inset 0 -1px 0 rgb(107 78 0 / 28%),
+        0 1px 2px rgb(0 0 0 / 30%),
+        0 10px 26px rgb(255 201 60 / 28%) !important;
+    font-weight: 700;
+    letter-spacing: .015em;
+    transition:
+        transform var(--ab-dur) var(--ab-spring),
+        box-shadow var(--ab-dur) var(--ab-ease),
+        filter var(--ab-dur) var(--ab-ease) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html[data-theme="amethyst"] #ui :is(
+        .btn-primary, .reading-primary, .shop-primary-action,
+        .minigame-multiplayer-main, .app-cta
+    ):hover:not(:disabled) {
+        filter: brightness(1.06) saturate(1.04);
+        transform: translateY(-1px);
+        box-shadow:
+            inset 0 1px 0 rgb(255 255 255 / 58%),
+            inset 0 -1px 0 rgb(107 78 0 / 28%),
+            0 2px 4px rgb(0 0 0 / 32%),
+            0 14px 32px rgb(255 201 60 / 38%) !important;
+    }
+}
+
+html[data-theme="amethyst"] #ui :is(
+    .btn-primary, .reading-primary, .shop-primary-action,
+    .minigame-multiplayer-main, .app-cta
+):active:not(:disabled) {
+    transform: scale(.97);
+    filter: brightness(.96);
+    box-shadow: inset 0 2px 6px rgb(107 78 0 / 45%) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. CONTROLLI SEGMENTATI (le linguette tra le pagine)
+   Una pista incassata, una pillola selezionata che sale.
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] #ui :is(
+    .session-tool-switcher, .dnd-tabs,
+    .reading-tabs, .shop-filters, .manual-complete-tabs, .mv-tabs
+) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px !important;
+    padding: 4px !important;
+    border: 1px solid var(--ab-hairline) !important;
+    border-radius: var(--ab-r-md) !important;
+    background: var(--ab-track) !important;
+    box-shadow:
+        inset 0 1px 3px rgb(0 0 0 / 34%),
+        inset 0 -1px 0 rgb(255 255 255 / 5%) !important;
+}
+
+html[data-theme="amethyst"] #ui :is(
+    .session-tool-switcher, .dnd-tabs,
+    .reading-tabs, .shop-filters, .manual-complete-tabs, .mv-tabs
+) > :is(button, a) {
+    flex: 0 1 auto;
+    min-width: 0;
+    padding: 9px 14px !important;
+    border-radius: calc(var(--ab-r-md) - 4px) !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: var(--ab-text-dim) !important;
+    box-shadow: none !important;
+    font-weight: 600;
+    letter-spacing: .015em;
+    transition:
+        transform var(--ab-dur) var(--ab-spring),
+        background-color var(--ab-dur) var(--ab-ease),
+        border-color var(--ab-dur) var(--ab-ease),
+        color var(--ab-dur) var(--ab-ease),
+        box-shadow var(--ab-dur) var(--ab-ease) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html[data-theme="amethyst"] #ui :is(
+        .session-tool-switcher, .dnd-tabs,
+        .reading-tabs, .shop-filters, .manual-complete-tabs, .mv-tabs
+    ) > :is(button, a):hover:not(:disabled, .active, [aria-current], [aria-selected="true"], [aria-pressed="true"]) {
+        background: rgb(255 255 255 / 7%) !important;
+        color: var(--ab-text) !important;
+    }
+}
+
+/* Stato selezionato: pillola chiara, testo pieno, ombra corta. */
+html[data-theme="amethyst"] #ui :is(
+    .session-tool-switcher, .dnd-tabs,
+    .reading-tabs, .shop-filters, .manual-complete-tabs, .mv-tabs
+) > :is(button, a):is(.active, [aria-current], [aria-selected="true"], [aria-pressed="true"]) {
+    border-radius: calc(var(--ab-r-md) - 4px) !important;
+    border-color: var(--ab-hairline-strong) !important;
+    background: var(--ab-material-selected) !important;
+    color: #fff !important;
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 26%),
+        0 1px 2px rgb(0 0 0 / 34%),
+        0 4px 10px rgb(0 0 0 / 22%) !important;
+    font-weight: 700;
+}
+
+html[data-theme="amethyst"] #ui :is(
+    .session-tool-switcher, .dnd-tabs,
+    .reading-tabs, .shop-filters, .manual-complete-tabs, .mv-tabs
+) > :is(button, a):is(.active, [aria-current], [aria-selected="true"], [aria-pressed="true"]):active {
+    transform: scale(.97);
+}
+
+/* Rail verticale delle impostazioni: resta una colonna, non una pista. */
+html[data-theme="amethyst"] #ui .settings-nav {
+    padding: 5px !important;
+    border: 1px solid var(--ab-hairline) !important;
+    border-radius: var(--ab-r-md) !important;
+    background: var(--ab-track) !important;
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 34%) !important;
+}
+
+html[data-theme="amethyst"] #ui .settings-nav button {
+    border: 1px solid transparent !important;
+    border-radius: calc(var(--ab-r-md) - 5px) !important;
+    background: transparent !important;
+    color: var(--ab-text-dim) !important;
+    box-shadow: none !important;
+    font-weight: 600;
+    transition:
+        background-color var(--ab-dur) var(--ab-ease),
+        color var(--ab-dur) var(--ab-ease),
+        box-shadow var(--ab-dur) var(--ab-ease) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html[data-theme="amethyst"] #ui .settings-nav button:hover:not(.active) {
+        background: rgb(255 255 255 / 7%) !important;
+        color: var(--ab-text) !important;
+    }
+}
+
+html[data-theme="amethyst"] #ui .settings-nav button.active {
+    border-color: var(--ab-hairline-strong) !important;
+    background: var(--ab-material-selected) !important;
+    color: #fff !important;
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 26%),
+        0 1px 2px rgb(0 0 0 / 34%) !important;
+    font-weight: 700;
+}
+
+/* La sottolineatura dei vecchi tab non serve più: ora è una pillola. */
+html[data-theme="amethyst"] #ui :is(.reading-tabs, .mv-tabs) > button {
+    border-bottom: 1px solid transparent !important;
+}
+
+/* Dock della home: resta una griglia, i bottoni diventano segmenti. */
+html[data-theme="amethyst"] #ui .taverna-home-dock {
+    border-radius: var(--ab-r-md) !important;
+    border: 1px solid var(--ab-hairline) !important;
+    background: var(--ab-track) !important;
+    box-shadow: inset 0 1px 3px rgb(0 0 0 / 34%) !important;
+    padding: 5px !important;
+}
+
+html[data-theme="amethyst"] #ui .taverna-home-dock button {
+    border-radius: calc(var(--ab-r-md) - 5px) !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: var(--ab-text-dim) !important;
+    box-shadow: none !important;
+    font-weight: 600;
+    letter-spacing: .04em;
+    transition:
+        transform var(--ab-dur) var(--ab-spring),
+        background-color var(--ab-dur) var(--ab-ease),
+        border-color var(--ab-dur) var(--ab-ease),
+        color var(--ab-dur) var(--ab-ease),
+        box-shadow var(--ab-dur) var(--ab-ease) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html[data-theme="amethyst"] #ui .taverna-home-dock button:hover {
+        background: rgb(255 255 255 / 8%) !important;
+        color: #fff !important;
+    }
+}
+
+html[data-theme="amethyst"] #ui .taverna-home-dock button:active {
+    transform: scale(.97);
+    background: rgb(255 255 255 / 4%) !important;
+}
+
+html[data-theme="amethyst"] #ui .taverna-home-dock .is-resume {
+    border-color: var(--ab-tint-line) !important;
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 12%), rgb(255 255 255 / 3%)),
+        rgb(75 42 123 / 30%) !important;
+    color: #fff !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. PILLOLE E CHIP (gioco, tavoli, contatori)
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] #ui :is(
+    .game-bot-pill, .sc-chip, .mt-opponents__chip,
+    .counter-extra-chip, .dnd-manual-page-chip
+) {
+    border-radius: var(--ab-r-pill) !important;
+    border: 1px solid var(--ab-hairline) !important;
+    background: var(--ab-material) !important;
+    color: var(--ab-text) !important;
+    box-shadow: var(--ab-bevel), 0 1px 2px rgb(0 0 0 / 24%) !important;
+    letter-spacing: .03em;
+    transition:
+        transform var(--ab-dur) var(--ab-spring),
+        background-color var(--ab-dur) var(--ab-ease),
+        border-color var(--ab-dur) var(--ab-ease),
+        color var(--ab-dur) var(--ab-ease),
+        box-shadow var(--ab-dur) var(--ab-ease) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html[data-theme="amethyst"] #ui :is(
+        .game-bot-pill, .sc-chip, .mt-opponents__chip, .counter-extra-chip
+    ):hover:not(.active, [aria-pressed="true"]) {
+        background: var(--ab-material-hover) !important;
+        border-color: var(--ab-tint-line) !important;
+        color: #fff !important;
+    }
+}
+
+html[data-theme="amethyst"] #ui :is(.game-bot-pill, .mt-opponents__chip, .sc-chip):is(.active, [aria-pressed="true"]) {
+    border-color: var(--ab-tint-line) !important;
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 18%), rgb(255 255 255 / 6%)),
+        rgb(75 42 123 / 45%) !important;
+    color: #fff !important;
+    box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 22%),
+        0 0 0 1px rgb(201 184 228 / 18%),
+        0 6px 16px rgb(75 42 123 / 28%) !important;
+    transform: translateY(-2px);
+}
+
+html[data-theme="amethyst"] #ui .game-bot-count { color: var(--ab-tint) !important; }
+
+/* --------------------------------------------------------------------------
+   6. BOTTONE INDIETRO — il "bottoncino tra le pagine" per eccellenza
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] #ui .app-back-button {
+    min-height: 40px;
+    padding: 9px 16px 9px 13px !important;
+    border-radius: var(--ab-r-pill) !important;
+    border: 1px solid var(--ab-hairline) !important;
+    background: var(--ab-material) !important;
+    color: var(--ab-text) !important;
+    box-shadow: var(--ab-bevel), 0 1px 2px rgb(0 0 0 / 26%) !important;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+html[data-theme="amethyst"] #ui .app-back-arrow {
+    display: inline-block;
+    transition: transform var(--ab-dur) var(--ab-spring);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html[data-theme="amethyst"] #ui .app-back-button:hover {
+        background: var(--ab-material-hover) !important;
+        border-color: var(--ab-tint-line) !important;
+        color: #fff !important;
+        box-shadow: var(--ab-bevel), var(--ab-shadow-hover) !important;
+    }
+    html[data-theme="amethyst"] #ui .app-back-button:hover .app-back-arrow {
+        transform: translateX(-3px);
+    }
+}
+
+html[data-theme="amethyst"] #ui .app-back-button:active {
+    transform: scale(.965);
+    background: var(--ab-material-press) !important;
+    box-shadow: var(--ab-shadow-press) !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. CAMPI: stessa carrozzeria, focus preciso
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] #ui :is(
+    input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
+    textarea, select
+) {
+    border-radius: var(--ab-r-sm) !important;
+    border: 1px solid var(--ab-hairline) !important;
+    background-color: rgb(14 15 18 / 72%) !important;
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 30%) !important;
+    transition:
+        border-color var(--ab-dur-fast) var(--ab-ease),
+        box-shadow var(--ab-dur-fast) var(--ab-ease),
+        background-color var(--ab-dur-fast) var(--ab-ease) !important;
+}
+
+html[data-theme="amethyst"] #ui :is(input, textarea, select):focus {
+    border-color: var(--ab-tint-line) !important;
+    box-shadow:
+        inset 0 1px 2px rgb(0 0 0 / 30%),
+        0 0 0 3px rgb(201 184 228 / 18%) !important;
+}
+
+/* --------------------------------------------------------------------------
+   8. ACCESSIBILITÀ E PERFORMANCE
+   -------------------------------------------------------------------------- */
+
+html[data-theme="amethyst"] #ui :is(
+    button, a, [role="button"], input, select, textarea, [tabindex="0"]
+):focus-visible {
+    outline: 2px solid var(--ab-tint) !important;
+    outline-offset: 3px;
+    border-radius: inherit;
+}
+
+html[data-theme="amethyst"] #ui :is(
+    button, [role="button"]
+):disabled,
+html[data-theme="amethyst"] #ui :is(button, [role="button"])[aria-disabled="true"] {
+    opacity: .45;
+    filter: saturate(.5);
+    transform: none !important;
+    box-shadow: none !important;
+    cursor: not-allowed;
+}
+
+/* Niente hover "appiccicato" su touch. */
+@media (hover: none) {
+    html[data-theme="amethyst"] #ui :is(button, a, [role="button"]):hover {
+        transform: none;
+    }
+}
+
+/* Chi preferisce meno movimento ottiene lo stesso contrasto, zero molla. */
+@media (prefers-reduced-motion: reduce) {
+    html[data-theme="amethyst"] #ui :is(button, a, [role="button"], input, select, textarea) {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+    }
+    html[data-theme="amethyst"] #ui :is(button, a, [role="button"]):active {
+        transform: none !important;
+    }
+}
+
+/* Alto contrasto: hairline più leggibile, niente vetro. */
+@media (prefers-contrast: more) {
+    html[data-theme="amethyst"] #ui :is(button, a, [role="button"]) {
+        border-color: rgb(255 255 255 / 34%) !important;
+        background-image: none !important;
+    }
+}

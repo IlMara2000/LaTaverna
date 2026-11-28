@@ -18,7 +18,7 @@
 .sidebar-actions > a.sidebar-nav-item { font-size: .8rem; padding: 12px; }
 
 /* Uscita dall'account: discreta a riposo, rossa solo quando la si tocca. */
-#ui #sidebar-menu .sidebar-logout { text-align: left; min-height: 48px !important; padding: 12px 18px !important; font-size: 10px !important; letter-spacing: .06em; border-color: rgb(255 255 255 / 12%) !important; color: #c2adbd !important; }
+#ui #sidebar-menu .sidebar-logout { text-align: left; min-height: 48px !important; padding: 12px 18px !important; font-size: 10px !important; letter-spacing: .06em; border-color: rgb(255 255 255 / 12%) !important; color: #c9b8e4 !important; }
 #ui #sidebar-menu .sidebar-logout:hover:not(:disabled, .is-armed),
 #ui #sidebar-menu .sidebar-logout:focus-visible:not(.is-armed) { border-color: rgb(255 106 106 / 45%) !important; color: #ffb8b8 !important; background: rgb(255 106 106 / 5%) !important; }
 /* Primo tocco: la voce si arma e chiede conferma prima di uscire. */

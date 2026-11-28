@@ -42,8 +42,8 @@
     transition: border-color 160ms ease, background-color 160ms ease;
 }
 #ui .app-back-arrow { font-size: 20px; line-height: 1; }
-#ui .app-back-button:focus-visible { outline: 2px solid #dfbfff; outline-offset: 4px; }
-#ui .app-back-button:hover { border-color: #c59cf2; }
+#ui .app-back-button:focus-visible { outline: 2px solid #e4daf3; outline-offset: 4px; }
+#ui .app-back-button:hover { border-color: #c9b8e4; }
 #ui :is(.profile-page, .music-center, .dnd-app) > .app-back-button { margin-bottom: 24px; }
 #ui .app-back-button > span { display: inline; }
 
@@ -58,7 +58,7 @@ body:has(.app-back-button) #nav-home-btn { display: none !important; }
     width: 56px;
     height: 56px;
     border-radius: 21px;
-    background: linear-gradient(145deg, rgb(190 132 239 / 18%), rgb(105 53 157 / 12%)), rgb(43 24 64 / 90%) !important;
+    background: linear-gradient(145deg, rgb(201 184 228 / 18%), rgb(75 42 123 / 12%)), rgb(25 27 32 / 90%) !important;
     touch-action: manipulation;
 }
 #ui #navbar-trigger.is-mobile-draggable {
@@ -87,11 +87,11 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
     touch-action: pan-y pinch-zoom;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    scrollbar-color: #9d79bd transparent;
+    scrollbar-color: #4b2a7b transparent;
     scroll-padding-block: 16px;
 }
 #ui #sidebar-menu::-webkit-scrollbar { display: block; width: 4px; }
-#ui #sidebar-menu::-webkit-scrollbar-thumb { border-radius: 4px; background: #9d79bd; }
+#ui #sidebar-menu::-webkit-scrollbar-thumb { border-radius: 4px; background: #4b2a7b; }
 #ui #sidebar-menu button { min-height: 44px; }
 
 /* Sticky headers and session drawers must also clear the iOS status area. */
@@ -100,8 +100,8 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
 #ui .dnd-left-panel { padding-bottom: calc(88px + var(--menu-bottom-gap)); }
 #ui .dnd-panel-close { width: 44px; height: 44px; flex-basis: 44px; }
 #ui .dnd-table-topbar { top: calc(var(--safe-top) + 16px); left: max(16px, var(--safe-left)); right: max(16px, var(--safe-right)); }
-#ui .dnd-table-topbar button { min-width: 44px; min-height: 44px; background: rgb(57 32 81 / 90%) !important; color: #fff; }
-#ui .dnd-table-topbar button[aria-expanded="true"] { background: #71409a !important; border-color: #d6aff5; }
+#ui .dnd-table-topbar button { min-width: 44px; min-height: 44px; background: rgb(56 33 92 / 90%) !important; color: #fff; }
+#ui .dnd-table-topbar button[aria-expanded="true"] { background: #4b2a7b !important; border-color: #e4daf3; }
 #ui .dnd-session-hud { top: calc(var(--safe-top) + 28px + var(--session-toolbar-height, 100px)); }
 #ui .dnd-dice-bar { bottom: calc(var(--safe-bottom) + 12px); }
 
@@ -151,21 +151,21 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
 #ui :is(.reading-close, .dnd-panel-close, .briscola-modal-close, .solitario-close,
     .scopa-dialog-head [data-action="close-dialog"],
     .shop-cart > header > button, .shop-modal-panel > button):focus-visible {
-    outline: 2px solid #d5acff !important; outline-offset: -5px; box-shadow: none;
+    outline: 2px solid #e4daf3 !important; outline-offset: -5px; box-shadow: none;
 }
 #ui :is(.reading-close, .dnd-panel-close, .briscola-modal-close, .solitario-close):hover {
-    background: rgb(194 151 237 / 10%);
+    background: rgb(201 184 228 / 10%);
 }
 #ui .dnd-hero-die {
     width: clamp(96px, 17vw, 176px); height: auto; overflow: visible;
-    background: none; border: 0; text-shadow: none; color: #c897ed;
-    opacity: .55; filter: drop-shadow(0 8px 14px rgb(119 62 175 / 22%));
+    background: none; border: 0; text-shadow: none; color: #c9b8e4;
+    opacity: .55; filter: drop-shadow(0 8px 14px rgb(75 42 123 / 22%));
 }
-.dnd-hero-die .die-shell { fill: rgb(131 72 175 / 22%); stroke: currentColor; stroke-width: 3; stroke-linejoin: round; }
+.dnd-hero-die .die-shell { fill: rgb(75 42 123 / 22%); stroke: currentColor; stroke-width: 3; stroke-linejoin: round; }
 .dnd-hero-die .die-facets { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
-.dnd-hero-die text { fill: #ecd7ff; font: 800 27px 'Montserrat', sans-serif; }
+.dnd-hero-die text { fill: #e4daf3; font: 800 27px 'Montserrat', sans-serif; }
 .music-status { min-height: 1.5em; color: var(--text-secondary); }
-.music-status[data-state="error"], .music-status[data-state="blocked"] { color: #f0c9ff; }
+.music-status[data-state="error"], .music-status[data-state="blocked"] { color: #e4daf3; }
 @media (max-width: 760px) {
     #ui .dnd-hero > div:first-child { min-width: 0; width: 100%; }
     #ui .dnd-hero-die { position: absolute; width: 72px; right: 18px; bottom: 20px; }
@@ -182,7 +182,7 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
 .music-credits p, .music-credits li { font-size: .8rem; line-height: 1.7; color: var(--text-secondary); }
 .music-credits ul { padding-left: 20px; }
 .music-credits li + li { margin-top: 14px; }
-.music-credits a { color: #dfbfff; text-decoration: underline; text-underline-offset: 3px; }
+.music-credits a { color: #e4daf3; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 480px) {
     .music-track { flex-wrap: wrap; }
     .music-track-mood { flex-basis: 100%; text-align: left; }
@@ -216,8 +216,8 @@ body.taverna-menu-open #nav-home-btn { visibility: hidden; }
     width: 4px;
     height: 18px;
     border-radius: 4px;
-    background: #ecd7ff;
-    box-shadow: 0 0 8px rgb(199 125 255 / 30%);
+    background: #e4daf3;
+    box-shadow: 0 0 8px rgb(201 184 228 / 30%);
 }
 #ui #navbar-trigger:is([data-edges~="top"], [data-edges~="bottom"]) .nav-edge-grip::after { width: 18px; height: 4px; }
 #ui #navbar-trigger.is-edge-handle.is-active .nav-edge-grip::after {

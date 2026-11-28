@@ -2,33 +2,33 @@
    One skin for every destination; illustrations and ornament stay out of boards,
    maps and PDF content. Scoped !important overrides legacy glass declarations. */
 :root[data-theme="amethyst"] {
-    --fantasy-black: #0d0b10;
-    --fantasy-panel: #18131d;
-    --fantasy-ivory: #e9dfcd;
-    --fantasy-muted: #b4a8b9;
-    --fantasy-line: #76607966;
-    --fantasy-accent: #af83c8;
+    --fantasy-black: #0e0f12;
+    --fantasy-panel: #17181c;
+    --fantasy-ivory: #f4efe6;
+    --fantasy-muted: #c2c6cd;
+    --fantasy-line: #ffffff26;
+    --fantasy-accent: #ffc93c;
     --fantasy-display: 'Bangers', Impact, sans-serif;
     --fantasy-serif: 'Manrope', system-ui, sans-serif;
-    --bg-deep: #0d0b10;
-    --bg-dark: #0d0b10;
-    --text-primary: #e9dfcd;
-    --text-secondary: #b4a8b9;
-    --amethyst-bright: #a77ac3;
-    --amethyst-light: #cbaade;
-    --amethyst-glow: #a77ac31f;
-    --glass-border: #87718d55;
-    --crystal-page: radial-gradient(ellipse at 50% 0%, #35203d55, transparent 60%), #0d0b10;
-    --crystal-glass: linear-gradient(135deg, #aa81bc08, transparent 60%), #18131df5;
-    --crystal-control: #211827;
-    --crystal-selected: #50325e;
-    --crystal-inset: inset 0 1px 0 #e9dfcd0c;
-    --crystal-shadow: var(--crystal-inset), 0 6px 16px #0003;
+    --bg-deep: #0e0f12;
+    --bg-dark: radial-gradient(ellipse at 50% 0%, #4b2a7b 0%, #0e0f12 58%), #0e0f12;
+    --text-primary: #f4efe6;
+    --text-secondary: #c2c6cd;
+    --amethyst-bright: #ffc93c;
+    --amethyst-light: #ffdc85;
+    --amethyst-glow: #ffc93c24;
+    --glass-border: #ffffff26;
+    --crystal-page: radial-gradient(ellipse at 50% 0%, #4b2a7b66, transparent 60%), #0e0f12;
+    --crystal-glass: linear-gradient(135deg, rgb(255 255 255 / 7%), transparent 60%), rgb(14 15 18 / 96%);
+    --crystal-control: #1b1c21;
+    --crystal-selected: #4b2a7b;
+    --crystal-inset: inset 0 1px 0 rgb(255 255 255 / 8%);
+    --crystal-shadow: var(--crystal-inset), 0 6px 16px #0006;
     --crystal-radius: 16px;
     --crystal-radius-sm: 10px;
     --crystal-radius-lg: 20px;
-    --accent-gradient: linear-gradient(120deg, #684278, #42284e);
-    --accent-gradient-hot: linear-gradient(120deg, #865d99, #573466);
+    --accent-gradient: linear-gradient(120deg, #6b3fa0, #4b2a7b);
+    --accent-gradient-hot: linear-gradient(120deg, #ffdf8e, #e0a800);
     --world-muted: var(--fantasy-muted);
     --world-surface: var(--fantasy-panel);
 }
@@ -48,102 +48,102 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
     color: var(--fantasy-accent); font-size: 10px; font-weight: 600; letter-spacing: .24em;
 }
 #ui :is(input:not([type="range"]):not([type="checkbox"]):not([type="radio"]), textarea, select) {
-    border-radius: 12px !important; background-color: #110e16 !important;
+    border-radius: 12px !important; background-color: #0e0f12 !important;
 }
 #ui :is(.session-tool-switcher, .dnd-tabs, .settings-nav, .reading-tabs, .shop-filters) {
-    border-radius: 3px; background: #151019; border-color: var(--fantasy-line);
+    border-radius: 3px; background: #0e0f12; border-color: var(--fantasy-line);
 }
 #ui :is(.glass-box, .glass-card, .action-card, .game-card, .dnd-hero, .reading-welcome, .shop-story) {
     backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 /* The ten percent: heraldic rules and restrained engraved corner marks. */
 #ui :is(.dnd-panel, .catalog-game-card, .settings-group, .reading-shelf, .profile-glass-card, .music-playlist) {
-    border-top: 1px solid #a88baf77; box-shadow: inset 0 3px 0 #0d0b10, inset 0 4px 0 #7c608333 !important;
+    border-top: 1px solid #4b2a7b77; box-shadow: inset 0 3px 0 #0e0f12, inset 0 4px 0 #4b2a7b33 !important;
 }
 #ui :is(button, a, input, textarea, select, [tabindex="0"]):focus-visible {
-    outline: 2px solid #d9b5ec !important; outline-offset: 4px;
+    outline: 2px solid #e4daf3 !important; outline-offset: 4px;
 }
 
 /* Home: three engraved chapters, one visual world. */
 #ui .taverna-home { background: none; }
 #ui .taverna-home-header { border-bottom: 1px solid var(--fantasy-line); padding-bottom: 18px; }
 #ui .taverna-wordmark > span { font-family: var(--fantasy-serif) !important; font-weight: 500; letter-spacing: .16em; color: var(--fantasy-ivory); }
-#ui .taverna-wordmark small { color: #b2a3b6; }
-#ui .taverna-home-badge { border: 0; border-radius: 0; background: none; color: #b7a5bc; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+#ui .taverna-wordmark small { color: #9ea5bb; }
+#ui .taverna-home-badge { border: 0; border-radius: 0; background: none; color: #c9b8e4; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 #ui .taverna-welcome { position: relative; padding: 34px 0 30px; }
 #ui .taverna-welcome h1 { font-family: var(--fantasy-display) !important; font-size: clamp(52px, 5.5vw, 82px); line-height: .99; margin: 18px 0; color: var(--fantasy-ivory); letter-spacing: .01em; font-weight: 400; }
-#ui .taverna-welcome h1 em { color: #b68dcd; font-style: normal; }
-#ui .taverna-welcome p { color: #c0b5c4; font-size: 15px; line-height: 1.8; }
+#ui .taverna-welcome h1 em { color: #c9b8e4; font-style: normal; }
+#ui .taverna-welcome p { color: #c2c6cd; font-size: 15px; line-height: 1.8; }
 #ui .taverna-scene-stage { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; height: clamp(400px, 48vh, 530px); }
-#ui .taverna-scene { border: 1px solid #8c73935c; border-radius: 16px !important; background: #100c14; box-shadow: 0 8px 24px #0004; overflow: hidden; }
+#ui .taverna-scene { border: 1px solid #4b2a7b5c; border-radius: 16px !important; background: #0e0f12; box-shadow: 0 8px 24px #0004; overflow: hidden; }
 #ui .taverna-scene img { width: 300%; max-width: none; height: 100%; object-fit: cover; object-position: 50% 25%; opacity: .95; transform: none !important; filter: none; transition: opacity 200ms; }
 #ui .scene-cards img { left: 0; }
 #ui .scene-party img { left: -100%; }
 #ui .scene-gdr img { left: -200%; }
 #ui .scene-magic img { left: 0; width: 100%; filter: none; }
-#ui .taverna-scene::before { display: block; inset: 8px; background: none; border: 1px solid #c7adc733; opacity: 1; z-index: 2; pointer-events: none; }
+#ui .taverna-scene::before { display: block; inset: 8px; background: none; border: 1px solid #c9b8e433; opacity: 1; z-index: 2; pointer-events: none; }
 #ui .taverna-scene::after { display: none; }
-#ui .taverna-scene-scrim { background: linear-gradient(180deg, #0d091322, transparent 40%, #100b15c9 72%, #100b15 100%); }
-#ui .scene-number { top: 20px; left: 20px; color: #d9c3df; background: #130d19c9; border: 1px solid #b491ba55; border-radius: 1px; font-size: 9px; letter-spacing: .18em; padding: 8px 10px; backdrop-filter: none; -webkit-backdrop-filter: none; }
+#ui .taverna-scene-scrim { background: linear-gradient(180deg, #0e0f1222, transparent 40%, #0e0f12c9 72%, #0e0f12 100%); }
+#ui .scene-number { top: 20px; left: 20px; color: #e4daf3; background: #0e0f12c9; border: 1px solid #c9b8e455; border-radius: 1px; font-size: 9px; letter-spacing: .18em; padding: 8px 10px; backdrop-filter: none; -webkit-backdrop-filter: none; }
 #ui .taverna-scene-caption { inset: auto 22px 22px; padding: 0; border: 0; border-radius: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
 #ui .taverna-scene-title { font-family: var(--fantasy-display) !important; font-size: clamp(30px, 2.7vw, 41px); font-weight: 400; letter-spacing: .02em; color: var(--fantasy-ivory); }
 #ui .scene-symbol { display: none; }
-#ui .scene-description { color: #c8bccb; font-size: 14px; }
-#ui .scene-link { color: #cfb4dc; border-top: 1px solid #af86bd50; padding-top: 14px; margin-top: 18px; font-size: 13px; }
-#ui .taverna-scene:hover { border-color: #b990ca; box-shadow: 0 8px 24px #0005; }
+#ui .scene-description { color: #c9b8e4; font-size: 14px; }
+#ui .scene-link { color: #c9b8e4; border-top: 1px solid #c9b8e450; padding-top: 14px; margin-top: 18px; font-size: 13px; }
+#ui .taverna-scene:hover { border-color: #c9b8e4; box-shadow: 0 8px 24px #0005; }
 #ui .taverna-scene:hover img { opacity: 1; }
-#ui .taverna-home-dock { border: 0; border-block: 1px solid var(--fantasy-line); border-radius: 0; box-shadow: none; background: #15101a; padding: 8px 0; margin-top: 22px; }
-#ui .taverna-home-dock button { border-radius: 0; border: 0; border-right: 1px solid #86678e40; background: none; color: #d2c3d7; letter-spacing: .13em; }
-#ui .taverna-home-dock button:hover { background: #34213d; }
-#ui .taverna-home-footer { font-family: var(--fantasy-serif) !important; font-size: 13px; font-style: italic; color: #aa94b4; }
+#ui .taverna-home-dock { border: 0; border-block: 1px solid var(--fantasy-line); border-radius: 0; box-shadow: none; background: #0e0f12; padding: 8px 0; margin-top: 22px; }
+#ui .taverna-home-dock button { border-radius: 0; border: 0; border-right: 1px solid #4b2a7b40; background: none; color: #e4daf3; letter-spacing: .13em; }
+#ui .taverna-home-dock button:hover { background: #191b20; }
+#ui .taverna-home-footer { font-family: var(--fantasy-serif) !important; font-size: 13px; font-style: italic; color: #c9b8e4; }
 
 /* Catalog: library of engraved folios rather than playful tiles. */
-#ui .world-catalog-header { border-block: 1px solid var(--fantasy-line); padding: 26px 12px; background: linear-gradient(90deg, transparent, #37213c44, transparent); }
+#ui .world-catalog-header { border-block: 1px solid var(--fantasy-line); padding: 26px 12px; background: linear-gradient(90deg, transparent, #191b2044, transparent); }
 #ui .world-catalog-header .main-title { font-size: clamp(48px, 6vw, 72px); margin: 12px 0; }
 #ui .catalog-game-card { min-height: 145px; gap: 18px; padding: 24px; border-radius: 12px !important; background: var(--crystal-glass) !important; }
-#ui .catalog-game-icon { display: grid; place-items: center; width: 58px; height: 70px; flex-shrink: 0; border: 3px double #ae8fb375; border-radius: 1px; color: #d2b6df; background: #2b1c33; font-size: 27px; }
+#ui .catalog-game-icon { display: grid; place-items: center; width: 58px; height: 70px; flex-shrink: 0; border: 3px double #c9b8e475; border-radius: 1px; color: #c9b8e4; background: #191b20; font-size: 27px; }
 #ui .catalog-game-copy h3 { color: #e4d8c8; font-size: 24px; line-height: 1.2; }
 #ui .world-game-description { margin: 10px 0 0; color: var(--fantasy-muted); font-size: 14px; font-weight: 400; line-height: 1.55; }
-#ui .catalog-game-arrow { color: #ba92cc; }
+#ui .catalog-game-arrow { color: #c9b8e4; }
 
 /* RPG dashboard and the deeper session share parchment-colored type and iron. */
-#ui .dnd-app .dnd-hero { background: linear-gradient(90deg, #151018f7, #211628d9), url('/assets/worlds/handwritten-triptych.webp') right 30% / cover !important; border: 1px solid #90759866; border-radius: 12px !important; box-shadow: inset 0 0 0 7px #110d1699, inset 0 0 0 8px #82628e33 !important; }
+#ui .dnd-app .dnd-hero { background: linear-gradient(90deg, #0e0f12f7, #191b20d9), url('/assets/worlds/handwritten-triptych.webp') right 30% / cover !important; border: 1px solid #4b2a7b66; border-radius: 12px !important; box-shadow: inset 0 0 0 7px #0e0f1299, inset 0 0 0 8px #4b2a7b33 !important; }
 #ui .dnd-app .dnd-hero :is(h1, h1 span) { font-family: var(--fantasy-display) !important; font-size: clamp(38px, 5vw, 67px); font-weight: 400; line-height: 1.12; letter-spacing: .01em; }
-#ui .dnd-app .dnd-panel { border-radius: 12px !important; border-color: #80668b66; }
+#ui .dnd-app .dnd-panel { border-radius: 12px !important; border-color: #4b2a7b66; }
 #ui .dnd-app .dnd-panel > strong { font-family: var(--fantasy-serif) !important; font-size: 23px; text-transform: none; }
 #ui .dnd-hero-die { opacity: .45; }
 #ui .dnd-hero-props { display: none; }
-#ui .dnd-session :is(.dnd-session-panel, .dnd-session-block) { border-radius: 2px; border-color: #796084; background-color: #18121e; }
+#ui .dnd-session :is(.dnd-session-panel, .dnd-session-block) { border-radius: 2px; border-color: #4b2a7b; background-color: #0e0f12; }
 #ui .dnd-session :is(h2, h3) { font-family: var(--fantasy-serif) !important; color: var(--fantasy-ivory); }
-#ui .dnd-session .initiative-round { border: 3px double #9a7faa77; border-radius: 0; }
+#ui .dnd-session .initiative-round { border: 3px double #4b2a7b77; border-radius: 0; }
 
 /* Reading: a quiet monastic library. The PDF itself is deliberately untouched. */
 #ui .reading-page .reading-heading h1 { font-family: var(--fantasy-display) !important; font-size: clamp(52px, 7vw, 78px); }
-#ui .reading-page .reading-welcome { position: relative; border: 3px double #9c7da460; padding: 28px; border-radius: 16px !important; background: #1d1524 !important; }
-#ui .reading-page .reading-welcome-note { font-family: var(--fantasy-serif) !important; color: #cbb4d4; font-size: 13px; letter-spacing: .12em; }
-#ui .reading-page .reading-spine { border: 3px double #977ba655; border-radius: 1px; background: #2a1c34; }
+#ui .reading-page .reading-welcome { position: relative; border: 3px double #4b2a7b60; padding: 28px; border-radius: 16px !important; background: #0e0f12 !important; }
+#ui .reading-page .reading-welcome-note { font-family: var(--fantasy-serif) !important; color: #c9b8e4; font-size: 13px; letter-spacing: .12em; }
+#ui .reading-page .reading-spine { border: 3px double #4b2a7b55; border-radius: 1px; background: #191b20; }
 #ui .reading-page .reading-shelf { border-radius: 16px !important; }
-#ui .reading-page .reading-empty { border: 1px solid #6e55794d; border-radius: 0; background: #110e16; }
-#ui .ebook-reader :is(.ebook-tools, .ebook-footer) { border-color: #84639166; }
+#ui .reading-page .reading-empty { border: 1px solid #4b2a7b4d; border-radius: 0; background: #0e0f12; }
+#ui .ebook-reader :is(.ebook-tools, .ebook-footer) { border-color: #4b2a7b66; }
 
 /* Bottega: a cabinet of artifacts, preserving every original product image. */
-#ui .artisan-shop { --shop-brass: #c5afce; --shop-border: #9b7daa55; --shop-muted: #b6a7bd; --shop-faint: #ab97b5; }
+#ui .artisan-shop { --shop-brass: #c9b8e4; --shop-border: #4b2a7b55; --shop-muted: #c9b8e4; --shop-faint: #c9b8e4; }
 #ui .artisan-shop .shop-hero h1, #ui .artisan-shop .shop-hero h1 :is(span, em) { font-family: var(--fantasy-display) !important; font-weight: 400; font-style: normal; letter-spacing: .015em; -webkit-text-stroke: 0; color: #e7dccb; }
-#ui .artisan-shop .shop-hero h1 em { color: #b68bca; }
-#ui .artisan-shop .shop-hero-photo { border-radius: 2px; border: 3px double #92759f66; background: #17111d; }
+#ui .artisan-shop .shop-hero h1 em { color: #c9b8e4; }
+#ui .artisan-shop .shop-hero-photo { border-radius: 2px; border: 3px double #4b2a7b66; background: #0e0f12; }
 #ui .artisan-shop :is(.shop-orbit, .shop-grain, .shop-ambient, .shop-photo-light) { display: none; }
-#ui .artisan-shop .shop-floating-label { border-radius: 1px; border: 1px solid #b994cb66; background: #21162df0; color: #dbc9e2; backdrop-filter: none; }
-#ui .artisan-shop :is(.shop-product-card, .shop-cart, .shop-modal-panel, .shop-age-panel) { border-radius: 3px; border-color: #90749966; background: #18121f; }
-#ui .artisan-shop .shop-marquee { background: #291a33; border-block: 1px solid #95729f66; }
-#ui .artisan-shop .shop-wordmark-seal { border-radius: 0; border: 3px double #9b7aa777; font-family: var(--fantasy-display) !important; }
+#ui .artisan-shop .shop-floating-label { border-radius: 1px; border: 1px solid #c9b8e466; background: #191b20f0; color: #e4daf3; backdrop-filter: none; }
+#ui .artisan-shop :is(.shop-product-card, .shop-cart, .shop-modal-panel, .shop-age-panel) { border-radius: 3px; border-color: #4b2a7b66; background: #16171b; }
+#ui .artisan-shop .shop-marquee { background: #191b20; border-block: 1px solid #4b2a7b66; }
+#ui .artisan-shop .shop-wordmark-seal { border-radius: 0; border: 3px double #4b2a7b77; font-family: var(--fantasy-display) !important; }
 
 /* Every game inherits the world without changing suit colors or board geometry. */
-#ui :is(.game-master-wrapper, .master-wrapper, .scopa-game, .solitario-game, .briscola-game) { --world-surface: #15101b; }
-#ui :is(.briscola-table, .scopa-table-area, .solitario-table) { background: radial-gradient(ellipse at 50% 25%, #39263f, #19121f 80%) !important; border: 1px solid #a280ad66; border-radius: 5px !important; box-shadow: inset 0 0 0 5px #1c1224, inset 0 0 0 6px #9a7da340 !important; }
-#ui :is(#start-screen, .briscola-start, .scopa-welcome, .blocks-start, .tictactoe-start-screen) { background: radial-gradient(ellipse at 50% 0%, #40274b55, transparent 65%), #100c15 !important; }
+#ui :is(.game-master-wrapper, .master-wrapper, .scopa-game, .solitario-game, .briscola-game) { --world-surface: #0e0f12; }
+#ui :is(.briscola-table, .scopa-table-area, .solitario-table) { background: radial-gradient(ellipse at 50% 25%, #191b20, #16171b 80%) !important; border: 1px solid #4b2a7b66; border-radius: 5px !important; box-shadow: inset 0 0 0 5px #0e0f12, inset 0 0 0 6px #4b2a7b40 !important; }
+#ui :is(#start-screen, .briscola-start, .scopa-welcome, .blocks-start, .tictactoe-start-screen) { background: radial-gradient(ellipse at 50% 0%, #38215c55, transparent 65%), #0e0f12 !important; }
 #ui :is(.solitario-brand h1, .scopa-brand h1, .briscola-brand h1, .scopa-welcome h2) { font-family: var(--fantasy-display) !important; letter-spacing: .04em; }
-#ui .game-chess-board-frame { border: 3px double #ab8cba77; }
-#ui :is(.game-score-widget, .game-turn-indicator, .blocks-hud, .tictactoe-scoreboard) { border-radius: 3px; border-color: #977ba255; }
+#ui .game-chess-board-frame { border: 3px double #c9b8e477; }
+#ui :is(.game-score-widget, .game-turn-indicator, .blocks-hud, .tictactoe-scoreboard) { border-radius: 3px; border-color: #4b2a7b55; }
 
 /* Account, settings, music and navigation carry the same iron-and-ink finish. */
 #ui :is(.sidebar-glass, .music-player, .music-playlist, .profile-glass-card, .settings-group, .settings-form, .settings-device-info) { background: var(--crystal-glass) !important; border-color: var(--fantasy-line); border-radius: 14px !important; }
@@ -153,12 +153,12 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui :is(.settings-title, .music-title) { font-size: clamp(40px, 5vw, 60px); }
 
 /* Entry remains logo-led, with an architectural frame instead of crystals. */
-#ui .entry-container::before { content: ''; position: absolute; width: min(510px, 85%); top: 8%; bottom: 8%; border: 1px solid #8f6fa044; border-radius: 46% 46% 2px 2px; pointer-events: none; z-index: -1; }
-#ui .entry-container .entry-cta, #ui .auth-submit { background: #573564; border: 1px solid #ad88ba77; border-radius: 2px; color: #f0e5d5; }
-#ui .auth-submit:hover, #ui .entry-container:hover .entry-cta { background: #704580; }
-#ui .auth-provider { border-radius: 2px; background: #1c1423; border-color: #91729e55; }
-#ui .auth-form .auth-input { border-radius: 16px !important; background: #130e19 !important; border-color: #90709855; }
-#ui .auth-intro, #ui .entry-description { font-family: var(--fantasy-serif) !important; color: #c8b7d1; font-style: italic; }
+#ui .entry-container::before { content: ''; position: absolute; width: min(510px, 85%); top: 8%; bottom: 8%; border: 1px solid #4b2a7b44; border-radius: 46% 46% 2px 2px; pointer-events: none; z-index: -1; }
+#ui .entry-container .entry-cta, #ui .auth-submit { background: #4b2a7b; border: 1px solid #c9b8e477; border-radius: 2px; color: #ffdc85; }
+#ui .auth-submit:hover, #ui .entry-container:hover .entry-cta { background: #4b2a7b; }
+#ui .auth-provider { border-radius: 2px; background: #0e0f12; border-color: #4b2a7b55; }
+#ui .auth-form .auth-input { border-radius: 16px !important; background: #0e0f12 !important; border-color: #4b2a7b55; }
+#ui .auth-intro, #ui .entry-description { font-family: var(--fantasy-serif) !important; color: #c9b8e4; font-style: italic; }
 
 @media (max-width: 700px) {
     #ui .taverna-welcome { padding: 26px 0; }
@@ -168,7 +168,7 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
     #ui .taverna-scene-title { font-size: 35px; }
     #ui .taverna-scene-caption { inset: auto 22px 22px; }
     #ui .taverna-home-dock { gap: 0; }
-    #ui .taverna-home-dock button { min-height: 48px; border-bottom: 1px solid #86678e26; }
+    #ui .taverna-home-dock button { min-height: 48px; border-bottom: 1px solid #4b2a7b26; }
     #ui .catalog-game-card { padding: 19px; min-height: 135px; }
     #ui .catalog-game-copy h3 { font-size: 22px; }
     #ui .catalog-game-icon { width: 45px; height: 60px; }
@@ -182,9 +182,9 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 }
 
 /* Comfortable control sizes across every destination. */
-#ui .catalog-game-icon { font-family: Georgia, serif !important; font-variant-emoji: text; color: #d5bddf; }
-#ui .catalog-game-copy small { font-size: 12px; color: #bdacc7; }
-#ui .catalog-game-copy .catalog-game-record { display: block; margin-top: 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #e0c9f5; opacity: .85; }
+#ui .catalog-game-icon { font-family: Georgia, serif !important; font-variant-emoji: text; color: #e4daf3; }
+#ui .catalog-game-copy small { font-size: 12px; color: #c9b8e4; }
+#ui .catalog-game-copy .catalog-game-record { display: block; margin-top: 8px; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #e4daf3; opacity: .85; }
 #ui .catalog-intro { font-size: 15px; }
 #ui :is(.auth-form label, .auth-submit, .auth-provider, .auth-guest) { font-size: 16px; }
 #ui :is(.auth-register, .auth-back, .auth-divider) { font-size: 14px; }
@@ -192,8 +192,8 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui :is(.back-home-button, .btn-home-back, .btn-back-glass) { border-radius: 12px !important; }
 #ui :is(.scene-link, .taverna-home-footer) { line-height: 1.4; }
 #ui .app-back-button { border-radius: 12px !important; }
-#ui .taverna-home-dock:has(.is-resume) { border-radius: 0; background: #15101a; }
-#ui .floating-trigger { border-radius: 14px !important; background: #291c33 !important; }
+#ui .taverna-home-dock:has(.is-resume) { border-radius: 0; background: #0e0f12; }
+#ui .floating-trigger { border-radius: 14px !important; background: #191b20 !important; }
 #ui .reading-search > div { border-radius: 3px; }
 #ui :is(h1, .main-title, .settings-title, .music-title) { text-transform: none !important; }
 #ui :is(.settings-nav button, .settings-form label, .settings-form label > span) { font-size: 13px; font-weight: 600; }
@@ -206,46 +206,46 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui :is(.taverna-home, .minigames-lobby-wrapper, .reading-page, .dnd-app, .settings-page, .music-center) { line-height: 1.6; }
 #ui :is(.settings-title, .music-title, .world-catalog-header .main-title) { font-size: clamp(34px, 4.5vw, 56px); letter-spacing: -.035em; }
 #ui :is(.settings-group, .reading-shelf, .profile-glass-card, .music-playlist, .dnd-panel, .catalog-game-card) {
-    border: 1px solid #aa8cb629; box-shadow: 0 8px 28px #0002, inset 0 1px 0 #eadbf008 !important;
+    border: 1px solid #c9b8e429; box-shadow: 0 8px 28px #0002, inset 0 1px 0 #e4daf308 !important;
 }
 #ui :is(.settings-form, .settings-device-info, .reading-empty, .reading-search > div, .shop-product-card, .shop-cart, .shop-modal-panel, .shop-age-panel) { border-radius: 14px; }
-#ui :is(.session-tool-switcher, .dnd-tabs, .settings-nav, .reading-tabs, .shop-filters) { padding: 6px; gap: 6px; border-radius: 12px; background: #141018; }
+#ui :is(.session-tool-switcher, .dnd-tabs, .settings-nav, .reading-tabs, .shop-filters) { padding: 6px; gap: 6px; border-radius: 12px; background: #0e0f12; }
 #ui :is(.session-tool-switcher button, .dnd-tabs button, .settings-nav button, .reading-tabs button) { border-radius: 8px !important; border-color: transparent; min-height: 42px; font-size: 13px; }
-#ui :is(.session-tool-switcher button.active, .dnd-tabs button.active, .reading-tabs button.active) { box-shadow: inset 0 1px 0 #eadbf025, 0 3px 8px #0003; }
+#ui :is(.session-tool-switcher button.active, .dnd-tabs button.active, .reading-tabs button.active) { box-shadow: inset 0 1px 0 #e4daf325, 0 3px 8px #0003; }
 #ui :is(.settings-form label, .settings-form label > span, .settings-row, .music-track strong, .music-track small, .dnd-panel p, .reading-shelf p) { text-align: left !important; }
 #ui :is(.settings-form label > span, .music-track small, .settings-row p) { font-size: 13px; font-weight: 500; line-height: 1.6; }
 #ui :is(.music-track, .dnd-panel) { transition: background-color 180ms, border-color 180ms; }
-#ui :is(.music-track, .dnd-panel):hover { border-color: #b895ca77; background-color: #241b2d; }
-#ui .app-back-button { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; background: transparent; border-color: #9b7eae33; }
+#ui :is(.music-track, .dnd-panel):hover { border-color: #c9b8e477; background-color: #191b20; }
+#ui .app-back-button { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; background: transparent; border-color: #4b2a7b33; }
 #ui .sidebar-nav-item { text-align: left !important; padding: 14px 18px !important; font-weight: 600; }
 #ui .sidebar-glass { box-shadow: -18px 0 60px #0005; }
-#ui .floating-trigger { border-color: #b392d866; box-shadow: 0 6px 24px #0006; }
+#ui .floating-trigger { border-color: #c9b8e466; box-shadow: 0 6px 24px #0006; }
 
 #ui .taverna-home-header { padding-bottom: 20px; }
 #ui .taverna-wordmark > span { font-size: 15px; font-weight: 700; }
 #ui .taverna-wordmark small { font-size: 9px; letter-spacing: .14em; margin-top: 6px; }
-#ui .taverna-home-badge { border: 1px solid #ac88bc33; border-radius: 30px; padding: 9px 14px; font-size: 10px; letter-spacing: .04em; text-transform: none; }
+#ui .taverna-home-badge { border: 1px solid #c9b8e433; border-radius: 30px; padding: 9px 14px; font-size: 10px; letter-spacing: .04em; text-transform: none; }
 #ui .taverna-welcome { display: grid; grid-template-columns: 1.65fr 1fr; align-items: end; column-gap: 60px; padding: 42px 0 36px; }
 #ui .taverna-welcome .crystal-eyebrow { grid-column: 1 / -1; text-align: left !important; font-size: 10px; }
 #ui .taverna-welcome h1 { font-size: clamp(42px, 4.6vw, 66px); line-height: 1.08; text-align: left !important; margin: 18px 0 0; letter-spacing: -.04em; }
-#ui .taverna-welcome h1 em { font-family: var(--fantasy-display) !important; color: #c4a1df; letter-spacing: -.04em; }
-#ui .taverna-welcome p { text-align: left !important; font-size: 14px; line-height: 1.85; max-width: 320px; margin: 0 0 5px; color: #ad9fb8; }
+#ui .taverna-welcome h1 em { font-family: var(--fantasy-display) !important; color: #c9b8e4; letter-spacing: -.04em; }
+#ui .taverna-welcome p { text-align: left !important; font-size: 14px; line-height: 1.85; max-width: 320px; margin: 0 0 5px; color: #c9b8e4; }
 #ui .home-section-label { display: flex; justify-content: space-between; gap: 20px; padding: 0 0 16px; }
-#ui .home-section-label > span:first-child { font-size: 14px; font-weight: 600; color: #e2d8eb; }
-#ui .home-section-label b { padding-left: 16px; color: #cfb0df; }
+#ui .home-section-label > span:first-child { font-size: 14px; font-weight: 600; color: #e4daf3; }
+#ui .home-section-label b { padding-left: 16px; color: #c9b8e4; }
 #ui .taverna-scene-stage { height: clamp(360px, 43vh, 460px); gap: 22px; }
-#ui .taverna-scene { border-radius: 18px !important; border-color: #ad8bc540; transition: border-color 200ms, box-shadow 200ms, translate 200ms; }
-#ui .taverna-scene::before { inset: 7px; border-radius: 12px; border-color: #dec9ed24; }
-#ui .taverna-scene-scrim { background: linear-gradient(180deg, #160e2122 20%, #110b1a44 40%, #140e20ed 80%, #140e20); }
+#ui .taverna-scene { border-radius: 18px !important; border-color: #c9b8e440; transition: border-color 200ms, box-shadow 200ms, translate 200ms; }
+#ui .taverna-scene::before { inset: 7px; border-radius: 12px; border-color: #e4daf324; }
+#ui .taverna-scene-scrim { background: linear-gradient(180deg, #0e0f1222 20%, #0e0f1244 40%, #0e0f12ed 80%, #0e0f12); }
 #ui .taverna-scene-title { font-size: clamp(25px, 2.2vw, 34px); letter-spacing: -.025em; }
 #ui .scene-number { border-radius: 6px; font-size: 9px; font-weight: 500; letter-spacing: .12em; }
-#ui .scene-description { font-size: 12px; line-height: 1.6; color: #bdb0c9; }
-#ui .scene-link { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; border-color: #b597cb2e; }
-#ui .scene-link b { display: grid; place-items: center; width: 30px; height: 30px; background: #a57ac321; border: 1px solid #b790cb44; border-radius: 50%; font-size: 16px; }
+#ui .scene-description { font-size: 12px; line-height: 1.6; color: #c9b8e4; }
+#ui .scene-link { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; border-color: #c9b8e42e; }
+#ui .scene-link b { display: grid; place-items: center; width: 30px; height: 30px; background: #c9b8e421; border: 1px solid #c9b8e444; border-radius: 50%; font-size: 16px; }
 #ui .taverna-scene:hover { translate: 0 -4px; box-shadow: 0 14px 35px #0006; }
-#ui .taverna-home-dock, #ui .taverna-home-dock:has(.is-resume) { border: 1px solid #aa8ac52e; border-radius: 14px; background: #19121f; padding: 8px; gap: 6px; }
+#ui .taverna-home-dock, #ui .taverna-home-dock:has(.is-resume) { border: 1px solid #c9b8e42e; border-radius: 14px; background: #16171b; padding: 8px; gap: 6px; }
 #ui .taverna-home-dock button { border: 0; border-radius: 8px; font-size: 10px; font-weight: 600; letter-spacing: .06em; }
-#ui .taverna-home-dock .is-resume { border: 1px solid #b68adb33; background: #6d428e24; border-radius: 8px; }
+#ui .taverna-home-dock .is-resume { border: 1px solid #c9b8e433; background: #4b2a7b24; border-radius: 8px; }
 #ui .taverna-home-footer { font-size: 11px; font-style: normal; }
 
 #ui .world-catalog-header { text-align: left; padding: 28px 0; border-top: 0; background: none; }
@@ -253,19 +253,19 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui #minigame-catalog .grid-layout { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
 #ui #minigame-catalog .subtitle { text-align: left !important; margin-bottom: 18px !important; font-size: 11px !important; letter-spacing: .12em !important; }
 #ui .catalog-game-card { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: 0; gap: 0; overflow: hidden; border-radius: 16px !important; transition: translate 180ms, border-color 180ms; }
-#ui .catalog-game-art { display: grid; place-items: center; height: 128px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 100%, #8654a044, transparent 75%), #1e1529; border-bottom: 1px solid #b793ca26; }
-#ui .catalog-game-art::before, #ui .catalog-game-art::after { content: ''; position: absolute; width: 105px; height: 105px; border: 1px solid #ba96cc22; border-radius: 26px; transform: rotate(45deg); }
+#ui .catalog-game-art { display: grid; place-items: center; height: 128px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 100%, #4b2a7b44, transparent 75%), #191b20; border-bottom: 1px solid #c9b8e426; }
+#ui .catalog-game-art::before, #ui .catalog-game-art::after { content: ''; position: absolute; width: 105px; height: 105px; border: 1px solid #c9b8e422; border-radius: 26px; transform: rotate(45deg); }
 #ui .catalog-game-art::after { width: 160px; height: 160px; border-radius: 38px; }
-#ui .catalog-game-icon { position: relative; z-index: 1; width: 62px; height: 72px; font-size: 40px; background: #37223e; border: 1px solid #bf9bc955; border-radius: 13px; box-shadow: 0 10px 24px #0004, inset 0 1px 0 #ecd6fa22; transform: rotate(-8deg); }
-#ui [data-game-category="party"] .catalog-game-art { background: radial-gradient(ellipse at 50% 100%, #77598555, transparent 75%), #211929; }
+#ui .catalog-game-icon { position: relative; z-index: 1; width: 62px; height: 72px; font-size: 40px; background: #191b20; border: 1px solid #c9b8e455; border-radius: 13px; box-shadow: 0 10px 24px #0004, inset 0 1px 0 #e4daf322; transform: rotate(-8deg); }
+#ui [data-game-category="party"] .catalog-game-art { background: radial-gradient(ellipse at 50% 100%, #4b2a7b55, transparent 75%), #191b20; }
 #ui [data-game-category="strategy"] .catalog-game-icon { transform: none; border-radius: 50%; }
 #ui .catalog-game-copy { padding: 20px 22px 16px; flex: 1; }
 #ui .catalog-game-copy h3 { font-size: 19px; font-weight: 700; letter-spacing: -.035em; margin-bottom: 10px; }
-#ui .catalog-game-copy small { font-size: 11px; color: #c7acdb; }
-#ui .world-game-description { font-size: 12px; line-height: 1.75; color: #b4a7bf; }
-#ui .catalog-game-arrow { position: static; display: flex; justify-content: space-between; align-items: center; margin: 0 22px; padding: 14px 0; border-top: 1px solid #b598c426; font-size: 12px; font-weight: 600; }
+#ui .catalog-game-copy small { font-size: 11px; color: #c9b8e4; }
+#ui .world-game-description { font-size: 12px; line-height: 1.75; color: #c9b8e4; }
+#ui .catalog-game-arrow { position: static; display: flex; justify-content: space-between; align-items: center; margin: 0 22px; padding: 14px 0; border-top: 1px solid #c9b8e426; font-size: 12px; font-weight: 600; }
 #ui .catalog-game-arrow b { font-size: 19px; }
-#ui .catalog-game-card:hover { translate: 0 -3px; border-color: #b895ca88; }
+#ui .catalog-game-card:hover { translate: 0 -3px; border-color: #c9b8e488; }
 #ui .minigame-multiplayer-panel { border-radius: 12px; padding: 16px; }
 #ui .minigame-multiplayer-join input { font-size: 13px; letter-spacing: .04em; font-weight: 500; }
 
@@ -274,15 +274,15 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 #ui .dnd-app .dnd-panel { padding: 24px; text-align: left !important; }
 #ui .dnd-app .dnd-panel > strong { display: block; text-align: left !important; margin: 10px 0; font-size: 21px; font-weight: 600; }
 #ui .reading-page .reading-heading h1 { font-size: clamp(42px, 5vw, 64px); letter-spacing: -.04em; }
-#ui .reading-page .reading-welcome { border: 1px solid #b793cc33; background: linear-gradient(110deg, #34213f66, #1b1522) !important; }
+#ui .reading-page .reading-welcome { border: 1px solid #c9b8e433; background: linear-gradient(110deg, #191b2066, #0e0f12) !important; }
 #ui .reading-page .reading-empty { border-style: dashed; padding: 36px 24px; }
 #ui .artisan-shop .shop-hero h1 { font-size: clamp(48px, 7vw, 94px); line-height: 1.05; }
-#ui .artisan-shop .shop-hero-photo { border-radius: 22px; border: 1px solid #b294c633; }
-#ui .auth-panel { padding: 32px; border: 1px solid #aa85bd30; border-radius: 24px; background: #18111fcc; box-shadow: 0 24px 90px #0004; }
+#ui .artisan-shop .shop-hero-photo { border-radius: 22px; border: 1px solid #c9b8e433; }
+#ui .auth-panel { padding: 32px; border: 1px solid #c9b8e430; border-radius: 24px; background: #0e0f12cc; box-shadow: 0 24px 90px #0004; }
 #ui :is(.auth-submit, .auth-provider, .auth-form .auth-input) { border-radius: 10px !important; }
-#ui .auth-submit { background: linear-gradient(110deg, #8960a9, #684786); border-color: #b996d766; box-shadow: inset 0 1px 0 #ffffff22, 0 4px 15px #1c0c2d55; }
+#ui .auth-submit { background: linear-gradient(110deg, #4b2a7b, #4b2a7b); border-color: #c9b8e466; box-shadow: inset 0 1px 0 #ffffff22, 0 4px 15px #21163055; }
 #ui .auth-intro, #ui .entry-description { font-style: normal; }
-#ui .entry-container .entry-cta { border-radius: 12px; font-weight: 600; background: #7953a0; box-shadow: 0 8px 30px #7b43932a; }
+#ui .entry-container .entry-cta { border-radius: 12px; font-weight: 600; background: #4b2a7b; box-shadow: 0 8px 30px #4b2a7b2a; }
 @media (max-width: 700px) {
     #ui .taverna-welcome { display: block; padding: 30px 0 26px; }
     #ui .taverna-welcome h1 { font-size: clamp(36px, 9.5vw, 54px); }
@@ -311,53 +311,53 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 
 /* Latest reference: hand-lettered gaming posters, ink lines and amethyst paper. */
 :root[data-theme="amethyst"] {
-    --fantasy-ivory: #f1e4cc;
-    --fantasy-accent: #c8a0e3;
-    --fantasy-line: #b79ac344;
-    --crystal-glass: linear-gradient(125deg, #76538a10, transparent 65%), #1b1522;
-    --crystal-control: #271c32;
-    --crystal-selected: #684381;
+    --fantasy-ivory: #f4efe6;
+    --fantasy-accent: #ffc93c;
+    --fantasy-line: #ffc93c40;
+    --crystal-glass: linear-gradient(125deg, rgb(75 42 123 / 18%), transparent 65%), #17181c;
+    --crystal-control: #1b1c21;
+    --crystal-selected: #4b2a7b;
 }
 #ui :is(h1, .main-title, .settings-title, .music-title), #ui :is(h1, .main-title) :is(span, em) {
-    letter-spacing: .025em !important; line-height: 1.08; text-shadow: 2px 3px 0 #08060c;
+    letter-spacing: .025em !important; line-height: 1.08; text-shadow: 2px 3px 0 #0e0f12;
 }
 #ui .taverna-welcome h1 { font-size: clamp(52px, 5.3vw, 76px); transform: rotate(-1deg); transform-origin: left center; }
-#ui .taverna-welcome h1 em { display: inline-block; position: relative; color: #ccaae8; }
-#ui .taverna-welcome h1 em::after { content: ''; position: absolute; left: 1%; right: 2%; bottom: -7px; height: 5px; border-bottom: 2px solid #c4a5db99; border-radius: 50%; transform: rotate(-1deg); }
+#ui .taverna-welcome h1 em { display: inline-block; position: relative; color: #ffc93c; }
+#ui .taverna-welcome h1 em::after { content: ''; position: absolute; left: 1%; right: 2%; bottom: -7px; height: 5px; border-bottom: 2px solid #c9b8e499; border-radius: 50%; transform: rotate(-1deg); }
 #ui .taverna-welcome p { padding-bottom: 5px; }
 #ui .home-section-label > span:first-child { font-family: var(--fantasy-display) !important; font-size: 23px; letter-spacing: .04em; font-weight: 400; }
-#ui .taverna-home-badge { border-radius: 52% 4% 48% 5% / 8% 60% 8% 50%; border-color: #b18bc45c; }
-#ui .taverna-scene { border-radius: 6px 15px 7px 13px !important; border: 2px solid #a781ba70; box-shadow: 5px 6px 0 #08060b; }
-#ui .taverna-scene::before { border-radius: 10px 3px 12px 5px; border-color: #e3c8f135; transform: rotate(.25deg); }
-#ui .taverna-scene-title { font-size: clamp(32px, 2.8vw, 41px); letter-spacing: .035em; text-shadow: 2px 3px 0 #0d0812; }
-#ui .taverna-scene-scrim { background: linear-gradient(180deg, transparent 35%, #110b1a44 50%, #140e20eb 80%, #140e20); }
-#ui .scene-number { background: #e8d8be; color: #35213f; border: 1px solid #120c1d; border-radius: 2px 5px 3px 1px; transform: rotate(-3deg); box-shadow: 2px 3px 0 #140d2299; }
-#ui .scene-link b { border-radius: 45% 55% 48% 52%; border-color: #b994d77a; background: #ab80c624; }
-#ui .taverna-home-dock, #ui .taverna-home-dock:has(.is-resume) { border-radius: 8px 15px 8px 12px; border-color: #af8dc444; }
-#ui :is(.catalog-game-card, .dnd-panel, .reading-shelf, .music-playlist, .settings-group, .profile-glass-card) { border-radius: 8px 14px 8px 12px !important; border-color: #b999cd42; box-shadow: 3px 4px 0 #08060c88 !important; }
-#ui .catalog-game-art { background: radial-gradient(ellipse at 50% 100%, #9b76b14a, transparent 75%), #35223f; }
-#ui .catalog-game-art::before { border-radius: 45% 55% 41% 59%; border: 2px solid #d6bbde2b; transform: rotate(-12deg); }
-#ui .catalog-game-art::after { border-radius: 43% 57% 55% 45%; border-style: dashed; border-color: #d4aedd30; transform: rotate(10deg); }
-#ui .catalog-game-icon { color: #382042; background: #e9d9bf; border: 2px solid #110b19; border-radius: 6px 12px 7px 5px; box-shadow: 5px 5px 0 #100919; }
+#ui .taverna-home-badge { border-radius: 52% 4% 48% 5% / 8% 60% 8% 50%; border-color: #c9b8e45c; }
+#ui .taverna-scene { border-radius: 6px 15px 7px 13px !important; border: 2px solid #4b2a7b70; box-shadow: 5px 6px 0 #0e0f12; }
+#ui .taverna-scene::before { border-radius: 10px 3px 12px 5px; border-color: #e4daf335; transform: rotate(.25deg); }
+#ui .taverna-scene-title { font-size: clamp(32px, 2.8vw, 41px); letter-spacing: .035em; text-shadow: 2px 3px 0 #0e0f12; }
+#ui .taverna-scene-scrim { background: linear-gradient(180deg, transparent 35%, #0e0f1244 50%, #0e0f12eb 80%, #0e0f12); }
+#ui .scene-number { background: #ffdc85; color: #191b20; border: 1px solid #0e0f12; border-radius: 2px 5px 3px 1px; transform: rotate(-3deg); box-shadow: 2px 3px 0 #0e0f1299; }
+#ui .scene-link b { border-radius: 45% 55% 48% 52%; border-color: #c9b8e47a; background: #c9b8e424; }
+#ui .taverna-home-dock, #ui .taverna-home-dock:has(.is-resume) { border-radius: 8px 15px 8px 12px; border-color: #c9b8e444; }
+#ui :is(.catalog-game-card, .dnd-panel, .reading-shelf, .music-playlist, .settings-group, .profile-glass-card) { border-radius: 8px 14px 8px 12px !important; border-color: #c9b8e442; box-shadow: 3px 4px 0 #0e0f1288 !important; }
+#ui .catalog-game-art { background: radial-gradient(ellipse at 50% 100%, #4b2a7b4a, transparent 75%), #191b20; }
+#ui .catalog-game-art::before { border-radius: 45% 55% 41% 59%; border: 2px solid #e4daf32b; transform: rotate(-12deg); }
+#ui .catalog-game-art::after { border-radius: 43% 57% 55% 45%; border-style: dashed; border-color: #c9b8e430; transform: rotate(10deg); }
+#ui .catalog-game-icon { color: #191b20; background: #ffdc85; border: 2px solid #0e0f12; border-radius: 6px 12px 7px 5px; box-shadow: 5px 5px 0 #0e0f12; }
 #ui .catalog-game-copy h3 { font-family: var(--fantasy-display) !important; font-weight: 400; font-size: 27px; letter-spacing: .035em; }
 #ui .catalog-game-arrow { border-top-style: dashed; }
 #ui .catalog-game-arrow b { transform: rotate(-10deg); }
-#ui :is(.session-tool-switcher button.active, .dnd-tabs button.active, .reading-tabs button.active) { border-radius: 5px 9px 4px 8px !important; border-color: #b392ce77; background: #63407a; box-shadow: 2px 2px 0 #0e0a13; }
+#ui :is(.session-tool-switcher button.active, .dnd-tabs button.active, .reading-tabs button.active) { border-radius: 5px 9px 4px 8px !important; border-color: #ffc93c66; background: #4b2a7b; box-shadow: 2px 2px 0 #0e0f12; }
 /* Sui fondi scuri i filtri inattivi devono restare leggibili. */
-#ui #app :is(.session-tool-switcher, .dnd-tabs, .settings-nav, .reading-tabs, .shop-filters) button:not(.active):not([aria-pressed="true"]) { color: #e6d8f2 !important; }
-#ui .dnd-app .dnd-hero { border-radius: 8px 18px 7px 16px !important; border-color: #ba9acd55; }
+#ui #app :is(.session-tool-switcher, .dnd-tabs, .settings-nav, .reading-tabs, .shop-filters) button:not(.active):not([aria-pressed="true"]) { color: #e4daf3 !important; }
+#ui .dnd-app .dnd-hero { border-radius: 8px 18px 7px 16px !important; border-color: #c9b8e455; }
 #ui .dnd-app .dnd-panel > strong { font-family: var(--fantasy-display) !important; font-size: 28px; font-weight: 400; letter-spacing: .035em; }
 #ui .dnd-app .dnd-panel > span, #ui .dnd-kicker { display: block; text-align: left !important; }
 #ui .dnd-app .dnd-hero h1 { text-align: left !important; }
-#ui .reading-page .reading-welcome { border-radius: 7px 17px 8px 14px !important; border: 1px dashed #bea4ce70; }
+#ui .reading-page .reading-welcome { border-radius: 7px 17px 8px 14px !important; border: 1px dashed #c9b8e470; }
 #ui .reading-welcome-note { transform: rotate(-2deg); }
 #ui .reading-page .reading-empty { border-radius: 8px 15px 9px 12px; }
 #ui .artisan-shop .shop-hero h1 { letter-spacing: .035em; }
-#ui .artisan-shop .shop-floating-label { border: 1px solid #20122b; background: #e9d9bf; color: #35223e; box-shadow: 3px 3px 0 #100919; }
-#ui .auth-panel { border-radius: 10px 24px 12px 21px; border-color: #b99bcb44; }
-#ui .auth-submit, #ui .entry-container .entry-cta { border-radius: 6px 10px 7px 5px; border: 1px solid #c4a3de88; box-shadow: 3px 4px 0 #0d0715; }
+#ui .artisan-shop .shop-floating-label { border: 1px solid #0e0f12; background: #ffdc85; color: #191b20; box-shadow: 3px 3px 0 #0e0f12; }
+#ui .auth-panel { border-radius: 10px 24px 12px 21px; border-color: #c9b8e444; }
+#ui .auth-submit, #ui .entry-container .entry-cta { border-radius: 6px 10px 7px 5px; border: 1px solid #c9b8e488; box-shadow: 3px 4px 0 #0e0f12; }
 #ui .entry-container::before { border-style: dashed; }
-#ui .taverna-home-footer { color: #bb9dcd; }
+#ui .taverna-home-footer { color: #c9b8e4; }
 @media (max-width: 700px) {
     #ui .taverna-welcome h1 { font-size: clamp(43px, 11vw, 62px); }
     #ui .taverna-welcome p { margin-top: 25px; }
@@ -369,7 +369,7 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 /* Each game's ink motif appears in the artwork and fades under the copy. */
 #ui .catalog-game-card { position: relative; isolation: isolate; }
 #ui .catalog-game-card::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--game-art) center bottom / cover; opacity: .23; mask-image: linear-gradient(transparent 25%, #0008 60%, #000); }
-#ui .catalog-game-card .catalog-game-art { background: linear-gradient(#1b102533, #1b102566), var(--game-art) center / cover; }
+#ui .catalog-game-card .catalog-game-art { background: linear-gradient(#0e0f1233, #0e0f1266), var(--game-art) center / cover; }
 #ui .catalog-game-art::before, #ui .catalog-game-art::after { opacity: .2; }
 #ui [data-launch-game="briscola"] { --game-art: url("/assets/games/briscola.svg"); }
 #ui [data-launch-game="scopa"] { --game-art: url("/assets/games/scopa.svg"); }
@@ -386,13 +386,13 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 
 /* Dice controls must retain readable contrast in both day and night map modes. */
 #ui .dnd-dice-bar :is(#diceFormula, #rollMode, #rollMod) {
-    background: #24172f !important; color: #f6e9ff !important;
-    -webkit-text-fill-color: #f6e9ff; color-scheme: dark;
-    border-color: #87639b !important; min-height: 40px;
+    background: #191b20 !important; color: #f7f5ef !important;
+    -webkit-text-fill-color: #f7f5ef; color-scheme: dark;
+    border-color: #4b2a7b !important; min-height: 40px;
 }
-#ui .dnd-dice-bar select option { background: #24172f; color: #f6e9ff; }
-#ui .dnd-dice-bar input::placeholder { color: #d1b8df; opacity: 1; }
-#ui .dnd-dice-bar :is(input,select):focus-visible { outline: 2px solid #b884da; outline-offset: 2px; }
+#ui .dnd-dice-bar select option { background: #191b20; color: #f7f5ef; }
+#ui .dnd-dice-bar input::placeholder { color: #c9b8e4; opacity: 1; }
+#ui .dnd-dice-bar :is(input,select):focus-visible { outline: 2px solid #c9b8e4; outline-offset: 2px; }
 #ui .dnd-roll-cube[data-die] {
     width: 88px; height: 88px; clip-path: none; border-radius: 0;
     overflow: visible; background: transparent; filter: none; animation: none;
@@ -400,7 +400,7 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
 }
 #ui .dnd-roll-cube canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 #ui .dnd-roll-cube .dnd-die-facet, #ui .dnd-roll-cube::before { display: none; }
-#ui .dnd-roll-cube > strong { color: #fff3dd; text-shadow: 0 2px 4px #170b24; transform: none; }
+#ui .dnd-roll-cube > strong { color: #ffdc85; text-shadow: 0 2px 4px #0e0f12; transform: none; }
 #ui .dnd-roll-display.is-rolling .dnd-roll-cube > strong { visibility: hidden; }
 #ui .dnd-roll-display.is-rolling .dnd-roll-shadow { animation: none; }
 
@@ -411,6 +411,6 @@ html[data-theme="amethyst"] body { background: var(--crystal-page); }
         background: transparent !important; border: 0; box-shadow: none;
         backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
     }
-    #ui .taverna-home .taverna-scene-scrim { background: linear-gradient(180deg,transparent 25%,#08070955 50%,#080709e6 100%); }
+    #ui .taverna-home .taverna-scene-scrim { background: linear-gradient(180deg,transparent 25%,#0e0f1255 50%,#0e0f12e6 100%); }
     #ui .taverna-home .scene-description { color: #f2ebdf; text-shadow: 0 1px 3px #000; }
 }
