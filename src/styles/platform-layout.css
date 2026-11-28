@@ -116,23 +116,23 @@ ritorno restano dov'erano. */
 }
 
 /* 8. Testo corrente giustificato sui schermi larghi: la colonna resta piena
-su entrambi i lati. Serve !important perché global.css ancora il centro a
-tutti gli elementi; le schede strette restano centrate, dove giustificare
-aprirebbe buchi fra le parole. */
+su entrambi i lati. Le schede strette restano centrate, dove giustificare
+aprirebbe buchi fra le parole. Nessun !important: la specificità di queste
+regole basta rispetto ai default di global.css. */
 @media (min-width: 760px) {
     html body #ui #app :is(.entry-page, .community-page, .legal-page, .magic-page) :is(p, li, dd) {
-        text-align: justify !important;
+        text-align: justify;
         hyphens: auto;
     }
 
     html body #ui #app :is(.community-panel, .mv-card, .mv-import, .community-toolbar, .mv-panel-heading, [role="status"]) :is(p, li) {
-        text-align: center !important;
+        text-align: center;
         hyphens: manual;
     }
 
     /* L'intestazione di pagina resta centrata su un asse solo. */
     html body #ui #app :is(.entry-page, .community-page, .legal-page, .magic-page) > header :is(p, li, dd) {
-        text-align: center !important;
+        text-align: center;
         hyphens: manual;
     }
 }
