@@ -43,7 +43,7 @@
    schermo pieno, che si dimensionano su --viewport-height e --visual-viewport-height,
    scendono dello stesso valore. Così footer, barre comandi e ultime righe restano
    sopra il banner. */
-body.tv-consent-open #ui #app {
+html body.tv-consent-open #ui #app {
   flex: 0 0 auto;
   height: calc(100dvh - var(--tv-consent-space, 0px));
   /* Il distacco in fondo lo dà il banner: senza questa riga lo scorrimento
@@ -54,6 +54,9 @@ body.tv-consent-open #ui #app {
    Con il banner aperto la pagina resta alta quanto lo schermo e scorre dentro #app,
    invece di schiacciare la mano e ritagliare le carte. */
 body.tv-consent-open .magic-play { min-height: 100dvh; }
+/* `html` prima di `body` batte per specificità i giochi che bloccano #app a 100dvh
+   con la stessa forza (html.scippo-shell #ui #app): qui conta la specificità, non
+   l'ordine di caricamento dei CSS dei giochi. */
 
 body.tv-consent-open {
   --viewport-height: calc(100dvh - var(--tv-consent-space, 0px));
