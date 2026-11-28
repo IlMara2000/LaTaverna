@@ -250,8 +250,28 @@ body.tv-consent-open {
 }
 .tv-consent-modal__note a { color: var(--tv-consent-accent); }
 
+/* Telefono in verticale: stesse regole del formato orizzontale, ma in colonna perché
+   a 390px il testo e i tre pulsanti non stanno sulla stessa riga. Il banner scende da
+   288px a ~130px: il testo resta leggibile su due righe e il resto è nella pagina
+   Cookie. Il link nel paragrafo sparisce perché è la stessa azione del pulsante
+   "Preferenze", e da solo resterebbe un elemento focalizzabile dentro il testo
+   troncato. */
 @media (max-width: 560px) {
-  .tv-consent { flex-direction: column; align-items: stretch; }
-  .tv-consent__actions { justify-content: stretch; }
-  .tv-consent__actions .tv-btn { flex: 1 1 auto; }
+  .tv-consent {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .tv-consent__text h2 { margin: 0 0 2px; font-size: 14px; }
+  .tv-consent__text p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  .tv-consent__link { display: none; }
+  .tv-consent__actions { justify-content: stretch; flex-wrap: nowrap; gap: 6px; }
+  .tv-consent__actions .tv-btn { flex: 1 1 auto; min-height: 36px; padding: 6px 8px; font-size: 12.5px; }
 }
