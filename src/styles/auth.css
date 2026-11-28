@@ -11,7 +11,7 @@ html[data-theme="amethyst"] #app:has(.auth-page) { padding: 0; }
 #ui .auth-logo { display: block; width: 250px; height: auto; max-width: 100%; align-self: center; margin: -32px auto -14px; filter: none; animation: none; }
 #ui .auth-intro { margin: 0 0 28px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; text-align: center; }
 #ui .auth-form { display: flex; flex-direction: column; text-align: left; gap: 9px; }
-#ui .auth-form :is(label, input) { text-align: left !important; }
+#ui .auth-form :is(label, input) { text-align: left; }
 #ui .auth-form label { font-size: 12px; font-weight: 500; color: #dccbe9; }
 #ui .auth-form label:not(:first-child) { margin-top: 9px; }
 #ui .auth-form .auth-input { width: 100%; min-height: 48px; margin: 0; padding: 13px 16px; font-size: 16px; box-sizing: border-box; background: #1d142b !important; border: 1px solid #a280be45; box-shadow: none; border-radius: 12px !important; }

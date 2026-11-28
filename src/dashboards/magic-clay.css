@@ -490,7 +490,7 @@ body:has(#ui .magic-page), body:has(#ui .card-counter) { background: var(--magic
 #ui .magic-page .magic-topbar :is(.magic-back,.magic-page-tools) { margin: 0; }
 #ui .magic-page .magic-topbar .app-back-button { background: none !important; border: 0 !important; box-shadow: none !important; padding: 8px 0; }
 #ui .magic-page .magic-heading { display: block; }
-#ui .magic-page .magic-heading :is(h1,p) { text-align: left !important; }
+#ui .magic-page .magic-heading :is(h1,p) { text-align: left; }
 #ui .magic-page .magic-heading h1 { margin: 0; }
 #ui .magic-page .magic-heading p { margin: 6px 0 0; }
 #ui .magic-page .magic-owned-card { display: block; }

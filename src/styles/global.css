@@ -5257,7 +5257,7 @@ platform-layout.css per centratura di pagina e giustificazione). */
        display: grid;
        gap: 3px;
        justify-items: start;
-       text-align: left !important;
+       text-align: left;
    }
 
    .tictactoe-mode-copy strong {
@@ -5267,7 +5267,7 @@ platform-layout.css per centratura di pagina e giustificazione). */
        letter-spacing: 1px;
        text-transform: uppercase;
        line-height: 1;
-       text-align: left !important;
+       text-align: left;
    }
 
    .tictactoe-mode-copy small {
@@ -5276,7 +5276,7 @@ platform-layout.css per centratura di pagina e giustificazione). */
        font-weight: 800;
        letter-spacing: 0.6px;
        text-transform: uppercase;
-       text-align: left !important;
+       text-align: left;
    }
 
    .tictactoe-size-picker {
@@ -5320,7 +5320,7 @@ platform-layout.css per centratura di pagina e giustificazione). */
        font-weight: 800 !important;
        line-height: 1.35;
        letter-spacing: 0.8px !important;
-       text-align: center !important;
+       text-align: center;
        text-transform: uppercase;
    }
 
@@ -7216,7 +7216,7 @@ platform-layout.css per centratura di pagina e giustificazione). */
 
 #ui .manual-library,
 #ui .manual-library * {
-    text-align: left !important;
+    text-align: left;
 }
 
 .manual-library {
@@ -8687,7 +8687,7 @@ body.manual-page-modal-open .floating-trigger {
 }
 
 .dnd-tabs button {
-    text-align: center !important;
+    text-align: center;
 }
 
 .taverna-scene-stage {

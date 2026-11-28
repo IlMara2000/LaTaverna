@@ -69,8 +69,8 @@
 @media (prefers-reduced-motion: reduce) {#ui #app .entry-page.oracle-console .oracle-badge .oracle-puppet {animation:none}}
 
 /* La base dell'app centra ogni testo: qui la schermata resta allineata a sinistra. */
-#ui #app .entry-page.oracle-console :is(h1,p,span,label,div,article,textarea,input,button,small) {text-align:left!important}
-#ui #app .entry-page.oracle-console .oracle-bar-title {text-align:center!important}
+#ui #app .entry-page.oracle-console :is(h1,p,span,label,div,article,textarea,input,button,small) {text-align: left}
+#ui #app .entry-page.oracle-console .oracle-bar-title {text-align: center}
 
 /* Conversazione. */
 #ui .oracle-console .oracle-chat {display:flex;flex:1 1 auto;flex-direction:column;gap:16px;min-height:180px;padding:6px 2px 12px;overflow-y:auto;text-align:left}

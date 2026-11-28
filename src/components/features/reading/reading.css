@@ -6,7 +6,7 @@
     padding: 24px 16px 50px;
     color: #f7f5ef;
 }
-#app .reading-page *, #app .reading-dialog * { text-align: left !important; }
+/* Allineamento del testo: lo stabilisce platform-layout.css. */
 .reading-page button, .reading-dialog button { font: inherit; cursor: pointer; }
 .reading-page button:disabled, .reading-dialog button:disabled { opacity: .45; cursor: wait; }
 .reading-page [hidden], .reading-dialog [hidden] { display: none !important; }
@@ -44,7 +44,7 @@
 .reading-book-row { display: flex; gap: 18px; align-items: center; padding: 22px 0; border-top: 1px solid var(--reading-line); }
 .reading-spine { width: 49px; height: 65px; flex-shrink: 0; padding: 12px 10px 7px; border-radius: 3px 6px 6px 3px; border: 1px solid #4b2a7b; border-left: 4px solid #4b2a7b; color: #c9b8e4; background: linear-gradient(135deg, #191b20, #0e0f12); }
 .reading-spine svg { height: 24px; }
-#app .reading-spine small { display: block; font-size: 7px; letter-spacing: .15em; margin-top: 6px; text-align: center !important; }
+#app .reading-spine small { display: block; font-size: 7px; letter-spacing: .15em; margin-top: 6px; text-align: center; }
 .reading-book-info { flex: 1; min-width: 0; }
 .reading-book-info h3 { font-size: 15px; font-weight: 500; margin: 0 0 7px; overflow-wrap: anywhere; line-height: 1.5; }
 .reading-book-info p { font-size: 11px; line-height: 1.6; color: var(--reading-muted); margin: 0 0 8px; overflow-wrap: anywhere; }
@@ -52,11 +52,11 @@
 .reading-visibility { font-size: 9px; color: #c9b8e4; }
 .reading-visibility.is-public { color: #a7cdb9; }
 .reading-book-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; max-width: 320px; }
-#app .reading-star { height: 42px; width: 42px; font-size: 25px !important; text-align: center !important; background: none; border: 1px solid var(--reading-line); border-radius: 10px; color: #c9b8e4; }
+#app .reading-star { height: 42px; width: 42px; font-size: 25px !important; text-align: center; background: none; border: 1px solid var(--reading-line); border-radius: 10px; color: #c9b8e4; }
 .reading-star.is-favorite { color: #ffc93c; }
 .reading-text-button { border: 0; background: none; color: #c9b8e4; padding: 9px; font-size: 10px !important; }
-.reading-empty { padding: 45px 12px; text-align: center !important; color: var(--reading-muted); }
-#app .reading-empty, #app .reading-empty * { text-align: center !important; }
+.reading-empty { padding: 45px 12px; text-align: center; color: var(--reading-muted); }
+#app .reading-empty, #app .reading-empty * { text-align: center; }
 .reading-empty h3 { font-size: 17px; font-weight: 500; color: #e4daf3; }
 .reading-empty p { font-size: 12px; max-width: 450px; margin: 12px auto 22px; line-height: 1.8; }
 .reading-empty-icon { display: block; width: 48px; height: 48px; margin: 0 auto 22px; color: #4b2a7b; }

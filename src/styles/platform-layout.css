@@ -110,6 +110,14 @@ ritorno restano dov'erano. */
     max-width: 66ch;
 }
 
+/* Intestazioni composte (area legale, libreria): titolo e occhiello stanno
+sullo stesso asse anche quando non sono figli diretti di <header>. */
+#ui #app :is(.legal-hero, .reading-heading) :is(h1, h2, .legal-eyebrow, .reading-eyebrow, p) {
+    width: 100%;
+    margin-inline: auto;
+    text-align: center;
+}
+
 /* Le barre di comandi seguono lo stesso asse delle intestazioni. */
 #ui #app :is(.community-toolbar, .mv-platform-tools, .mv-import-actions) {
     justify-content: center;

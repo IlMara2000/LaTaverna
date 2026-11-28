@@ -15,7 +15,7 @@
     display: block; margin: 0 0 28px !important; padding: 0 0 28px;
     border-radius: 0; overflow: visible; box-shadow: none;
     border: 0; border-bottom: 1px solid #e4daf333;
-    background: none; text-align: left !important;
+    background: none; text-align: left;
 }
 #ui #app .entry-page .entry-back-row { margin: 0; }
 #ui #app .entry-page :is(.crystal-eyebrow, .reading-eyebrow) {

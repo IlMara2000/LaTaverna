@@ -160,8 +160,8 @@ html[data-theme="amethyst"] .taverna-home-ambient { display: none; }
 #ui .taverna-home-header::after { display: none; }
 #ui .taverna-wordmark { display: flex; align-items: center; gap: 12px; }
 #ui .taverna-home-header img { display: block; width: 38px; height: 38px; }
-#ui .taverna-wordmark > span { text-align: left !important; font-size: 14px; font-weight: 800; letter-spacing: .17em; }
-#ui .taverna-wordmark small { display: block; margin-top: 6px; text-align: left !important; font-size: 7px; font-weight: 500; letter-spacing: .21em; color: #c9b8e4; }
+#ui .taverna-wordmark > span { text-align: left; font-size: 14px; font-weight: 800; letter-spacing: .17em; }
+#ui .taverna-wordmark small { display: block; margin-top: 6px; text-align: left; font-size: 7px; font-weight: 500; letter-spacing: .21em; color: #c9b8e4; }
 #ui .taverna-home-badge { display: inline-flex; align-items: center; gap: 9px; padding: 10px 15px; border: 1px solid var(--glass-border); border-radius: 999px; background: rgb(201 184 228 / 5%); color: #e4daf3; font-size: 10px; }
 #ui .taverna-home-badge > span { color: #e4daf3; font-size: 17px; }
 #ui .taverna-home-main { width: min(100%, 1200px); }
@@ -181,9 +181,9 @@ html[data-theme="amethyst"] .taverna-home-ambient { display: none; }
 #ui .scene-number { position: absolute; top: 20px; left: 20px; z-index: 3; padding: 8px 11px; border: 1px solid rgb(228 218 243 / 26%); border-radius: 999px; background: rgb(14 15 18 / 54%); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 8px; letter-spacing: .12em; color: #e4daf3; }
 #ui .taverna-scene-caption { position: absolute; inset: auto 13px 13px; z-index: 3; display: flex; flex-direction: column; align-items: flex-start; padding: 20px; border: 1px solid rgb(228 218 243 / 17%); border-radius: 22px; background: linear-gradient(130deg, rgb(201 184 228 / 13%), rgb(33 22 48 / 25%)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 1px rgb(247 245 239 / 9%); }
 #ui .scene-symbol { display: block; font-size: 25px; line-height: 1; color: #e4daf3; margin-bottom: 12px; }
-#ui .taverna-scene-title { position: static; display: block; text-align: left !important; font-size: clamp(1.08rem, 1.6vw, 1.5rem); font-weight: 600; letter-spacing: -.04em !important; line-height: 1.2; text-transform: none; text-shadow: none; transform: none; }
+#ui .taverna-scene-title { position: static; display: block; text-align: left; font-size: clamp(1.08rem, 1.6vw, 1.5rem); font-weight: 600; letter-spacing: -.04em !important; line-height: 1.2; text-transform: none; text-shadow: none; transform: none; }
 #ui .taverna-scene-title::after { display: none; }
-#ui .scene-description { color: #e4daf3; text-align: left !important; font-size: 10px; line-height: 1.7; margin-top: 8px; }
+#ui .scene-description { color: #e4daf3; text-align: left; font-size: 10px; line-height: 1.7; margin-top: 8px; }
 #ui .scene-link { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 18px; padding-top: 13px; border-top: 1px solid rgb(228 218 243 / 15%); font-size: 9px; color: #e4daf3; }
 #ui .scene-link b { font-size: 17px; font-weight: 400; }
 #ui .taverna-home-dock, #ui .taverna-home-dock:has(.is-resume) { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: 100%; padding: 9px; margin-top: 20px; border: 1px solid var(--glass-border); border-radius: 25px; background: var(--crystal-glass); box-shadow: var(--crystal-inset); animation: none; }
@@ -248,11 +248,11 @@ html[data-theme="amethyst"] .game-turn-indicator.white-turn { color: #e4daf3; bo
 #ui #minigame-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 #ui .minigames-lobby-wrapper .minigame-multiplayer-panel { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px 20px; padding: 18px; }
 #ui .minigames-lobby-wrapper .minigame-multiplayer-status { grid-column: 1 / -1; margin: 0; }
-#ui .minigames-lobby-wrapper .lobby-section > h2 { margin: 30px 0 16px !important; text-align: left !important; font-size: 10px !important; font-weight: 600; color: #e4daf3; opacity: 1 !important; }
+#ui .minigames-lobby-wrapper .lobby-section > h2 { margin: 30px 0 16px !important; text-align: left; font-size: 10px !important; font-weight: 600; color: #e4daf3; opacity: 1 !important; }
 #ui .minigames-lobby-wrapper .grid-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; margin-top: 0; }
 #ui .catalog-game-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 25px; min-height: 174px; padding: 22px; overflow: hidden; }
 #ui .catalog-game-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 16px; border: 1px solid rgb(228 218 243 / 22%); background: linear-gradient(135deg, rgb(201 184 228 / 15%), rgb(75 42 123 / 8%)); color: #e4daf3; font-size: 28px; font-weight: 500; }
-#ui .catalog-game-copy, #ui .catalog-game-copy * { text-align: left !important; }
+#ui .catalog-game-copy, #ui .catalog-game-copy * { text-align: left; }
 #ui .catalog-game-copy h3 { margin: 0 0 6px; color: #f7f5ef; font-size: 14px; font-weight: 600; text-transform: none; letter-spacing: -.025em; }
 #ui .catalog-game-copy small { font-size: 9px; font-weight: 500; color: #c9b8e4; }
 #ui .catalog-game-arrow { position: absolute; top: 24px; right: 22px; color: #c9b8e4; font-size: 19px; }
