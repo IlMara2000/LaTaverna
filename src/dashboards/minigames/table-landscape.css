@@ -333,6 +333,20 @@ html.table-compact .blocks-board-shell {
     grid-template-rows: minmax(0, 1fr);
 }
 html.table-compact :is(.blocks-board-topline, .blocks-objective) { display: none !important; }
+/* Il campo è vincolato in altezza e la barra in alto costava 45px: qui la
+   barra si azzera in altezza e i suoi pulsanti escono verso il basso ai due
+   lati, sopra le colonne HUD (146px di campo in mezzo, 173..341 e 504..672 le
+   colonne: non si sovrappongono). Il marchio centrale finirebbe proprio sopra
+   la scacchiera, quindi si toglie. */
+html.table-compact .blocks-topbar {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    align-items: start !important;
+    grid-template-columns: 1fr 1fr !important;
+}
+html.table-compact .blocks-brand { display: none !important; }
+
 html.table-compact #blocks-board {
     width: auto !important;
     height: 100% !important;
