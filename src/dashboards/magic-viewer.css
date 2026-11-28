@@ -19,6 +19,9 @@
 #ui .mv-import p { margin:0; color:#74697c; font-size:13px; }
 #ui .mv-file { display:inline-flex; flex:none; align-items:center; justify-content:center; min-height:42px; padding:0 17px; border:1px solid #c7a8df; border-radius:13px; color:#512d70; background:linear-gradient(145deg,#fff,#f4eafb); box-shadow:0 3px 0 #dfd1e9; cursor:pointer; font-weight:700; }
 #ui .mv-file input { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+#ui .mv-file { gap:7px; }
+#ui .mv-file svg { width:18px; height:18px; flex:none; }
+#ui .mv-import-photos { display:flex; gap:10px; min-width:0; }
 #ui .mv-search { display:flex; align-items:center; gap:10px; min-height:46px; margin:12px 0 20px; padding:0 14px; border:1px solid #e2d8e9; border-radius:14px; color:#795a91; background:#fff; box-shadow:inset 2px 2px 5px #38204b0b,inset -2px -2px 5px #fff; }
 #ui .mv-search>span { font-size:22px; }
 #ui .mv-search input { width:100%; min-width:0; border:0!important; outline:0; color:#362641!important; background:transparent!important; box-shadow:none!important; }
@@ -56,7 +59,9 @@
 #ui .mv-review { margin:14px 0 22px; padding:16px; border:1px solid #e4d6ec; border-radius:17px; background:#f8f2fb; }
 #ui .mv-review h3 { margin:0 0 5px; color:#422957; }
 #ui .mv-review p { color:#796b81; font-size:13px; }
-#ui .mv-review-row { padding:8px 0; border-top:1px solid #e8deed; }
+#ui .mv-review-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; padding:8px 0; border-top:1px solid #e8deed; }
+#ui .mv-review-ignore { padding:7px 11px; border:1px solid #e0d4e8; border-radius:10px; color:#6b5577; font-size:12px; background:#fff; cursor:pointer; }
+#ui .mv-review-ignore:hover { border-color:#bf9ad7; color:#422957; }
 #ui .mv-review-row label { display:grid; grid-template-columns:minmax(100px,1fr) minmax(170px,1.3fr); gap:8px; align-items:center; color:#463351; font-size:13px; }
 #ui .mv-review-row small { color:#80738a; }
 #ui .mv-review-row select, #ui .mv-export select { min-height:38px; padding:0 10px; border:1px solid #e0d4e8; border-radius:10px; color:#44314f; background:#fff; }
@@ -107,6 +112,8 @@
  #ui .mv-deck-filter { flex:1 1 auto; max-width:none; }
  #ui .mv-import { width:100%; }
  #ui .mv-file { width:100%; }
+ #ui .mv-import-photos { width:100%; }
+ #ui .mv-import-photos .mv-file { flex:1 1 0; width:auto; }
  #ui .mv-tabs button { flex:1; justify-content:center; padding-inline:6px; font-size:13px; }
  #ui .mv-grid { grid-template-columns:repeat(auto-fill,minmax(125px,1fr)); gap:10px; }
  #ui .mv-review-row label { grid-template-columns:1fr; }
@@ -197,4 +204,25 @@
  #ui .mv-modal-effect { font-size:16px; line-height:1.6; }
  #ui .mv-selection-tools { gap:8px; padding:10px; }
  #ui .mv-selection-tools button { flex:1 1 auto; padding-inline:10px; font-size:13px; }
+}
+
+/* ── fotocamera della collezione ─────────────────────────────────────────
+   Si legge solo la riga del nome dentro il riquadro: nessuna foto viene
+   salvata. Le lettere lette restano a schermo come un codice che si completa. */
+#ui .mv-import-actions { display:flex; flex:none; gap:10px; align-items:center; }
+#ui .mv-camera { position:fixed; inset:0; z-index:2200; display:grid; place-items:center; padding:16px; background:#0b0712d9; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+#ui .mv-camera__box { display:grid; gap:10px; width:min(100%,560px); max-height:100%; overflow:auto; padding:14px; border:1px solid #ffffff2e; border-radius:20px; background:#1b1226; color:#f4ecff; box-shadow:0 18px 44px #000000a6; }
+#ui .mv-camera__stage { position:relative; overflow:hidden; aspect-ratio:4/3; border-radius:14px; background:#000; }
+#ui .mv-camera__video { display:block; width:100%; height:100%; object-fit:cover; }
+#ui .mv-camera__guide { position:absolute; inset-inline:10%; top:34%; height:16%; border:2px solid #ffd682; border-radius:10px; box-shadow:0 0 0 100vmax #00000066; }
+#ui .mv-camera__guide span { display:inline-block; padding:2px 6px; border-radius:0 0 6px 0; background:#00000099; color:#ffd682; font-size:11px; letter-spacing:.06em; text-transform:uppercase; }
+#ui .mv-camera__letters { position:absolute; inset-inline:8px; bottom:8px; min-height:28px; margin:0; padding:6px 8px; border-radius:8px; background:#000000a8; color:#b8ffd0; font-family:ui-monospace,SFMono-Regular,monospace; font-size:14px; letter-spacing:.14em; text-transform:uppercase; }
+#ui .mv-camera__hint { margin:0; min-height:20px; color:#d8cae5; font-size:13px; }
+#ui .mv-camera__actions { display:flex; flex-wrap:wrap; gap:8px; }
+#ui .mv-camera__actions .mv-button, #ui .mv-camera__actions .mv-text-button { flex:1 1 auto; min-height:44px; }
+@media(max-width:650px) {
+  #ui .mv-camera { padding:8px; }
+  #ui .mv-camera__box { padding:10px; }
+  #ui .mv-camera__stage { aspect-ratio:3/4; }
+  #ui .mv-import-actions { width:100%; flex-direction:column; }
 }

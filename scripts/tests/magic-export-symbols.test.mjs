@@ -18,7 +18,22 @@ test('wantlist supports all formats, names and valid quantities without network 
 test('wantlist exports only supplied rows; empty or unsupported export is rejected', () => {
     assert.equal(buildWantlistExport(cards.slice(1)).count, 1);
     assert.throws(() => buildWantlistExport([]), /Nessuna carta/);
-    assert.throws(() => buildWantlistExport(cards, { format: 'pdf' }), /non valido/);
+    assert.throws(() => buildWantlistExport(cards, { format: 'doc' }), /non valido/);
+});
+test('pdf wantlist is a valid one-card-per-line English list', () => {
+    const file = buildWantlistExport(cards, { language: 'en', format: 'pdf' });
+    assert.equal(file.mime, 'application/pdf');
+    assert.equal(file.filename, 'wantlist-magic-en.pdf');
+    const text = Buffer.from(file.content).toString('latin1');
+    assert.ok(text.startsWith('%PDF-1.4'));
+    assert.ok(text.trimEnd().endsWith('%%EOF'));
+    assert.ok(text.includes('(4 Lightning Bolt) Tj'));
+    assert.ok(!text.includes('Fulmine'));
+    // xref: startxref points at the table and every entry at its object.
+    const start = Number(text.match(/startxref\n(\d+)/)[1]);
+    assert.equal(text.slice(start, start + 4), 'xref');
+    const first = Number(text.match(/0000000000 65535 f \n(\d{10}) 00000 n/)[1]);
+    assert.equal(first, text.indexOf('1 0 obj'));
 });
 test('CSV preserves punctuation and accents without executing formulas', () => {
     const file = buildWantlistExport([{ name: '=HYPERLINK("x")', quantity: 2 }, { name: 'Æther, "Fuoco"\nSecondo', quantity: 0 }], { format: 'csv' });

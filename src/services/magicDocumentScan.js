@@ -7,6 +7,22 @@ GlobalWorkerOptions.workerSrc = pdfWorker;
 let scanQueue = Promise.resolve();
 let nextScanRequestAt = 0;
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Worker OCR del progetto: asset serviti dal nostro dominio (nessun CDN, CSP
+ * rispettata) e pagina di testo già impostata. `pageseg` 3 = pagina intera,
+ * 7 = una riga sola (la riga del nome in una foto). Chi lo crea lo termina.
+ */
+export async function creaWorkerOcr(pageseg = 7) {
+    const worker = await createWorker('eng', 1, {
+        workerPath: '/ocr/worker.min.js',
+        corePath: '/ocr/tesseract-core-lstm.wasm.js',
+        langPath: '/ocr',
+        gzip: true
+    });
+    await worker.setParameters({ tessedit_pageseg_mode: String(pageseg) });
+    return worker;
+}
 const toCompressedJpeg = source => {
     let encoded = '';
     for (const [maxSide, quality] of [[1200, 0.62], [1050, 0.56], [900, 0.5], [760, 0.44]]) {
@@ -203,6 +219,67 @@ async function readDocx(file) {
     throw new Error('Nel DOCX non ho trovato il testo del documento.');
 }
 
+/* ── foto della collezione: solo il nome, tutto in locale ───────────────
+   La riga del nome è stampata più grande di tipo e testo: si prende la riga
+   più alta nella metà superiore della foto. Nessuna immagine lascia il
+   dispositivo e nessuna foto viene salvata: alla collezione arriva il nome. */
+const FOTO_LATO_MAX = 1600;
+
+const nomeDallaFoto = async (bitmap, worker) => {
+    const scala = Math.min(1, FOTO_LATO_MAX / Math.max(bitmap.width, bitmap.height));
+    const tela = document.createElement('canvas');
+    tela.width = Math.round(bitmap.width * scala);
+    tela.height = Math.round(bitmap.height * scala);
+    tela.getContext('2d').drawImage(bitmap, 0, 0, tela.width, tela.height);
+    bitmap.close();
+    const { data } = await worker.recognize(tela, {}, { blocks: true });
+    const righe = (data.blocks || []).flatMap(blocco => blocco.paragraphs || [])
+        .flatMap(paragrafo => paragrafo.lines || [])
+        .filter(riga => /[\p{L}]{3}/u.test(riga.text) && riga.bbox.y0 < tela.height * 0.5);
+    if (!righe.length) return '';
+    const corpoMax = Math.max(...righe.map(riga => riga.bbox.y1 - riga.bbox.y0));
+    const prima = righe
+        .filter(riga => riga.bbox.y1 - riga.bbox.y0 >= corpoMax * 0.7)
+        .sort((a, b) => a.bbox.y0 - b.bbox.y0)[0];
+    const nome = cleanOcrTitle(prima?.text);
+    return nome.length >= 3 && nome.length <= 100 && !isSectionHeading(nome) ? nome : '';
+};
+
+/**
+ * Foto di carte (una carta per foto) → nomi da cercare nel catalogo. Il lavoro
+ * resta sul dispositivo; `unreadable` conta le foto in cui il nome non si legge.
+ */
+export async function scanMagicCardPhotos(files, onProgress = () => {}) {
+    const worker = await creaWorkerOcr(3);
+    const letti = [];
+    let illeggibili = 0;
+    try {
+        for (const [indice, file] of files.entries()) {
+            onProgress(`Leggo la foto ${indice + 1} di ${files.length}…`);
+            try {
+                const nome = await nomeDallaFoto(await createImageBitmap(file), worker);
+                if (nome) letti.push(nome);
+                else illeggibili++;
+            } catch {
+                illeggibili++;
+            }
+        }
+    } finally {
+        await worker.terminate();
+    }
+    if (!letti.length) {
+        throw new Error(illeggibili
+            ? 'In nessuna foto ho letto il nome: inquadra la carta dritta, intera e ben illuminata.'
+            : 'Nessuna foto da leggere.');
+    }
+    const uniti = new Map();
+    for (const nome of letti) {
+        const chiave = nome.toLocaleLowerCase();
+        uniti.set(chiave, { name: nome, quantity: (uniti.get(chiave)?.quantity || 0) + 1 });
+    }
+    return { cards: [...uniti.values()], unreadable: illeggibili };
+}
+
 export async function scanMagicDocument(file, onProgress = () => {}) {
     if (file.name.toLowerCase().endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         const source = await readDocx(file);
@@ -240,14 +317,7 @@ export async function scanMagicDocument(file, onProgress = () => {}) {
         const all = [];
         let worker = null;
         try {
-            // Asset OCR serviti dal nostro dominio: nessun CDN esterno, quindi
-            // nessuna richiesta a terzi e compatibilità con la CSP.
-            worker = await createWorker('eng', 1, {
-                workerPath: '/ocr/worker.min.js',
-                corePath: '/ocr/tesseract-core-lstm.wasm.js',
-                langPath: '/ocr',
-                gzip: true
-            });
+            worker = await creaWorkerOcr(3);
             for (let pageNo = 1; pageNo <= pdf.numPages; pageNo++) {
                 onProgress(`Riconosco i nomi nella pagina ${pageNo} di ${pdf.numPages}…`);
                 const page = await pdf.getPage(pageNo), viewport = page.getViewport({ scale: 2 });

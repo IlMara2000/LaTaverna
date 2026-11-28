@@ -4,7 +4,7 @@ import { buildWantlistExport, downloadWantlist } from '../services/magicWantlist
 import {oracleHeaders} from '../services/oracleClient.js';
 import { rememberDestination, navigateTo } from '../services/appNavigation.js';
 import { updateSidebarContext } from '../components/layout/Sidebar.js';
-import { scanMagicDocument } from '../services/magicDocumentScan.js';
+import { creaWorkerOcr, scanMagicCardPhotos, scanMagicDocument } from '../services/magicDocumentScan.js';
 import { getMagicAccount, loadMagicLibrary, loadMagicShoppingSummary, loadPublicMagicShare, refreshMagicPrices, saveMagicLibrary } from '../services/magicLibrary.js';
 import { getPreference, setPreference } from '../services/userPreferences.js';
 import { unpricedCards } from '../services/magicShoppingList.js';
@@ -12,6 +12,8 @@ import { PRICE_AGE_MAX, PRICE_AGE_MIN, normalizePriceAge, resolvePriceAge } from
 import { MAGIC_DEMO_DECKS } from '../data/magicDemoDecks.js';
 import './magic-viewer.css';
 
+// Foto per volta dall'import in galleria: un mazzo intero sta largamente qui dentro.
+const MAX_FOTO = 110;
 const COLLECTION_KEY = 'taverna_magic_collection_v1';
 const DECKS_KEY = 'taverna_magic_decks_v1';
 const WANTLIST_KEY = 'taverna_magic_wantlist_v1';
@@ -129,6 +131,9 @@ export function showMagicDashboard(container, options = {}) {
     let priceCurrency = readPriceCurrency();
     let priceBusy = false;
     let priceCooldownUntil = 0, priceTicker = null, priceAgeSaveTimer = null;
+    // Chiusura della fotocamera (ferma lo stream e il worker OCR): serve al
+    // rientro dalla schermata, che non deve lasciare la fotocamera accesa.
+    let cameraStop = null;
     let cloudQueue = Promise.resolve(), searchResults = [], commanderSearchResults = [], deckFilter = '';
     const priceCooldownLeft = () => Math.max(0, Math.ceil((priceCooldownUntil - Date.now()) / 1000));
     const priceButtonLabel = () => {
@@ -484,10 +489,10 @@ export function showMagicDashboard(container, options = {}) {
           <p id="magic-viewer-notice" class="mv-notice" aria-live="polite">${esc(notice)}</p>
           ${tab === 'collezione' ? `<section class="mv-panel">
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">LA TUA RACCOLTA</span><h2>Collezione</h2><p>Apri una carta per leggere l’effetto. Il simbolo ◇ la aggiunge alla wantlist.</p></div><strong>${cards.reduce((sum,card)=>sum+(Number(card.quantity)||1),0)} carte</strong></div>
-            <div class="mv-import"><div><h3>Importa una lista</h3><p>Carica un file PDF, TXT o DOCX. I nomi vengono cercati nel catalogo ufficiale.</p></div><label class="mv-file">Scegli file<input id="mv-file" type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label></div>
+            <div class="mv-import"><div><h3>Aggiungi carte</h3><p>Carica una lista PDF, TXT o DOCX, fotografa una carta o prendi fino a ${MAX_FOTO} foto dalla galleria: si legge solo il nome.</p></div><div class="mv-import-actions"><label class="mv-file">Scegli file<input id="mv-file" type="file" accept=".pdf,.txt,.docx,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label><span class="mv-import-photos"><button type="button" class="mv-file" id="mv-camera" aria-label="Fotografa una carta e leggine il nome"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 8h2.6l1.5-2.3h7.8L17.4 8H20a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 20 19H4a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 4 8Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="13.4" r="3.3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>Fotocamera</button><label class="mv-file" id="mv-gallery"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 5.5h17v13h-17z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m5.5 16 4.2-4.6 3 3.2 2.4-2.5 4.4 3.9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="9.3" r="1.4" fill="currentColor"/></svg>Galleria<input id="mv-photos" type="file" accept="image/*" multiple></label></span></div></div>
             <label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra le carte per nome…" value="${esc(filter)}"></label>
             <label class="mv-hide-deck"><input id="mv-hide-deck-cards" type="checkbox" ${hideDeckCards ? 'checked' : ''}> <span>Nascondi le carte già in un mazzo</span><small>${hiddenByDecks ? `${hiddenByDecks} ${hiddenByDecks === 1 ? 'carta' : 'carte'} senza copie libere` : 'tutte le copie sono libere'}</small></label>
-            ${pending.length ? `<div class="mv-review"><h3>Controlla le carte trovate</h3><p>Verifica i nomi prima di salvarli; gli elementi in rosso non sono stati associati a una carta.</p>${pending.map((item,index)=>`<div class="mv-review-row"><label>${esc(item.name)} <small>×${item.quantity}</small><select data-resolve="${index}"><option value="">${item.card ? `Trovata: ${esc(item.card.name)}` : 'Scegli il risultato esatto'}</option>${(item.matches||[]).map(card=>`<option value="${esc(card.id)}">${esc(card.name)} · ${esc(card.set_name||card.set||'')}</option>`).join('')}</select></label></div>`).join('')}<div class="mv-actions"><button type="button" class="mv-button" id="mv-confirm-import" ${pending.some(item=>!item.card)?'disabled':''}>Aggiungi carte selezionate</button><button type="button" class="mv-button mv-soft" id="mv-cancel-import">Annulla</button></div></div>` : ''}
+            ${pending.length ? `<div class="mv-review"><h3>Controlla le carte trovate</h3><p>Verifica i nomi prima di salvarli; gli elementi in rosso non sono stati associati a una carta.</p>${pending.map((item,index)=>`<div class="mv-review-row"><label>${esc(item.name)} <small>×${item.quantity}</small><select data-resolve="${index}"><option value="">${item.card ? `Trovata: ${esc(item.card.name)}` : 'Scegli il risultato esatto'}</option>${(item.matches||[]).map(card=>`<option value="${esc(card.id)}">${esc(card.name)} · ${esc(card.set_name||card.set||'')}</option>`).join('')}</select></label><button type="button" class="mv-review-ignore" data-ignore="${index}">Ignora</button></div>`).join('')}<div class="mv-actions"><button type="button" class="mv-button" id="mv-confirm-import" ${pending.some(item=>!item.card)?'disabled':''}>Aggiungi carte selezionate</button><button type="button" class="mv-button mv-soft" id="mv-cancel-import">Annulla</button></div></div>` : ''}
             <div class="mv-selection-tools" aria-label="Gestisci collezione">
               <button type="button" class="mv-button" id="mv-delete-cards" ${selected.size ? '' : 'disabled'}>Cancella${selected.size ? ` (${selected.size})` : ''}</button>
               <button type="button" class="mv-button mv-soft" id="mv-select-mode">${selecting ? 'Fine selezione' : 'Seleziona carte'}</button>
@@ -499,7 +504,7 @@ export function showMagicDashboard(container, options = {}) {
           </section>` : tab === 'mazzi' ? `<section class="mv-panel">
             <div class="mv-panel-heading"><div><span class="mv-eyebrow">ORGANIZZAZIONE</span><h2>I tuoi mazzi</h2><p>Crea un mazzo dalle carte della collezione e gestiscine le copie.</p></div><div class="mv-panel-actions mv-deck-actions"><button type="button" class="mv-button" id="mv-new-deck">Nuovo mazzo</button><label class="mv-deck-filter"><span aria-hidden="true">⌕</span><input id="mv-deck-filter" type="search" value="${esc(deckFilter)}" placeholder="Cerca nel mazzo…" aria-label="Cerca una carta nel mazzo selezionato" autocomplete="off"></label></div></div>
             ${decks.length ? `<div class="mv-deck-layout"><aside class="mv-deck-list">${decks.map(deck=>`<button type="button" data-select-deck="${esc(deck.id)}" aria-current="${deck.id===activeDeck?.id}"><strong>${esc(deck.name)}</strong><small>${deck.cards.reduce((sum,item)=>sum+(Number(item.quantity)||1),0)} carte</small></button>`).join('')}</aside><div class="mv-deck-content"><div class="mv-deck-tools"><h3>${esc(activeDeck?.name||'')}</h3>${playControl}<button class="mv-text-button" id="mv-print-deck" type="button">Stampa proxy</button><button class="mv-text-button" id="mv-rename-deck" type="button">Rinomina</button><button class="mv-text-button" id="mv-delete-deck" type="button">Elimina</button></div>${commanderAlert}${commanderSection}<label class="mv-search"><span>⌕</span><input id="mv-deck-search" type="search" placeholder="Aggiungi una carta…"></label><div id="mv-search-results" class="mv-search-results">${searchResults.map(card=>`<button type="button" data-add-deck-card="${esc(card.id)}"><img src="${esc(face(card))}" alt=""><span>${esc(card.name)}</span><small>+ Aggiungi</small></button>`).join('')}</div><p class="mv-empty" id="mv-deck-filter-empty" ${deckFilterQuery && deckCards.length && !deckCards.some(deckMatchesFilter) ? '' : 'hidden'}>Nessuna carta di questo mazzo corrisponde alla ricerca.</p><div class="mv-deck-groups" id="mv-deck-groups">${[['Creature','Creature'],['Instant','Istantanei'],['Sorcery','Stregonerie'],['Artifact','Artefatti'],['Enchantment','Incantesimi'],['Planeswalker','Planeswalker'],['Battle','Battaglie'],['Land','Terre'],['Other','Altre carte']].map(([type,title])=>{const group=deckCards.filter(deckMatchesFilter).filter(c=>{const primary=['Land','Creature','Planeswalker','Battle','Artifact','Enchantment','Instant','Sorcery'].find(t=>c.typeLine?.includes(t))||'Other';return primary===type;});return group.length?`<section class="mv-deck-group"><h4>${title} <span>${group.reduce((sum,c)=>sum+c.quantity,0)}</span></h4><div class="mv-grid">${group.map(card=>`<div class="mv-deck-card" data-card-name="${esc(card.name)}">${cardTile(card,'deck')}<div class="mv-quantity-tools"><button data-deck-quantity="${esc(card.id)}" data-delta="-1" aria-label="Riduci copie di ${esc(card.name)}">−</button><span>${card.quantity}</span><button data-deck-quantity="${esc(card.id)}" data-delta="1" aria-label="Aumenta copie di ${esc(card.name)}">+</button></div></div>`).join('')}</div></section>`:'';}).join('')||(deckCards.length ? '' : '<p class="mv-empty">Questo mazzo è vuoto. Cerca una carta qui sopra.</p>')}</div></div></div>` : '<p class="mv-empty">Non hai ancora creato mazzi.</p>'}
-          </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div>${priceNotice()}<div class="mv-price-tools"><label class="mv-price-age">Avviso prezzi vecchi<input id="mv-price-age" type="number" inputmode="numeric" min="${PRICE_AGE_MIN}" max="${PRICE_AGE_MAX}" step="1" value="${priceMaxAgeDays}" aria-describedby="mv-price-age-hint">giorni <small id="mv-price-age-hint">0 = mai</small></label><label class="mv-price-age">Valuta dei totali<select id="mv-price-currency">${PRICE_CURRENCY_OPTIONS.map(code=>`<option value="${code}" ${code===priceCurrency?'selected':''}>${PRICE_CURRENCY_LABEL[code]}</option>`).join('')}</select></label><button type="button" class="mv-button mv-soft" id="mv-price-refresh" ${priceBusy || priceCooldownLeft() > 0 ? 'disabled' : ''}>${priceButtonLabel()}</button></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
+          </section>` : `<section class="mv-panel"><div class="mv-panel-heading"><div><span class="mv-eyebrow">DA CERCARE</span><h2>Wantlist</h2><p>Le carte che vuoi trovare, pronte da esportare in italiano o inglese.</p></div><strong>${wantlist.length} carte</strong></div>${priceNotice()}<div class="mv-price-tools"><label class="mv-price-age">Avviso prezzi vecchi<input id="mv-price-age" type="number" inputmode="numeric" min="${PRICE_AGE_MIN}" max="${PRICE_AGE_MAX}" step="1" value="${priceMaxAgeDays}" aria-describedby="mv-price-age-hint">giorni <small id="mv-price-age-hint">0 = mai</small></label><label class="mv-price-age">Valuta dei totali<select id="mv-price-currency">${PRICE_CURRENCY_OPTIONS.map(code=>`<option value="${code}" ${code===priceCurrency?'selected':''}>${PRICE_CURRENCY_LABEL[code]}</option>`).join('')}</select></label><button type="button" class="mv-button mv-soft" id="mv-price-refresh" ${priceBusy || priceCooldownLeft() > 0 ? 'disabled' : ''}>${priceButtonLabel()}</button></div><label class="mv-search"><span>⌕</span><input id="mv-filter" type="search" placeholder="Filtra la wantlist…" value="${esc(filter)}"></label><div class="mv-export"><label>Lingua<select id="mv-export-language"><option value="it" ${exportLanguage === 'it' ? 'selected' : ''}>Italiano</option><option value="en" ${exportLanguage === 'en' ? 'selected' : ''}>English</option></select></label><label>Formato<select id="mv-export-format"><option value="txt" ${exportFormat === 'txt' ? 'selected' : ''}>TXT · lista</option><option value="csv" ${exportFormat === 'csv' ? 'selected' : ''}>CSV</option><option value="json" ${exportFormat === 'json' ? 'selected' : ''}>JSON</option><option value="pdf" ${exportFormat === 'pdf' ? 'selected' : ''}>PDF · lista</option></select></label><button type="button" class="mv-button" id="mv-export" ${wanted.length ? '' : 'disabled'}>Esporta ${wanted.length} carte</button><small>Esporta le carte mostrate. In italiano usa i nomi italiani disponibili, altrimenti conserva il nome originale. Funziona anche offline.</small></div><div class="mv-grid">${wanted.map(card=>cardTile(card,'wantlist')).join('') || '<p class="mv-empty">La wantlist è vuota. Nella collezione tocca il simbolo ◇ su una carta per aggiungerla.</p>'}</div></section>`}
           ${modalCard ? `<div class="mv-modal-backdrop" role="presentation"><section class="mv-modal" role="dialog" aria-modal="true" aria-labelledby="mv-modal-title"><button type="button" class="mv-modal-close" aria-label="Chiudi">×</button>${modalCard.image?`<img class="mv-modal-art" src="${esc(modalCard.image)}" alt="${esc(modalCard.name)}">`:''}<div class="mv-modal-copy"><div class="mv-sheet-grab" role="separator" aria-orientation="horizontal" aria-label="Trascina per mostrare tutti i dettagli della carta" tabindex="0"><span></span></div><div class="mv-sheet-body"><div class="mv-browse"><button type="button" data-browse="-1" aria-label="Carta precedente">←</button><span>Scorri per sfogliare</span><button type="button" data-browse="1" aria-label="Carta successiva">→</button></div><span class="mv-eyebrow">${renderCardSymbols(modalCard.manaCost)} · ${esc(modalCard.typeLine)}</span><h2 id="mv-modal-title">${esc(modalCard.printedName||modalCard.name)}</h2><p class="mv-modal-effect" id="mv-modal-effect">${renderCardSymbols(modalCard.localizedText || modalCard.printedText || modalCard.oracleText || 'Nessun testo disponibile.')}</p><small id="mv-modal-language">${modalCard.localizedText ? (modalCard.translated ? 'Traduzione italiana automatica' : 'Stampa italiana ufficiale') : 'Testo Oracle originale'}</small></div></div></section></div>` : ''}
         </main>`;
         bind();
@@ -601,6 +606,51 @@ export function showMagicDashboard(container, options = {}) {
         void refreshPriceSummary();
     };
 
+    // Nomi letti (da file o fotocamera) → carte del catalogo. Chi non ha una
+    // corrispondenza esatta riceve i candidati simili, così la revisione può
+    // correggere il nome invece di scartarlo.
+    async function riconosciNomi(scanned) {
+        const trovati = await lookupExactCards(scanned);
+        const cercaCarte = async query => {
+            const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(query)}&unique=cards&order=name`);
+            return response.ok ? ((await response.json()).data || []).slice(0, 5) : [];
+        };
+        for (const entry of trovati) {
+            if (entry.card) continue;
+            entry.matches = await cercaCarte(`name:${entry.name}`);
+            if (entry.matches.length) continue;
+            // Le stampe italiane hanno il nome stampato in italiano: Scryfall le
+            // conosce solo con lang:it.
+            const italiane = await cercaCarte(`!"${entry.name}" lang:it`);
+            if (italiane.length === 1) entry.card = italiane[0];
+            else entry.matches = italiane.length ? italiane : await cercaCarte(`name:"${entry.name}" lang:it`);
+        }
+        return trovati;
+    }
+
+    // Foto dalla galleria: una carta per foto, fino a MAX_FOTO. Il nome si legge
+    // in locale (nessuna immagine caricata) e finisce nella stessa revisione
+    // dell'import da file, così un tasto solo salva tutto in collezione.
+    async function importPhotos(files) {
+        if (busy || !files.length) return;
+        const scelte = files.slice(0, MAX_FOTO);
+        if (files.length > MAX_FOTO) setNotice(`Scelgo le prime ${MAX_FOTO} foto: oltre non è gestibile in una volta.`);
+        busy = true; setNotice(`Leggo ${scelte.length} foto sul dispositivo…`);
+        try {
+            const { cards: letti, unreadable } = await scanMagicCardPhotos(scelte, setNotice);
+            setNotice(`Cerco ${letti.length} nomi nel catalogo…`);
+            pending = [...pending, ...await riconosciNomi(letti)];
+            render();
+            const esatte = pending.filter(item => item.card).length, daAssociare = pending.length - esatte;
+            const perse = unreadable ? ` ${unreadable} senza nome leggibile.` : '';
+            setNotice(`${esatte} carte riconosciute, ${daAssociare} da associare.${perse} Controlla e aggiungi alla collezione.`);
+        } catch (error) {
+            setNotice(`Scansione delle foto non riuscita: ${error.message}`);
+        } finally {
+            busy = false;
+        }
+    }
+
     async function importFile(file) {
         if (busy) return;
         busy = true; setNotice('Leggo il file…');
@@ -608,13 +658,7 @@ export function showMagicDashboard(container, options = {}) {
             const scanned = await scanMagicDocument(file, message => setNotice(message));
             if (!scanned.length) throw new Error('Non ho trovato nomi di carte nel file.');
             setNotice(`Cerco ${scanned.length} nomi esatti nel catalogo…`);
-            pending = await lookupExactCards(scanned);
-            for (const entry of pending) {
-                if (!entry.card) {
-                    const response = await fetch(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(`name:${entry.name}`)}&unique=cards&order=name`);
-                    if (response.ok) entry.matches = (await response.json()).data?.slice(0, 5) || [];
-                }
-            }
+            pending = await riconosciNomi(scanned);
             render();
             setNotice(`Controlla i risultati: ${pending.filter(item=>item.card).length} esatti, ${pending.filter(item=>!item.card).length} da associare.`);
         } catch (error) { setNotice(error.message || 'Importazione non riuscita.'); }
@@ -636,7 +680,179 @@ export function showMagicDashboard(container, options = {}) {
         pending = []; persist(); render(); setNotice(makeDeck ? 'Carte aggiunte alla collezione e salvate nel nuovo mazzo.' : 'Carte aggiunte alla collezione.');
     }
 
+    /* ── fotocamera: il nome di una carta letto dal vivo ────────────────────
+       Nessuna foto viene salvata: si riconosce solo la riga del nome dentro il
+       riquadro giallo. Le lettere lette si accumulano a schermo (come un QR
+       che si completa); quando due letture coincidono la fotocamera si chiude
+       e parte la ricerca nel catalogo. Se il nome non si legge o non esiste,
+       il riquadro resta aperto, dice cosa non ha funzionato e si riprova. */
+    const apriFotocamera = async () => {
+        if (cameraStop) return;
+        if (!navigator.mediaDevices?.getUserMedia) {
+            setNotice('Questo browser non dà accesso alla fotocamera: usa l’import da file.');
+            return;
+        }
+        const overlay = document.createElement('div');
+        overlay.className = 'mv-camera';
+        overlay.innerHTML = `
+          <div class="mv-camera__box" role="dialog" aria-modal="true" aria-label="Leggi il nome di una carta con la fotocamera">
+            <div class="mv-camera__stage">
+              <video class="mv-camera__video" playsinline muted autoplay></video>
+              <div class="mv-camera__guide" aria-hidden="true"><span>Nome della carta</span></div>
+              <p class="mv-camera__letters" aria-live="polite"></p>
+            </div>
+            <p class="mv-camera__hint" role="status">Inquadra la riga con il nome: la lettura si ferma da sola.</p>
+            <div class="mv-camera__actions">
+              <button type="button" class="mv-button" data-camera-read>Leggi adesso</button>
+              <button type="button" class="mv-button mv-soft" data-camera-retry hidden>Riprova</button>
+              <button type="button" class="mv-text-button" data-camera-close>Chiudi</button>
+            </div>
+          </div>`;
+        // Dentro #ui (dove vivono gli stili della pagina) ma fuori dal
+        // contenitore: i ridisegni della collezione non spengono la fotocamera.
+        (container.closest('#ui') || document.body).appendChild(overlay);
+        const video = overlay.querySelector('video');
+        const lettere = overlay.querySelector('.mv-camera__letters');
+        const stato = overlay.querySelector('.mv-camera__hint');
+        const leggiOra = overlay.querySelector('[data-camera-read]');
+        const riprova = overlay.querySelector('[data-camera-retry]');
+        let stream = null, worker = null, timer = null, fermo = false, letture = 0, precedente = '';
+
+        const onKey = evento => { if (evento.key === 'Escape') { evento.preventDefault(); stop(); } };
+        const stop = () => {
+            fermo = true;
+            clearInterval(timer); timer = null;
+            stream?.getTracks().forEach(traccia => traccia.stop());
+            stream = null;
+            void worker?.terminate(); worker = null;
+            document.removeEventListener('keydown', onKey);
+            overlay.remove();
+            if (cameraStop === stop) cameraStop = null;
+        };
+        cameraStop = stop;
+        document.addEventListener('keydown', onKey);
+        const chiudi = overlay.querySelector('[data-camera-close]');
+        chiudi.addEventListener('click', stop);
+        chiudi.focus();
+
+        // Solo la riga dentro il riquadro: `object-fit: cover` sposta il video,
+        // quindi la posizione del riquadro va riportata ai pixel della camera.
+        const fotogramma = () => {
+            const schermo = video.getBoundingClientRect();
+            const larghezza = video.videoWidth || 1, altezza = video.videoHeight || 1;
+            const scala = Math.max(schermo.width / larghezza, schermo.height / altezza);
+            const offsetX = (schermo.width - larghezza * scala) / 2, offsetY = (schermo.height - altezza * scala) / 2;
+            const guida = overlay.querySelector('.mv-camera__guide').getBoundingClientRect();
+            const x = (guida.left - schermo.left - offsetX) / scala, y = (guida.top - schermo.top - offsetY) / scala;
+            const w = guida.width / scala, h = guida.height / scala;
+            const tela = document.createElement('canvas');
+            tela.width = Math.max(320, Math.round(w * 4));
+            tela.height = Math.max(80, Math.round(h * 4));
+            const contesto = tela.getContext('2d');
+            // Nome chiaro su plastica scura: più contrasto aiuta l’OCR.
+            contesto.filter = 'grayscale(1) contrast(1.7)';
+            contesto.drawImage(video, x, y, w, h, 0, 0, tela.width, tela.height);
+            return tela;
+        };
+
+        const testoLetto = voce => String(voce || '')
+            .replace(/[^\p{L}' ]/gu, ' ').replace(/\s+/g, ' ').trim()
+            .split(' ').filter(parola => parola.length >= 2).slice(0, 6).join(' ').slice(0, 60);
+
+        const cerca = async testo => {
+            fermo = true;
+            clearInterval(timer); timer = null;
+            stato.textContent = `Cerco «${testo}» nel catalogo…`;
+            const riprendi = messaggio => {
+                stato.textContent = messaggio;
+                fermo = false; letture = 0; precedente = ''; riprova.hidden = false; leggiOra.disabled = false;
+                clearInterval(timer);
+                timer = setInterval(() => { void leggi(); }, 1200);
+            };
+            try {
+                const trovati = await riconosciNomi([{ name: testo, quantity: 1 }]);
+                const trovata = trovati[0];
+                if (!trovata?.card && !trovata?.matches?.length) {
+                    riprendi(`Nel catalogo non c’è «${testo}»: inquadra meglio la riga del nome e riprova.`);
+                    return;
+                }
+                stop();
+                pending = [...pending, ...trovati];
+                render();
+                setNotice(trovata.card
+                    ? `Letta «${trovata.card.printedName || trovata.card.name}»: controlla il risultato e aggiungila alla collezione.`
+                    : `Ho letto «${testo}»: scegli la carta giusta o ignora la riga.`);
+            } catch (errore) {
+                riprendi(`Ricerca non riuscita (${errore.message}): riprova quando la rete torna.`);
+            }
+        };
+
+        const leggi = async () => {
+            if (!worker || fermo) return;
+            leggiOra.disabled = true;
+            try {
+                const { data } = await worker.recognize(fotogramma());
+                if (fermo) return;
+                const testo = testoLetto(data.text);
+                lettere.textContent = testo || '···';
+                if (!testo) {
+                    stato.textContent = 'Non vedo lettere: avvicina la carta o sposta il riflesso sulla plastica.';
+                } else if (testo.length >= 4 && testo === precedente) {
+                    await cerca(testo);
+                    return;
+                } else {
+                    stato.textContent = `Ho letto «${testo}». Tieni ferma la carta un istante.`;
+                    precedente = testo;
+                }
+                letture += 1;
+                if (letture >= 8 && !fermo) {
+                    riprova.hidden = false;
+                    stato.textContent = 'Il nome resta poco leggibile: premi «Riprova» con più luce o usa l’import da file.';
+                    clearInterval(timer); timer = null;
+                }
+            } catch (errore) {
+                riprova.hidden = false;
+                stato.textContent = `Lettura non riuscita: ${errore.message}. Riprova.`;
+            } finally {
+                if (!fermo) leggiOra.disabled = false;
+            }
+        };
+
+        leggiOra.addEventListener('click', () => { void leggi(); });
+        riprova.addEventListener('click', () => {
+            fermo = false; letture = 0; precedente = ''; riprova.hidden = true; leggiOra.disabled = false;
+            clearInterval(timer); timer = setInterval(() => { void leggi(); }, 1200);
+            void leggi();
+        });
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        } catch (errore) {
+            riprova.hidden = false;
+            stato.textContent = errore?.name === 'NotAllowedError'
+                ? 'Serve il permesso della fotocamera: consentilo dall’icona nella barra del browser, poi «Riprova».'
+                : `Fotocamera non disponibile: ${errore.message || errore.name}.`;
+            return;
+        }
+        video.srcObject = stream;
+        await video.play().catch(() => { /* il primo fotogramma arriva comunque */ });
+        stato.textContent = 'Preparo il riconoscimento…';
+        try {
+            // Lo stesso OCR dei PDF, già impostato per una riga di testo.
+            worker = await creaWorkerOcr(7);
+            // Chiusa mentre il worker si caricava: va spento lo stesso.
+            if (fermo) { void worker.terminate(); worker = null; return; }
+            stato.textContent = 'Inquadra la riga con il nome: la lettura si ferma da sola.';
+            timer = setInterval(() => { void leggi(); }, 1200);
+            void leggi();
+        } catch (errore) {
+            riprova.hidden = false;
+            stato.textContent = `Riconoscimento non disponibile: ${errore.message}.`;
+        }
+    };
+
     function bind() {
+        container.querySelector('#mv-camera')?.addEventListener('click', () => void apriFotocamera());
         container.querySelectorAll('[data-mtcg-tool]').forEach(button=>button.onclick=()=>navigateTo(button.dataset.mtcgTool,container,{preset:'commander',returnTo:'magic'}));
         // Il mazzo attivo è anche quello che il tavolo propone all'avvio.
         const playDeck=container.querySelector('#mv-play-deck');
@@ -645,6 +861,7 @@ export function showMagicDashboard(container, options = {}) {
         if(printDeck)printDeck.onclick=()=>{const deck=decks.find(d=>d.id===activeDeckId)||decks[0],map=byId();const decklist=(deck?.cards||[]).map(e=>{const card=map.get(String(e.cardId));return card?`${e.quantity} ${card.name}`:'';}).filter(Boolean).join('\n');void navigateTo('proxyPrinter',container,{decklist});};
         container.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { tab = button.dataset.tab; filter = ''; deckFilter = ''; searchResults = []; commanderSearchResults = []; selecting = false; selected.clear(); clearPress(); render(); if (tab === 'wantlist') void refreshPriceSummary(); }));
         container.querySelector('#mv-file')?.addEventListener('change', event => { const file = event.target.files?.[0]; if (file) void importFile(file); event.target.value = ''; });
+        container.querySelector('#mv-photos')?.addEventListener('change', event => { const files = [...(event.target.files || [])]; event.target.value = ''; if (files.length) void importPhotos(files); });
         container.querySelector('#mv-filter')?.addEventListener('input', event => { filter = event.target.value; const start=event.target.selectionStart; render(); const input=container.querySelector('#mv-filter'); input?.focus(); try { input?.setSelectionRange(start,start); } catch { /* search inputs may not support selection */ } });
         container.querySelector('#mv-hide-deck-cards')?.addEventListener('change', event => {
             hideDeckCards = event.target.checked;
@@ -727,6 +944,7 @@ export function showMagicDashboard(container, options = {}) {
         if (modalCard && focusClose) { focusClose = false; container.querySelector('.mv-modal-close')?.focus(); }
         container.querySelector('.mv-modal-backdrop')?.addEventListener('click', event => { if(event.target.classList.contains('mv-modal-backdrop')) closeCard(); });
         container.querySelector('#mv-cancel-import')?.addEventListener('click', () => { pending=[]; render(); setNotice('Importazione annullata.'); });
+        container.querySelectorAll('[data-ignore]').forEach(button => button.addEventListener('click', () => { pending.splice(Number(button.dataset.ignore),1); render(); setNotice('Riga ignorata.'); }));
         container.querySelectorAll('[data-resolve]').forEach(select => select.addEventListener('change', () => { const item=pending[Number(select.dataset.resolve)]; const selected=item.matches?.find(card=>card.id===select.value); if(selected) item.card=selected; else if(select.value==='') item.card=null; const button=container.querySelector('#mv-confirm-import'); if(button) button.disabled=pending.some(entry=>!entry.card); }));
         container.querySelector('#mv-confirm-import')?.addEventListener('click', () => {
             const count=pending.length;
@@ -842,7 +1060,7 @@ export function showMagicDashboard(container, options = {}) {
         });
     }
 
-    window.__magicCleanup = () => { disposed = true; clearPress(); stopPriceTicker(); clearTimeout(priceAgeSaveTimer); window.removeEventListener('resize', onSheetResize); };
+    window.__magicCleanup = () => { disposed = true; clearPress(); stopPriceTicker(); clearTimeout(priceAgeSaveTimer); cameraStop?.(); window.removeEventListener('resize', onSheetResize); };
     render();
     // Anche offline: le copie in collezione devono coprire i mazzi di esempio.
     if (topUpDemoDecks()) render();
